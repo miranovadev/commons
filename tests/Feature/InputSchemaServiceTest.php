@@ -131,6 +131,7 @@ class InputSchemaServiceTest extends TestCase
                 'proposition.traverse',
             ],
             PhaseKind::Disperse->value => [
+                'preparation.start',
                 'proposition.variant',
                 'proposition.revise',
                 'attestation.create',

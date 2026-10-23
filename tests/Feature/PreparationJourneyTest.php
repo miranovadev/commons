@@ -179,6 +179,45 @@ class PreparationJourneyTest extends TestCase
         $this->assertArrayHasKey('participant.rest', app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema']['$defs']['actions']);
     }
 
+    public function test_combined_delivery_budget_fails_without_partial_success_or_receipt(): void
+    {
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        $sources = [];
+        for ($index = 0; $index < 4; $index++) {
+            $sources[] = DB::transaction(fn () => $fixture->receipt(str_repeat('x', 14000).$index));
+        }
+        $service = app(PreparationService::class);
+        $execution = $service->start($f->viewer, $f->phase, $fixture->input($sources));
+        try {
+            $service->delivery($f->viewer, $execution, 'human-text');
+            $this->fail('The combined budget was bypassed.');
+        } catch (\DomainException) {
+            $execution->refresh();
+            $this->assertSame('failed', $execution->status);
+            $this->assertSame('payload_limit', $execution->metadata['failure']['classification']);
+            $this->assertNull($execution->presentation);
+            $this->assertNull($execution->receipt);
+            $this->assertNull($f->phase->fresh()->completed_at);
+        }
+    }
+
+    public function test_empty_preserved_material_can_be_delivered_and_resolved_without_fabricated_content(): void
+    {
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        $source = DB::transaction(fn () => $fixture->receipt(''));
+        $service = app(PreparationService::class);
+        $execution = $service->start($f->viewer, $f->phase, $fixture->input([$source]));
+        $delivery = $service->delivery($f->viewer, $execution, 'human-text');
+        $this->assertSame('', $delivery['deliveries'][0]['content']);
+        $this->assertSame(0, $delivery['deliveries'][0]['payload_bytes']);
+        $service->acknowledge($f->viewer, $execution, $delivery['presentation_token']);
+        $receipt = $service->defer($f->viewer, $execution, 'This preserved resource was empty.');
+        $this->assertTrue($receipt->isEvidence());
+        $this->assertNull($receipt->consumption);
+    }
+
     public function test_artifact_storage_rejects_path_escape_and_reads_inside_write_transactions(): void
     {
         $fixture = new PreparationFixture;
@@ -296,5 +335,14 @@ class PreparationJourneyTest extends TestCase
             $this->assertCount($outcome === 'deferred' ? 3 : 2, $requests);
         }
         $this->assertStringNotContainsString('preserved artifact body', json_encode($execution->toArray()));
+        if ($path = getenv('COMMONS_PREPARATION_READING_EXAMPLES')) {
+            $examples = is_file($path) ? json_decode(file_get_contents($path), true, flags: JSON_THROW_ON_ERROR) : [];
+            $examples[$outcome] = ['source' => 'Isolated automated journey, real application request with deterministic provider response',
+                'execution' => $execution->getAttributes(), 'receipt' => $execution->receipt?->getAttributes(),
+                'prepared_inference_request' => $requests[1],
+                'following_ordinary_request' => $outcome === 'deferred' ? $requests[2] : null];
+            file_put_contents($path, json_encode($examples, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
+        }
+
     }
 }

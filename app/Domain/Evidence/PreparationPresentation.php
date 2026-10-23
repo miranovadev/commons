@@ -41,6 +41,13 @@ final readonly class PreparationPresentation
                 || $delivery['request_id'] !== PreparationInput::requestId($delivery)) {
                 throw new DomainException('Delivery must preserve its exact requested selection and boundaries.');
             }
+            if ($delivery['read_type'] === 'text'
+                ? (! is_int($parameters['max_chars'] ?? null) || $parameters['max_chars'] < 1
+                    || $parameters['max_chars'] > (int) config('preparation.max_chars')
+                    || $bounds['offset'] !== ($parameters['offset'] ?? 0) || $parameters['max_chars'] < $bounds['end'] - $bounds['offset'])
+                : ($parameters !== [] || $bounds['offset'] !== 0 || $bounds['end'] !== $bounds['total'])) {
+                throw new DomainException('Whole representations cannot be truncated; text boundaries must match the request.');
+            }
             if (isset($ids[$delivery['request_id']])) {
                 throw new DomainException('Deliver each identical representation once, retaining all Receipt associations.');
             }

@@ -75,7 +75,15 @@ final readonly class PreparationService
             if ($expected !== $actual) {
                 throw new DomainException('Every selected representation must be delivered exactly once.');
             }
+            $receipts = Receipt::whereKey($selected->pluck('receipt_id'))->get()->keyBy('id');
             foreach ($presentation->deliveries as $delivery) {
+                if ($delivery['read_type'] === 'raw') {
+                    $selection = $selected->first(fn ($item) => PreparationInput::requestId($item) === $delivery['request_id']);
+                    $artifact = $this->artifact($receipts[$selection['receipt_id']], $selection['artifact_id']);
+                    if ($delivery['payload_hash'] !== $artifact['hash'] || $delivery['payload_bytes'] !== $artifact['size']) {
+                        throw new DomainException('Raw delivery must match the entire preserved Artifact byte identity.');
+                    }
+                }
                 $capabilities = app(ArtifactReaderRegistry::class)->capabilities($delivery['source_type'], $delivery['delivery_method']);
                 if ($delivery['method'] !== ArtifactReaderRegistry::METHOD || $delivery['version'] !== ArtifactReaderRegistry::VERSION
                     || $delivery['representation'] !== $delivery['read_type']
@@ -293,10 +301,16 @@ final readonly class PreparationService
     public function recover(Participant $participant, Phase $phase): void
     {
         $execution = $this->active($phase);
-        if ($execution !== null && ($execution->phase_id !== $phase->id || $execution->proposition_id !== $phase->gate_proposition_id
-            || $execution->started_at->lt(now()->subSeconds((int) config('preparation.unresolved_seconds'))))) {
-            $this->fail($participant, $execution, ArtifactReaderRegistry::METHOD, ArtifactReaderRegistry::VERSION, 'expired',
-                'The unresolved Preparation expired or its initiating Phase/Gate changed. No completion was inferred.');
+        if ($execution === null) {
+            return;
+        }
+        $stale = $execution->phase_id !== $phase->id || $execution->proposition_id !== $phase->gate_proposition_id
+            || app(ExhaustionService::class)->unavailable($phase->gate)
+            || app(ExhaustedContinuationService::class)->ids($phase)->has($phase->gate_proposition_id);
+        if ($stale || $execution->started_at->lt(now()->subSeconds((int) config('preparation.unresolved_seconds')))) {
+            $this->fail($participant, $execution, ArtifactReaderRegistry::METHOD, ArtifactReaderRegistry::VERSION, $stale ? 'stale' : 'expired',
+                $stale ? 'The initiating Phase, Gate or available branch changed. No completion was inferred.'
+                    : 'The unresolved Preparation expired. No completion was inferred.');
         }
     }
 
@@ -339,7 +353,8 @@ final readonly class PreparationService
         }
         app(CausalContextService::class)->assertPhase($phase);
         if (! app(PhasePositionService::class)->acceptsGate($phase, $phase->gate)
-            || app(ExhaustionService::class)->unavailable($phase->gate)) {
+            || app(ExhaustionService::class)->unavailable($phase->gate)
+            || app(ExhaustedContinuationService::class)->ids($phase)->has($phase->gate_proposition_id)) {
             throw new ConflictHttpException('Preparation requires a lawful Disperse Gate on an available branch.');
         }
 

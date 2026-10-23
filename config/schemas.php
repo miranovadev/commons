@@ -75,6 +75,7 @@ return [
 
     'actions' => [
         'preparation.start' => [
+            'description' => 'Read selected preserved Artifacts for a stated purpose, then contribute or explicitly defer in the same Disperse Phase.',
             'title' => 'Prepare Artifacts', 'type' => 'object', 'additionalProperties' => false,
             'required' => ['action', 'proposition_id', 'purpose', 'artifacts'],
             'properties' => [
@@ -85,6 +86,7 @@ return [
             ],
         ],
         'preparation.defer' => [
+            'description' => 'Complete this Preparation without a Proposition, recording your reason and preserving the current Phase.',
             'title' => 'Defer after Preparation', 'type' => 'object', 'additionalProperties' => false,
             'required' => ['action', 'reason'],
             'properties' => ['action' => ['const' => 'preparation.defer'],

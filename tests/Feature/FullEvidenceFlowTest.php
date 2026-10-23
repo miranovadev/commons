@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\HorizonCycleFixture;
-use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
+use Tests\Support\RefreshEvidenceDatabase as RefreshDatabase;
 use Tests\TestCase;
 
 #[Group('integration')]

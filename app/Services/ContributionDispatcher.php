@@ -67,6 +67,9 @@ final readonly class ContributionDispatcher
             $receiptOptions = $input['receipt_options'] ?? null;
             unset($input['receipt_options']);
             $action = $input['action'];
+            if (isset($input['execution_id']) && $preparation === null) {
+                throw new ConflictHttpException('Prepared contributions must use their execution resolution boundary.');
+            }
             if ($preparation !== null) {
                 app(PreparationService::class)->assertResolution($participant, $phase, $preparation);
                 if (! in_array($action, ['proposition.variant', 'proposition.revise'], true)

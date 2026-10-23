@@ -61,6 +61,10 @@ and target assertion without moving catalogue filtering into action consumers.
 
 ## Disperse activation boundary
 
+> Stage 2D now activates this policy with a complete Preparation workflow. The
+> following describes the historical Stage 2B deployment boundary.
+> See [Stage 2D](epistemic-evidence-stage-2d.md).
+
 Disperse generation remains enabled by its existing structural rules in Stage
 2B, including its existing evidence and epoch conditions for renewed exploration.
 No Prepare action is exposed. No feature flag or dormant preparation service is

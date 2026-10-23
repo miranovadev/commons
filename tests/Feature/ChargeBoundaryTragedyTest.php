@@ -168,6 +168,7 @@ class ChargeBoundaryTragedyTest extends TestCase
         foreach ([$this->origin, $seed] as $region) {
             $gate = $this->node($this->phase($region, PhaseKind::Constrain), $region);
             $phase = $this->phase($gate, PhaseKind::Disperse);
+            $this->receiptFixture($gate);
             $target = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
                 ['action' => 'proposition.variant', 'statement' => 'A regional boundary']);
             $this->assertSame($target->id, Tragedy::where('governing_committal_id', $region->id)->sole()->terminal_proposition_id);

@@ -43,7 +43,7 @@ return [
     ],
     4 => [
         'name' => 'disperse',
-        'description' => 'Open a structurally needed expressive opportunity, attest, or traverse an already-attested Write.',
+        'description' => 'With available ordinary evidence, develop a structurally lawful Variant or Revise. Otherwise Prepare accessible Artifacts once per Cycle, then contribute or explicitly defer. Attestation and Traverse retain their independent rules.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'preparation.start',

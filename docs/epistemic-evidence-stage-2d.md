@@ -182,3 +182,18 @@ race tests exercise this contract. Frontend tests render real escaped content,
 acknowledge only after rendering, clear it on unmount, and enforce selection bounds.
 The PR records complete Core, Integration, Phase Profile, C3 and frontend outcomes,
 including baseline failures by cause rather than test name alone.
+
+
+[Persisted examples and actual prepared inference requests](evidence/epistemic-evidence-stage-2d/examples.json)
+come from the isolated autonomous journey test with deterministic provider responses.
+They include contributed and deferred executions/Receipts, a failed execution with
+`receipt: null`, and the following ordinary request after deferment (without Artifact
+content). Generate them with `COMMONS_PREPARATION_READING_EXAMPLES=docs/evidence/epistemic-evidence-stage-2d/examples.json php artisan test tests/Feature/PreparationJourneyTest.php`.
+The API key is test-only and is not part of the recorded request body.
+
+Lifecycle fixtures now preserve readable resources and perform Preparation after
+Constrain consumes the available evidence. The fixed skeptical HTTP transcript
+retains its structural lineage and Commit measurements, while five Disperse
+Preparations replace later Persist acquisitions. Preparation integration cases use
+fresh isolated schemas with real transaction boundaries, because a test-wide write
+transaction cannot truthfully exercise out-of-transaction reading.

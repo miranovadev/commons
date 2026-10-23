@@ -25,6 +25,7 @@ use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\Fixtures\PropositionBirth;
 use Tests\TestCase;
 
@@ -88,7 +89,7 @@ class WriteOnceTest extends TestCase
         try {
             app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
             $this->fail('The Variant opportunity must be consumed immediately.');
-        } catch (DomainException) {
+        } catch (DomainException|ConflictHttpException) {
             $this->assertSame($counts, [Proposition::count(), Supersession::count()]);
         }
         $return = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
@@ -166,7 +167,7 @@ class WriteOnceTest extends TestCase
         try {
             $this->phase($participant, PhaseKind::Persist, 'stance', $gate);
             $this->fail('An expressive Gate cannot be moved into the opposite Domain.');
-        } catch (DomainException) {
+        } catch (DomainException|ConflictHttpException) {
             $this->assertSame('activity', $gate->fresh()->register);
         }
         $later = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
@@ -375,7 +376,7 @@ class WriteOnceTest extends TestCase
         try {
             app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
             $this->fail('Direct dispatch must reject the invalid action.');
-        } catch (DomainException) {
+        } catch (DomainException|ConflictHttpException) {
         }
         $this->assertSame($counts, [Proposition::count(), Supersession::count(), $participant->substrate->ledgerEntries()->count()]);
     }
@@ -417,7 +418,7 @@ class WriteOnceTest extends TestCase
             'gate_proposition_id' => $gate?->id, 'started_at' => now()])->save();
 
         // These cases isolate structural generation from shared evidence availability.
-        if ($kind === PhaseKind::Persist && $gate !== null) {
+        if (in_array($kind, [PhaseKind::Persist, PhaseKind::Disperse], true) && $gate !== null) {
             $this->receiptFixture($gate);
         }
 

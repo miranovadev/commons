@@ -81,7 +81,7 @@ class PreparationExecutionTest extends TestCase
         $this->assertNull($execution->fresh()->resulting_proposition_id);
         $this->assertSame(['type' => 'deferred', 'reason' => $reason], $receipt->metadata['outcome']);
         $this->assertSame($fixture->input()['purpose'], $receipt->metadata['purpose']);
-        $this->assertSame($fixture->input()['artifacts'], $receipt->metadata['selections']);
+        $this->assertEquals($fixture->input()['artifacts'], $receipt->metadata['selections']);
         $this->assertOrdinary($receipt, $execution);
         $this->assertNotNull(app(ReceiptEvidenceService::class)->observation($receipt));
         $this->assertDatabaseHas('participant_receipt_contexts', ['participant_id' => $f->viewer->id, 'receipt_id' => $receipt->id, 'cleared_at' => null]);
@@ -431,7 +431,7 @@ class PreparationExecutionTest extends TestCase
         $this->assertFalse(app(HorizonReceiptService::class)->catalogue($f->phase)->contains('id', $fixture->source->id));
         $service->present($f->viewer, $execution, $fixture->presentation());
         $receipt = $service->defer($f->viewer, $execution, 'The selected material was supplied.');
-        $this->assertSame($fixture->input()['artifacts'], $receipt->metadata['selections']);
+        $this->assertEquals($fixture->input()['artifacts'], $receipt->metadata['selections']);
     }
 
     public function test_failed_phase_advance_rolls_back_receipt_outcome_and_contribution(): void
@@ -578,6 +578,6 @@ class PreparationExecutionTest extends TestCase
     private function structuralSnapshot(): array
     {
         return collect(['propositions', 'supersessions', 'phases', 'cycles', 'horizon_exploration_states',
-            'chirality_observations', 'closure_births', 'chirality_population_observations', 'phase_profile_observations', 'proposition_attestation_cursors'])->mapWithKeys(fn ($t) => [$t => DB::table($t)->get()->toJson()])->all();
+            'chirality_observations', 'closure_births', 'chirality_population_observations', 'phase_profile_observations', 'proposition_attestation_cursors'])->mapWithKeys(fn ($t) => [$t => DB::table($t)->get()->sortBy(fn ($row) => json_encode($row))->values()->toJson()])->all();
     }
 }

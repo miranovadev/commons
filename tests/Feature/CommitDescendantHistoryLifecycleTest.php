@@ -20,7 +20,7 @@ use App\Services\PropositionStateService;
 use App\Services\ReceiptContextService;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\HorizonCycleFixture;
-use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
+use Tests\Support\RefreshEvidenceDatabase as RefreshDatabase;
 use Tests\TestCase;
 
 /** Separate coverage for post-Commit reset, selected search lineage and frozen history. */

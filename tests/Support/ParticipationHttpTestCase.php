@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
 use LogicException;
-use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
+use Tests\Support\RefreshEvidenceDatabase as RefreshDatabase;
 
 /** Real participation requests; only external DNS and HTTP evidence are deterministic. */
 abstract class ParticipationHttpTestCase extends TestCase
@@ -181,6 +181,31 @@ abstract class ParticipationHttpTestCase extends TestCase
         $this->assertSame(200, $response->status(), $response->getContent().$this->traceMessage($state));
 
         return $response->json('data');
+    }
+
+    protected function prepareVariant(string $participant, string $statement): array
+    {
+        $state = $this->readParticipation($participant);
+        $this->assertActionAvailable($state, 'preparation.start');
+        $this->assertActionUnavailable($state, 'proposition.variant');
+        $source = $state['plan']['preparation_options'][0];
+        $started = $this->contribute($participant, ['action' => 'preparation.start',
+            'proposition_id' => $state['plan']['gate_id'], 'purpose' => 'Examine preserved evidence before exploring this continuation.',
+            'artifacts' => [['receipt_id' => $source['receipt_id'], 'artifact_id' => $source['artifact_id'],
+                'read_type' => 'text', 'parameters' => ['max_chars' => 4000]]]], $state);
+        $this->assertSame($state['plan']['phase'], $started['plan']['phase']);
+        $id = $started['plan']['preparation']['execution_id'];
+        $this->readAndAcknowledgePreparation($participant, $id);
+
+        return $this->contribute($participant, ['action' => 'proposition.variant', 'execution_id' => $id, 'statement' => $statement]);
+    }
+
+    protected function readAndAcknowledgePreparation(string $participant, string $execution): void
+    {
+        $url = '/api/substrates/'.$this->substrateSlug.'/participants/'.$participant.'/preparations/'.$execution;
+        $delivery = $this->getJson($url.'/reading')->assertOk()->json('data');
+        $this->assertNotEmpty($delivery['deliveries']);
+        $this->postJson($url.'/presented', ['presentation_token' => $delivery['presentation_token']])->assertOk();
     }
 
     protected function postContribution(string $participant, string $phase, array $input): TestResponse

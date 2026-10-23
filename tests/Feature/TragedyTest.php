@@ -120,6 +120,8 @@ class TragedyTest extends TestCase
                 $result = app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,
                     ['action' => 'proposition.reclassify', 'proposition_id' => $fixture->expression->id, 'receipt_id' => $receipt->id]);
                 $fixture->phase = app(PhaseProgressionService::class)->advance($fixture->phase, $result);
+                // This case isolates action exhaustion with shared ordinary evidence available.
+                $this->observationFixture($fixture->phase, $result, ['kind' => 'citation', 'reference' => $result->id]);
             }
 
             return [$fixture->actor->fresh(), $fixture->phase];
