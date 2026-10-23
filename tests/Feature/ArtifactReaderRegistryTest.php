@@ -51,7 +51,7 @@ class ArtifactReaderRegistryTest extends TestCase
         $reader = app(ArtifactReaderRegistry::class);
         $selected = $reader->read('A💚éZ', 'text/plain', 'text', ['offset' => 1, 'max_chars' => 2], 'inline-text');
         $this->assertSame('💚é', $selected['content']);
-        $this->assertSame(['unit' => 'unicode-characters', 'offset' => 1, 'end' => 3, 'total' => 4, 'has_more' => true], $selected['boundaries']);
+        $this->assertSame(['unit' => 'unicode-characters', 'requested_offset' => 1, 'requested_max_chars' => 2, 'offset' => 1, 'end' => 3, 'length' => 2, 'total' => 4, 'has_more' => true], $selected['boundaries']);
         $empty = $reader->read('', 'text/plain', 'text', ['max_chars' => 10], 'human-text');
         $this->assertSame('', $empty['content']);
         $this->assertSame(0, $empty['boundaries']['end']);
@@ -61,17 +61,16 @@ class ArtifactReaderRegistryTest extends TestCase
     {
         return [
             ["\xFF\x00", 'text/plain', 'raw', [], 'unsupported_source'],
-            ['%PDF-1.4 fake', 'text/plain', 'raw', [], 'unsupported_source'],
+            ['%PDF-1.4 fake', 'text/plain', 'raw', [], 'missing_capability'],
             ['{invalid}', 'application/json', 'raw', [], 'invalid_source'],
             ['<root>', 'application/xml', 'raw', [], 'invalid_source'],
             ['<!DOCTYPE root [<!ENTITY x SYSTEM "file:///etc/passwd">]><root>&x;</root>', 'application/xml', 'raw', [], 'unsupported_source'],
             ['plain', 'text/plain', 'sanitised', [], 'missing_capability'],
             ['<html>text</html>', 'text/html', 'regex', [], 'missing_capability'],
-            ['text', 'text/plain', 'raw', ['max_chars' => 2], 'invalid_parameters'],
-            ['text', 'text/plain', 'text', [], 'invalid_parameters'],
+            ['text', 'text/plain', 'raw', ['max_chars' => 0], 'invalid_parameters'],
             ['text', 'text/plain', 'text', ['offset' => 10, 'max_chars' => 2], 'invalid_parameters'],
             ['text', 'text/plain', 'text', ['offset' => -1, 'max_chars' => 2], 'invalid_parameters'],
-            [str_repeat('x', 16385), 'text/plain', 'raw', [], 'payload_limit'],
+            [str_repeat('💚', 12000), 'text/plain', 'raw', ['max_chars' => 12000], 'payload_limit'],
         ];
     }
 
@@ -89,7 +88,9 @@ class ArtifactReaderRegistryTest extends TestCase
     public function test_capabilities_advertise_only_implemented_combinations_and_delivery_methods(): void
     {
         $registry = app(ArtifactReaderRegistry::class);
-        $this->assertSame(['raw', 'sanitised', 'text'], array_column($registry->capabilities('html', 'inline-text'), 'read_type'));
+        $this->assertSame(['raw', 'sanitised', 'text', 'tables', 'lists'], array_column($registry->capabilities('html', 'inline-text'), 'read_type'));
+        $this->assertSame(['text'], array_column($registry->capabilities('pdf', 'inline-text'), 'read_type'));
+        config(['preparation.pdf.binary' => '/nonexistent/pdftotext']);
         $this->assertSame([], $registry->capabilities('pdf', 'inline-text'));
         $this->assertSame([], $registry->capabilities('html', 'native-attachment'));
     }

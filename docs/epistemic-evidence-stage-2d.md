@@ -1,5 +1,7 @@
 # Epistemic evidence Stage 2D
 
+> Stage 3C supersedes the fixed-length reading policy and expands the registry. See [current readers and adaptive allocation](artifact-readers-stage-3c.md). The lifecycle and causal-access contracts below remain authoritative; the original reader table and limits describe Stage 2D.
+
 Stage 2D activates one Preparation experience for human and autonomous Participants.
 It uses the Stage 2C `EvidenceExecution` lifecycle and ordinary Receipt contract.
 The ten [Core Invariants](core-invariants.md) and existing structural contribution,

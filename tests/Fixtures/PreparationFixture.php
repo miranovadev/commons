@@ -13,6 +13,7 @@ use App\Models\Receipt;
 use App\Services\ContributionDispatcher;
 use App\Services\Evidence\ArtifactReaderRegistry;
 use App\Services\Evidence\ArtifactStore;
+use App\Services\Evidence\PreparationAllocation;
 use App\Services\EvidenceExecutionService;
 use App\Services\LedgerService;
 use Carbon\CarbonImmutable;
@@ -63,17 +64,22 @@ final class PreparationFixture
 
     public function presentation(?array $input = null): PreparationPresentation
     {
-        return new PreparationPresentation(collect(($input ?? $this->input())['artifacts'])
-            ->unique(fn ($s) => PreparationInput::requestId($s))->values()->map(function ($selection) {
+        $selections = ($input ?? $this->input())['artifacts'];
+
+        $representations = collect($selections)
+            ->unique(fn ($s) => PreparationInput::requestId($s))->values()->map(function ($selection) use ($selections) {
                 $receipt = Receipt::findOrFail($selection['receipt_id']);
                 $artifact = collect($receipt->metadata['artifacts'])->firstWhere('hash', $selection['artifact_id']);
                 $body = app(ArtifactStore::class)->read($artifact);
-                $read = app(ArtifactReaderRegistry::class)->read($body, $artifact['media_type'], $selection['read_type'], $selection['parameters'] ?? [], 'inline-text');
-                unset($read['content']);
+                $read = app(ArtifactReaderRegistry::class)->represent($body, $artifact['media_type'], $selection['read_type'], $selection['parameters'] ?? [], 'inline-text');
 
-                return ['artifact_id' => $selection['artifact_id'], 'request_id' => PreparationInput::requestId($selection),
+                return ['receipt_ids' => collect($selections)->filter(fn ($item) => PreparationInput::requestId($item) === PreparationInput::requestId($selection))->pluck('receipt_id')->values()->all(),
+                    'artifact_id' => $selection['artifact_id'], 'request_id' => PreparationInput::requestId($selection),
                     'delivery_id' => 'test:'.PreparationInput::requestId($selection), ...$read];
-            })->all());
+            })->all();
+
+        return new PreparationPresentation(array_map(fn ($item) => array_diff_key($item, ['content' => true]),
+            app(PreparationAllocation::class)->allocate($representations)));
     }
 
     public static function registerReader(): void

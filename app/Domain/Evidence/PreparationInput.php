@@ -34,7 +34,7 @@ final readonly class PreparationInput
                 || array_diff(array_keys($selection['parameters'] ?? []), ['offset', 'max_chars']) !== []
                 || collect($selection['parameters'] ?? [])->contains(fn ($value) => ! is_int($value) || $value < 0)
                 || (isset($selection['parameters']['max_chars']) && ($selection['parameters']['max_chars'] < 1
-                    || $selection['parameters']['max_chars'] > (int) config('preparation.max_chars')))) {
+                    || $selection['parameters']['max_chars'] > min(self::MAX_PAYLOAD_BYTES, (int) config('preparation.max_chars'))))) {
                 throw new DomainException('Each selection requires a Receipt ID and canonical Artifact hash.');
             }
             $key = $selection['receipt_id'].':'.self::requestId($selection);
@@ -51,9 +51,7 @@ final readonly class PreparationInput
     public static function requestId(array $selection): string
     {
         $parameters = $selection['parameters'] ?? [];
-        if (($selection['read_type'] ?? null) === 'text') {
-            $parameters['offset'] ??= 0;
-        }
+        $parameters['offset'] ??= 0;
         ksort($parameters);
 
         return hash('sha256', json_encode([$selection['artifact_id'], $selection['read_type'], $parameters], JSON_THROW_ON_ERROR));

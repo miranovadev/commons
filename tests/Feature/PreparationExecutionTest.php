@@ -222,7 +222,7 @@ class PreparationExecutionTest extends TestCase
 
     public static function invalidPresentations(): array
     {
-        return array_map(fn ($v) => [$v], ['unknown-reader', 'wrong-version', 'unsupported', 'omitted', 'duplicate', 'budget', 'negative', 'unselected', 'body']);
+        return array_map(fn ($v) => [$v], ['unknown-reader', 'wrong-version', 'unsupported', 'omitted', 'duplicate', 'budget', 'negative', 'unselected', 'body', 'false-length', 'wrong-origin', 'raw-hash']);
     }
 
     #[DataProvider('invalidPresentations')]
@@ -237,7 +237,7 @@ class PreparationExecutionTest extends TestCase
         switch ($case) {
             case 'unknown-reader': $deliveries[0]['method'] = 'unregistered';
                 break;
-            case 'wrong-version': $deliveries[0]['version'] = '2';
+            case 'wrong-version': $deliveries[0]['version'] = 'unknown-future-version';
                 break;
             case 'unsupported': $deliveries[0]['representation'] = 'unsupported-image';
                 break;
@@ -250,6 +250,12 @@ class PreparationExecutionTest extends TestCase
             case 'negative': $deliveries[0]['payload_bytes'] = -1;
                 break;
             case 'unselected': $deliveries[0]['artifact_id'] = 'sha256:'.str_repeat('0', 64);
+                break;
+            case 'false-length': $deliveries[0]['boundaries']['length'] = 0;
+                break;
+            case 'wrong-origin': $deliveries[0]['receipt_ids'] = [(string) str()->ulid()];
+                break;
+            case 'raw-hash': $deliveries[0]['representation_hash'] = 'sha256:'.str_repeat('0', 64);
                 break;
             case 'body': $deliveries[0]['body'] = 'contents';
                 break;

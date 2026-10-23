@@ -24,6 +24,18 @@ import { MantineProvider } from '@mantine/core';
 import { PreparationPanel } from './resources/js/components/PreparationPanel';
 import { PreparationFields } from './resources/js/components/PreparationFields';
 export { act } from 'react';
+export function changeReading(selection, label, value) {
+ let result;
+ const tree = PreparationFields({ options: globalThis.preparationHarness.options, value: [selection], onChange: items => { result = items[0]; } });
+ function find(node) {
+  if (!React.isValidElement(node)) return;
+  if (node.props.label === label) return node;
+  for (const child of React.Children.toArray(node.props.children)) { const found = find(child); if (found) return found; }
+ }
+ find(tree).props.onChange(value);
+ return result;
+}
+
 export function mount(container, selection = false) {
  const root = createRoot(container);
  function Fields() { const [items, setItems] = React.useState([]); return <><PreparationFields options={globalThis.preparationHarness.options} value={items} onChange={setItems} /><output>{JSON.stringify(items)}</output></>; }
@@ -44,12 +56,12 @@ export function useAcknowledgePreparationMutation() {
 } }], bundle: true, platform: 'node', format: 'cjs', write: false, jsx: 'automatic' });
 const module = { exports: {} };
 new Function('require', 'module', 'exports', bundle.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
-const { act, mount } = module.exports;
+const { act, mount, changeReading } = module.exports;
 
 test('human content is escaped, acknowledged after rendering, and discarded when the interaction closes', async () => {
   const calls = [];
   globalThis.preparationHarness = { read: 0, resets: 0, deferred: 0,
-    delivery: { presentation_token: 'trusted-token', deliveries: [{ request_id: 'request', artifact_id: 'hash', source_type: 'html', read_type: 'raw', method: 'commons-native-text', version: '1', boundaries: { offset: 0, end: 12, total: 40, has_more: true }, content: '<script>globalThis.executed = true</script>Source text' }] },
+    delivery: { presentation_token: 'trusted-token', deliveries: [{ request_id: 'request', artifact_id: 'hash', source_type: 'html', read_type: 'raw', method: 'commons-native-text', version: '1', payload_bytes: 12, boundaries: { requested_offset: 0, requested_max_chars: null, offset: 0, end: 12, length: 12, total: 40, has_more: true }, content: '<script>globalThis.executed = true</script>Source text' }] },
     acknowledge(input) { assert.match(document.querySelector('pre').textContent, /Source text/); calls.push(input); },
   };
   const element = document.createElement('div'); document.body.append(element);
@@ -60,6 +72,8 @@ test('human content is escaped, acknowledged after rendering, and discarded when
   assert.equal(element.querySelector('script'), null);
   assert.equal(globalThis.executed, undefined);
   assert.match(element.textContent, /More content exists/);
+  assert.match(element.textContent, /Delivered 12 characters \/ 12 bytes/);
+  assert.match(element.textContent, /Automatic allocation/);
   const defer = [...element.querySelectorAll('button')].find(b => b.textContent === 'Defer with a reason');
   assert.equal(defer.disabled, false);
   await act(async () => defer.click());
@@ -70,7 +84,7 @@ test('human content is escaped, acknowledged after rendering, and discarded when
   element.remove();
 });
 
-test('selection editor bounds associations and includes explicit character parameters', async () => {
+test('selection editor bounds associations and defaults to automatic allocation and permits optional ranges', async () => {
   globalThis.preparationHarness = { options: [{ receipt_id: 'receipt', artifact_id: 'hash', source_type: 'plain-text', reference: 'Source', capabilities: [{ read_type: 'raw', parameters: {} }, { read_type: 'text', parameters: { max_chars: 4000 }, max_chars: 8000 }] }] };
   const element = document.createElement('div'); document.body.append(element);
   const page = mount(element, true);
@@ -79,8 +93,27 @@ test('selection editor bounds associations and includes explicit character param
   assert.equal([...element.querySelectorAll('button')].find(b => b.textContent === 'Add Artifact').disabled, true);
   const selected = JSON.parse(element.querySelector('output').textContent);
   assert.equal(selected.length, 8);
-  assert.deepEqual(selected[0], { receipt_id: 'receipt', artifact_id: 'hash', read_type: 'text', parameters: { offset: 0, max_chars: 4000 } });
+  assert.deepEqual(selected[0], { receipt_id: 'receipt', artifact_id: 'hash', read_type: 'text', parameters: { offset: 0 } });
   await act(async () => [...element.querySelectorAll('button')].find(b => b.textContent === 'Remove selection').click());
   assert.equal(JSON.parse(element.querySelector('output').textContent).length, 7);
   await act(async () => page.close()); element.remove();
+});
+
+
+test('optional ranges remain automatic until a maximum is entered, and clearing it restores allocation', () => {
+  globalThis.preparationHarness = { options: [{ receipt_id: 'receipt', artifact_id: 'hash', source_type: 'html', reference: 'Source', capabilities: [
+    { read_type: 'text', parameters: { offset: 0 }, max_chars: 12000 }, { read_type: 'tables', parameters: { offset: 0 }, max_chars: 12000 },
+  ] }] };
+  let item = { receipt_id: 'receipt', artifact_id: 'hash', read_type: 'text' };
+  item = changeReading(item, 'Character offset', 4);
+  assert.deepEqual(item.parameters, { offset: 4 });
+  item = changeReading(item, 'Maximum characters (optional)', 6000);
+  assert.deepEqual(item.parameters, { offset: 4, max_chars: 6000 });
+  item = changeReading(item, 'Maximum characters (optional)', '');
+  assert.deepEqual(item.parameters, { offset: 4 });
+  item = changeReading(item, 'Read Type', 'tables');
+  assert.equal(item.read_type, 'tables');
+  assert.deepEqual(item.parameters, { offset: 0 });
+  item = changeReading(item, 'Character offset', 12);
+  assert.deepEqual(item.parameters, { offset: 12 });
 });

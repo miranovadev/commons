@@ -192,7 +192,12 @@ class PreparationJourneyTest extends TestCase
             $sources[] = DB::transaction(fn () => $fixture->receipt(str_repeat('x', 14000).$index));
         }
         $service = app(PreparationService::class);
-        $execution = $service->start($f->viewer, $f->phase, $fixture->input($sources));
+        $input = $fixture->input($sources);
+        foreach ($input['artifacts'] as &$selection) {
+            $selection['parameters'] = ['max_chars' => 12000];
+        }
+        unset($selection);
+        $execution = $service->start($f->viewer, $f->phase, $input);
         try {
             $service->delivery($f->viewer, $execution, 'human-text');
             $this->fail('The combined budget was bypassed.');
@@ -318,6 +323,13 @@ class PreparationJourneyTest extends TestCase
         $fixture = new PreparationFixture;
         $f = $fixture->context;
         $revision = $outcome === 'revised' ? $this->refutedWrite($fixture) : null;
+        $preparationInput = $fixture->input();
+        if ($outcome === 'contributed') {
+            $small = $fixture->receipt(str_repeat('a', 500));
+            $large = $fixture->receipt(str_repeat('z', 15000));
+            $preparationInput = $fixture->input([$fixture->source, $small, $large]);
+            $preparationInput['artifacts'][2]['read_type'] = 'text';
+        }
         $this->publishPotentialFixture($f->viewer);
         $connection = (new Connection)->forceFill(['name' => 'Preparation transport', 'provider' => 'openai',
             'configuration' => ['model' => 'gpt-test'], 'credentials' => ['api_key' => 'test-secret']]);
@@ -326,12 +338,12 @@ class PreparationJourneyTest extends TestCase
             'is_enabled' => true, 'configuration' => ['trigger' => ['mode' => 'manual'], 'wake' => ['termination' => 'phase']]]);
         $link->save();
         $requests = [];
-        Http::fake(function ($request) use (&$requests, $fixture, $f, $outcome, $revision) {
+        Http::fake(function ($request) use (&$requests, $fixture, $f, $outcome, $revision, $preparationInput) {
             $payload = $request->data();
             $requests[] = $payload;
             if (count($requests) === 1) {
                 $this->assertStringNotContainsString('preserved artifact body', json_encode($payload));
-                $input = ['action' => 'preparation.start', 'proposition_id' => $f->gate->id, ...$fixture->input()];
+                $input = ['action' => 'preparation.start', 'proposition_id' => $f->gate->id, ...$preparationInput];
             } else {
                 $execution = EvidenceExecution::where('type', 'prepare')->sole();
                 if ($execution->status !== 'completed') {
@@ -339,6 +351,11 @@ class PreparationJourneyTest extends TestCase
                     $this->assertStringContainsString('preserved artifact body', $payload['input'][1]['content']);
                     $this->assertStringContainsString($fixture->input()['purpose'], $payload['input'][1]['content']);
                     $this->assertStringContainsString('untrusted preserved material', $payload['input'][1]['content']);
+                    if ($outcome === 'contributed') {
+                        $this->assertStringContainsString(str_repeat('z', 11477), $payload['input'][1]['content']);
+                        $this->assertStringNotContainsString(str_repeat('z', 11478), $payload['input'][1]['content']);
+                        $this->assertStringContainsString('"requested_max_chars":null', $payload['input'][1]['content']);
+                    }
                     $schema = $payload['text']['format']['schema'];
                     $this->assertStringNotContainsString('attestation.create', json_encode($schema));
                     $this->assertStringNotContainsString('preparation.start', json_encode($schema));

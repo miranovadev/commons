@@ -26,9 +26,11 @@ use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\Fixtures\PreparationFixture;
+use Tests\Fixtures\TextPdf;
 use Tests\Support\RefreshEvidenceDatabase;
 use Tests\TestCase;
 
@@ -172,6 +174,40 @@ class LoadFileInstrumentTest extends TestCase
         $this->assertDatabaseMissing('participant_receipt_contexts', ['receipt_id' => $receipt->id]);
     }
 
+    public static function expandedDownloads(): array
+    {
+        return [
+            [TextPdf::make(['Downloaded PDF sentinel']), 'application/pdf', 'text', 'Downloaded PDF sentinel'],
+            ["name,value\nresearch,42\n", 'text/csv', 'tables', '["research","42"]'],
+            ['<table><tr><td>Downloaded HTML sentinel</td></tr></table>', 'text/html', 'tables', 'Downloaded HTML sentinel'],
+        ];
+    }
+
+    #[DataProvider('expandedDownloads')]
+    public function test_downloaded_formats_share_readers_without_loading_or_unconsumed_source(string $body, string $mime, string $type, string $expected): void
+    {
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        Http::fake(['*' => Http::response($body, 200, ['Content-Type' => $mime])]);
+        $receipt = $this->observationFixture($f->gate->phase, $f->gate, $this->input());
+        $fixture->consume($receipt);
+        $input = $fixture->input([$receipt]);
+        $input['artifacts'][0]['read_type'] = $type;
+        $service = app(PreparationService::class);
+        $execution = $service->start($f->viewer, $f->phase, $input);
+        $delivery = $service->delivery($f->viewer, $execution, 'human-text');
+        $this->assertStringContainsString($expected, $delivery['deliveries'][0]['content']);
+        $service->acknowledge($f->viewer, $execution, $delivery['presentation_token']);
+        $prepared = $service->defer($f->viewer, $execution, 'Compare these acquired sources later.');
+        $this->assertSame($body, app(ArtifactStore::class)->read($receipt->metadata['artifacts'][0]));
+        $this->assertSame([$receipt->id], $prepared->metadata['deliveries'][0]['receipt_ids']);
+        $this->assertNull($prepared->consumption);
+        $this->assertNull($f->phase->fresh()->completed_at);
+        $this->assertDatabaseMissing('participant_receipt_contexts', ['receipt_id' => $receipt->id]);
+        $this->assertStringNotContainsString($expected, json_encode($prepared->metadata));
+        Http::assertSentCount(1);
+    }
+
     public function test_failed_download_completes_observation_but_storage_failure_does_not_spend_allowance(): void
     {
         $f = $this->fixture();
@@ -229,7 +265,7 @@ class LoadFileInstrumentTest extends TestCase
     {
         $fixture = new PreparationFixture;
         $f = $fixture->context;
-        Http::fake(['*' => Http::response("%PDF-1.7\0\xff", 200, ['Content-Type' => 'application/pdf'])]);
+        Http::fake(['*' => Http::response("\x89PNG\r\n\x1a\n\0unsupported", 200, ['Content-Type' => 'image/png'])]);
         $receipt = $this->observationFixture($f->gate->phase, $f->gate, $this->input());
         $this->assertTrue($receipt->metadata['content_verified']);
         $this->assertSame('completed', $receipt->evidenceExecution->status);

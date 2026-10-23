@@ -1,5 +1,7 @@
 # Hyperlink Artifacts Stage 1
 
+> Preserved Artifacts now support [Stage 3C readers and adaptive Preparation](artifact-readers-stage-3c.md), independent of acquisition type or Receipt consumption.
+
 Stage 3A adds [bounded anchor-reference metadata](hyperlink-reference-discovery-stage-3a.md)
 to the same successful HTML observation. Its extraction preserves every Artifact
 and evidence-identity contract below; discovered resources are never fetched
