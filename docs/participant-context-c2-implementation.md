@@ -1,5 +1,11 @@
 # Participant Context C2 implementation
 
+> Stage 3B capability refinement: creator loading applies only to readable Receipts.
+> Load File / Download is ordinary and non-loadable; its acquisition metadata and
+> Artifact access remain available under the existing causal scope. See
+> [the Download contract](load-file-download-stage-3b.md).
+
+
 Authority: [approved C2 target](participant-context-c2-target.md), subordinate to
 [the ten Core Invariants](core-invariants.md). C1 is the current-main baseline
 `62a4f065e3333176c26403cc12881c3fe2507998`.

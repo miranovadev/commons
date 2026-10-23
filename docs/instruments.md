@@ -4,8 +4,8 @@
 
 One completed Instrument execution per Participant Cycle is permitted in Persist,
 against the exact current Gate. It leaves Phase, Cycle and position unchanged and
-returns fresh cognition with the ordinary Receipt automatically loaded for its
-creator. Completed unsuccessful observations spend the allowance; infrastructure
+returns fresh cognition. Readable Receipts automatically load for their creator;
+Load File Receipts remain non-loadable. Completed unsuccessful observations spend the allowance; infrastructure
 failures without an execution/Receipt do not. Receipt consumption or unloading
 does not restore it. See [the Stage 2A contract](epistemic-evidence-stage-2a.md).
 
@@ -101,7 +101,8 @@ The original observed Proposition is preserved; new Receipts ground it. Legacy A
 Receipt, execution result, invocation or provenance is rewritten. Domain model
 updates reject changes to saved Receipts and originating invocation fields.
 
-Execution and Replay automatically load the new Receipt for its performer under C2.
+Execution and Replay automatically load readable Receipts for their performer under C2.
+Load File is ordinary but non-loadable and creates no loading event.
 Qualifying loaded uptake uses the existing Reinforcement rules. Even if multiple equivalent or changed observations
 are loaded, each Participant still contributes at most one counted Reinforcement
 per active classification under the evidence inheritance rules. Reclassification
