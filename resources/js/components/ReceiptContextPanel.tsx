@@ -52,8 +52,17 @@ export function ReceiptContextPanel({ plan }: { plan: ParticipantPlan }) {
         </Box>)}
         {receipt.evidence.statement && <Text size="sm">{receipt.evidence.statement}</Text>}
         {receipt.evidence.direction && <Text size="xs">{receipt.evidence.direction}: {receipt.evidence.rationale}</Text>}
+        {receipt.evidence.title && <Text size="sm" fw={600}>{receipt.evidence.title}</Text>}
         {receipt.evidence.content_excerpt && <Text size="sm">{receipt.evidence.content_excerpt}{receipt.evidence.excerpt_truncated ? '…' : ''}</Text>}
         {receipt.evidence.resource && <Text size="xs" c="dimmed">Verified resource: {receipt.evidence.resource}</Text>}
+        {receipt.evidence.links && <Stack gap={3} mt="xs">
+          <Text size="xs" fw={600}>Page references</Text>
+          {receipt.evidence.links.map(link => <Anchor key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" size="sm" style={{ overflowWrap: 'anywhere' }}>{link.text || link.url}</Anchor>)}
+          {receipt.evidence.links_error ? <Text size="xs">References could not be extracted. The page observation remains available.</Text>
+            : receipt.evidence.links_truncated ? <Text size="xs">Showing {receipt.evidence.links.length} of {receipt.evidence.links_count} discovered destinations.</Text>
+              : receipt.evidence.links.length === 0 ? <Text size="xs">No navigable references found.</Text> : null}
+          <Text size="xs" c="dimmed">References only; linked resources have not been acquired.</Text>
+        </Stack>}
         {receipt.evidence.executed_at && <Text size="xs" c="dimmed">Observed {receipt.evidence.executed_at}</Text>}
         {receipt.evidence.results?.map((result) => <Box key={result.rank} mt="xs">
           <Anchor href={result.url} target="_blank" rel="noopener noreferrer" size="sm">{result.title || result.url}</Anchor>

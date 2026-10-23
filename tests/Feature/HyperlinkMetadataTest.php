@@ -27,7 +27,7 @@ class HyperlinkMetadataTest extends TestCase
     #[DataProvider('html')]
     public function test_independent_deterministic_metadata(string $html, ?string $title, ?string $titleSource, ?string $description, ?string $source): void
     {
-        $result = app(HyperlinkMetadataExtractor::class)->extract($html, 'text/html', 'Old excerpt', false);
+        $result = app(HyperlinkMetadataExtractor::class)->extract($html, 'text/html', 'Old excerpt', false, 'https://example.com/page');
         $this->assertSame($title, $result['title']);
         $this->assertSame($titleSource, $result['title_source']);
         $this->assertSame($description, $result['description']);
@@ -37,11 +37,11 @@ class HyperlinkMetadataTest extends TestCase
 
     public function test_unicode_limits_and_exact_source_prefixes(): void
     {
-        $result = app(HyperlinkMetadataExtractor::class)->extract('<title>'.str_repeat('界', 301).'</title><meta name="description" content="'.str_repeat('🌌', 1201).'">', 'text/html', null, false);
+        $result = app(HyperlinkMetadataExtractor::class)->extract('<title>'.str_repeat('界', 301).'</title><meta name="description" content="'.str_repeat('🌌', 1201).'">', 'text/html', null, false, 'https://example.com/page');
         $this->assertSame(str_repeat('界', 300), $result['title']);
         $this->assertSame(str_repeat('🌌', 1200), $result['description']);
         $this->assertTrue($result['description_truncated']);
-        $body = app(HyperlinkMetadataExtractor::class)->extract('<body>'.str_repeat('界', 1201).'</body>', 'text/html', null, false);
+        $body = app(HyperlinkMetadataExtractor::class)->extract('<body>'.str_repeat('界', 1201).'</body>', 'text/html', null, false, 'https://example.com/page');
         $this->assertSame(str_repeat('界', 1200), $body['description']);
         $this->assertTrue($body['description_truncated']);
     }
@@ -50,12 +50,12 @@ class HyperlinkMetadataTest extends TestCase
     {
         $extractor = app(HyperlinkMetadataExtractor::class);
         foreach (['text/plain', 'application/json'] as $type) {
-            $result = $extractor->extract('original bytes', $type, 'Normalized excerpt', true);
+            $result = $extractor->extract('original bytes', $type, 'Normalized excerpt', true, 'https://example.com/page');
             $this->assertSame('Normalized excerpt', $result['description']);
             $this->assertSame('normalized_text', $result['description_source']);
             $this->assertTrue($result['description_truncated']);
         }
-        $this->assertNull($extractor->extract("\x00\xff", 'application/pdf', null, true)['description']);
+        $this->assertNull($extractor->extract("\x00\xff", 'application/pdf', null, true, 'https://example.com/page')['description']);
     }
 
     public function test_parser_does_not_load_external_entities_or_resources(): void
@@ -67,7 +67,7 @@ class HyperlinkMetadataTest extends TestCase
             return null;
         });
         try {
-            app(HyperlinkMetadataExtractor::class)->extract('<!DOCTYPE html SYSTEM "https://example.invalid/evil.dtd" [<!ENTITY ex SYSTEM "file:///etc/passwd">]><html><head><title>&ex;</title></head><body><img src="https://example.invalid/image">Safe</body></html>', 'text/html', null, false);
+            app(HyperlinkMetadataExtractor::class)->extract('<!DOCTYPE html SYSTEM "https://example.invalid/evil.dtd" [<!ENTITY ex SYSTEM "file:///etc/passwd">]><html><head><title>&ex;</title></head><body><img src="https://example.invalid/image">Safe</body></html>', 'text/html', null, false, 'https://example.com/page');
             $this->assertSame([], $requests);
         } finally {
             libxml_set_external_entity_loader(null);

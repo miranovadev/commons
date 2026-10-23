@@ -142,6 +142,7 @@ final class ReceiptEvidenceService
             $content = array_intersect_key($receipt->metadata, array_flip([
                 'resource', 'fingerprint', 'observed_at', 'last_modified', 'content_excerpt', 'excerpt_truncated',
                 'title', 'title_source', 'description_source',
+                'links', 'links_count', 'links_truncated', 'links_error',
             ]));
             // Keep the existing small presentation slot; do not duplicate the description
             // or reveal storage keys. Historical Receipts keep their original excerpt.
