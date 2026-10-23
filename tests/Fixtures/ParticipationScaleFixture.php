@@ -41,7 +41,8 @@ final class ParticipationScaleFixture
                 'direction' => $i % 2 ? 'support' : 'refute', 'created_at' => $at, 'updated_at' => $at];
             $record('attestation', (new Attestation)->getMorphClass(), $attestation);
             $reference = 'https://example.test/history/'.$i;
-            $rows['evidence_executions'][] = ['id' => $execution, 'phase_id' => $phase->id, 'proposition_id' => $id,
+            $rows['evidence_executions'][] = ['id' => $execution, 'phase_id' => $phase->id, 'cycle_id' => $phase->cycle_id,
+                'type' => 'instrument', 'proposition_id' => $id,
                 'kind' => 'hyperlink', 'reference' => $reference, 'status' => 'completed',
                 'input' => json_encode(['kind' => 'hyperlink', 'reference' => $reference]), 'started_at' => $at, 'completed_at' => $at];
             $rows['receipts'][] = ['id' => $receipt, 'evidence_execution_id' => $execution, 'receiptable_type' => (new Proposition)->getMorphClass(),

@@ -21,6 +21,7 @@ use App\Services\LedgerService;
 use App\Services\ParticipantReceiptProjection;
 use App\Services\PreparationService;
 use App\Services\PropositionOptionService;
+use App\Services\ReceiptContextService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -104,7 +105,7 @@ class PreparationExecutionTest extends TestCase
         $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $f->gate->id, 'target_proposition_id' => $result->id, 'type' => 'variant']);
         $this->assertSame(['type' => 'contributed', 'proposition_id' => $result->id], $receipt->metadata['outcome']);
         $this->assertOrdinary($receipt, $execution);
-        $original = $receipt->metadata;
+        $original = $receipt->fresh()->metadata;
         $target = $this->reclassify($fixture, $receipt);
         $this->assertNotSame($result->id, $target->id);
         $this->assertSame($original, $receipt->fresh()->metadata);
@@ -118,7 +119,7 @@ class PreparationExecutionTest extends TestCase
         [$service, $execution] = $this->presented($fixture);
         $f = $fixture->context;
         $receipt = $service->defer($f->viewer, $execution, 'Await a better comparison.');
-        $original = $receipt->metadata;
+        $original = $receipt->fresh()->metadata;
         $target = $this->reclassify($fixture, $receipt);
         $this->assertNotSame($f->viewer->id, $target->phase->cycle->participant_id);
         $this->assertSame($original, $receipt->fresh()->metadata);
@@ -279,7 +280,9 @@ class PreparationExecutionTest extends TestCase
         $this->assertNull($execution->outcome);
         $this->assertNull($execution->receipt);
         $this->assertNotNull($execution->failed_at);
-        $this->assertSame(['failure' => ['method' => 'native-extract', 'version' => '1', 'stage' => 'read']], $execution->metadata);
+        $this->assertSame('native-extract', $execution->metadata['failure']['method']);
+        $this->assertSame('1', $execution->metadata['failure']['version']);
+        $this->assertSame('read', $execution->metadata['failure']['stage']);
         $this->assertSame($before, $this->structuralSnapshot());
         $this->expectException(ConflictHttpException::class);
         $service->start($f->viewer, $f->phase, $fixture->input());
@@ -474,6 +477,51 @@ class PreparationExecutionTest extends TestCase
         }
     }
 
+    public function test_preparation_receipt_alone_enables_shared_persist_generation_independently_of_loading(): void
+    {
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        [$service, $execution] = $this->presented($fixture);
+        $receipt = $service->defer($f->viewer, $execution, 'Preserve the comparison for later development.');
+        $this->reclassify($fixture, $fixture->source);
+        $other = $this->other($f->phase);
+        $gate = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $other->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $gate->id, 'write_register' => 'frontier'])->save();
+        $actor = $other->cycle->participant;
+        $actor->forceFill(['current_proposition_id' => $gate->id])->save();
+        $this->assertSame([$receipt->id], app(HorizonReceiptService::class)->ordinaryAvailable($other)->modelKeys());
+        $contexts = app(ReceiptContextService::class);
+        $contexts->clear($f->viewer, $f->phase, $receipt->id);
+        foreach (['unloaded', 'loaded', 'cleared'] as $state) {
+            if ($state === 'loaded') {
+                $contexts->read($actor, $other, $receipt->id);
+            }
+            if ($state === 'cleared') {
+                $contexts->clear($actor, $other, $receipt->id);
+            }
+            $actions = app(InputPlanService::class)->forPhase($actor, $other)['schema']['$defs']['actions'];
+            $this->assertArrayHasKey('proposition.variant', $actions);
+            $this->assertArrayNotHasKey('instrument.execute', $actions);
+        }
+        $result = app(ContributionDispatcher::class)->dispatch($actor, $other,
+            ['action' => 'proposition.variant', 'statement' => 'Develop another Participant’s Preparation observation.']);
+        $this->assertSame([$gate->id], $result->parents()->pluck('propositions.id')->all());
+        $this->assertOrdinary($receipt, $execution);
+        $this->assertSame('deferred', $execution->fresh()->outcome);
+    }
+
+    public function test_failed_delivery_after_presentation_retains_only_the_delivery_that_actually_happened(): void
+    {
+        $fixture = new PreparationFixture;
+        [$service, $execution] = $this->presented($fixture);
+        $presented = $execution->fresh()->presentation;
+        $service->fail($fixture->context->viewer, $execution, 'test-acknowledgement', '1', 'delivery', 'Resolution channel failed after presentation.');
+        $this->assertSame($presented, $execution->fresh()->presentation);
+        $this->assertNull($execution->fresh()->outcome);
+        $this->assertNull($execution->fresh()->receipt);
+        $this->assertSame('failed', $execution->fresh()->status);
+    }
+
     private function presented(PreparationFixture $fixture): array
     {
         PreparationFixture::registerReader();
@@ -533,6 +581,6 @@ class PreparationExecutionTest extends TestCase
     private function structuralSnapshot(): array
     {
         return collect(['propositions', 'supersessions', 'phases', 'cycles', 'horizon_exploration_states',
-            'chirality_observations', 'closure_births', 'chirality_population_observations'])->mapWithKeys(fn ($t) => [$t => DB::table($t)->get()->toJson()])->all();
+            'chirality_observations', 'closure_births', 'chirality_population_observations', 'phase_profile_observations', 'proposition_attestation_cursors'])->mapWithKeys(fn ($t) => [$t => DB::table($t)->get()->toJson()])->all();
     }
 }
