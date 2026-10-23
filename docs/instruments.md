@@ -1,5 +1,7 @@
 # Instruments and immutable observations
 
+> See [Stage 3C readers and adaptive Preparation](artifact-readers-stage-3c.md) for PDF text, CSV/HTML tables, HTML lists and shared reading budgets. Instrument acquisition and allowances remain unchanged.
+
 ## Persist-only, phase-neutral Instrumentation (Stage 2A)
 
 One completed Instrument execution per Participant Cycle is permitted in Persist,

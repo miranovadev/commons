@@ -33,7 +33,8 @@ export function PreparationPanel({ slug, participantId, preparation, onDefer }: 
     {reading.isLoading && <Text size="sm">Reading selected material…</Text>}
     {reading.data?.deliveries.map(item => <Box key={item.request_id}>
       <Text size="xs">{item.artifact_id} · {item.source_type} / {item.read_type} · {item.method} v{item.version}</Text>
-      <Text size="xs">Characters {item.boundaries.offset}–{item.boundaries.end} of {item.boundaries.total}{item.boundaries.has_more ? ' · More content exists' : ''}</Text>
+      <Text size="xs">Representation characters {item.boundaries.offset}–{item.boundaries.end} of {item.boundaries.total}{item.boundaries.has_more ? ' · More content exists' : ''} · Delivered {item.boundaries.length} characters / {item.payload_bytes} bytes</Text>
+      <Text size="xs">Requested offset {item.boundaries.requested_offset} · {item.boundaries.requested_max_chars == null ? 'Automatic allocation' : `Maximum ${item.boundaries.requested_max_chars} characters`}</Text>
       <Box component="pre" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', maxHeight: 400, overflow: 'auto' }}>{item.content || '(Empty Artifact representation)'}</Box>
     </Box>)}
     {presented && <Text size="sm">Use an available Variant or Revise below, or explicitly defer.</Text>}

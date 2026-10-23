@@ -1,5 +1,7 @@
 # Load File: Download (Stage 3B)
 
+> Stage 3C adds native PDF text, CSV tables and HTML table/list reading with adaptive budgets. See [reader capabilities](artifact-readers-stage-3c.md). Acquisition remains unchanged; references below to PDF being unsupported describe the Stage 3B reader boundary.
+
 Load File acquires a directly referenced public HTTP(S) resource as an immutable
 Artifact. Its initial and only method is `download`:
 

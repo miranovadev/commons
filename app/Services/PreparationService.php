@@ -14,6 +14,7 @@ use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Services\Evidence\ArtifactReaderRegistry;
 use App\Services\Evidence\ArtifactStore;
+use App\Services\Evidence\PreparationAllocation;
 use App\Services\Participation\ParticipationContext;
 use DomainException;
 use Illuminate\Support\Facades\Cache;
@@ -61,6 +62,16 @@ final readonly class PreparationService
     /** Trusted adapter acknowledgement only; no public action/route accepts this payload. */
     public function present(Participant $participant, EvidenceExecution $execution, PreparationPresentation $presentation): void
     {
+        // Runtime capability/version probing stays outside structural write transactions.
+        $reader = app(ArtifactReaderRegistry::class);
+        foreach ($presentation->deliveries as $delivery) {
+            $capability = array_find($reader->capabilities($delivery['source_type'], $delivery['delivery_method']),
+                fn ($item) => $item['read_type'] === $delivery['read_type']);
+            if ($delivery['method'] !== ($capability['method'] ?? null) || $delivery['version'] !== ($capability['version'] ?? null)
+                || $delivery['representation'] !== $delivery['read_type']) {
+                throw new DomainException('Presentation requires an explicitly supported reader, version and representation.');
+            }
+        }
         DB::transaction(function () use ($participant, $execution, $presentation): void {
             [, $execution] = $this->lockExecution($participant, $execution);
             if ($execution->status === 'presented' && $execution->presentation == $presentation->deliveries) {
@@ -80,15 +91,15 @@ final readonly class PreparationService
                 if ($delivery['read_type'] === 'raw') {
                     $selection = $selected->first(fn ($item) => PreparationInput::requestId($item) === $delivery['request_id']);
                     $artifact = $this->artifact($receipts[$selection['receipt_id']], $selection['artifact_id']);
-                    if ($delivery['payload_hash'] !== $artifact['hash'] || $delivery['payload_bytes'] !== $artifact['size']) {
-                        throw new DomainException('Raw delivery must match the entire preserved Artifact byte identity.');
+                    $whole = $delivery['boundaries']['offset'] === 0 && $delivery['boundaries']['end'] === $delivery['boundaries']['total'];
+                    if ($delivery['representation_hash'] !== $artifact['hash']
+                        || ($whole && ($delivery['payload_hash'] !== $artifact['hash'] || $delivery['payload_bytes'] !== $artifact['size']))) {
+                        throw new DomainException('Raw representation must retain the preserved Artifact byte identity.');
                     }
                 }
-                $capabilities = app(ArtifactReaderRegistry::class)->capabilities($delivery['source_type'], $delivery['delivery_method']);
-                if ($delivery['method'] !== ArtifactReaderRegistry::METHOD || $delivery['version'] !== ArtifactReaderRegistry::VERSION
-                    || $delivery['representation'] !== $delivery['read_type']
-                    || ! in_array($delivery['read_type'], array_column($capabilities, 'read_type'), true)) {
-                    throw new DomainException('Presentation requires an explicitly supported reader, version and representation.');
+                $associations = $selected->filter(fn ($item) => PreparationInput::requestId($item) === $delivery['request_id'])->pluck('receipt_id')->unique()->values()->all();
+                if ($delivery['receipt_ids'] !== $associations) {
+                    throw new DomainException('Presentation must preserve every selected Receipt association.');
                 }
             }
             $this->executions->present($execution, $presentation);
@@ -151,7 +162,7 @@ final readonly class PreparationService
             if (! in_array($stored->status, ['pending', 'presented'], true)) {
                 return;
             }
-            $details = array_intersect_key($details, array_flip(['artifact_id', 'read_type', 'classification']));
+            $details = array_intersect_key($details, array_flip(['artifact_id', 'read_type', 'source_type', 'classification']));
             foreach ($details as $value) {
                 if (! is_string($value) || strlen($value) > 160) {
                     throw new DomainException('Failure identity fields must be bounded.');
@@ -197,8 +208,10 @@ final readonly class PreparationService
                         $source = app(ArtifactReaderRegistry::class)->sourceType($body, $artifact['media_type'] ?? '');
                         Cache::put($key, $source, 3600);
                     }
-                    $capabilities = array_values(array_filter(app(ArtifactReaderRegistry::class)->capabilities($source, 'inline-text'),
-                        fn ($capability) => $capability['read_type'] !== 'raw' || $artifact['size'] <= (int) config('preparation.selection_bytes')));
+                    $capabilities = app(ArtifactReaderRegistry::class)->capabilities($source, 'inline-text');
+                    if ($capabilities === []) {
+                        continue;
+                    }
                     $result[] = ['receipt_id' => $receipt->id, 'artifact_id' => $artifact['hash'],
                         'reference' => $receipt->reference, 'source_type' => $source, 'size' => $artifact['size'], 'capabilities' => $capabilities];
                 } catch (Throwable) {
@@ -253,33 +266,49 @@ final readonly class PreparationService
         }
         $deliveries = [];
         $seen = [];
-        $bytes = 0;
+        $materials = [];
+        $bodies = [];
         $selection = [];
+        $attempt = [];
+        $reader = app(ArtifactReaderRegistry::class);
         try {
             foreach ($execution->input['artifacts'] as $selection) {
+                $attempt = [];
                 $id = PreparationInput::requestId($selection);
                 if (isset($seen[$id])) {
+                    $deliveries[$seen[$id]]['receipt_ids'][] = $selection['receipt_id'];
+
                     continue;
                 }
-                $seen[$id] = true;
+                $seen[$id] = count($deliveries);
                 $receipt = Receipt::findOrFail($selection['receipt_id']);
                 $artifact = $this->artifact($receipt, $selection['artifact_id']);
-                $body = app(ArtifactStore::class)->read($artifact);
-                $representation = app(ArtifactReaderRegistry::class)->read($body, $artifact['media_type'] ?? '',
-                    $selection['read_type'], $selection['parameters'] ?? [], $method);
-                $bytes += $representation['payload_bytes'];
-                if ($bytes > min(PreparationInput::MAX_PAYLOAD_BYTES, (int) config('preparation.delivery_bytes'))) {
-                    throw new ArtifactReadingException('payload_limit', 'The combined delivery exceeds its configured budget.');
-                }
+                $body = $bodies[$selection['artifact_id']] ??= app(ArtifactStore::class)->read($artifact);
+                $source = $reader->sourceType($body, $artifact['media_type'] ?? '');
+                $attempt = ['source_type' => $source];
+                $capability = array_find($reader->capabilities($source, $method), fn ($item) => $item['read_type'] === $selection['read_type']);
+                $attempt += array_intersect_key($capability ?? [], array_flip(['method', 'version']));
+                $parameters = $selection['parameters'] ?? [];
+                $reader->validateParameters($parameters);
+                // Same bytes/read type/source version are parsed once, even with different ranges.
+                $key = $selection['artifact_id'].':'.$source.':'.$selection['read_type'];
+                $representation = $materials[$key] ??= $reader->represent($body, $artifact['media_type'] ?? '',
+                    $selection['read_type'], [], $method);
                 $deliveries[] = ['artifact_id' => $selection['artifact_id'], 'request_id' => $id,
-                    'delivery_id' => $execution->id.':'.$id, ...$representation];
+                    'receipt_ids' => [$selection['receipt_id']],
+                    'delivery_id' => $execution->id.':'.$id, ...$representation, 'parameters' => $parameters];
             }
+            $deliveries = app(PreparationAllocation::class)->allocate($deliveries);
             $acknowledgement = new PreparationPresentation(array_map(fn ($item) => array_diff_key($item, ['content' => true]), $deliveries));
         } catch (Throwable $exception) {
             $classification = $exception instanceof ArtifactReadingException ? $exception->classification : 'storage_failure';
-            $this->fail($participant, $execution, ArtifactReaderRegistry::METHOD, ArtifactReaderRegistry::VERSION,
+            if ($exception instanceof ArtifactReadingException) {
+                $attempt = [...$attempt, ...$exception->details];
+                $selection = [...$selection, ...array_intersect_key($exception->details, array_flip(['artifact_id', 'read_type']))];
+            }
+            $this->fail($participant, $execution, $attempt['method'] ?? ArtifactReaderRegistry::METHOD, $attempt['version'] ?? ArtifactReaderRegistry::VERSION,
                 $classification === 'missing_capability' ? 'unsupported' : 'read', mb_substr($exception->getMessage(), 0, 1000),
-                ['classification' => $classification, ...array_intersect_key($selection, array_flip(['artifact_id', 'read_type']))]);
+                ['classification' => $classification, ...array_intersect_key($attempt, ['source_type' => true]), ...array_intersect_key($selection, array_flip(['artifact_id', 'read_type']))]);
             throw new DomainException('Preparation reading failed: '.$exception->getMessage(), previous: $exception);
         }
 

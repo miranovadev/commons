@@ -95,12 +95,9 @@ final readonly class InputSchemaService
                         'read_type' => ['type' => 'string', 'const' => $capability['read_type']],
                     ];
                     $required = array_keys($properties);
-                    if ($capability['read_type'] === 'text') {
-                        $required[] = 'parameters';
-                        $properties['parameters'] = ['type' => 'object', 'additionalProperties' => false, 'required' => ['max_chars'],
-                            'properties' => ['offset' => ['type' => 'integer', 'minimum' => 0],
-                                'max_chars' => ['type' => 'integer', 'minimum' => 1, 'maximum' => $capability['max_chars']]]];
-                    }
+                    $properties['parameters'] = ['type' => 'object', 'additionalProperties' => false,
+                        'properties' => ['offset' => ['type' => 'integer', 'minimum' => 0],
+                            'max_chars' => ['type' => 'integer', 'minimum' => 1, 'maximum' => $capability['max_chars']]]];
                     $selections[] = ['type' => 'object', 'additionalProperties' => false, 'required' => $required, 'properties' => $properties];
                 }
             }
