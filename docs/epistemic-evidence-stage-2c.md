@@ -61,16 +61,19 @@ these write transactions. Instrument observation continues outside its transacti
 ## Selection and reading contract
 
 `PreparationInput` requires exact authored purpose (1–240 characters) and 1–8
-Receipt/Artifact pairs. Only the current shared catalogue grants selection authority.
+Receipt/Artifact pairs. Only the current causal shared catalogue grants selection authority.
 Every canonical `sha256:` hash must appear in its claimed Receipt's preserved
-Artifact metadata. Unknown, consumed, foreign-scope, duplicate-pair, malformed and
-excessive selections are rejected. Loading is irrelevant to this catalogue check.
-Several Receipt associations may name the same bytes; presentation delivers each
-unique hash once and retains every original association.
+Artifact metadata. **Corrected in Stage 2D:** attached and unattached ordinary
+Receipts are equally eligible sources within the existing Region/Horizon scope.
+Unknown, foreign-scope, malformed, excessive and identical duplicate selections
+are rejected. Loading is irrelevant. Several Receipt associations may name the
+same bytes; identical requested representations share delivery while different
+Read Types/ranges remain distinct. Every original association is retained.
 
 Selection authority is checked at start and remains attached to that immutable
 request. Later consumption does not erase the already selected provenance or allow
-additional selections. A new Preparation cannot select a now-consumed Receipt.
+additional selections. A new Preparation may select the same consumed source
+Receipt when its causal scope and the independent Preparation allowance permit it.
 
 `PreparationReader` supplies a pure capability contract: method, version, and
 support for the preserved Artifact descriptor plus requested representation. There
