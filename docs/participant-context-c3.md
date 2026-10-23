@@ -15,7 +15,7 @@ candidates where the handoff explicitly corrects terminal and Write visibility.
 | Commit | Resolve sanctioned source associations through PropositionStateService. Do not collect the previous basin wholesale. A prospective Committal stops discovery; directly displayed Committals still qualify. | Handoff 4.4 and final diagnostic Commit fixture |
 | Reconcile | A genuine encountered two-parent join exposes both direct operands. Same-basin encountered ancestry can continue backward; foreign operands and operands of prospective joins are leaf sources. Legitimate displayed counterparts are direct sources. | Handoff 4.5; final diagnostic two-operand and foreign-history tests |
 | Loaded evidence | All selected ordinary Receipts expose available inline bodies when personally loaded, including Write and extended history. Deduplicate by immutable ID. | Corrected handoff 5.2 |
-| Special memory | Existing Tragedy / Proposition Search scope and authority remain unchanged. | Handoff 5.3 |
+| Special memory | Tragedy retains its special memory scope. Proposition Search is ordinary evidence under Stage 2B; bounded result visibility grants no structural authority. | Handoff 5.3 |
 | Perspective | `Your designation describes your perspective on the subject, not a fact about the subject itself.` appears in the provider-visible system instruction. | Handoff 6; actual request tests |
 
 All entries are **documented** in the approved handoff (the descendant-Commit

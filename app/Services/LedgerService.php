@@ -100,8 +100,7 @@ final readonly class LedgerService
                 };
                 $phase = $ledgerable->phase;
                 // Cognitive memory is auditable history, not field/evidence mutation.
-                $memoryOnly = ($ledgerable instanceof ReceiptContextEvent && $ledgerable->context->receipt->isMemory())
-                    || ($ledgerable instanceof Receipt && $ledgerable->type === 'proposition_search');
+                $memoryOnly = ($ledgerable instanceof ReceiptContextEvent && $ledgerable->context->receipt->isSpecial());
                 if (! $memoryOnly) {
                     app(FieldMutationService::class)->touch($phase, $affected);
                 }

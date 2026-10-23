@@ -9,7 +9,6 @@ use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
@@ -24,6 +23,7 @@ use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\IsolatesClosureOutput;
+use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
 /** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
@@ -32,6 +32,8 @@ class RevisionAdmissibilityTest extends TestCase
 {
     use IsolatesClosureOutput;
     use RefreshDatabase;
+
+    private Proposition $revisionSeed;
 
     protected function setUp(): void
     {
@@ -289,7 +291,8 @@ class RevisionAdmissibilityTest extends TestCase
         $previous->cycle->forceFill(['completed_at' => now()])->save();
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $previous->cycle->participant_id,
-            'sequence' => $previous->cycle->sequence + 1])->save();
+            'sequence' => $previous->cycle->sequence + 1,
+            'entry_committal_id' => $previous->cycle->entry_committal_id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $previous->kind,
             'write_register' => $previous->write_register, 'gate_proposition_id' => $previous->gate_proposition_id,
@@ -304,53 +307,16 @@ class RevisionAdmissibilityTest extends TestCase
     private function currentPhase(
         string $gateRegister = 'canon',
     ): array {
-        $substrate = new Substrate;
-        $substrate->forceFill([
-            'slug' => 'revision-admissibility',
-            'title' => 'Revision admissibility',
-            'visibility' => 'private',
-            'configuration' => [],
-        ]);
-        $substrate->save();
+        $f = new ParticipantContextFixture(1, 0, false);
+        $this->revisionSeed = $f->seed;
+        $gate = $f->node($f->seed, $gateRegister, position: PhaseKind::Distinguish);
+        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier',
+            'gate_proposition_id' => $gate->id])->save();
+        $f->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
+        // Isolate revision ownership/stance against an available regional observation.
+        $this->receiptFixture($gate);
 
-        $participant = new Participant;
-        $participant->forceFill([
-            'substrate_id' => $substrate->getKey(),
-            'callsign' => 'owner',
-            'max_read_count' => 25,
-            'max_token_count' => null,
-        ]);
-        $participant->save();
-
-        $cycle = new Cycle;
-        $cycle->forceFill([
-            'participant_id' => $participant->getKey(),
-            'sequence' => 2,
-        ]);
-        $cycle->save();
-
-        $phase = new Phase;
-        $phase->forceFill([
-            'cycle_id' => $cycle->getKey(),
-            'kind' => PhaseKind::Persist,
-            'write_register' => 'frontier',
-            'started_at' => now(),
-        ]);
-        $phase->save();
-
-        $gate = new Proposition;
-        $gate->forceFill([
-            'phase_id' => $phase->getKey(),
-            'register' => $gateRegister,
-            'tier' => 'expressive',
-            'statement' => 'The current Gate.',
-        ]);
-        $gate->save();
-        app(LedgerService::class)->record($gate);
-        $phase->gate_proposition_id = $gate->getKey();
-        $phase->save();
-
-        return [$participant, $phase, $gate];
+        return [$f->viewer, $f->phase, $gate];
     }
 
     private function priorHead(
@@ -361,6 +327,7 @@ class RevisionAdmissibilityTest extends TestCase
         $cycle = Cycle::query()
             ->whereBelongsTo($participant)
             ->whereNotNull('completed_at')
+            ->whereNotNull('entry_committal_id')
             ->first();
 
         if ($cycle === null) {
@@ -368,12 +335,13 @@ class RevisionAdmissibilityTest extends TestCase
             $cycle->forceFill([
                 'participant_id' => $participant->getKey(),
                 'sequence' => 1,
+                'entry_committal_id' => $this->revisionSeed->id,
                 'completed_at' => now(),
             ]);
             $cycle->save();
         }
 
-        $phase = Phase::query()->whereBelongsTo($cycle)->first();
+        $phase = Phase::query()->whereBelongsTo($cycle)->where('kind', PhaseKind::Persist->value)->first();
 
         if ($phase === null) {
             $phase = new Phase;

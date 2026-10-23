@@ -88,6 +88,24 @@ try {
             }
             throw new RuntimeException('Concurrent duplicate generation was accepted.');
         })(),
+        'generation-conflict', 'receipt-generation-conflict' => (function () use ($input): void {
+            $participant = Participant::findOrFail($input['participant_id']);
+            $plan = app(InputPlanService::class)->forParticipant($participant);
+            try {
+                if ($input['operation'] === 'receipt-generation-conflict') {
+                    app(ContributionDispatcher::class)->dispatch($participant, Phase::findOrFail($input['phase_id']), $input['contribution']);
+                } else {
+                    app(ParticipationService::class)->contribute($participant, $input['phase_id'], $input['contribution'], $plan['schema']);
+                }
+            } catch (ConflictHttpException $exception) {
+                if (str_contains($exception->getMessage(), 'field changed') || str_contains($exception->getMessage(), 'options changed')
+                    || str_contains($exception->getMessage(), 'Shared Receipt availability changed')) {
+                    return;
+                }
+                throw $exception;
+            }
+            throw new RuntimeException('A waiting contribution ignored shared Receipt consumption.');
+        })(),
         'read' => (function () use ($app, $input): void {
             $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
             $request = Request::create($input['url'], 'GET', server: ['HTTP_ACCEPT' => 'application/json']);
@@ -140,9 +158,14 @@ function contributeWithRetry(Participant $participant, string $phaseId, array $i
                     $choice = $actions['attestation.create']['anyOf'][0]['properties'];
                     $contribution = ['action' => 'attestation.create', 'proposition_id' => $choice['proposition_id']['enum'][0],
                         'direction' => $choice['direction']['enum'][0]];
-                } else {
+                } elseif (isset($actions['proposition.traverse'])) {
+                    $contribution = ['action' => 'proposition.traverse',
+                        'proposition_id' => $actions['proposition.traverse']['properties']['proposition_id']['enum'][0]];
+                } elseif (isset($actions['instrument.execute'])) {
                     $contribution = ['action' => 'instrument.execute', 'proposition_id' => $actions['instrument.execute']['properties']['proposition_id']['enum'][0],
-                        'instrument' => ['kind' => 'citation', 'reference' => $phase->gate_proposition_id]];
+                        'instrument' => ['kind' => 'citation', 'reference' => $phase->cycle->entry_committal_id]];
+                } else {
+                    throw new RuntimeException('No forward contribution is available to this concurrency worker.');
                 }
             }
 

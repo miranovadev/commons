@@ -22,6 +22,7 @@ use App\Services\ParticipationService;
 use App\Services\PropositionStateService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
 class OperationalCommitmentTest extends TestCase
@@ -73,7 +74,7 @@ class OperationalCommitmentTest extends TestCase
         $this->assertNull($phase->fresh()->completed_at);
         $this->assertDatabaseCount('commitment_snapshots', 1);
         $this->attest($gate);
-        app(OperationalInstrumentService::class)->execute($gate->phase, $gate, [
+        $this->observationFixture($gate->phase, $gate, [
             'kind' => 'hyperlink', 'reference' => 'https://example.test/ready',
         ]);
         $this->publishPotentialFixture($participant);
@@ -99,12 +100,19 @@ class OperationalCommitmentTest extends TestCase
 
     public function test_citation_resolves_attestations_and_verified_hyperlinks_have_signatures(): void
     {
-        $gate = $this->candidate();
-        $attestation = $this->attest($gate);
+        $f = new ParticipantContextFixture(1, 0, false);
+        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier'])->save();
+        $gate = $f->gate;
+        $attestation = (new Attestation)->forceFill(['phase_id' => $gate->phase_id, 'proposition_id' => $gate->id, 'direction' => 'support']);
+        $attestation->save();
+        app(LedgerService::class)->record($attestation);
         $service = app(OperationalInstrumentService::class);
-        $receipt = $service->execute($gate->phase, $gate, ['kind' => 'citation', 'reference' => $attestation->id]);
+        $receipt = $service->execute($f->phase, $gate, ['kind' => 'citation', 'reference' => $attestation->id]);
         $this->assertSame($attestation->id, $receipt->metadata['target_id']);
-        $receipt = $service->execute($gate->phase, $gate, ['kind' => 'hyperlink', 'reference' => ' https://example.test/evidence ']);
+        $other = new ParticipantContextFixture(1, 0, false);
+        $other->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier'])->save();
+        $gate = $other->gate;
+        $receipt = $service->execute($other->phase, $gate, ['kind' => 'hyperlink', 'reference' => ' https://example.test/evidence ']);
         $this->assertSame('https://example.test/evidence', $receipt->reference);
         $this->assertTrue($receipt->metadata['content_verified']);
         $this->assertNotNull($receipt->signature);
@@ -140,7 +148,9 @@ class OperationalCommitmentTest extends TestCase
 
     public function test_invalid_and_unsupported_instruments_leave_no_partial_write(): void
     {
-        $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
+        $observing = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
+        $this->move($this->participant, ['action' => 'instrument.execute', 'proposition_id' => $observing['plan']['gate_id'],
+            'instrument' => ['kind' => 'citation', 'reference' => $this->origin->id]]);
         $state = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Persist the distinction']);
         foreach ([
             ['kind' => 'hyperlink', 'reference' => 'file:///etc/passwd'],
@@ -153,7 +163,7 @@ class OperationalCommitmentTest extends TestCase
             } catch (\InvalidArgumentException) {
                 $this->assertDatabaseMissing('propositions', ['statement' => 'Rejected']);
                 $this->assertNull(Phase::findOrFail($state['plan']['phase']['id'])->completed_at);
-                $this->assertDatabaseCount('instrument_executions', 1);
+                $this->assertDatabaseCount('instrument_executions', 2);
             }
         }
         $this->expectException(DomainException::class);
@@ -218,10 +228,12 @@ class OperationalCommitmentTest extends TestCase
 
     public function test_removed_reclassification_contracts_reject_payloads(): void
     {
-        $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
+        $observing = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
+        $this->move($this->participant, ['action' => 'instrument.execute', 'proposition_id' => $observing['plan']['gate_id'],
+            'instrument' => ['kind' => 'citation', 'reference' => $this->origin->id]]);
         $early = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Persist the distinction']);
         $earlyGate = Proposition::findOrFail($early['plan']['gate_id']);
-        app(OperationalInstrumentService::class)->execute($earlyGate->phase, $earlyGate, ['kind' => 'citation', 'reference' => $this->origin->id]);
+        $this->observationFixture($earlyGate->phase, $earlyGate, ['kind' => 'citation', 'reference' => $this->origin->id]);
         foreach (['reclassify_with_receipt', 'proposition.reclassify_with_receipt', 'proposition.reclassify_with_instrument'] as $action) {
             try {
                 $this->move($this->participant, ['action' => $action, 'statement' => 'Rejected']);

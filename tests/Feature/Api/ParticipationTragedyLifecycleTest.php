@@ -48,7 +48,10 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         // The still-open entrant counts alongside completed participation.
         $this->assertSame(19, (int) DB::table('commitment_snapshots')
             ->where('proposition_id', $boundary['proposition_id'])->value('cadence_interval'));
-        $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Develop the completed region']);
+        $observing = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Develop the completed region']);
+        $observed = $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $observing['plan']['gate_id'],
+            'instrument' => ['kind' => 'citation', 'reference' => $boundary['proposition_id']]]);
+        $this->assertSame($observing['plan']['phase'], $observed['plan']['phase']);
         $beforeRest = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Test its fresh continuation']);
         $participant = Participant::findOrFail($actor);
         $cycle = $participant->cycles()->latest('sequence')->firstOrFail();

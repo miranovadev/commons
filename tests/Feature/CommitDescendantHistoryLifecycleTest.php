@@ -89,10 +89,8 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
         $this->assertNotContains($otherOperand, $expected, 'Reconcile does not import the other branch into selected history.');
         $this->assertNotContains($origin->id, array_column($search->results, 'proposition_id'));
         $this->assertSame('settlement', $search->domain);
-        // Persist observes the current Gate; the separately authored Write does
-        // not inherit this internal-memory observation or grounding authority.
-        $written = app(ContributionDispatcher::class)->dispatch($actor, $phase,
-            ['action' => 'proposition.variant', 'statement' => 'Investigate the recorded history.']);
+        // Persist observes its current Gate. The ordinary Receipt supplies evidence,
+        // while its result collection grants no structural authority.
         $edges = Supersession::count();
         app(ContributionDispatcher::class)->dispatch($actor, $phase,
             ['action' => 'instrument.execute', 'proposition_id' => $head->id,
@@ -101,12 +99,14 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
         $this->assertSame($expected, array_column($memory->metadata['proposition_collection']['results'], 'proposition_id'));
         $this->assertSame([2, 3, 4, 5, 6, 7], array_column($memory->metadata['proposition_collection']['results'], 'lineage_distance'));
         $this->assertSame($head->id, $memory->instrumentExecution->proposition_id);
-        $this->assertSame(0, $written->instrumentExecutions()->count());
-        $this->assertNull($memory->signature);
-        $this->assertFalse(app(CommitmentAdmissibilityService::class)->grounding($written)['requirements']['receipt']);
-        $this->assertSame(0, app(ReinforcementService::class)->count($written));
+        $this->assertSame(1, $head->instrumentExecutions()->count());
+        $this->assertSame($memory->metadata['observation_identity'], $memory->signature);
+        $this->assertTrue(app(CommitmentAdmissibilityService::class)->grounding($head)['requirements']['receipt']);
+        $this->assertSame(1, app(ReinforcementService::class)->count($head));
+        $this->publishPotentialFixture($actor);
+        $this->assertArrayHasKey('proposition.variant', $service->stateFor($actor)['plan']['schema']['$defs']['actions']);
         $load = app(ReceiptContextService::class)->read($actor, $phase, $memory->id);
-        $this->assertNull($load->evidence_signature);
+        $this->assertSame($memory->signature, $load->evidence_signature);
         $this->assertSame($edges, Supersession::count());
         $this->assertSame($head->id, $actor->fresh()->current_proposition_id);
         $this->assertSame($votes, $state->attestations(collect([$commit]))->pluck('id')->all());

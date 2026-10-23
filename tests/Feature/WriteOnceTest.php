@@ -18,7 +18,6 @@ use App\Services\ContributionService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\Observables\ReinforcementService;
-use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
 use App\Services\ReceiptContextService;
@@ -114,7 +113,7 @@ class WriteOnceTest extends TestCase
         $this->assertArrayNotHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
         $this->assertSame([], $this->targets($plan, 'proposition.revise'));
         $this->assertContains($write->id, $this->targets($plan, 'attestation.create'));
-        $this->assertSame([$gate->id], $this->targets($plan, 'instrument.execute'));
+        $this->assertSame([], $this->targets($plan, 'instrument.execute'));
         $this->assertFalse($plan['rest_available']);
         $this->assertArrayNotHasKey('participant.rest', $plan['schema']['$defs']['actions']);
         app(ContributionDispatcher::class)->dispatch($participant, $return, [
@@ -150,7 +149,7 @@ class WriteOnceTest extends TestCase
         $this->assertUnavailable($participant, $return, $input);
         $plan = $this->plan($participant);
         $this->assertContains($revised->id, $this->targets($plan, 'attestation.create'));
-        $this->assertSame([$gate->id], $this->targets($plan, 'instrument.execute'));
+        $this->assertSame([], $this->targets($plan, 'instrument.execute'));
         $this->assertSame([], $this->targets($plan, 'proposition.revise'));
         $this->assertFalse($plan['rest_available']);
     }
@@ -271,7 +270,7 @@ class WriteOnceTest extends TestCase
         $phase = $this->phase($participant, PhaseKind::Constrain, 'canon', $gate);
         $input = ['action' => 'proposition.reclassify'];
         $this->assertUnavailable($participant, $phase, $input);
-        $receipt = app(OperationalInstrumentService::class)->execute($phase, $gate, ['kind' => 'citation', 'reference' => $gate->id]);
+        $receipt = $this->observationFixture($phase, $gate, ['kind' => 'citation', 'reference' => $gate->id]);
         app(ReceiptContextService::class)->clear($participant, $phase, $receipt->id);
         $this->assertSame(0, app(ReinforcementService::class)->count($gate));
         $this->assertUnavailable($participant, $phase, $input);
@@ -416,6 +415,11 @@ class WriteOnceTest extends TestCase
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register,
             'gate_proposition_id' => $gate?->id, 'started_at' => now()])->save();
+
+        // These cases isolate structural generation from shared evidence availability.
+        if ($kind === PhaseKind::Persist && $gate !== null) {
+            $this->receiptFixture($gate);
+        }
 
         return $phase;
     }

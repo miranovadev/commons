@@ -59,6 +59,9 @@ final readonly class OperationalInstrumentService
             if (! $origin && ! $this->availability->mutable($proposition)) {
                 throw new DomainException('Committed sources and Committal results cannot receive instruments. Develop a Variant from the Committal instead.');
             }
+            if (! $origin && ! app(PropositionOptionService::class)->instrumentOptionsFor($phase->fresh())->contains('id', $proposition->id)) {
+                throw new ConflictHttpException('Instrumentation requires the active Persist Gate, an unused Cycle allowance and no available ordinary Receipt.');
+            }
 
             $metadata = match ($input['kind']) {
                 'hyperlink' => ['resource' => $this->identity->resource($reference)],
@@ -88,6 +91,9 @@ final readonly class OperationalInstrumentService
         }
         if (! $bootstrap && ! $this->availability->mutable($proposition)) {
             throw new DomainException('Committed sources and Committal results cannot receive instruments. Develop a Variant from the Committal instead.');
+        }
+        if (! $bootstrap && ! app(PropositionOptionService::class)->instrumentOptionsFor($phase->fresh())->contains('id', $proposition->id)) {
+            throw new ConflictHttpException('Instrumentation requires the active Persist Gate, an unused Cycle allowance and no available ordinary Receipt.');
         }
         app(RelevantInstrumentService::class)->assertAvailable($proposition, $input);
         $normalized = $this->normalize($input);

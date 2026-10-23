@@ -33,6 +33,7 @@ use App\Services\LedgerService;
 use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ProspectiveClosureService;
+use App\Services\OperationalInstrumentService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
@@ -41,6 +42,8 @@ use App\Services\TragedyService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
+use Tests\Fixtures\ParticipantContextFixture;
+use Tests\Fixtures\PropositionBirth;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -199,7 +202,7 @@ abstract class TestCase extends BaseTestCase
                 'source_proposition_id' => $seed->id, 'target_proposition_id' => $terminal->id, 'type' => 'variant']);
             $edge->save();
             app(LedgerService::class)->record($edge);
-            \Tests\Fixtures\PropositionBirth::complete($terminal);
+            PropositionBirth::complete($terminal);
         }
         $this->controlledBirthClosureFixture(1, $terminal->id);
         $terminal->wasRecentlyCreated = true; // The fixture explicitly supplies the birth event.
@@ -353,7 +356,7 @@ abstract class TestCase extends BaseTestCase
                 'source_proposition_id' => $source->id, 'proposition_id' => $target->id, 'consumed_at' => now()])->save();
             DB::table('proposition_receipt_links')->insert([
                 'proposition_id' => $target->id, 'receipt_id' => $receiptId, 'created_at' => now()]);
-            \Tests\Fixtures\PropositionBirth::complete($target);
+            PropositionBirth::complete($target);
 
             return $target;
         });
@@ -494,6 +497,41 @@ abstract class TestCase extends BaseTestCase
             ?? $available->firstOrFail();
 
         return ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id];
+    }
+
+    /**
+     * Observation-record fixture for catalogue, provenance and measurement tests.
+     * This deliberately uses the persistence primitive, not a contribution API:
+     * constructing history must not assert that acquisition is currently offered.
+     * Operational/lifecycle tests must use OperationalInstrumentService instead.
+     */
+    protected function observationFixture(Phase $phase, Proposition $node, array $input): Receipt
+    {
+        $observed = app(OperationalInstrumentService::class)->observe($input);
+        $reference = $observed->input['reference'] ?? $observed->input['query'];
+        $metadata = $observed->metadata;
+        if ($input['kind'] === 'citation') {
+            $target = Proposition::find($reference) ?? Attestation::findOrFail($reference);
+            $this->assertSame($phase->cycle->participant->substrate_id, $target->phase->cycle->participant->substrate_id);
+            $metadata = [...$metadata, 'validation' => 'commons-reference',
+                'target_type' => $target->getMorphClass(), 'target_id' => $target->id];
+        }
+        $executions = app(InstrumentExecutionService::class);
+
+        return DB::transaction(function () use ($executions, $phase, $node, $observed, $reference, $metadata): Receipt {
+            $execution = $executions->start($phase, $node, $observed->input['kind'], $reference, $observed->input);
+
+            return $executions->complete($execution, $node, metadata: $metadata,
+                verification: $observed->verification, observation: $observed->search);
+        });
+    }
+
+    /** Attach a catalogue observation through the existing one-use consumption operation. */
+    protected function consumeObservationFixture(ParticipantContextFixture $fixture, Receipt $receipt): void
+    {
+        $source = $fixture->node($fixture->phase->gate, 'frontier', position: PhaseKind::Persist);
+        $target = $fixture->node($source, 'canon', 'reclassify', position: PhaseKind::Constrain);
+        DB::transaction(fn () => app(HorizonReceiptService::class)->consume($target->phase, $source, $target, $receipt->id));
     }
 
     protected function receiptFixture(Proposition $node): void

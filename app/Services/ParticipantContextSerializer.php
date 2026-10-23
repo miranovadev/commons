@@ -147,9 +147,8 @@ final class ParticipantContextSerializer
         if ($receipt['type'] === 'proposition_search') {
             return [
                 ...Arr::only($receipt, ['id', 'loaded', 'proposition_id', 'context_horizon_id', 'availability',
-                    'consumed_at', 'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'load_mode']),
-                'active' => false, 'can_replay' => false,
-                'memory_active' => ($receipt['loaded'] ?? false) && ($receipt['memory_active'] ?? false),
+                    'consumed_at', 'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'active']),
+                'can_replay' => false,
                 ...(($receipt['loaded'] ?? false) && isset($receipt['proposition_collection'])
                     ? ['proposition_collection' => $this->propositionCollection($receipt['proposition_collection'])] : []),
             ];

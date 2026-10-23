@@ -35,21 +35,11 @@ class EvidenceFirstInteractionTest extends TestCase
 
             return $service->stateFor($f->viewer)['plan']['schema']['$defs']['actions'][$action]['properties']['proposition_id']['enum'] ?? [];
         };
-        $this->assertSame($kind === PhaseKind::Persist ? [$gate->id] : [], $targets('instrument.execute'));
+        $this->assertSame([], $targets('instrument.execute'), 'Shared available evidence withholds acquisition');
         $this->assertContains($write->id, $targets('attestation.create'), 'Shared same-Horizon evidence is sufficient');
         $this->assertContains($other->id, $targets('attestation.create'));
         $this->assertNotContains($write->id, $targets('proposition.traverse'));
-        $observation = $kind === PhaseKind::Persist ? $gate : $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
-        $persist = $kind === PhaseKind::Persist ? $f->phase->fresh() : $f->phase->replicate();
-        if ($kind !== PhaseKind::Persist) {
-            $persist->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $observation->id, 'write_register' => 'frontier'])->save();
-        }
-        app(ContributionDispatcher::class)->dispatch($f->viewer, $persist, ['action' => 'instrument.execute', 'proposition_id' => $observation->id,
-            'instrument' => ['kind' => 'citation', 'reference' => $f->seed->id]]);
-        if ($kind !== PhaseKind::Persist) {
-            $persist->forceFill(['completed_at' => now()])->save();
-        }
-        $this->assertSame(6, ParticipantReceiptContext::active()->count());
+        $this->assertSame(5, ParticipantReceiptContext::active()->count());
         $this->assertContains($write->id, $targets('attestation.create'));
         $this->assertNotContains($write->id, $targets('proposition.traverse'));
         app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase->fresh(), ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'refute']);

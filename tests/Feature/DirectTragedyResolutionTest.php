@@ -78,9 +78,6 @@ class DirectTragedyResolutionTest extends TestCase
     {
         $fixture = new GovernedExpressionFixture;
         $fixture->writePersist();
-        app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,
-            ['action' => 'instrument.execute', 'proposition_id' => $fixture->phase->gate_proposition_id,
-                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/attested-terminal']]);
         $this->measure($fixture->expression, 1);
         $this->resolveExpressiveFieldFixture($result);
         app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,

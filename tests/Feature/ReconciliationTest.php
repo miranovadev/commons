@@ -19,7 +19,6 @@ use App\Services\LedgerService;
 use App\Services\MediationReadService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\OpenAIResponseSchema;
-use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
@@ -170,7 +169,7 @@ class ReconciliationTest extends TestCase
         $this->attest($sibling, 'support');
         $this->attest($this->gate, 'support');
         foreach ([$this->gate, $sibling] as $source) {
-            app(OperationalInstrumentService::class)->execute($this->phase, $source,
+            $this->observationFixture($this->phase, $source,
                 ['kind' => 'hyperlink', 'reference' => 'https://example.test/source/'.$source->id]);
         }
         $plan = $this->plan();

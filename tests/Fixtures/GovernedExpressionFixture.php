@@ -38,10 +38,13 @@ final class GovernedExpressionFixture
             ['action' => 'proposition.variant', 'statement' => 'An independently authored first distinction.']);
     }
 
-    /** Produce the real Persist Write while leaving its Phase open for evidence. */
+    /** Acquire shared evidence, then produce the real Persist Write. */
     public function writePersist(): void
     {
         $this->phase = app(PhaseProgressionService::class)->advance($this->phase, $this->expression);
+        app(ContributionDispatcher::class)->dispatch($this->actor, $this->phase,
+            ['action' => 'instrument.execute', 'proposition_id' => $this->phase->gate_proposition_id,
+                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/grounded-development']]);
         $this->expression = app(ContributionDispatcher::class)->dispatch($this->actor, $this->phase,
             ['action' => 'proposition.variant', 'statement' => 'Develop the first distinction.']);
     }
@@ -51,9 +54,6 @@ final class GovernedExpressionFixture
     {
         $this->writePersist();
         $dispatcher = app(ContributionDispatcher::class);
-        $dispatcher->dispatch($this->actor, $this->phase,
-            ['action' => 'instrument.execute', 'proposition_id' => $this->phase->gate_proposition_id,
-                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/grounded-development']]);
         $dispatcher->dispatch($this->actor, $this->phase,
             ['action' => 'attestation.create', 'proposition_id' => $this->expression->id, 'direction' => 'support']);
         $this->phase = app(PhaseProgressionService::class)->advance($this->phase, $this->expression);

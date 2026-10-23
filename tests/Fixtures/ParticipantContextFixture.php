@@ -103,12 +103,12 @@ final class ParticipantContextFixture
         $this->viewer->forceFill(['current_proposition_id' => $this->gate->id])->save();
     }
 
-    public function node(?Proposition $parent, string $register, string $type = 'variant', string $tier = 'expressive', ?PhaseKind $position = null, ?Proposition $additionalParent = null, bool $completeBirth = true): Proposition
+    public function node(?Proposition $parent, string $register, string $type = 'variant', string $tier = 'expressive', ?PhaseKind $position = null, ?Proposition $additionalParent = null, bool $completeBirth = true, ?Participant $participant = null): Proposition
     {
         $phase = new Phase;
         $kind = $position ?? ($type === 'reconcile' ? PhaseKind::Mediate : ($type === 'commit' ? PhaseKind::Order : PhaseKind::Distinguish));
         $governor = $parent?->tier === 'committal' ? $parent : $parent?->phase->cycle->entryCommittal;
-        $cycle = $governor === null ? $this->history : $this->governedCycle($governor);
+        $cycle = $governor === null ? $this->history : $this->governedCycle($governor, $participant);
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register,
             'gate_proposition_id' => $parent?->id, 'started_at' => now(), 'completed_at' => now()])->save();
         $node = new Proposition;
@@ -150,18 +150,20 @@ final class ParticipantContextFixture
         return $this->node($parent, $register, 'commit', 'committal', completeBirth: false);
     }
 
-    private function governedCycle(Proposition $seed): Cycle
+    private function governedCycle(Proposition $seed, ?Participant $participant = null): Cycle
     {
-        if (! isset($this->governedCycles[$seed->id])) {
+        $participant ??= $this->viewer;
+        $key = $seed->id.':'.$participant->id;
+        if (! isset($this->governedCycles[$key])) {
             $cycle = new Cycle;
-            $cycle->forceFill(['participant_id' => $this->viewer->id,
-                'sequence' => (int) $this->viewer->cycles()->max('sequence') + 1,
+            $cycle->forceFill(['participant_id' => $participant->id,
+                'sequence' => (int) $participant->cycles()->max('sequence') + 1,
                 'context_horizon_id' => $seed->phase->cycle->context_horizon_id,
                 'entry_committal_id' => $seed->id, 'completed_at' => now()])->save();
-            $this->governedCycles[$seed->id] = $cycle;
+            $this->governedCycles[$key] = $cycle;
         }
 
-        return $this->governedCycles[$seed->id];
+        return $this->governedCycles[$key];
     }
 
     public function edge(Proposition $source, Proposition $target, string $type): void

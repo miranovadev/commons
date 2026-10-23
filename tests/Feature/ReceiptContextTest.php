@@ -19,7 +19,6 @@ use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ReinforcementService;
-use App\Services\OperationalInstrumentService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\ReceiptContextService;
@@ -52,7 +51,7 @@ class ReceiptContextTest extends TestCase
         $reference = $fixture->node($fixture->seed, 'activity');
         $subject = $fixture->node($reference, 'frontier', 'reclassify', position: PhaseKind::Persist);
         $fixture->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $reference->id, 'write_register' => 'frontier'])->save();
-        $receipt = app(OperationalInstrumentService::class)->execute($subject->phase, $subject, [
+        $receipt = $this->observationFixture($subject->phase, $subject, [
             'kind' => 'citation', 'reference' => $reference->id,
         ]);
 
@@ -159,7 +158,7 @@ class ReceiptContextTest extends TestCase
         }
         $foreign = new ParticipantContextFixture(1, 0);
         $hidden = $foreign->node($foreign->seed, 'canon');
-        $hiddenReceipt = app(OperationalInstrumentService::class)->execute($hidden->phase, $hidden, ['kind' => 'citation', 'reference' => $foreign->seed->id]);
+        $hiddenReceipt = $this->observationFixture($hidden->phase, $hidden, ['kind' => 'citation', 'reference' => $foreign->seed->id]);
         $phase = $this->move($fixture, $subject);
         foreach ([$hiddenReceipt->id, strtolower((string) str()->ulid())] as $id) {
             try {
@@ -260,7 +259,7 @@ class ReceiptContextTest extends TestCase
         $next->forceFill(['kind' => PhaseKind::Distinguish, 'write_register' => $horizon->domain->registerFor(PhaseKind::Distinguish)])->save();
         $newSubject = app(ContributionDispatcher::class)->dispatch($fixture->viewer, $next,
             ['action' => 'proposition.variant', 'statement' => 'A new lineage']);
-        $duplicate = app(OperationalInstrumentService::class)->execute($next, $newSubject,
+        $duplicate = $this->observationFixture($next, $newSubject,
             ['kind' => 'citation', 'reference' => $reference->id]);
         $service->clear($fixture->viewer, $next, $duplicate->id);
         $context = new ParticipationContext($next->fresh());

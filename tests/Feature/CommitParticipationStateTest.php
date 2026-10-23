@@ -18,7 +18,6 @@ use App\Services\Observables\ChiralityCalculator;
 use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\ReinforcementService;
-use App\Services\OperationalInstrumentService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
@@ -162,7 +161,7 @@ class CommitParticipationStateTest extends TestCase
         $this->touch($source);
         $old = new Attestation;
         $old->forceFill(['phase_id' => $this->phase->id, 'proposition_id' => $source->id, 'direction' => 'refute'])->save();
-        app(OperationalInstrumentService::class)->execute($this->phase, $source,
+        $this->observationFixture($this->phase, $source,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/before-reset']);
         $priorCommit = $this->node('committal');
         $this->edge($source, $priorCommit, 'commit');
@@ -179,7 +178,7 @@ class CommitParticipationStateTest extends TestCase
         $touch = $this->touch($fresh);
         $earned = new Attestation;
         $earned->forceFill(['phase_id' => $touch->id, 'proposition_id' => $fresh->id, 'direction' => 'support'])->save();
-        $receipt = app(OperationalInstrumentService::class)->execute($touch, $fresh,
+        $receipt = $this->observationFixture($touch, $fresh,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/after-reset']);
         $comparison = app(ContextLineageComparisonService::class)->prospectiveCommit($fresh, $this->phase);
         $preview = $comparison->current->propositions->last();

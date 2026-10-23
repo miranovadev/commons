@@ -35,8 +35,8 @@ final class ReceiptEvidenceService
 
     public function describe(Receipt $receipt, ParticipationContext $context): ?array
     {
-        if ($receipt->isMemory()) {
-            return null; // Readable internal memory is not evidential grounding.
+        if ($receipt->isSpecial()) {
+            return null; // Tragedy retains its separate authority contract.
         }
         $execution = $receipt->instrumentExecution;
         if (! $receipt->supports(ReceiptCapability::Readable) || $execution?->status !== 'completed'
@@ -116,11 +116,18 @@ final class ReceiptEvidenceService
         ];
     }
 
-    /** Immutable external evidence, independent of operational activation. */
+    /** Immutable observations, independent of operational activation. */
     public function observation(Receipt $receipt): ?array
     {
         if (! $receipt->supports(ReceiptCapability::Readable) || ! $receipt->observationComplete()) {
             return null;
+        }
+        if ($receipt->type === 'proposition_search' && $receipt->signature !== null
+            && ($receipt->metadata['content_verified'] ?? false) === true
+            && ($receipt->metadata['reinforcement_version'] ?? null) === 'observed-proposition-search'
+            && is_array($receipt->metadata['proposition_collection']['results'] ?? null)) {
+            // An empty collection is a completed observation, not a failed search.
+            return ['signature' => $receipt->signature, 'evidence' => $receipt->metadata['proposition_collection']];
         }
         if ($receipt->type === 'hyperlink' && $receipt->signature !== null
             && ($receipt->metadata['content_verified'] ?? false) === true

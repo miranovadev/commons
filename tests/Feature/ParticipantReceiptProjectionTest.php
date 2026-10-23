@@ -21,7 +21,7 @@ class ParticipantReceiptProjectionTest extends TestCase
         $state = ['participant' => ['id' => 'viewer'], 'plan' => ['receipts' => [
             [...$r, 'id' => 'unrelated'], $r,
             ['id' => 'memory', 'type' => 'proposition_search', 'reference' => 'query', 'loaded' => true,
-                'load_mode' => 'memory', 'memory_active' => true, 'proposition_collection' => ['results' => []]],
+                'proposition_collection' => ['results' => []]],
         ]]];
         $catalogue = app(ParticipantReceiptProjection::class)->normalize($registers, $state);
         $this->assertSame(['memory', 'r1'], array_column($catalogue, 'id'));

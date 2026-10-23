@@ -101,6 +101,7 @@ final class PropositionOptionService
     {
         if ($phase->kind !== PhaseKind::Persist || $phase->completed_at !== null
             || $phase->cycle->completed_at !== null
+            || ! $this->generation->epistemicActionAvailable($phase, 'instrument.execute', $context)
             || InstrumentExecution::query()->where('status', 'completed')
                 ->whereHas('phase', fn ($query) => $query->where('cycle_id', $phase->cycle_id))->exists()) {
             return collect();
