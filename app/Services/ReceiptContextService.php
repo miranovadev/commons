@@ -84,7 +84,7 @@ final readonly class ReceiptContextService
             return $receipts->map(function ($receipt) use ($phase, $context, $loads, $present, $replayTargets, $available, $activeIds): array {
                 $verified = $this->evidence->describe($receipt, $context);
                 $load = $loads->get($receipt->id);
-                $memory = $receipt->isMemory();
+                $memory = $receipt->isSpecial();
                 $loaded = $load !== null && $load->cleared_at === null;
                 $alreadyPresent = isset($verified['referenced_proposition_id']) && $present->contains($verified['referenced_proposition_id']);
                 $status = $loaded ? 'loaded' : ($memory ? 'available' : ($verified === null ? 'unqualified' : ($alreadyPresent ? 'already-in-context' : 'available')));
@@ -96,14 +96,11 @@ final readonly class ReceiptContextService
                     'context_horizon_id' => $receipt->context_horizon_id,
                     'availability' => $receipt->consumption !== null ? 'consumed' :
                         ($available->contains('id', $receipt->id)
-                            || ($receipt->type === 'proposition_search'
-                                && $present->contains($receipt->instrumentExecution?->proposition_id))
                             ? 'available' : 'historical'),
                     'consumed_at' => $receipt->consumption?->consumed_at?->toISOString(),
                     'attached_proposition_id' => $receipt->consumption?->proposition_id,
                     'type' => $receipt->type, 'reference' => $receipt->reference,
                     ...($receipt->type === 'tragedy' ? ['purpose' => 'homologous_boundary_escape', 'warrant' => app(TragedyEvidenceService::class)->describe($receipt)] : []),
-                    ...($receipt->type === 'proposition_search' ? ['purpose' => 'bounded_historical_memory'] : []),
                     'capabilities' => [
                         'readable' => $receipt->supports(ReceiptCapability::Readable),
                         'replayable' => $receipt->supports(ReceiptCapability::Replayable),
@@ -123,8 +120,9 @@ final readonly class ReceiptContextService
                             'consumed_in_current_phase' => $receipt->consumption?->phase_id === $phase->id,
                             ...($loaded ? ['tragedy_memory' => app(TragedyMemoryService::class)->describe($receipt, $phase)] : []),
                         ] : []),
-                        ...($receipt->type === 'proposition_search' && $loaded
-                            ? ['proposition_collection' => $receipt->metadata['proposition_collection'] ?? []] : [])] : []),
+                    ] : []),
+                    ...($receipt->type === 'proposition_search' && $loaded
+                        ? ['proposition_collection' => $receipt->metadata['proposition_collection']] : []),
                     'status' => $status, 'loaded_at' => $loaded ? $load->loaded_at->toISOString() : null,
                     ...($verified !== null ? ['evidence' => $verified['evidence']] : []),
                 ];
@@ -196,9 +194,6 @@ final readonly class ReceiptContextService
             return $this->forPhase($phase, $context)->filter(function ($item) use ($references): bool {
                 if ($item['type'] === 'tragedy') {
                     return $item['loaded'] || $item['availability'] === 'available' || $item['consumed_in_current_phase'];
-                }
-                if ($item['type'] === 'proposition_search') {
-                    return $item['loaded'] || $item['status'] === 'available';
                 }
 
                 return $references->has($item['id']) && $item['capabilities']['readable']
@@ -313,7 +308,7 @@ final readonly class ReceiptContextService
         $event->setRelation('phase', $phase);
         $event->setRelation('context', $load);
         app(LedgerService::class)->record($event);
-        if ($load->receipt->isMemory()) {
+        if ($load->receipt->isSpecial()) {
             // Cognition only: no field invalidation, recalculation or evidence signature.
             app(RealtimePublisher::class)->participant($load->participant_id);
 

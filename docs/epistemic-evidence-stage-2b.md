@@ -27,8 +27,9 @@ their existing consumption authority.
 
 An Instrument still completes at most once per Participant Cycle and refreshes
 the same Persist Phase. An ordinary Receipt switches the refreshed plan to
-generation where structurally eligible. A memory-only observation does not
-satisfy the ordinary evidence prerequisite. Another Participant can later supply
+generation where structurally eligible. Citation, Hyperlink, Web Search and
+Proposition Search are ordinary Receipts; successful empty searches qualify.
+Tragedy alone is special and does not satisfy this ordinary prerequisite. Another Participant can later supply
 shared evidence without restoring the first Participant's allowance.
 
 ## Ownership and enforcement
@@ -75,7 +76,7 @@ remain independent. Activation belongs to Stages 2C–2D, not this deployment.
 
 | Boundary | Question | Resolution | Authority | Status | Verification |
 | --- | --- | --- | --- | --- | --- |
-| Catalogue | Historical or currently available? | Existing scoped ordinary unconsumed catalogue | Handoff §3 | Documented | Shared, consumed, foreign-Region and memory cases |
+| Catalogue | Historical or currently available? | Existing scoped ordinary unconsumed catalogue | Handoff §3 | Documented | Shared, consumed, foreign-Region and empty search cases |
 | Loading | Personal cognitive uptake required? | No | Handoff §3 | Documented | Loaded/unloaded and other-Participant evidence |
 | Structure | Can evidence bypass viable continuations or revision ownership? | No; additive prerequisite | Handoff §6 | Documented | Viable-route and revision tests |
 | Race | Receipt consumed after validation? | Fresh check under existing root lock; reject stale action | Handoff §7 | Documented | Independent PostgreSQL connections and direct dispatch |
@@ -89,3 +90,26 @@ Distinguish's initial Variant and Origin bootstrap remain exempt.
 
 Validation results and cause-level baseline comparisons are recorded in the
 implementation PR. PostgreSQL CI is authoritative for the two-connection tests.
+
+## Proposition Search classification correction
+
+`Receipt::SPECIAL_RECEIPT_TYPES` contains only Tragedy. The former memory
+classification incorrectly excluded Proposition Search from ordinary catalogue,
+grounding, consumption, cognitive evidence associations and qualifying uptake.
+`InstrumentExecutionService` now persists the existing immutable collection
+identity as its evidence signature; `ReceiptEvidenceService` qualifies completed
+collections, including empty results. Existing catalogue and Reclassification
+owners apply their normal Region/Horizon and one-use rules without new filters.
+
+The same classification governs ParticipationContext, Reinforcement and ledger
+field invalidation. No measurement formula changes. Search-specific selection,
+identity, duplicate suppression, stale observation checks and bounded collection
+presentation remain: a result is never a new causal edge or movement option.
+Loaded historical collections remain personal cognition; their presence does not
+restore consumed or out-of-scope catalogue availability. Tragedy loading retains
+its separate non-evidential behavior.
+
+The affected seams reuse existing owners rather than adding services. The
+remaining search-specific serializer/projection branches preserve bounded loaded
+result visibility; they do not implement eligibility. A future consolidation of
+Receipt presentation could reduce those branches independently of domain policy.

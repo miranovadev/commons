@@ -198,7 +198,7 @@ final readonly class InputSchemaService
             }
             $action['properties']['receipt_options'] = ['type' => 'object', 'additionalProperties' => false,
                 'properties' => $selections,
-                'description' => 'Load eligible local Receipts or scoped memory; unload your currently loaded Receipts. Tragedy and Proposition Search loading remember only: no evidence or Reinforcement; memory alone grants no movement, grounding or escape authority. Load and unload must be disjoint; already-loaded eligible loads are no-ops. Applied atomically with this action, visible next Phase.'];
+                'description' => 'Load eligible local Receipts or scoped memory; unload your currently loaded Receipts. Tragedy loading remembers only: no evidence or Reinforcement. Proposition Search is ordinary evidence; its results grant no movement or structural authority. Load and unload must be disjoint; already-loaded eligible loads are no-ops. Applied atomically with this action, visible next Phase.'];
         }
         unset($action);
 

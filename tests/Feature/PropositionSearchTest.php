@@ -153,7 +153,7 @@ class PropositionSearchTest extends TestCase
         }
     }
 
-    public function test_receipt_loads_as_cognitive_memory_without_evidence_reinforcement_or_authority(): void
+    public function test_ordinary_receipt_qualifies_and_loads_without_granting_result_authority(): void
     {
         $s = $this->scenario();
         $beforeEdges = Supersession::count();
@@ -161,37 +161,39 @@ class PropositionSearchTest extends TestCase
         $input = ['kind' => 'proposition_search', 'query' => 'needle', 'limit' => 10];
         $receipt = app(OperationalInstrumentService::class)->execute($s['phase'], $s['head'], $input);
 
-        $this->assertSame($fieldVersion, $s['fixture']->substrate->fresh()->field_version);
+        $this->assertGreaterThan($fieldVersion, $s['fixture']->substrate->fresh()->field_version);
         $this->assertSame('proposition_search', $receipt->type);
-        $this->assertTrue($receipt->isMemory());
-        $this->assertNull($receipt->signature);
-        $this->assertSame('non-reinforcing-memory', $receipt->metadata['reinforcement_version']);
+        $this->assertFalse($receipt->isSpecial());
+        $this->assertTrue($receipt->isEvidence());
+        $this->assertNull($receipt->consumption);
+        $this->assertSame($receipt->metadata['observation_identity'], $receipt->signature);
+        $this->assertSame('observed-proposition-search', $receipt->metadata['reinforcement_version']);
         $this->assertSame([3, 6, 9], array_column($receipt->metadata['proposition_collection']['results'], 'lineage_distance'));
         $this->assertSame($beforeEdges, Supersession::count(), 'Searching history must create no causal edge.');
-        $this->assertFalse(app(EvidenceEligibilityService::class)->hasReceipt($s['head']));
-        $this->assertFalse(app(CommitmentAdmissibilityService::class)->grounding($s['head'])['requirements']['receipt']);
-        $this->assertNotContains($receipt->id, app(HorizonReceiptService::class)->ordinaryAvailable($s['phase'])->pluck('id'));
-        $this->assertNotContains($s['head']->id,
+        $this->assertTrue(app(EvidenceEligibilityService::class)->hasReceipt($s['head']));
+        $this->assertTrue(app(CommitmentAdmissibilityService::class)->grounding($s['head'])['requirements']['receipt']);
+        $this->assertContains($receipt->id, app(HorizonReceiptService::class)->ordinaryAvailable($s['phase'])->pluck('id'));
+        $this->assertContains($s['head']->id,
             app(HorizonReceiptService::class)->instrumentedIds($s['phase'], collect([$s['head']->id])));
-        $this->assertSame(0, app(ReinforcementService::class)->count($s['head']));
+        $this->assertSame(1, app(ReinforcementService::class)->count($s['head']));
 
         $context = app(ReceiptContextService::class);
         $available = $context->forPhase($s['phase'])->firstWhere('id', $receipt->id);
         $this->assertSame('available', $available['availability']);
         $this->assertSame('loaded', $available['status']);
-        $this->assertSame('memory', $available['load_mode']);
+        $this->assertArrayNotHasKey('load_mode', $available);
         $this->assertTrue($available['loaded']);
         $this->assertFalse($available['active']);
-        $this->assertArrayNotHasKey('evidence', $available);
+        $this->assertSame($receipt->metadata['proposition_collection'], $available['evidence']);
 
         $load = $context->read($s['fixture']->viewer, $s['phase'], $receipt->id);
-        $this->assertSame($fieldVersion, $s['fixture']->substrate->fresh()->field_version);
-        $this->assertNull($load->evidence_signature);
+        $this->assertGreaterThan($fieldVersion, $s['fixture']->substrate->fresh()->field_version);
+        $this->assertSame($receipt->signature, $load->evidence_signature);
         $this->assertSame($s['head']->id, $load->proposition_id);
         $loaded = $context->forPhase($s['phase'])->firstWhere('id', $receipt->id);
-        $this->assertTrue($loaded['memory_active']);
+        $this->assertTrue($loaded['loaded']);
         $this->assertSame([3, 6, 9], array_column($loaded['proposition_collection']['results'], 'lineage_distance'));
-        $this->assertSame(0, app(ReinforcementService::class)->count($s['head']));
+        $this->assertSame(1, app(ReinforcementService::class)->count($s['head']));
 
         $serialized = app(ParticipantContextSerializer::class)->receipts($context->forPhase($s['phase'])->all());
         $memory = collect($serialized)->firstWhere('id', $receipt->id);
@@ -261,6 +263,8 @@ class PropositionSearchTest extends TestCase
         $cycle->forceFill(['sequence' => (int) $s['fixture']->viewer->cycles()->max('sequence') + 1, 'completed_at' => null])->save();
         $phase = $s['phase']->replicate();
         $phase->forceFill(['cycle_id' => $cycle->id, 'completed_at' => null])->save();
+        $s['fixture']->phase = $phase;
+        $this->consumeObservationFixture($s['fixture'], $first);
         $second = app(OperationalInstrumentService::class)->execute($phase->fresh(), $s['head'], $input);
         $this->assertNotSame($first->metadata['observation_identity'], $second->metadata['observation_identity']);
         $this->assertSame([3, 6, 9, 11],

@@ -109,11 +109,12 @@ final readonly class InstrumentExecutionService
                     || $propositionCollection->limit !== ($locked->input['limit'] ?? null)) {
                     throw new DomainException('The Proposition Search collection must match its stored invocation and head.');
                 }
+                $resolution = ['signature' => $propositionCollection->identity(), 'status' => 'observed-proposition-search'];
                 $metadata = [...$metadata,
                     'proposition_collection' => $propositionCollection->payload(),
                     'observation_identity' => $propositionCollection->identity(),
                     'content_verified' => true,
-                    'reinforcement_version' => 'non-reinforcing-memory'];
+                    'reinforcement_version' => $resolution['status']];
             } elseif ($propositionCollection !== null) {
                 throw new DomainException('Only Proposition Search may persist a PropositionCollection.');
             }

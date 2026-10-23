@@ -108,7 +108,7 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
     }
 
     #[Group('constitutional')]
-    public function test_rest_rejects_a_productive_phase_and_accepts_a_spent_allowance_without_ordinary_evidence(): void
+    public function test_rest_rejects_productive_search_generation_and_accepts_a_structurally_spent_phase(): void
     {
         $this->startSubstrate();
         $actor = $this->joinParticipant('rest-reader');
@@ -122,6 +122,9 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
             'instrument' => ['kind' => 'proposition_search', 'limit' => 3]]);
         $this->assertSame($persist['plan']['phase'], $before['plan']['phase']);
         $this->assertActionUnavailable($before, 'receipt.read');
+        $this->assertActionAvailable($before, 'proposition.variant');
+        $this->assertActionUnavailable($before, 'participant.rest');
+        $before = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Develop the observed distinction']);
         $this->assertActionAvailable($before, 'participant.rest');
         $loads = DB::table('participant_receipt_contexts')->count();
         $after = $this->contribute($actor, ['action' => 'participant.rest']);

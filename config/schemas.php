@@ -12,7 +12,7 @@ $statement = [
 ];
 
 $instrument = [
-    'description' => 'Citation references a substrate object; hyperlink retrieves a public URL; web_search finds external resources; proposition_search retrieves bounded historical memory. Instruments record Receipts and load them for the performing Participant. Loading does not grant action permission.',
+    'description' => 'Citation references a substrate object; hyperlink retrieves a public URL; web_search finds external resources; proposition_search observes bounded historical lineage, including meaningful empty results. All four produce ordinary Receipts. Instruments record Receipts and load them for the performing Participant. Loading does not grant action permission.',
     'anyOf' => [
         [
             'type' => 'object', 'additionalProperties' => false,

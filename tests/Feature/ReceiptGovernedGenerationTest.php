@@ -20,6 +20,7 @@ use App\Services\ParticipationService;
 use App\Services\PhaseGenerationService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionOptionService;
+use App\Services\ReceiptContextService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -56,11 +57,11 @@ class ReceiptGovernedGenerationTest extends TestCase
         return $phase->fresh();
     }
 
-    private function observe(ParticipantContextFixture $f, Phase $phase): Receipt
+    private function observe(ParticipantContextFixture $f, Phase $phase, string $kind = 'citation'): Receipt
     {
         app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase, [
             'action' => 'instrument.execute', 'proposition_id' => $phase->gate_proposition_id,
-            'instrument' => ['kind' => 'citation', 'reference' => $f->seed->id],
+            'instrument' => $kind === 'citation' ? ['kind' => 'citation', 'reference' => $f->seed->id] : ['kind' => $kind],
         ]);
 
         return Receipt::whereHas('instrumentExecution', fn ($q) => $q->where('phase_id', $phase->id))->sole();
@@ -112,14 +113,20 @@ class ReceiptGovernedGenerationTest extends TestCase
         }
     }
 
-    public function test_shared_receipt_enables_generation_without_loading_or_consumption(): void
+    public static function ordinaryKinds(): array
+    {
+        return ['citation' => ['citation'], 'proposition search' => ['proposition_search']];
+    }
+
+    #[DataProvider('ordinaryKinds')]
+    public function test_shared_receipt_enables_generation_without_loading_or_consumption(string $kind): void
     {
         $f = $this->fixture();
         $observer = $this->observer($f);
         $otherGate = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
         $observer->forceFill(['gate_proposition_id' => $otherGate->id])->save();
         $observer->cycle->participant->forceFill(['current_proposition_id' => $otherGate->id])->save();
-        $receipt = $this->observe($f, $observer);
+        $receipt = $this->observe($f, $observer, $kind);
         $this->assertSame($otherGate->id, $receipt->instrumentExecution->proposition_id);
         $this->assertNotSame($f->gate->id, $receipt->instrumentExecution->proposition_id);
         $this->assertDatabaseMissing('participant_receipt_contexts', ['participant_id' => $f->viewer->id, 'receipt_id' => $receipt->id]);
@@ -137,10 +144,11 @@ class ReceiptGovernedGenerationTest extends TestCase
         $this->assertContains($receipt->id, array_column($after['plan']['receipts'], 'id'));
     }
 
-    public function test_consumption_invalidates_stale_generation_and_reopens_acquisition(): void
+    #[DataProvider('ordinaryKinds')]
+    public function test_consumption_invalidates_stale_generation_and_reopens_acquisition(string $kind): void
     {
         $f = $this->fixture();
-        $receipt = $this->observe($f, $this->observer($f));
+        $receipt = $this->observe($f, $this->observer($f), $kind);
         $schema = app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema'];
         $this->assertArrayHasKey('proposition.variant', $schema['$defs']['actions']);
         $this->consume($f, $receipt);
@@ -185,7 +193,8 @@ class ReceiptGovernedGenerationTest extends TestCase
         $vote->save();
         app(LedgerService::class)->record($vote);
         $this->assertEmpty(app(PropositionOptionService::class)->revisionOptionsFor($f->phase, $f->viewer));
-        $this->observe($f, $this->observer($f));
+        $observer = $this->observer($f);
+        app(OperationalInstrumentService::class)->execute($observer, $f->gate, ['kind' => 'proposition_search']);
         $this->assertFalse(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant'));
         $this->assertSame([$head->id], app(PropositionOptionService::class)->revisionOptionsFor($f->phase, $f->viewer)->modelKeys());
         $other = $this->observer($f);
@@ -213,7 +222,7 @@ class ReceiptGovernedGenerationTest extends TestCase
         $this->assertFalse(app(PhaseGenerationService::class)->epistemicActionAvailable($f->phase, 'proposition.variant'));
     }
 
-    public function test_memory_observation_spends_allowance_but_shared_evidence_can_later_enable_generation(): void
+    public function test_empty_proposition_search_enables_generation_and_consumption_retires_availability(): void
     {
         $f = $this->fixture();
         app(PotentialProjectionService::class)->refresh($f->substrate->id);
@@ -221,10 +230,27 @@ class ReceiptGovernedGenerationTest extends TestCase
         $after = $service->contribute($f->viewer, $f->phase->id, ['action' => 'instrument.execute',
             'proposition_id' => $f->gate->id, 'instrument' => ['kind' => 'proposition_search', 'limit' => 3]]);
         $this->assertSame($f->phase->id, $after['plan']['phase']['id']);
-        $this->assertSame(['participant.rest'], array_keys($after['plan']['schema']['$defs']['actions']));
-        $this->assertSame('proposition_search', Receipt::sole()->type);
-        $this->observe($f, $this->observer($f));
+        $this->assertArrayHasKey('proposition.variant', $after['plan']['schema']['$defs']['actions']);
+        $receipt = Receipt::sole();
+        $this->assertSame('proposition_search', $receipt->type);
+        $this->assertTrue($receipt->isEvidence());
+        $this->assertNull($receipt->consumption);
+        $this->assertSame([], $receipt->metadata['proposition_collection']['results']);
+        $this->assertSame([$receipt->id], app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->modelKeys());
+        $other = $this->observer($f);
+        $this->assertTrue(app(PhaseGenerationService::class)->available($other, 'proposition.variant'));
+        $context = app(ReceiptContextService::class);
+        $context->clear($f->viewer, $f->phase, $receipt->id);
         $this->assertTrue(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant'));
+        $context->read($other->cycle->participant, $other, $receipt->id);
+        $this->assertTrue(app(PhaseGenerationService::class)->available($other, 'proposition.variant'));
+
+        $this->assertTrue(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant'));
+        $this->assertEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($f->phase));
+        $this->consume($f, $receipt);
+        $this->assertEmpty(app(HorizonReceiptService::class)->ordinaryAvailable($other));
+        $this->assertFalse(app(PhaseGenerationService::class)->epistemicActionAvailable($other, 'proposition.variant'));
+        $this->assertNotEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($other));
         $this->assertEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($f->phase));
     }
 

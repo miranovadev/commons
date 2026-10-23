@@ -97,14 +97,13 @@ attaches its selected Commit Region Receipt; committed results remain frozen.
 Receipt metadata is shared. Gate options establish optional personal loading
 for Reinforcement, independently of one-use consumption by Reclassify.
 
-## Proposition Search: bounded historical memory
+## Proposition Search: bounded historical observation
 
 ```json
 {"kind":"proposition_search","query":"optional text","limit":5}
 ```
 
-Proposition Search is an internal-memory Instrument, not an evidence-discovery
-Instrument. It reads backward from the exact Proposition on which the Instrument
+Proposition Search is an ordinary evidence Instrument observing bounded internal history. It reads backward from the exact Proposition on which the Instrument
 is executed by reusing `BackwardRecoveryLineage`: raw recorded causal hops,
 durable participant arrival provenance at multi-input Writes, revisions and
 historical intermediates all retain their real distance. It never starts from a
@@ -143,12 +142,14 @@ Each result is deliberately thin:
 time. Excluded visible, non-matching or complementary-Domain nodes still occupy
 their real hops, so returned distances are never renumbered.
 
-The persisted Receipt is type `proposition_search`, readable-only, and uses
-`load_mode: memory`. Once loaded its `proposition_collection` appears in
-Participant cognition outside the loaded-evidence prefix. It has no evidence
-signature, never enters ordinary Region Receipt catalogues, never counts as an
-instrumented evidence source, never produces Reinforcement, and never satisfies
-Attestation or Commitment grounding.
+The persisted Receipt is type `proposition_search`, readable-only, ordinary and
+initially unattached. Its immutable observation identity is its evidence signature.
+It enters the shared Region/Horizon catalogue, qualifies for grounding and Persist
+generation, and supports normal Reclassification consumption. A successful empty
+collection is equally valid evidence. Tragedy is the sole special Receipt type.
+Loading and unloading affect cognitive uptake and derived Reinforcement as for
+other ordinary evidence; they do not determine catalogue availability. Loaded
+search collections remain bounded cognitive content, never structural authority.
 
 Observation identity includes the normalized query and material
 PropositionCollection identity: head, Domain, ordered returned Proposition IDs

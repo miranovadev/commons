@@ -20,21 +20,21 @@ class Receipt extends Model
 
     protected $keyType = 'string';
 
-    public const MEMORY_TYPES = ['tragedy', 'proposition_search'];
+    public const SPECIAL_RECEIPT_TYPES = ['tragedy'];
 
-    public function isMemory(): bool
+    public function isSpecial(): bool
     {
-        return in_array($this->type, self::MEMORY_TYPES, true);
+        return in_array($this->type, self::SPECIAL_RECEIPT_TYPES, true);
     }
 
     public function isEvidence(): bool
     {
-        return ! $this->isMemory();
+        return ! $this->isSpecial();
     }
 
     public function scopeEvidence(Builder $query): void
     {
-        $query->whereNotIn('type', self::MEMORY_TYPES);
+        $query->whereNotIn('type', self::SPECIAL_RECEIPT_TYPES);
     }
 
     protected function casts(): array
