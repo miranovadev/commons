@@ -184,7 +184,8 @@ class PropositionSearchTest extends TestCase
         $this->assertArrayNotHasKey('load_mode', $available);
         $this->assertTrue($available['loaded']);
         $this->assertFalse($available['active']);
-        $this->assertSame($receipt->metadata['proposition_collection'], $available['evidence']);
+        // Compare persisted JSON on both sides; PostgreSQL JSONB normalizes object key order.
+        $this->assertSame($receipt->fresh()->metadata['proposition_collection'], $available['evidence']);
 
         $load = $context->read($s['fixture']->viewer, $s['phase'], $receipt->id);
         $this->assertGreaterThan($fieldVersion, $s['fixture']->substrate->fresh()->field_version);

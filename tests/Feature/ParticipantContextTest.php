@@ -140,6 +140,7 @@ class ParticipantContextTest extends TestCase
         $this->assertStringContainsString($guidance, $schema['$defs']['instrument']['description']);
         $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
         $this->assertStringContainsString('memory alone grants no movement, grounding or escape authority', json_encode($transport, JSON_THROW_ON_ERROR));
+        $this->assertStringContainsString('Proposition Search is ordinary evidence; its results grant no movement or structural authority.', json_encode($transport, JSON_THROW_ON_ERROR));
         $this->assertStringNotContainsString('Cite records evidence but never reinforces.', $prompt['system']);
         $this->assertStringNotContainsString('no page fetch or content verification', $prompt['user']);
         $this->assertStringNotContainsString('an unsigned Receipt', $prompt['user']);
