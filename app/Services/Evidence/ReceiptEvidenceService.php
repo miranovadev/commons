@@ -166,6 +166,22 @@ final class ReceiptEvidenceService
         return null;
     }
 
+    /** Non-loadable acquisition metadata follows existing catalogue/C3 scope, never file bodies. */
+    public function acquisition(Receipt $receipt): ?array
+    {
+        if ($receipt->type !== 'load_file' || ! $receipt->observationComplete()) {
+            return null;
+        }
+        $metadata = array_intersect_key($receipt->metadata, array_flip([
+            'method', 'source_url', 'effective_url', 'filename', 'processing_ms', 'content_verified',
+            'validation', 'observation_error',
+        ]));
+        $metadata['artifacts'] = array_map(fn ($artifact) => array_intersect_key($artifact,
+            array_flip(['hash', 'media_type', 'size'])), $receipt->metadata['artifacts'] ?? []);
+
+        return $metadata;
+    }
+
     /** A recorded failure is information, never a qualifying evidence signature. */
     public function failure(Receipt $receipt): ?array
     {

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Domain\Evidence\DownloadObservation;
 use App\Domain\Evidence\PropositionCollection;
 use App\Models\Proposition;
 use App\Models\Receipt;
@@ -20,8 +21,17 @@ final readonly class RelevantInstrumentService
         array $input,
         ?ParticipationContext $context = null,
         ?PropositionCollection $collection = null,
+        ?DownloadObservation $download = null,
     ): ?Receipt {
         $normalized = $this->invocations->normalize($input);
+        if ($normalized['kind'] === 'load_file') {
+            // Source alone cannot identify a resource version. Recheck the observed bytes
+            // under the contribution lock, using the existing effective evidence scope.
+            return $download === null ? null : $this->state->receipts($proposition, $context)->first(
+                fn (Receipt $receipt): bool => $receipt->type === 'load_file'
+                    && ($receipt->metadata['observation_identity'] ?? null) === $download->identity(),
+            );
+        }
         if ($normalized['kind'] === 'proposition_search') {
             if ($collection === null) {
                 return null; // Invocation alone cannot identify a changing historical observation.
@@ -46,8 +56,9 @@ final readonly class RelevantInstrumentService
         Proposition $proposition,
         array $input,
         ?PropositionCollection $collection = null,
+        ?DownloadObservation $download = null,
     ): void {
-        $receipt = $this->equivalent($proposition, $input, collection: $collection);
+        $receipt = $this->equivalent($proposition, $input, collection: $collection, download: $download);
         if ($receipt !== null) {
             throw new ConflictHttpException("An equivalent Instrument observation is already relevant (Receipt {$receipt->id}). Use the existing Receipt or choose another resource.");
         }
@@ -59,7 +70,7 @@ final readonly class RelevantInstrumentService
         return $this->state->receipts($proposition, $context)->sortBy('id')->map(function (Receipt $receipt): ?array {
             $invocation = $this->invocations->fromReceipt($receipt);
 
-            return $invocation === null || $invocation['kind'] === 'proposition_search'
+            return $invocation === null || in_array($invocation['kind'], ['proposition_search', 'load_file'], true)
                 ? null : ['receipt_id' => $receipt->id, 'invocation' => $invocation];
         })->filter()->unique(fn ($item) => $this->invocations->signature($item['invocation']))->values();
     }

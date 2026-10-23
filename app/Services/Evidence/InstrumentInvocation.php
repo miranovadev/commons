@@ -18,6 +18,14 @@ final class InstrumentInvocation
         if ($kind === 'proposition_search') {
             return PropositionCollection::normalizeInput($input);
         }
+        if ($kind === 'load_file') {
+            if (($input['method'] ?? null) !== 'download' || ! is_string($input['reference'] ?? null)
+                || array_diff(array_keys($input), ['kind', 'method', 'reference']) !== []) {
+                throw new DomainException('Load File requires method download and an HTTP(S) reference.');
+            }
+
+            return ['kind' => 'load_file', 'method' => 'download', 'reference' => DownloadAcquisition::url($input['reference'])];
+        }
         $field = $kind === 'web_search' ? 'query' : 'reference';
         if (! in_array($kind, ['hyperlink', 'citation', 'web_search'], true)
             || array_diff(array_keys($input), ['kind', $field]) !== [] || ! is_string($input[$field] ?? null)) {

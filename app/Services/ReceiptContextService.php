@@ -87,7 +87,7 @@ final readonly class ReceiptContextService
                 $memory = $receipt->isSpecial();
                 $loaded = $load !== null && $load->cleared_at === null;
                 $alreadyPresent = isset($verified['referenced_proposition_id']) && $present->contains($verified['referenced_proposition_id']);
-                $status = $loaded ? 'loaded' : ($memory ? 'available' : ($verified === null ? 'unqualified' : ($alreadyPresent ? 'already-in-context' : 'available')));
+                $status = $loaded ? 'loaded' : ($memory ? 'available' : ($verified === null && $receipt->type !== 'load_file' ? 'unqualified' : ($alreadyPresent ? 'already-in-context' : 'available')));
 
                 return [
                     'id' => $receipt->id, 'proposition_id' => $receipt->type === 'tragedy'
@@ -100,6 +100,7 @@ final readonly class ReceiptContextService
                     'consumed_at' => $receipt->consumption?->consumed_at?->toISOString(),
                     'attached_proposition_id' => $receipt->consumption?->proposition_id,
                     'type' => $receipt->type, 'reference' => $receipt->reference,
+                    ...($receipt->type === 'load_file' ? ['acquisition' => $this->evidence->acquisition($receipt)] : []),
                     ...($receipt->type === 'preparation' && $verified !== null ? ['preparation_history' => $verified['evidence']] : []),
                     ...($receipt->type === 'tragedy' ? ['purpose' => 'homologous_boundary_escape', 'warrant' => app(TragedyEvidenceService::class)->describe($receipt)] : []),
                     'capabilities' => [
@@ -212,10 +213,13 @@ final readonly class ReceiptContextService
     }
 
     /** Called inside Instrument completion, after immutable Receipt persistence. */
-    public function loadCreated(Receipt $receipt): ParticipantReceiptContext
+    public function loadCreated(Receipt $receipt): ?ParticipantReceiptContext
     {
         if (DB::transactionLevel() === 0 || ! $receipt->observationComplete()) {
             throw new DomainException('Creator loading requires completed Instrument persistence in its transaction.');
+        }
+        if (! $receipt->supports(ReceiptCapability::Readable)) {
+            return null;
         }
         $phase = $receipt->evidenceExecution->phase;
         $participant = $phase->cycle->participant;

@@ -96,6 +96,7 @@ final class ParticipantReceiptProjection
             }
 
             return [...($model?->only(['id', 'type', 'reference']) ?? Arr::only($receipt, ['id', 'type', 'reference'])), 'loaded' => $loaded,
+                ...($model?->type === 'load_file' ? ['acquisition' => $evidence->acquisition($model)] : []),
                 ...($content !== null ? ['loaded_inline_content' => $content] : [])];
         })->values()->all();
     }

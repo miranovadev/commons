@@ -157,7 +157,7 @@ final class ParticipantContextSerializer
         }
 
         return [
-            ...Arr::only($receipt, ['id', 'loaded', 'active', 'proposition_id', 'context_horizon_id', 'availability', 'consumed_at', 'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'can_replay', 'replayed_from_receipt_id', 'preparation_history']),
+            ...Arr::only($receipt, ['id', 'loaded', 'active', 'proposition_id', 'context_horizon_id', 'availability', 'consumed_at', 'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'can_replay', 'replayed_from_receipt_id', 'preparation_history', 'acquisition']),
             ...(($receipt['active'] ?? false) ? Arr::only($receipt, ['signature', 'observation_error']) : []),
             ...(($receipt['active'] ?? false) && isset($receipt['evidence']) ? ['evidence' => Arr::only($receipt['evidence'], [
                 'proposition_id', 'statement', 'attestation_id', 'direction', 'rationale',

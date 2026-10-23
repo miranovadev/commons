@@ -47,7 +47,7 @@ for limits, failure semantics, cognition and a persisted example.
 > associations, including Write and extended history.
 > **C2 update:** [Participant Context C2](participant-context-c2-implementation.md)
 > supersedes the inference Receipt layout and loading timing described below.
-> New Instrument Receipts auto-load for their performer; eligible local Write
+> New readable Instrument Receipts auto-load for their performer; eligible local Write
 > loads and personal same-substrate unloads are supported. Loaded Read/Gate
 > content appears once in the top-level catalogue; Write alone exposes metadata.
 > Operational evidence, causal authority and measurement formulas are unchanged.
@@ -70,7 +70,7 @@ Capability support does not bypass operational eligibility or evidence qualifica
 
 ## Instrument replay and Participant memory
 
-`instrument.execute` accepts a fresh Citation, Hyperlink or Web Search invocation,
+`instrument.execute` accepts a fresh Citation, Hyperlink, Web Search, Proposition Search or Load File invocation,
 or `instrument: {"replay_receipt_id": "R"}` with the normal `proposition_id`.
 The forms are mutually exclusive. The schema enumerates replay IDs for each exact
 eligible Instrument target. Catalogue visibility or replay capability alone grants
@@ -253,3 +253,11 @@ remove recorded Search or replay history.
 Stage 2C stores Instrument rows as `EvidenceExecution(type=instrument)`. Preparation
 shares execution storage and ordinary Receipt creation but cannot replay an Instrument.
 See [unified evidence executions](epistemic-evidence-stage-2c.md).
+
+## Load File / Download (Stage 3B)
+
+Load File preserves a directly referenced HTTP(S) resource as an exact-byte Artifact.
+Its ordinary Receipt is non-loadable; acquisition metadata is visible in the existing
+catalogue and supported Artifacts remain preparable after consumption. See the
+[Download contract](load-file-download-stage-3b.md) for limits, identity, security,
+replay, examples and validation. No Upload method is implemented.

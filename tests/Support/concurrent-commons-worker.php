@@ -1,6 +1,8 @@
 <?php
 
 // A separate PHP process gives the regression tests a real, independent backend.
+use App\Domain\Evidence\DownloadObservation;
+use App\Domain\Evidence\InstrumentObservation;
 use App\Models\CommitmentSnapshot;
 use App\Models\EvidenceExecution;
 use App\Models\Participant;
@@ -86,6 +88,11 @@ try {
                 app(ContributionDispatcher::class)->dispatch(
                     Participant::findOrFail($input['participant_id']),
                     Phase::findOrFail($input['phase_id']), $input['contribution'],
+                    observed: isset($input['download_observation']) ? new InstrumentObservation(
+                        $input['contribution']['instrument'], download: new DownloadObservation(
+                            $input['contribution']['instrument']['reference'], $input['download_observation'],
+                        ),
+                    ) : null,
                 );
             } catch (ConflictHttpException $exception) {
                 if (str_contains($exception->getMessage(), 'unused Cycle allowance')) {

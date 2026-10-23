@@ -103,6 +103,9 @@ class Receipt extends Model
         if ($this->type === 'web_search' && is_string($input['query'] ?? null)) {
             return ['kind' => 'web_search', 'query' => $input['query']];
         }
+        if ($this->type === 'load_file' && ($input['method'] ?? null) === 'download' && is_string($input['reference'] ?? null)) {
+            return ['kind' => 'load_file', 'method' => 'download', 'reference' => $input['reference']];
+        }
         if ($this->type === 'hyperlink' && is_string($input['reference'] ?? null)) {
             return ['kind' => 'hyperlink', 'reference' => trim($input['reference'])];
         }
