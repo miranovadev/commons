@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Enums\PhaseKind;
 use App\Models\ParticipantReceiptContext;
 use App\Services\ContributionDispatcher;
-use App\Services\OperationalInstrumentService;
 use App\Services\ParticipationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -36,12 +35,11 @@ class EvidenceFirstInteractionTest extends TestCase
 
             return $service->stateFor($f->viewer)['plan']['schema']['$defs']['actions'][$action]['properties']['proposition_id']['enum'] ?? [];
         };
-        $this->assertContains($write->id, $targets('instrument.execute'));
+        $this->assertSame([], $targets('instrument.execute'), 'Shared available evidence withholds acquisition');
         $this->assertContains($write->id, $targets('attestation.create'), 'Shared same-Horizon evidence is sufficient');
         $this->assertContains($other->id, $targets('attestation.create'));
         $this->assertNotContains($write->id, $targets('proposition.traverse'));
-        app(OperationalInstrumentService::class)->execute($f->phase->fresh(), $write, ['kind' => 'citation', 'reference' => $gate->id]);
-        $this->assertSame(6, ParticipantReceiptContext::active()->count());
+        $this->assertSame(5, ParticipantReceiptContext::active()->count());
         $this->assertContains($write->id, $targets('attestation.create'));
         $this->assertNotContains($write->id, $targets('proposition.traverse'));
         app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase->fresh(), ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'refute']);

@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EnterCycleRequest;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Substrate;
 use App\Services\ParticipationService;
+use App\Services\PreparationService;
 use DomainException;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -36,6 +39,33 @@ class ParticipationController extends Controller
         Gate::authorize('act', $participant);
 
         return response()->json(['data' => $participation->workspaceFor($participant)]);
+    }
+
+    public function reading(Request $request, Substrate $substrate, Participant $participant, string $execution): JsonResponse
+    {
+        Gate::authorize('act', $participant);
+        try {
+            $delivery = app(PreparationService::class)->delivery($participant,
+                EvidenceExecution::findOrFail($execution), 'human-text');
+
+            return response()->json(['data' => $delivery])->header('Cache-Control', 'private, no-store');
+        } catch (DomainException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422)->header('Cache-Control', 'private, no-store');
+        }
+    }
+
+    public function presented(Request $request, Substrate $substrate, Participant $participant, string $execution): JsonResponse
+    {
+        Gate::authorize('act', $participant);
+        $input = $request->validate(['presentation_token' => ['required', 'string', 'max:40000']]);
+        try {
+            app(PreparationService::class)->acknowledge($participant,
+                EvidenceExecution::findOrFail($execution), $input['presentation_token']);
+        } catch (DecryptException|DomainException $exception) {
+            return response()->json(['message' => 'The presentation acknowledgement is invalid.'], 422);
+        }
+
+        return response()->json(['data' => ['presented' => true]]);
     }
 
     public function enter(
@@ -101,4 +131,3 @@ class ParticipationController extends Controller
         return response()->json(['data' => $state]);
     }
 }
-

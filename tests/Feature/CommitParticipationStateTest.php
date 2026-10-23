@@ -12,13 +12,12 @@ use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\CommitmentAdmissibilityService;
-use App\Services\InstrumentExecutionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ChiralityCalculator;
 use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\ReinforcementService;
-use App\Services\OperationalInstrumentService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
@@ -102,12 +101,12 @@ class CommitParticipationStateTest extends TestCase
         $effective = new Attestation;
         $effective->forceFill(['phase_id' => $touch->id, 'proposition_id' => $gate->id,
             'supersedes_attestation_id' => $old->id, 'direction' => 'refute'])->save();
-        $executions = app(InstrumentExecutionService::class);
+        $executions = app(EvidenceExecutionService::class);
         $execution = $executions->start($this->phase, $gate, 'hyperlink', 'https://example.test/attestation');
         $receipt = $executions->complete($execution, $effective);
         $pending = $executions->start($this->phase, $gate, 'hyperlink', 'https://example.test/pending');
         $pendingReceipt = new Receipt;
-        $pendingReceipt->forceFill(['instrument_execution_id' => $pending->id, 'receiptable_type' => $gate->getMorphClass(),
+        $pendingReceipt->forceFill(['evidence_execution_id' => $pending->id, 'receiptable_type' => $gate->getMorphClass(),
             'receiptable_id' => $gate->id, 'type' => 'hyperlink', 'reference' => $pending->reference, 'signature' => 'pending'])->save();
         $commit = $this->node('committal');
         $this->edge($gate, $commit, 'commit');
@@ -162,7 +161,7 @@ class CommitParticipationStateTest extends TestCase
         $this->touch($source);
         $old = new Attestation;
         $old->forceFill(['phase_id' => $this->phase->id, 'proposition_id' => $source->id, 'direction' => 'refute'])->save();
-        app(OperationalInstrumentService::class)->execute($this->phase, $source,
+        $this->observationFixture($this->phase, $source,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/before-reset']);
         $priorCommit = $this->node('committal');
         $this->edge($source, $priorCommit, 'commit');
@@ -179,7 +178,7 @@ class CommitParticipationStateTest extends TestCase
         $touch = $this->touch($fresh);
         $earned = new Attestation;
         $earned->forceFill(['phase_id' => $touch->id, 'proposition_id' => $fresh->id, 'direction' => 'support'])->save();
-        $receipt = app(OperationalInstrumentService::class)->execute($touch, $fresh,
+        $receipt = $this->observationFixture($touch, $fresh,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/after-reset']);
         $comparison = app(ContextLineageComparisonService::class)->prospectiveCommit($fresh, $this->phase);
         $preview = $comparison->current->propositions->last();

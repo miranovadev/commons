@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Enums\RestReason;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
@@ -110,10 +111,12 @@ final readonly class InputPlanService
         );
         $lineage = $lineage->filter(fn ($node) => $context === null || $context->activeIds->has($node->id))->values();
         $writeOptions = $this->options->writeOptionsFor($phase, $context);
+        $preparation = app(PreparationService::class)->active($phase);
         $revisionOptions = $this->options->revisionOptionsFor(
             $phase,
             $participant,
             $context,
+            prepared: $preparation !== null,
         );
         $readOptions = $phase->kind === PhaseKind::Order ? $this->options->orderReadsFor($phase, $context) : $this->mediation->visibleReadsFor($phase, $context);
         $gateOptions = $this->options->gateOptionsFor($phase, $context);
@@ -187,6 +190,15 @@ final readonly class InputPlanService
                 'started_at' => $phase->started_at,
             ],
             ...($includeWorkspace ? ['workspace' => $workspace] : []),
+            'preparation' => $preparation === null ? null : [
+                'execution_id' => $preparation->id, 'status' => $preparation->status,
+                'purpose' => $preparation->input['purpose'], 'selections' => $preparation->input['artifacts'],
+            ],
+            'preparation_options' => isset($schema['$defs']['actions']['preparation.start']) ? app(PreparationService::class)->options($phase, $context) : [],
+            'preparation_failures' => $includeWorkspace ? EvidenceExecution::where('cycle_id', $phase->cycle_id)
+                ->where('type', 'prepare')->where('status', 'failed')->get()->map(fn ($e) => [
+                    'execution_id' => $e->id, 'purpose' => $e->input['purpose'], 'diagnostic' => $e->metadata,
+                ])->all() : [],
             'commitment' => $phase->kind === PhaseKind::Order
                 ? $this->admissibility->evaluate($gate, $phase, $context)
                 : null,
@@ -239,7 +251,7 @@ final readonly class InputPlanService
                 ->with([
                     'measurement',
                     'parents',
-                    'instrumentExecutions.receipt',
+                    'evidenceExecutions.receipt',
                     'effectiveAttestations' => $this->attestationsFor(
                         $participant
                     ),
@@ -259,7 +271,7 @@ final readonly class InputPlanService
         $provenance->loadMissing([
             'measurement',
             'parents',
-            'instrumentExecutions.receipt',
+            'evidenceExecutions.receipt',
             'effectiveAttestations' => $this->attestationsFor($participant),
             'phase.cycle.participant:id,callsign,substrate_id',
         ]);
@@ -320,7 +332,7 @@ final readonly class InputPlanService
         $collection->loadMissing([
             'measurement',
             'parents',
-            'instrumentExecutions.receipt',
+            'evidenceExecutions.receipt',
             'effectiveAttestations' => $this->attestationsFor($participant),
             'phase.cycle.participant:id,callsign,substrate_id',
         ]);
@@ -423,8 +435,8 @@ final readonly class InputPlanService
                 'rationale',
                 'created_at',
             ]),
-            'instruments' => ! $foreignOperand && $proposition->relationLoaded('instrumentExecutions')
-                ? $proposition->instrumentExecutions->map(fn ($execution): array => [
+            'instruments' => ! $foreignOperand && $proposition->relationLoaded('evidenceExecutions')
+                ? $proposition->evidenceExecutions->where('type', 'instrument')->values()->map(fn ($execution): array => [
                     'id' => $execution->getKey(),
                     'kind' => $execution->kind,
                     'reference' => $execution->reference,

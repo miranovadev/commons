@@ -18,13 +18,12 @@ use App\Services\CommitmentAdmissibilityService;
 use App\Services\CommitmentSnapshotService;
 use App\Services\Evidence\HyperlinkVerifier;
 use App\Services\Evidence\PublicResourceAddress;
-use App\Services\InstrumentExecutionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ReinforcementService;
-use App\Services\OperationalInstrumentService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PropositionMeasurementService;
 use App\Services\ReceiptContextService;
@@ -90,8 +89,8 @@ class ReinforcementTest extends TestCase
         app(PropositionMeasurementService::class)->project($this->node, 1, 1, 1);
         $cite = $this->loadedReceipt('citation', $this->node->id);
         $this->assertNull($cite->signature);
-        $execution = app(InstrumentExecutionService::class)->start($this->later, $this->node, 'hyperlink', 'https://example.test/page');
-        $forged = app(InstrumentExecutionService::class)->complete($execution, $this->node, 'user-signature',
+        $execution = app(EvidenceExecutionService::class)->start($this->later, $this->node, 'hyperlink', 'https://example.test/page');
+        $forged = app(EvidenceExecutionService::class)->complete($execution, $this->node, 'user-signature',
             ['content_verified' => true, 'last_modified' => '2000-01-01', 'fingerprint' => 'fake']);
         $this->assertNull($forged->signature);
         $this->assertFalse($forged->metadata['content_verified']);
@@ -126,7 +125,7 @@ class ReinforcementTest extends TestCase
 
     public function test_originating_evidence_can_be_loaded_later_without_reverification(): void
     {
-        $origin = app(OperationalInstrumentService::class)->execute($this->node->phase, $this->node,
+        $origin = $this->observationFixture($this->node->phase, $this->node,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/page']);
         $this->assertNotNull($origin->signature);
         $this->assertSame(1, $this->reinforcementCount());
@@ -354,7 +353,7 @@ class ReinforcementTest extends TestCase
     private function loadedReceipt(string $kind = 'hyperlink', string $reference = 'https://example.test/page', ?Phase $phase = null): Receipt
     {
         $phase ??= $this->later;
-        $receipt = app(OperationalInstrumentService::class)->execute($phase, $this->node, compact('kind', 'reference'));
+        $receipt = $this->observationFixture($phase, $this->node, compact('kind', 'reference'));
         if ($kind === 'hyperlink' && $receipt->signature !== null) {
             app(ReceiptContextService::class)->read($phase->cycle->participant, $phase, $receipt->id);
         }

@@ -2,7 +2,7 @@
 
 > **C2 update:** [Participant Context C2](participant-context-c2-implementation.md)
 > supersedes the inference Receipt layout and loading timing described below.
-> New Instrument Receipts auto-load for their performer; eligible local Write
+> New readable Instrument Receipts auto-load for their performer; eligible local Write
 > loads and personal same-substrate unloads are supported. Loaded Read/Gate
 > content appears once in the top-level catalogue; Write alone exposes metadata.
 > Operational evidence, causal authority and measurement formulas are unchanged.
@@ -101,7 +101,7 @@ Tragedy by type. Ordinary load events retain their existing behavior.
 
 ## Ordinary discovery and ownership
 
-An ordinary Receipt's regional identity is `Receipt → InstrumentExecution → observed Proposition → CommitRegionService → governing Committal`. Attachment never changes that origin. There is no new region table or persisted seed column. A packet reuses one hydrated graph and the same memoized batched entry map as the motor. A Committal owns itself; an expressive observed Proposition belongs to its creating Cycle's immutable entry Committal. Missing or invalid Cycle entry fails closed. Foreign causal inputs neither change this owner nor make their Receipts available.
+An ordinary Receipt's regional identity is `Receipt → EvidenceExecution → observed Proposition → CommitRegionService → governing Committal`. Attachment never changes that origin. There is no new region table or persisted seed column. A packet reuses one hydrated graph and the same memoized batched entry map as the motor. A Committal owns itself; an expressive observed Proposition belongs to its creating Cycle's immutable entry Committal. Missing or invalid Cycle entry fails closed. Foreign causal inputs neither change this owner nor make their Receipts available.
 
 An unconsumed completed observation is catalogued only at the same governing Committal, with the existing Horizon/qualification checks. In particular, bootstrap evidence originating in a preceding Horizon does not become a new shared observation merely because its Committal opens the next Horizon. Branches and reconciliation branches within a region share the available pool. A later Commit begins a different pool. Reclassification still consumes once and records its immutable Proposition link; no availability fallback traverses the Horizon.
 

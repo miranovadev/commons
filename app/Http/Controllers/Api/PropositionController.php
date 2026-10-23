@@ -9,8 +9,8 @@ use App\Models\Substrate;
 use App\Services\ExhaustionService;
 use App\Services\GraphProjectionService;
 use App\Services\Observables\ReinforcementService;
-use App\Services\PropositionPresentationService;
 use App\Services\PropositionInspectionService;
+use App\Services\PropositionPresentationService;
 use App\Services\PropositionStateService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -30,7 +30,7 @@ class PropositionController extends Controller
         $proposition->load(['phase.cycle.participant:id,callsign,substrate_id', 'measurement',
             'contextHorizonMembership.horizon' => fn ($query) => $query->withOpeningRegionExhaustion(), 'parents' => fn ($query) => $query->select('propositions.id', 'propositions.register')
                 ->orderBy('supersessions.created_at')->orderBy('supersessions.id'), 'children:id',
-            'instrumentExecutions.receipt']);
+            'evidenceExecutions.receipt']);
         $state->loadAttestationCounts(collect([$proposition]));
         $reinforcement->loadCounts(collect([$proposition]));
         $proposition->setAttribute('attestation_summary', $presentation->attestations($proposition));
@@ -84,4 +84,3 @@ class PropositionController extends Controller
         return PropositionResource::collection($propositions);
     }
 }
-

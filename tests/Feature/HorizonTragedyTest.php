@@ -38,7 +38,7 @@ class HorizonTragedyTest extends TestCase
         $this->assertSame($phase->cycle->context_horizon_id, $tragedy->context_horizon_id);
         $this->assertSame(RestReason::NoAvailableMove, $phase->cycle->fresh()->rest_reason);
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($phase->cycle->contextHorizon));
-        $this->assertNull($receipt->instrument_execution_id, 'Tragedy is not a fabricated Instrument execution');
+        $this->assertNull($receipt->evidence_execution_id, 'Tragedy is not a fabricated Instrument execution');
         $this->assertSame('tragedy', $receipt->type);
         $this->assertSame($commit->id, $phase->cycle->participant->fresh()->current_proposition_id);
         $this->assertTrue(app(HorizonReceiptService::class)->catalogue($phase)->contains('id', $receipt->id));

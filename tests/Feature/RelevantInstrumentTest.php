@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
 use App\Enums\ReceiptCapability;
-use App\Models\InstrumentExecution;
+use App\Models\EvidenceExecution;
 use App\Models\ParticipantReceiptContext;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
@@ -43,17 +43,20 @@ class RelevantInstrumentTest extends TestCase
     public function test_effective_receipts_suppress_duplicates_across_services_and_reclassification_without_mutating_history(array $input, array $equivalent): void
     {
         Http::fake();
-        $f = new ParticipantContextFixture(1, 0);
-        $target = $f->node($f->gate, 'frontier', position: PhaseKind::Mediate);
+        $f = new ParticipantContextFixture(1, 0, false);
+        $target = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $target->id, 'write_register' => 'frontier'])->save();
+        $f->viewer->forceFill(['current_proposition_id' => $target->id])->save();
         if ($input['kind'] === 'citation') {
             $input['reference'] = $f->seed->id;
             $equivalent['reference'] = ' '.$f->seed->id.' ';
         }
         $instruments = app(OperationalInstrumentService::class);
-        $receipt = $instruments->execute($f->phase, $target, $input);
+        $receipt = $this->observationFixture($target->phase, $target, $input);
+        $this->consumeObservationFixture($f, $receipt);
         $history = $receipt->fresh()->getAttributes();
-        $execution = $receipt->instrumentExecution->fresh()->getAttributes();
-        $count = InstrumentExecution::count();
+        $execution = $receipt->evidenceExecution->fresh()->getAttributes();
+        $count = EvidenceExecution::count();
         $relevance = app(RelevantInstrumentService::class);
         $this->assertSame($receipt->id, $relevance->equivalent($target, $equivalent)->id);
         $this->assertSame($receipt->id, $relevance->equivalent($target, $equivalent, new ParticipationContext($f->phase))->id);
@@ -68,7 +71,7 @@ class RelevantInstrumentTest extends TestCase
             app(ContributionService::class)->validateSchema($schema, $action);
             $this->fail('The authoritative schema accepted an equivalent normalized invocation.');
         } catch (\InvalidArgumentException) {
-            $this->assertSame($count, InstrumentExecution::count());
+            $this->assertSame($count, EvidenceExecution::count());
         }
         foreach ([fn () => $instruments->execute($f->phase, $target, $equivalent),
             fn () => app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase, $action),
@@ -77,7 +80,7 @@ class RelevantInstrumentTest extends TestCase
                 $submit();
                 $this->fail('Equivalent effective observation was accepted.');
             } catch (ConflictHttpException|\InvalidArgumentException) {
-                $this->assertSame($count, InstrumentExecution::count());
+                $this->assertSame($count, EvidenceExecution::count());
                 $this->assertNull($f->phase->fresh()->completed_at);
             }
         }
@@ -88,11 +91,12 @@ class RelevantInstrumentTest extends TestCase
         // A structural descendant with fresh evidence is a natural relevance boundary.
         $fresh = $f->node($classification, 'activity');
         $this->assertNull($relevance->equivalent($fresh, $input));
-        $observedAgain = $instruments->execute($f->phase, $fresh, $input);
+        $f->phase->forceFill(['gate_proposition_id' => $fresh->id])->save();
+        $observedAgain = $instruments->execute($f->phase->fresh(), $fresh, $input);
         $this->assertNotSame($receipt->id, $observedAgain->id);
         $this->assertSame($history, $receipt->fresh()->getAttributes());
-        $this->assertSame($execution, $receipt->instrumentExecution->fresh()->getAttributes());
-        $this->assertSame(6, ParticipantReceiptContext::active()->count());
+        $this->assertSame($execution, $receipt->evidenceExecution->fresh()->getAttributes());
+        $this->assertSame(2, ParticipantReceiptContext::active()->count());
         $this->assertSame(0, DB::table('reinforcements')->count());
     }
 
@@ -116,10 +120,13 @@ class RelevantInstrumentTest extends TestCase
 
     public function test_schema_exposes_target_specific_exclusions_and_retains_other_free_form_resources(): void
     {
-        $f = new ParticipantContextFixture(1, 0);
-        $target = $f->node($f->gate, 'frontier', position: PhaseKind::Mediate);
+        $f = new ParticipantContextFixture(1, 0, false);
+        $target = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $target->id, 'write_register' => 'frontier'])->save();
+        $f->viewer->forceFill(['current_proposition_id' => $target->id])->save();
         $input = ['kind' => 'citation', 'reference' => $f->seed->id];
-        $receipt = app(OperationalInstrumentService::class)->execute($f->phase, $target, $input);
+        $receipt = $this->observationFixture($target->phase, $target, $input);
+        $this->consumeObservationFixture($f, $receipt);
         $this->publishPotentialFixture($f->viewer);
         $plan = app(ParticipationService::class)->stateFor($f->viewer)['plan'];
         $this->assertSame([['receipt_id' => $receipt->id, 'invocation' => $input]], $plan['schema']['x-commons']['instrument_exclusions'][$target->id]);
@@ -138,8 +145,10 @@ class RelevantInstrumentTest extends TestCase
     public function test_replay_capability_survives_but_equivalent_effective_evidence_cannot_be_replayed(): void
     {
         Http::fake();
-        $f = new ParticipantContextFixture(1, 0);
-        $target = $f->node($f->gate, 'frontier', position: PhaseKind::Mediate);
+        $f = new ParticipantContextFixture(1, 0, false);
+        $target = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $target->id, 'write_register' => 'frontier'])->save();
+        $f->viewer->forceFill(['current_proposition_id' => $target->id])->save();
         $receipt = app(OperationalInstrumentService::class)->execute($f->phase, $target, ['kind' => 'web_search', 'query' => 'evidence']);
         $this->assertTrue($receipt->supports(ReceiptCapability::Readable));
         $this->assertTrue($receipt->supports(ReceiptCapability::Replayable));
@@ -147,12 +156,12 @@ class RelevantInstrumentTest extends TestCase
         $plan = app(ParticipationService::class)->stateFor($f->viewer)['plan'];
         $this->assertFalse(collect($plan['receipts'])->firstWhere('id', $receipt->id)['can_replay']);
         $this->assertArrayNotHasKey('receipt.replay', $plan['schema']['$defs']['actions']);
-        $count = InstrumentExecution::count();
+        $count = EvidenceExecution::count();
         try {
             app(ReceiptReplayService::class)->replay($f->viewer, $f->phase, $receipt->id);
             $this->fail('Relevant receipt replay was allowed.');
         } catch (\DomainException) {
-            $this->assertSame($count, InstrumentExecution::count());
+            $this->assertSame($count, EvidenceExecution::count());
         }
     }
 }

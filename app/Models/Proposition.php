@@ -64,9 +64,9 @@ class Proposition extends Model
         return $this->belongsTo(Phase::class);
     }
 
-    public function instrumentExecutions(): HasMany
+    public function evidenceExecutions(): HasMany
     {
-        return $this->hasMany(InstrumentExecution::class);
+        return $this->hasMany(EvidenceExecution::class);
     }
 
     public function attestations(): HasMany

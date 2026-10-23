@@ -6,8 +6,8 @@ use App\Domain\Evidence\VerifiedHyperlink;
 use App\Enums\PhaseKind;
 use App\Models\Connection;
 use App\Models\ParticipantReceiptContext;
+use App\Services\EvidenceExecutionService;
 use App\Services\HorizonReceiptService;
-use App\Services\InstrumentExecutionService;
 use App\Services\MediationReadService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptFactory;
@@ -27,7 +27,7 @@ class ParticipantPromptPersistenceTest extends TestCase
     public function test_actual_load_clear_and_reload_preserve_the_current_packet_and_do_not_cache_stale_evidence(): void
     {
         $fixture = new ParticipantContextFixture(2, 0, false);
-        $executions = app(InstrumentExecutionService::class);
+        $executions = app(EvidenceExecutionService::class);
         $receipts = [];
         foreach (['first', 'second'] as $name) {
             $read = app(MediationReadService::class)->anchorFor($fixture->phase);
@@ -94,7 +94,7 @@ class ParticipantPromptPersistenceTest extends TestCase
     public function test_attachment_removes_catalogue_entry_and_exposes_only_a_reference_until_read(): void
     {
         $fixture = new ParticipantContextFixture(2, 0, false);
-        $executions = app(InstrumentExecutionService::class);
+        $executions = app(EvidenceExecutionService::class);
         $receipt = $executions->complete(
             $executions->start($fixture->phase, $fixture->gate, 'hyperlink', 'https://example.test/attached'),
             $fixture->gate, verification: new VerifiedHyperlink('example.test/attached', hash('sha256', 'attached'),
@@ -134,7 +134,7 @@ class ParticipantPromptPersistenceTest extends TestCase
     public function test_receipt_heavy_gate_exposes_loaded_cognition_without_operational_activation(): void
     {
         $fixture = new ParticipantContextFixture(2, 3, false);
-        $executions = app(InstrumentExecutionService::class);
+        $executions = app(EvidenceExecutionService::class);
         $context = app(ReceiptContextService::class);
         for ($i = 0; $i < 12; $i++) {
             $receipt = $executions->complete(

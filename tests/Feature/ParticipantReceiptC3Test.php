@@ -4,13 +4,20 @@ namespace Tests\Feature;
 
 use App\Domain\Evidence\VerifiedHyperlink;
 use App\Enums\PhaseKind;
+use App\Models\Cycle;
 use App\Models\Participant;
+use App\Models\Phase;
 use App\Models\Proposition;
 use App\Services\ContributionDispatcher;
+use App\Services\Evidence\HyperlinkMetadataExtractor;
+use App\Services\EvidenceExecutionService;
 use App\Services\InputPlanService;
-use App\Services\InstrumentExecutionService;
 use App\Services\ParticipantContextSerializer;
+use App\Services\ParticipantPromptLayout;
 use App\Services\ParticipantReceiptProjection;
+use App\Services\PhaseProgressionService;
+use App\Services\PotentialProjectionService;
+use App\Services\PropositionMeasurementService;
 use App\Services\TerminalContinuationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,6 +29,41 @@ use Tests\TestCase;
 class ParticipantReceiptC3Test extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_multiple_loaded_reference_collections_keep_per_receipt_budgets_without_duplicate_projection(): void
+    {
+        $f = new ParticipantContextFixture(1, 0, false);
+        $executions = app(EvidenceExecutionService::class);
+        $receipts = [];
+        foreach (range(1, 3) as $page) {
+            $url = 'https://example.test/page-'.$page;
+            $html = '<meta name="description" content="Bounded page description">';
+            foreach (range(1, 50) as $link) {
+                $html .= '<a href="/page-'.$page.'/destination-'.$link.'">'.str_repeat('界', 200).'</a>';
+            }
+            $description = app(HyperlinkMetadataExtractor::class)->extract($html, 'text/html', 'Earlier excerpt', false, $url);
+            $receipts[] = $executions->complete($executions->start($f->phase, $f->gate, 'hyperlink', $url), $f->gate,
+                verification: new VerifiedHyperlink('example.test/page-'.$page, hash('sha256', $html), CarbonImmutable::now(), description: $description));
+        }
+        $before = $this->snapshot();
+        [$catalogue, $registers] = $this->project($f, $f->gate, writes: [$f->gate]);
+        $packet = ['participant' => $f->viewer->only(['id']), 'receipts' => $catalogue, ...$registers, 'actions' => []];
+        $prompt = app(ParticipantPromptLayout::class)->make($packet);
+        $this->assertSame(3, $prompt['loaded_receipt_count']);
+        foreach ($receipts as $index => $receipt) {
+            $content = collect($catalogue)->firstWhere('id', $receipt->id)['loaded_inline_content'];
+            $this->assertSame($receipt->metadata['links'], $content['links']);
+            $this->assertSame(50, $content['links_count']);
+            $this->assertTrue($content['links_truncated']);
+            $this->assertLessThanOrEqual(HyperlinkMetadataExtractor::LINKS_JSON_LIMIT,
+                strlen(json_encode($content['links'], JSON_UNESCAPED_SLASHES)));
+            $this->assertSame(1, substr_count($prompt['user'], '"url":"https://example.test/page-'.($index + 1).'/destination-1"'));
+        }
+        $this->assertLessThan(3 * (HyperlinkMetadataExtractor::LINKS_JSON_LIMIT + 2000), strlen($prompt['user']));
+        $this->assertSame('', $prompt['evidence']);
+        $this->assertSame('', $prompt['support']);
+        $this->assertSame($before, $this->snapshot());
+    }
 
     public function test_extended_evidence_is_personal_deduplicated_and_never_inserts_operational_nodes(): void
     {
@@ -47,6 +89,8 @@ class ParticipantReceiptC3Test extends TestCase
             $this->assertSame([], $registers['read']['propositions']);
             $this->assertSame([], $registers['write']['propositions']);
             $this->assertSame(1, substr_count(json_encode($catalogue), 'C3-BODY-past'));
+            $this->assertSame(1, substr_count(json_encode($catalogue), 'C3-LINK-past'));
+            $this->assertStringNotContainsString('C3-LINK-sibling', json_encode($catalogue));
             $this->assertCount(3, array_filter($catalogue, fn ($r) => isset($r['loaded_inline_content'])));
         }
         $this->assertSame($before, $this->snapshot());
@@ -55,6 +99,7 @@ class ParticipantReceiptC3Test extends TestCase
         [$catalogue] = $this->project($f, $e2, viewer: $viewer);
         $this->assertCount(3, $catalogue);
         $this->assertSame([], array_filter($catalogue, fn ($r) => $r['loaded'] || isset($r['loaded_inline_content'])));
+        $this->assertStringNotContainsString('C3-LINK-', json_encode($catalogue));
         $this->assertDatabaseHas('participant_receipt_contexts', ['participant_id' => $f->viewer->id, 'receipt_id' => $other->id, 'cleared_at' => null]);
     }
 
@@ -105,20 +150,15 @@ class ParticipantReceiptC3Test extends TestCase
         // Real Origin entry, dispatched Variant/Persist and dispatched Instrument.
         // Only the numerical boundary is isolated, as in DirectTragedyResolutionTest.
         $f = new GovernedExpressionFixture;
-        $f->writePersist();
-        $dispatcher = app(ContributionDispatcher::class);
-        $dispatcher->dispatch($f->actor, $f->phase, ['action' => 'instrument.execute',
+        $f->phase = app(PhaseProgressionService::class)->advance($f->phase, $f->expression);
+        $this->controlledBirthClosureFixture(1, $f->expression->id);
+        app(PropositionMeasurementService::class)->project($f->expression, 1, 1, 1);
+        app(PotentialProjectionService::class)->rebuild($f->actor->substrate_id, false);
+        $this->resolveExpressiveFieldFixture(1);
+        app(ContributionDispatcher::class)->dispatch($f->actor, $f->phase, ['action' => 'instrument.execute',
             'proposition_id' => $f->expression->id,
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/c3-terminal']]);
-        $this->controlledBirthClosureFixture(1, $f->expression->id);
-        app(\App\Services\PropositionMeasurementService::class)->project($f->expression, 1, 1, 1);
-        app(\App\Services\PotentialProjectionService::class)->rebuild($f->actor->substrate_id, false);
-        $this->resolveExpressiveFieldFixture(1);
-        // Resolve after installing the numerical double: the earlier dispatcher
-        // retains its constructor-injected measurement calculator.
-        app(ContributionDispatcher::class)->dispatch($f->actor, $f->phase, ['action' => 'attestation.create',
-            'proposition_id' => $f->expression->id, 'direction' => 'support']);
-        $this->assertDatabaseHas('terminal_encounters', ['proposition_id' => $f->expression->id, 'action' => 'attestation.create']);
+        $this->assertDatabaseHas('terminal_encounters', ['proposition_id' => $f->expression->id, 'action' => 'instrument.execute']);
         $this->assertTrue(app(TerminalContinuationService::class)->closed($f->expression));
         $plan = app(InputPlanService::class)->forPhase($f->actor, $f->phase);
         $state = ['participant' => $f->actor->only(['id', 'callsign', 'designation']),
@@ -153,10 +193,10 @@ class ParticipantReceiptC3Test extends TestCase
     {
         $f = new ParticipantContextFixture(1, 0, false);
         // Construct incomplete ownership initially; established ownership is immutable.
-        $cycle = (new \App\Models\Cycle)->forceFill(['participant_id' => $f->viewer->id,
+        $cycle = (new Cycle)->forceFill(['participant_id' => $f->viewer->id,
             'sequence' => $f->viewer->cycles()->max('sequence') + 1]);
         $cycle->save();
-        $phase = (new \App\Models\Phase)->forceFill(['cycle_id' => $cycle->id,
+        $phase = (new Phase)->forceFill(['cycle_id' => $cycle->id,
             'kind' => PhaseKind::Persist, 'write_register' => 'activity', 'started_at' => now()]);
         $phase->save();
         $gate = (new Proposition)->forceFill(['phase_id' => $phase->id,
@@ -172,10 +212,12 @@ class ParticipantReceiptC3Test extends TestCase
 
     private function receipt(ParticipantContextFixture $f, Proposition $node, string $tag)
     {
-        $service = app(InstrumentExecutionService::class);
+        $service = app(EvidenceExecutionService::class);
 
         return $service->complete($service->start($f->phase, $node, 'hyperlink', 'https://example.test/'.$tag), $node,
-            verification: new VerifiedHyperlink('example.test/'.$tag, hash('sha256', $tag), CarbonImmutable::now(), contentExcerpt: 'C3-BODY-'.$tag));
+            verification: new VerifiedHyperlink('example.test/'.$tag, hash('sha256', $tag), CarbonImmutable::now(), contentExcerpt: 'C3-BODY-'.$tag,
+                description: ['links' => [['url' => 'https://example.test/destination?source='.$tag, 'text' => 'C3-LINK-'.$tag]],
+                    'links_count' => 1, 'links_truncated' => false]));
     }
 
     private function project(ParticipantContextFixture $f, Proposition $gate, string $kind = 'persist', array $writes = [], ?Participant $viewer = null): array
@@ -199,7 +241,7 @@ class ParticipantReceiptC3Test extends TestCase
 
     private function snapshot(): array
     {
-        $tables = ['propositions', 'supersessions', 'attestations', 'receipts', 'instrument_executions',
+        $tables = ['propositions', 'supersessions', 'attestations', 'receipts', 'evidence_executions',
             'proposition_receipt_links', 'receipt_consumptions', 'participant_receipt_contexts', 'receipt_context_events',
             'proposition_measurements', 'commitment_snapshots', 'phases', 'cycles', 'participants',
             'context_horizons', 'terminal_encounters', 'tragedies', 'commit_region_exhaustions', 'substrate_ledger_entries'];

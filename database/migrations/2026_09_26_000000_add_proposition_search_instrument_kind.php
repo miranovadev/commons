@@ -9,7 +9,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $this->kind('instrument_executions', 'kind',
+        $this->kind('evidence_executions', 'kind',
             ['citation', 'artefact', 'hyperlink', 'web_search', 'proposition_search']);
         $this->kind('receipts', 'type',
             ['citation', 'artefact', 'hyperlink', 'web_search', 'tragedy', 'proposition_search']);
@@ -17,12 +17,12 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (DB::table('instrument_executions')->where('kind', 'proposition_search')->exists()
+        if (DB::table('evidence_executions')->where('kind', 'proposition_search')->exists()
             || DB::table('receipts')->where('type', 'proposition_search')->exists()) {
             throw new RuntimeException('Cannot discard Proposition Search Instrument or Receipt history.');
         }
 
-        $this->kind('instrument_executions', 'kind',
+        $this->kind('evidence_executions', 'kind',
             ['citation', 'artefact', 'hyperlink', 'web_search']);
         $this->kind('receipts', 'type',
             ['citation', 'artefact', 'hyperlink', 'web_search', 'tragedy']);
@@ -39,6 +39,6 @@ return new class extends Migration
             return;
         }
 
-        Schema::table($table, fn (Blueprint $blueprint) => $blueprint->enum($column, $values)->change());
+        Schema::table($table, fn (Blueprint $blueprint) => $blueprint->enum($column, $values)->nullable($table === 'evidence_executions')->change());
     }
 };

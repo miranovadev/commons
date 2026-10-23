@@ -14,6 +14,8 @@ final readonly class VerifiedHyperlink
         public ?CarbonImmutable $lastModified = null,
         public ?string $contentExcerpt = null,
         public bool $excerptTruncated = false,
+        public array $artifacts = [],
+        public array $description = [],
     ) {}
 
     public function metadata(): array
@@ -25,6 +27,8 @@ final readonly class VerifiedHyperlink
             'last_modified' => $this->lastModified?->toIso8601String(),
             'version_clock' => 'server-observed',
             'content_excerpt' => $this->contentExcerpt, 'excerpt_truncated' => $this->excerptTruncated,
+            ...$this->description,
+            'artifacts' => $this->artifacts,
         ];
     }
 }

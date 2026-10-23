@@ -1,20 +1,21 @@
 <?php
 
 // A separate PHP process gives the regression tests a real, independent backend.
+use App\Domain\Evidence\DownloadObservation;
+use App\Domain\Evidence\InstrumentObservation;
 use App\Models\CommitmentSnapshot;
-use App\Models\InstrumentExecution;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
-use App\Models\Supersession;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
+use App\Services\EvidenceExecutionService;
 use App\Services\InputPlanService;
-use App\Services\InstrumentExecutionService;
-use App\Services\LedgerService;
 use App\Services\ParticipationService;
 use App\Services\PotentialProjectionService;
+use App\Services\PreparationService;
 use App\Services\PropositionMeasurementService;
 use App\Services\ReceiptContextService;
 use App\Services\TragedyService;
@@ -30,6 +31,10 @@ $input = json_decode(stream_get_contents(STDIN), true, flags: JSON_THROW_ON_ERRO
 config()->set('database.default', 'concurrency_worker');
 config()->set('database.connections.concurrency_worker', $input['database']);
 config()->set('broadcasting.default', 'null');
+if (isset($input['artifact_root'])) {
+    config()->set('filesystems.disks.artifacts', ['driver' => 'local', 'root' => $input['artifact_root'], 'visibility' => 'private', 'serve' => false]);
+}
+
 DB::statement("SET lock_timeout = '8s'");
 DB::statement("SET statement_timeout = '12s'");
 echo DB::selectOne('select pg_backend_pid() as pid')->pid."\n";
@@ -61,6 +66,42 @@ try {
         'receipt-desired' => DB::transaction(fn () => app(ReceiptContextService::class)->desired(
             Participant::findOrFail($input['participant_id']), Phase::findOrFail($input['phase_id']), $input['receipt_options'],
         )),
+        'preparation-start-conflict', 'preparation-defer-conflict' => (function () use ($input): void {
+            try {
+                $service = app(PreparationService::class);
+                $participant = Participant::findOrFail($input['participant_id']);
+                if ($input['operation'] === 'preparation-start-conflict') {
+                    $service->start($participant, Phase::findOrFail($input['phase_id']), $input['preparation']);
+                } else {
+                    $service->defer($participant, EvidenceExecution::findOrFail($input['execution_id']), 'Concurrent deferment loses.');
+                }
+            } catch (ConflictHttpException $exception) {
+                if (str_contains($exception->getMessage(), 'already reserved') || str_contains($exception->getMessage(), 'active Disperse')) {
+                    return;
+                }
+                throw $exception;
+            }
+            throw new RuntimeException('Concurrent Preparation was accepted twice.');
+        })(),
+        'instrument-conflict' => (function () use ($input): void {
+            try {
+                app(ContributionDispatcher::class)->dispatch(
+                    Participant::findOrFail($input['participant_id']),
+                    Phase::findOrFail($input['phase_id']), $input['contribution'],
+                    observed: isset($input['download_observation']) ? new InstrumentObservation(
+                        $input['contribution']['instrument'], download: new DownloadObservation(
+                            $input['contribution']['instrument']['reference'], $input['download_observation'],
+                        ),
+                    ) : null,
+                );
+            } catch (ConflictHttpException $exception) {
+                if (str_contains($exception->getMessage(), 'unused Cycle allowance')) {
+                    return;
+                }
+                throw $exception;
+            }
+            throw new RuntimeException('Concurrent Instrument allowance was spent twice.');
+        })(),
         'dispatch-rejected' => (function () use ($input): void {
             try {
                 app(ContributionDispatcher::class)->dispatch(
@@ -75,6 +116,24 @@ try {
                 throw $exception;
             }
             throw new RuntimeException('Concurrent duplicate generation was accepted.');
+        })(),
+        'generation-conflict', 'receipt-generation-conflict' => (function () use ($input): void {
+            $participant = Participant::findOrFail($input['participant_id']);
+            $plan = app(InputPlanService::class)->forParticipant($participant);
+            try {
+                if ($input['operation'] === 'receipt-generation-conflict') {
+                    app(ContributionDispatcher::class)->dispatch($participant, Phase::findOrFail($input['phase_id']), $input['contribution']);
+                } else {
+                    app(ParticipationService::class)->contribute($participant, $input['phase_id'], $input['contribution'], $plan['schema']);
+                }
+            } catch (ConflictHttpException $exception) {
+                if (str_contains($exception->getMessage(), 'field changed') || str_contains($exception->getMessage(), 'options changed')
+                    || str_contains($exception->getMessage(), 'Shared Receipt availability changed')) {
+                    return;
+                }
+                throw $exception;
+            }
+            throw new RuntimeException('A waiting contribution ignored shared Receipt consumption.');
         })(),
         'read' => (function () use ($app, $input): void {
             $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
@@ -99,8 +158,8 @@ try {
             $input['phase_id'],
             [], // Select from fresh shared structure after any optimistic retry.
         ),
-        'complete' => app(InstrumentExecutionService::class)->complete(
-            InstrumentExecution::findOrFail($input['execution_id']),
+        'complete' => app(EvidenceExecutionService::class)->complete(
+            EvidenceExecution::findOrFail($input['execution_id']),
             Proposition::findOrFail($input['proposition_id']),
         ),
         'project' => app(PropositionMeasurementService::class)->project(
@@ -128,9 +187,14 @@ function contributeWithRetry(Participant $participant, string $phaseId, array $i
                     $choice = $actions['attestation.create']['anyOf'][0]['properties'];
                     $contribution = ['action' => 'attestation.create', 'proposition_id' => $choice['proposition_id']['enum'][0],
                         'direction' => $choice['direction']['enum'][0]];
-                } else {
+                } elseif (isset($actions['proposition.traverse'])) {
+                    $contribution = ['action' => 'proposition.traverse',
+                        'proposition_id' => $actions['proposition.traverse']['properties']['proposition_id']['enum'][0]];
+                } elseif (isset($actions['instrument.execute'])) {
                     $contribution = ['action' => 'instrument.execute', 'proposition_id' => $actions['instrument.execute']['properties']['proposition_id']['enum'][0],
-                        'instrument' => ['kind' => 'citation', 'reference' => $phase->gate_proposition_id]];
+                        'instrument' => ['kind' => 'citation', 'reference' => $phase->cycle->entry_committal_id]];
+                } else {
+                    throw new RuntimeException('No forward contribution is available to this concurrency worker.');
                 }
             }
 

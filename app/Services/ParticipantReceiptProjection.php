@@ -61,11 +61,12 @@ final class ParticipantReceiptProjection
         }
         unset($register);
         $catalogue = $catalogue->filter(fn ($receipt) => $references->contains($receipt['id'])
+            || ($receipt['type'] === 'proposition_search' && ($receipt['loaded'] ?? false))
             || (($receipt['load_mode'] ?? null) === 'memory'
                 && (($receipt['memory_active'] ?? false) || ($receipt['availability'] ?? null) === 'available')));
         $loads = ParticipantReceiptContext::active()->where('participant_id', $state['participant']['id'])
             ->whereIn('receipt_id', $catalogue->keys())->pluck('receipt_id')->flip();
-        $persisted = Receipt::with('instrumentExecution')->whereKey($catalogue->keys())->get()->keyBy('id');
+        $persisted = Receipt::with('evidenceExecution')->whereKey($catalogue->keys())->get()->keyBy('id');
         $visible = $references->unique()->flip();
         if ($references->diff($catalogue->keys())->isNotEmpty()) {
             throw new DomainException('A cognitive Receipt reference has no recorded metadata.');
@@ -81,20 +82,21 @@ final class ParticipantReceiptProjection
             $loaded = $model !== null ? $loads->has($receipt['id']) : ($receipt['loaded'] ?? false);
             $memory = ($receipt['load_mode'] ?? null) === 'memory';
             $content = null;
-            if ($loaded && ($memory ? ($receipt['memory_active'] ?? false) : $visible->has($receipt['id']))) {
+            if ($loaded && ($memory ? ($receipt['memory_active'] ?? false) : ($visible->has($receipt['id']) || $receipt['type'] === 'proposition_search'))) {
                 if ($memory) {
-                    $content = $receipt['tragedy_memory'] ?? $receipt['proposition_collection'] ?? null;
+                    $content = $receipt['tragedy_memory'] ?? null;
                 } elseif ($model !== null) {
                     $content = $evidence->observation($model)['evidence'] ?? $evidence->failure($model);
                     if ($model->type === 'citation') {
                         $content = $citationBodies->get($model->id)['evidence'] ?? null;
                     }
                 } else {
-                    $content = $receipt['evidence'] ?? null;
+                    $content = $receipt['evidence'] ?? $receipt['proposition_collection'] ?? null;
                 }
             }
 
             return [...($model?->only(['id', 'type', 'reference']) ?? Arr::only($receipt, ['id', 'type', 'reference'])), 'loaded' => $loaded,
+                ...($model?->type === 'load_file' ? ['acquisition' => $evidence->acquisition($model)] : []),
                 ...($content !== null ? ['loaded_inline_content' => $content] : [])];
         })->values()->all();
     }
@@ -115,10 +117,10 @@ final class ParticipantReceiptProjection
         }
         $attestations = Attestation::whereIn('proposition_id', $all)->get(['id', 'proposition_id']);
         $links = DB::table('proposition_receipt_links')->whereIn('proposition_id', $all)->get();
-        // Special memory keeps its existing plan-owned scope; causal discovery
-        // must not turn an old memory association into a new active memory.
-        $receipts = Receipt::whereNotIn('type', ['tragedy', 'proposition_search'])
-            ->whereHas('instrumentExecution', fn ($q) => $q->where('status', 'completed'))
+        // Tragedy keeps its plan-owned scope; ordinary search Receipts follow
+        // these same causal associations without importing their result nodes.
+        $receipts = Receipt::evidence()
+            ->whereHas('evidenceExecution', fn ($q) => $q->where('status', 'completed'))
             ->where(fn ($q) => $q->whereIn('id', $links->pluck('receipt_id'))
                 ->orWhere(fn ($q) => $q->where('receiptable_type', (new Proposition)->getMorphClass())->whereIn('receiptable_id', $all))
                 ->orWhere(fn ($q) => $q->where('receiptable_type', (new Attestation)->getMorphClass())->whereIn('receiptable_id', $attestations->pluck('id'))))

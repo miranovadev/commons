@@ -38,6 +38,8 @@ final class ParticipantContextSerializer
         return [
             'phase' => Arr::only($plan['phase'], ['id', 'number', 'kind', 'write_register']),
             'provenance_id' => $plan['provenance_id'] ?? null,
+            'preparation' => $plan['preparation'] ?? null,
+            'preparation_options' => $plan['preparation_options'] ?? [],
             'exhausted_alternatives' => array_map($this->historical(...), $plan['exhausted_alternatives'] ?? []),
             'gate_id' => $plan['gate']['id'],
             ...(isset($plan['chirality_admissibility']) ? ['chirality_admissibility' => $plan['chirality_admissibility']] : []),
@@ -147,21 +149,22 @@ final class ParticipantContextSerializer
         if ($receipt['type'] === 'proposition_search') {
             return [
                 ...Arr::only($receipt, ['id', 'loaded', 'proposition_id', 'context_horizon_id', 'availability',
-                    'consumed_at', 'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'load_mode']),
-                'active' => false, 'can_replay' => false,
-                'memory_active' => ($receipt['loaded'] ?? false) && ($receipt['memory_active'] ?? false),
+                    'consumed_at', 'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'active']),
+                'can_replay' => false,
                 ...(($receipt['loaded'] ?? false) && isset($receipt['proposition_collection'])
                     ? ['proposition_collection' => $this->propositionCollection($receipt['proposition_collection'])] : []),
             ];
         }
 
         return [
-            ...Arr::only($receipt, ['id', 'loaded', 'active', 'proposition_id', 'context_horizon_id', 'availability', 'consumed_at', 'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'can_replay', 'replayed_from_receipt_id']),
+            ...Arr::only($receipt, ['id', 'loaded', 'active', 'proposition_id', 'context_horizon_id', 'availability', 'consumed_at', 'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'can_replay', 'replayed_from_receipt_id', 'preparation_history', 'acquisition']),
             ...(($receipt['active'] ?? false) ? Arr::only($receipt, ['signature', 'observation_error']) : []),
             ...(($receipt['active'] ?? false) && isset($receipt['evidence']) ? ['evidence' => Arr::only($receipt['evidence'], [
                 'proposition_id', 'statement', 'attestation_id', 'direction', 'rationale',
                 'resource', 'fingerprint', 'observed_at', 'last_modified', 'content_excerpt', 'excerpt_truncated',
+                'title', 'title_source', 'description_source', 'links', 'links_count', 'links_truncated', 'links_error',
                 'query', 'executed_at', 'results', 'provider', 'request_id',
+                'originating_gate_id', 'participant_id', 'purpose', 'selections', 'deliveries', 'presented_at', 'outcome',
                 'tragedy_id', 'terminal_proposition_id', 'opening_proposition_id', 'exhausted_committals',
             ])] : []),
         ];

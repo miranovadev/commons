@@ -13,7 +13,7 @@ use App\Models\CommitmentSnapshot;
 use App\Models\Connection;
 use App\Models\ContextHorizon;
 use App\Models\Cycle;
-use App\Models\InstrumentExecution;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\ParticipantConnection;
 use App\Models\ParticipantReceiptContext;
@@ -29,9 +29,8 @@ use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\Evidence\HyperlinkVerifier;
+use App\Services\EvidenceExecutionService;
 use App\Services\ExhaustionAuditService;
-use App\Services\ExhaustionService;
-use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\ParticipantActivityService;
 use App\Services\ParticipantConnectionTriggerService;
@@ -117,6 +116,10 @@ class TransactionLockOrderTest extends TestCase
             app(ParticipationService::class)->contribute($second, $secondPhase->id, [
                 'action' => 'proposition.variant', 'statement' => 'Another distinction',
             ]);
+            $persist = $this->activePhase($second);
+            app(ParticipationService::class)->contribute($second, $persist->id, ['action' => 'instrument.execute',
+                'proposition_id' => $persist->gate_proposition_id,
+                'instrument' => ['kind' => 'citation', 'reference' => $persist->cycle->entry_committal_id]]);
         });
         foreach ([$firstPhase, $secondPhase] as $phase) {
             $this->assertNotNull($phase->fresh()->completed_at);
@@ -141,7 +144,7 @@ class TransactionLockOrderTest extends TestCase
     public function test_standalone_instrument_completion_does_not_hold_the_execution_while_waiting_for_the_root(): void
     {
         [$substrate, , $phase] = $this->fixture();
-        $execution = app(InstrumentExecutionService::class)->start($phase, $phase->gate, 'citation', $phase->gate_proposition_id);
+        $execution = app(EvidenceExecutionService::class)->start($phase, $phase->gate, 'citation', $phase->gate_proposition_id);
         $this->whileWorkerWaits($substrate, [
             'operation' => 'complete', 'execution_id' => $execution->id, 'proposition_id' => $phase->gate_proposition_id,
         ], function () use ($execution): void {
@@ -303,6 +306,9 @@ class TransactionLockOrderTest extends TestCase
         [$substrate, $first, $initial] = $this->fixture();
         app(ParticipationService::class)->contribute($first, $initial->id, ['action' => 'proposition.variant', 'statement' => 'Shared classification source']);
         $persist = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        app(ParticipationService::class)->contribute($first, $persist->id, ['action' => 'instrument.execute',
+            'proposition_id' => $persist->gate_proposition_id,
+            'instrument' => ['kind' => 'citation', 'reference' => $persist->cycle->entry_committal_id]]);
         app(ParticipationService::class)->contribute($first, $persist->id, ['action' => 'proposition.variant', 'statement' => 'Persisted source']);
         $source = $first->fresh()->position;
         $this->classificationEvidenceFixture($source);
@@ -367,6 +373,9 @@ class TransactionLockOrderTest extends TestCase
         $clock = \Mockery::mock(WakeClock::class);
         $clock->shouldReceive('now')->andReturn(0, 0, 0, 0, 0, 0, 0, 601);
         [$substrate, $first, $phase] = $this->fixture();
+        app(ParticipationService::class)->contribute($first, $phase->id,
+            ['action' => 'proposition.variant', 'statement' => 'Wake acquisition Gate']);
+        $phase = $this->activePhase($first);
         $second = new Participant;
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'between-actions'])->save();
         app(CycleEntryService::class)->enter($second);
@@ -383,10 +392,11 @@ class TransactionLockOrderTest extends TestCase
             $this->assertSame(0, DB::transactionLevel());
             $this->assertSame($phase->cycle_id, $state['cycle']['id']);
             if (++$calls === 1) {
-                return ['action' => 'proposition.variant', 'statement' => 'First wake action'];
+                return ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+                    'instrument' => ['kind' => 'citation', 'reference' => $phase->cycle->entry_committal_id]];
             }
             $this->assertSame('persist', $state['plan']['phase']['kind']);
-            $this->assertNotNull($phase->fresh()->completed_at);
+            $this->assertNull($phase->fresh()->completed_at);
             $process = new Process([PHP_BINARY, base_path('tests/Support/concurrent-commons-worker.php')], base_path(), null,
                 json_encode(['operation' => 'contribute', 'participant_id' => $second->id, 'phase_id' => $secondPhase->id,
                     'database' => config('database.connections.'.DB::getDefaultConnection())], JSON_THROW_ON_ERROR), 15);
@@ -394,7 +404,7 @@ class TransactionLockOrderTest extends TestCase
             $this->assertStringContainsString('completed', $process->getOutput());
             $this->assertNotNull($secondPhase->fresh()->completed_at);
 
-            return ['action' => 'proposition.variant', 'statement' => 'Second forward wake action'];
+            return ['action' => 'proposition.variant', 'statement' => 'Develop after phase-neutral acquisition'];
         });
         (new WakeParticipant($link->id))->handle($inference, app(ParticipationService::class), app(ParticipantConnectionTriggerService::class), app(ParticipantActivityService::class), $clock);
         $this->assertSame(2, $calls);
@@ -408,6 +418,9 @@ class TransactionLockOrderTest extends TestCase
         [, $first, $initial] = $this->fixture();
         app(ParticipationService::class)->contribute($first, $initial->id, ['action' => 'proposition.variant', 'statement' => 'Source']);
         $persist = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        app(ParticipationService::class)->contribute($first, $persist->id, ['action' => 'instrument.execute',
+            'proposition_id' => $persist->gate_proposition_id,
+            'instrument' => ['kind' => 'citation', 'reference' => $persist->cycle->entry_committal_id]]);
         app(ParticipationService::class)->contribute($first, $persist->id, ['action' => 'proposition.variant', 'statement' => 'Persisted source']);
         $source = $first->fresh()->position;
         $this->classificationEvidenceFixture($source);
@@ -439,32 +452,33 @@ class TransactionLockOrderTest extends TestCase
         app(ParticipationService::class)->contribute($first, $initial->id,
             ['action' => 'proposition.variant', 'statement' => 'Instrument lineage']);
         $initial = $this->activePhase($first);
-        $target = app(ContributionDispatcher::class)->dispatch($first, $initial,
-            ['action' => 'proposition.variant', 'statement' => 'Instrument subject']);
-        $this->receiptFixture($target); // Allow the competing attestation to advance this Phase.
+        $target = $initial->gate;
         app(PotentialProjectionService::class)->refresh($substrate->id);
         $second = new Participant;
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'during-observation'])->save();
         app(CycleEntryService::class)->enter($second);
         $secondPhase = $this->activePhase($second);
+        // Concurrency component: two active Persist acquisition contexts share
+        // a Gate. Full entry/Attestation histories are covered by lifecycle tests.
+        $secondPhase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => $initial->write_register,
+            'gate_proposition_id' => $target->id])->save();
+        $second->forceFill(['current_proposition_id' => $target->id])->save();
+        app(PotentialProjectionService::class)->refresh($substrate->id);
         $input = ['action' => 'instrument.execute', 'proposition_id' => $target->id,
             'instrument' => $kind === 'hyperlink' ? ['kind' => $kind, 'reference' => 'https://example.test/outside-lock']
                 : ['kind' => $kind, 'query' => 'Observe outside the write lock']];
         // The other Participant may legitimately generate its own citation.
         // Only the stale invocation's Phase must retain exactly its old evidence.
-        $beforeExecutions = InstrumentExecution::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all();
+        $beforeExecutions = EvidenceExecution::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all();
         $beforeReceipts = Receipt::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all();
         $observed = false;
-        $this->mock($kind === 'hyperlink' ? HyperlinkVerifier::class : WebSearchProvider::class, function ($mock) use ($kind, &$observed, $second, $secondPhase, $first, $initial, $target): void {
-            $mock->shouldReceive($kind === 'hyperlink' ? 'verify' : 'search')->once()->andReturnUsing(function ($reference) use ($kind, &$observed, $second, $secondPhase, $first, $initial, $target) {
+        $this->mock($kind === 'hyperlink' ? HyperlinkVerifier::class : WebSearchProvider::class, function ($mock) use ($kind, &$observed, $second, $secondPhase): void {
+            $mock->shouldReceive($kind === 'hyperlink' ? 'verify' : 'search')->once()->andReturnUsing(function ($reference) use ($kind, &$observed, $second, $secondPhase) {
                 $observed = DB::transactionLevel() === 0;
                 $process = new Process([PHP_BINARY, base_path('tests/Support/concurrent-commons-worker.php')], base_path(), null,
                     json_encode(['operation' => 'contribute', 'participant_id' => $second->id, 'phase_id' => $secondPhase->id,
                         'database' => config('database.connections.'.DB::getDefaultConnection())], JSON_THROW_ON_ERROR), 5);
                 $process->mustRun();
-                // Another actor also advances this Participant while observation is in flight.
-                app(ParticipationService::class)->contribute($first, $initial->id,
-                    ['action' => 'attestation.create', 'proposition_id' => $target->id, 'direction' => 'support']);
 
                 return $kind === 'hyperlink' ? new VerifiedHyperlink($reference, hash('sha256', $reference), CarbonImmutable::now())
                     : new SearchObservation($reference, CarbonImmutable::now(), [], 'fixture');
@@ -472,17 +486,18 @@ class TransactionLockOrderTest extends TestCase
         });
         try {
             app(ParticipationService::class)->contribute($first, $initial->id, $input);
-            $this->fail('A stale instrument result advanced the old Phase.');
+            $this->fail('A stale Instrument result was accepted after shared evidence appeared.');
         } catch (ConflictHttpException $exception) {
             $this->assertSame(409, $exception->getStatusCode());
         }
         $this->assertTrue($observed, 'External observation must run without a transaction.');
-        $this->assertNotNull($secondPhase->fresh()->completed_at);
-        $this->assertSame($beforeExecutions, InstrumentExecution::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all(),
+        $this->assertNull($secondPhase->fresh()->completed_at);
+        $this->assertSame(1, EvidenceExecution::where('phase_id', $secondPhase->id)->where('status', 'completed')->count());
+        $this->assertSame($beforeExecutions, EvidenceExecution::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all(),
             'The stale observation must not persist an execution.');
         $this->assertSame($beforeReceipts, Receipt::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all(),
             'The stale observation must not persist a Receipt.');
-        $this->assertDatabaseMissing('instrument_executions', ['proposition_id' => $target->id, 'kind' => $kind]);
+        $this->assertDatabaseMissing('evidence_executions', ['proposition_id' => $target->id, 'kind' => $kind]);
     }
 
     #[Group('load')]
@@ -492,7 +507,7 @@ class TransactionLockOrderTest extends TestCase
         app(ParticipationService::class)->contribute($participant, $phase->id,
             ['action' => 'proposition.variant', 'statement' => 'Gate with qualifying memory evidence']);
         $phase = $this->activePhase($participant);
-        $instruments = app(InstrumentExecutionService::class);
+        $instruments = app(EvidenceExecutionService::class);
         $receipt = $instruments->complete($instruments->start($phase, $phase->gate, 'hyperlink', 'https://example.test/gate-memory'), $phase->gate,
             verification: new VerifiedHyperlink('example.test/gate-memory', hash('sha256', 'gate memory'), CarbonImmutable::now()));
         $this->assertSame([$receipt->id], app(ReceiptContextService::class)->gateOptions($phase)->pluck('id')->all());

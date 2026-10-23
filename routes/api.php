@@ -68,6 +68,8 @@ Route::middleware('web')->group(function (): void {
                         'substrates/{substrate}/participants/{participant}/participate',
                         [ParticipationController::class, 'show'],
                     );
+                    Route::get('substrates/{substrate}/participants/{participant}/preparations/{execution}/reading', [ParticipationController::class, 'reading']);
+                    Route::post('substrates/{substrate}/participants/{participant}/preparations/{execution}/presented', [ParticipationController::class, 'presented']);
                     Route::post(
                         'substrates/{substrate}/participants/{participant}/participate',
                         [ParticipationController::class, 'store'],

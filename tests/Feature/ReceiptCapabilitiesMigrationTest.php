@@ -11,7 +11,6 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Services\LedgerService;
-use App\Services\OperationalInstrumentService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -45,17 +44,21 @@ class ReceiptCapabilitiesMigrationTest extends TestCase
         $subject = new Proposition;
         $subject->forceFill(['phase_id' => $phase->id, 'register' => 'canon', 'tier' => 'expressive', 'statement' => 'Legacy evidence'])->save();
         app(LedgerService::class)->record($subject);
-        $receipt = app(OperationalInstrumentService::class)->execute($phase, $subject,
+        $receipt = $this->observationFixture($phase, $subject,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/legacy']);
         // Construct a pre-C2 historical fixture, before creator loading existed.
         $eventIds = DB::table('receipt_context_events')->pluck('id');
         DB::table('substrate_ledger_entries')->where('kind', 'receipt_context')->whereIn('ledgerable_id', $eventIds)->delete();
         DB::table('receipt_context_events')->delete();
         DB::table('participant_receipt_contexts')->delete();
-        $original = $receipt->fresh()->only(['metadata', 'signature', 'reference', 'instrument_execution_id']);
+        $original = $receipt->fresh()->only(['metadata', 'signature', 'reference', 'evidence_execution_id']);
         $migration = require database_path('migrations/2026_09_14_120000_add_receipt_capabilities_and_replay.php');
+        // Unwind the later partial index before SQLite rebuilds the old schema.
+        $preparation = require database_path('migrations/2026_10_23_000000_enable_preparation_executions.php');
+        $preparation->down();
         $migration->down();
         $migration->up();
+        $preparation->up();
         $legacy = $receipt->fresh();
         $this->assertSame($original, $legacy->only(array_keys($original)));
         $this->assertNull($legacy->capabilities);
@@ -69,7 +72,7 @@ class ReceiptCapabilitiesMigrationTest extends TestCase
         try {
             // The widened enum works with existing rows/FKs. Roll this observation
             // back so test teardown can exercise the legitimate legacy rollback.
-            $search = app(OperationalInstrumentService::class)->execute($phase, $subject,
+            $search = $this->observationFixture($phase, $subject,
                 ['kind' => 'web_search', 'query' => 'upgrade']);
             $this->assertNotNull($search->signature);
         } finally {

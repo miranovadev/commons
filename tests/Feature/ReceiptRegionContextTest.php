@@ -6,8 +6,8 @@ use App\Domain\Evidence\VerifiedHyperlink;
 use App\Models\Connection;
 use App\Models\ParticipantReceiptContext;
 use App\Models\Proposition;
+use App\Services\EvidenceExecutionService;
 use App\Services\HorizonReceiptService;
-use App\Services\InstrumentExecutionService;
 use App\Services\MediationReadService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\ParticipantPromptFactory;
@@ -37,7 +37,7 @@ class ReceiptRegionContextTest extends TestCase
 
     private function receipt(ParticipantContextFixture $fixture, Proposition $node, string $name = 'evidence')
     {
-        $service = app(InstrumentExecutionService::class);
+        $service = app(EvidenceExecutionService::class);
 
         return $service->complete($service->start($fixture->phase, $node, 'hyperlink', 'https://example.test/'.$name), $node,
             verification: new VerifiedHyperlink('example.test/'.$name, hash('sha256', $name), CarbonImmutable::now(), contentExcerpt: 'BODY-'.$name));

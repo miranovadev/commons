@@ -39,7 +39,7 @@ These recover the original action-exhaustion assertions. The remaining nine data
 
 This is separately named lawful coverage for parts of Commit participation, Search, CommittalClosure and structural ancestry. It does **not** recover the original manufactured multi-Commit, foreign-Horizon, arbitrary-distance or transitive direct Committal-to-Committal assertions. Those identities remain in the inventory.
 
-An intermediate failure caught instrumentation targeting the preceding Gate instead of the current Persist Write. It was corrected by constructing the real Write before the action, not by bypassing operand authority.
+Historically, an intermediate failure caught instrumentation targeting the Gate rather than the then-required Persist Write. Stage 2A supersedes that target rule: Instrumentation now targets the current Persist Gate and does not advance the Phase. The fixture follows this current authority while retaining the independent history assertions.
 
 ## Attempted second Commit: specific limit
 

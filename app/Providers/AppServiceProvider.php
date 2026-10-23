@@ -9,6 +9,7 @@ use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Observers\RealtimeObserver;
+use App\Services\Evidence\PdfTextReader;
 use App\Services\Evidence\TavilyWebSearchProvider;
 use App\Services\ParticipantInferenceManager;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->scoped(PdfTextReader::class);
         $this->app->bind(WebSearchProvider::class, TavilyWebSearchProvider::class);
         $this->app->bind(
             ParticipantInference::class,

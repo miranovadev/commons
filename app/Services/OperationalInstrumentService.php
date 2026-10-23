@@ -6,6 +6,7 @@ use App\Contracts\WebSearchProvider;
 use App\Domain\Evidence\InstrumentObservation;
 use App\Domain\Evidence\PropositionCollection;
 use App\Domain\Evidence\SearchObservation;
+use App\Exceptions\ArtifactStorageException;
 use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
 use App\Models\Phase;
@@ -13,8 +14,10 @@ use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Models\SubstrateLedgerEntry;
+use App\Services\Evidence\DownloadAcquisition;
 use App\Services\Evidence\HyperlinkIdentity;
 use App\Services\Evidence\HyperlinkVerifier;
+use App\Services\Evidence\InstrumentInvocation;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -23,7 +26,7 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 final readonly class OperationalInstrumentService
 {
     public function __construct(
-        private InstrumentExecutionService $executions,
+        private EvidenceExecutionService $executions,
         private HyperlinkVerifier $verifier,
         private HyperlinkIdentity $identity,
         private WebSearchProvider $search,
@@ -58,15 +61,18 @@ final readonly class OperationalInstrumentService
             if (! $origin && ! $this->availability->mutable($proposition)) {
                 throw new DomainException('Committed sources and Committal results cannot receive instruments. Develop a Variant from the Committal instead.');
             }
+            if (! $origin && ! app(PropositionOptionService::class)->instrumentOptionsFor($phase->fresh())->contains('id', $proposition->id)) {
+                throw new ConflictHttpException('Instrumentation requires the active Persist Gate, an unused Cycle allowance and no available ordinary Receipt.');
+            }
 
             $metadata = match ($input['kind']) {
                 'hyperlink' => ['resource' => $this->identity->resource($reference)],
                 'citation' => $this->citation($reference, $substrateId),
-                'web_search', 'proposition_search' => [],
+                'web_search', 'proposition_search', 'load_file' => [],
                 default => throw new DomainException('This instrument is not available yet.'),
             };
             // The world may have changed during observation. Recheck before persisting anything.
-            app(RelevantInstrumentService::class)->assertAvailable($proposition, $input, $observed->propositions);
+            app(RelevantInstrumentService::class)->assertAvailable($proposition, $input, $observed->propositions, $observed->download);
 
             $execution = $this->executions->start(
                 $phase, $proposition, $input['kind'], $reference, $input, $replayedFrom,
@@ -75,7 +81,7 @@ final readonly class OperationalInstrumentService
             return $this->executions->complete(
                 $execution, $proposition, metadata: [...$metadata, ...$observed->metadata],
                 verification: $observed->verification, observation: $observed->search,
-                propositionCollection: $observed->propositions,
+                propositionCollection: $observed->propositions, download: $observed->download,
             );
         });
     }
@@ -87,6 +93,9 @@ final readonly class OperationalInstrumentService
         }
         if (! $bootstrap && ! $this->availability->mutable($proposition)) {
             throw new DomainException('Committed sources and Committal results cannot receive instruments. Develop a Variant from the Committal instead.');
+        }
+        if (! $bootstrap && ! app(PropositionOptionService::class)->instrumentOptionsFor($phase->fresh())->contains('id', $proposition->id)) {
+            throw new ConflictHttpException('Instrumentation requires the active Persist Gate, an unused Cycle allowance and no available ordinary Receipt.');
         }
         app(RelevantInstrumentService::class)->assertAvailable($proposition, $input);
         $normalized = $this->normalize($input);
@@ -115,6 +124,9 @@ final readonly class OperationalInstrumentService
             throw new DomainException('Proposition Search requires a Phase and Proposition execution context.');
         }
         $reference = $this->reference($input);
+        if ($kind === 'load_file') {
+            return new InstrumentObservation($input, download: app(DownloadAcquisition::class)->acquire($reference));
+        }
         $metadata = [];
         $observation = null;
         if ($kind === 'web_search') {
@@ -129,6 +141,10 @@ final readonly class OperationalInstrumentService
         if ($input['kind'] === 'hyperlink') {
             try {
                 $verification = $this->verifier->verify($reference);
+            } catch (ArtifactStorageException $exception) {
+                // Infrastructure failure is not a failed observation of the resource.
+                // No execution/Receipt has been persisted and no write lock is held.
+                throw $exception;
             } catch (\Throwable $exception) {
                 // A failed verification is still an observable Instrument attempt.
                 // Complete a non-reinforcing Receipt, without claiming verified content.
@@ -145,6 +161,9 @@ final readonly class OperationalInstrumentService
         $kind = $input['kind'] ?? null;
         if ($kind === 'proposition_search') {
             return PropositionCollection::normalizeInput($input);
+        }
+        if ($kind === 'load_file') {
+            return app(InstrumentInvocation::class)->normalize($input);
         }
         $keys = $kind === 'web_search' ? ['kind', 'query'] : ['kind', 'reference'];
         if (array_diff(array_keys($input), $keys) !== [] || array_diff($keys, array_keys($input)) !== []) {

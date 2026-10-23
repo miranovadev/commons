@@ -20,7 +20,11 @@ iteration. A wake still completes at most its original Cycle.
    may include concurrent committed changes; it does not promise a frozen snapshot.
 2. Infer an action. For external Instruments, validate the input, collect the
    observation, and retain it only in a request-local `InstrumentObservation`.
-   Hyperlink verification and Web Search never run in the write section.
+   Hyperlink verification, Artifact publication/read-back, descriptive metadata
+   extraction and Web Search never run in the write section. Artifact failure
+   aborts observation preparation; a later stale-state rejection or rollback may
+   leave an immutable unreferenced object. No storage I/O is added to Receipt
+   completion. See [Hyperlink Artifacts Stage 1](hyperlink-artifacts-stage-1.md).
 3. Begin the contribution transaction. Acquire Substrate → Participant → active
    Cycle → active Phase. Confirm the submitted Phase and the field version of the
    schema prepared before the transaction. A mismatch rejects the stale action.
@@ -63,9 +67,9 @@ and explicit row locks (schema migrations are outside the participation runtime)
 | OperationalInstrumentService::execute | Substrate; recheck mutability/invocation duplication and persist the already gathered observation atomically |
 | ReceiptReplayService::replay | Substrate → Participant → Phase; fresh encounter/capability/eligibility check, immutable replay invocation |
 | ReceiptContextService::read/clear | Substrate → Participant → Phase; active occurrence, one load/event, reinforcement and projection invalidation |
-| InstrumentExecutionService::start | Single insert, no explicit lock or transaction; ULID and foreign keys protect the pending record |
-| InstrumentExecutionService::complete | Substrate → execution; pending-to-completed transition, one Receipt, evidence identity, ledger and projection writes |
-| InstrumentExecutionService::fail | Execution row only; terminal status. Never enters ledger/projection code or escalates to Substrate |
+| EvidenceExecutionService::start | Single insert, no explicit lock or transaction; ULID and foreign keys protect the pending record |
+| EvidenceExecutionService::complete | Substrate → execution; pending-to-completed transition, one Receipt, evidence identity, ledger and projection writes |
+| EvidenceExecutionService::fail | Execution row only; terminal status. Never enters ledger/projection code or escalates to Substrate |
 | LedgerService::record | Substrate; monotonic substrate sequence allocation and membership inclusion |
 | CommitmentSnapshotService::record | Ledger takes Substrate, then measurement; frozen snapshot and causal boundary application |
 | ContextHorizonProjector::currentFor/include/apply/rebuild | Substrate, then Horizon for apply; unique initial/child sequence, idempotent memberships and explicit boundary ownership |
@@ -134,3 +138,8 @@ measurement derivation and ancestor summary propagation run without write locks.
 Publication takes only the Substrate lock, checks the observed version, and writes
 prepared rows atomically. Raced computations retry; dirty records survive failure.
 See [Incremental Potential](incremental-potential.md) for the maintenance boundary.
+
+Stage 2C Preparation uses Substrate → Participant → Cycle → Phase → execution for
+start, presentation and resolution. Contribution and Receipt completion share that
+transaction. Reader capability checks are pure; actual I/O belongs outside it. See
+[the Stage 2C contract](epistemic-evidence-stage-2c.md).

@@ -2,17 +2,42 @@
 
 namespace Tests\Fixtures;
 
+use App\Domain\Evidence\VerifiedHyperlink;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\ReceiptConsumption;
 use App\Models\Substrate;
+use App\Services\ChiralityGateService;
+use App\Services\Evidence\ArtifactStore;
+use App\Services\Evidence\HyperlinkIdentity;
+use App\Services\Evidence\HyperlinkMetadataExtractor;
+use App\Services\Evidence\HyperlinkVerifier;
+use App\Services\Evidence\PublicResourceRetriever;
+use App\Services\HorizonReceiptService;
 use App\Services\ParticipationService;
+use App\Services\PreparationService;
+use Carbon\CarbonImmutable;
 
 trait HorizonCycleFixture
 {
     protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0, int $actionBudget = 100, ?string $expressiveDirection = null, ?callable $recordAction = null): Proposition
     {
+        // Preserve real immutable material for the activated reading workflow.
+        $this->app->bind(HyperlinkVerifier::class, function ($app) {
+            return new class($app->make(HyperlinkIdentity::class), $app->make(PublicResourceRetriever::class), $app->make(ArtifactStore::class), $app->make(HyperlinkMetadataExtractor::class)) extends HyperlinkVerifier
+            {
+                public function verify(string $reference): VerifiedHyperlink
+                {
+                    $resource = app(HyperlinkIdentity::class)->resource($reference);
+                    $body = 'Deterministic preserved observation for '.$resource;
+                    $artifact = app(ArtifactStore::class)->preserve($body, 'text/plain');
+
+                    return new VerifiedHyperlink($resource, hash('sha256', $body), CarbonImmutable::now(), artifacts: [$artifact]);
+                }
+            };
+        });
         $substrate = (new Substrate)->forceFill(['slug' => 'single-bird', 'title' => 'Single Participant', 'visibility' => 'public', 'configuration' => []]);
         $substrate->save();
         $participant = (new Participant)->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'solo', 'max_read_count' => 25]);
@@ -44,6 +69,7 @@ trait HorizonCycleFixture
         $participantCount = count($participants);
         $trace = [];
         $lastCommitment = null;
+        $lastBias = null;
         for ($step = 0; $step < $actionBudget * $participantCount; $step++) {
             $participant = $participants[$step % $participantCount];
             $state = $service->stateFor($participant);
@@ -52,15 +78,33 @@ trait HorizonCycleFixture
             $lastCommitment = $plan['commitment'] ?? $lastCommitment;
             $observe?->__invoke($participant, $state);
             $actions = $plan['schema']['$defs']['actions'];
-            $action = collect(['proposition.commit', 'proposition.reclassify', 'proposition.variant', 'proposition.reconcile',
-                'proposition.traverse', 'attestation.create', 'instrument.execute', 'participant.rest'])
-                ->first(fn ($candidate) => isset($actions[$candidate]));
+            if ($plan['phase']['number'] === 6 && ! isset($actions['proposition.reclassify'])) {
+                $lastBias = app(ChiralityGateService::class)->evaluate(Phase::findOrFail($plan['phase']['id'])->gate);
+            }
+            $needsEvidence = app(HorizonReceiptService::class)
+                ->ordinaryAvailable(Phase::findOrFail($plan['phase']['id']))->isEmpty();
+            $preferredJudgment = collect($actions['attestation.create']['anyOf'] ?? [])
+                ->contains(fn ($choice) => $choice['properties']['direction']['enum'][0] === ($expressiveDirection ?? $originDirection));
+            // Judge an existing Write before generating another reconciliation.
+            // Acquisition no longer selects/advances through an unjudged Write.
+            $action = collect(['preparation.start', 'instrument.execute', 'proposition.commit', 'proposition.reclassify', 'attestation.create',
+                'proposition.variant', 'proposition.reconcile', 'proposition.traverse', 'participant.rest'])
+                ->first(fn ($candidate) => isset($actions[$candidate])
+                    && ($candidate !== 'instrument.execute' || $needsEvidence || count($actions) === 1)
+                    && ($candidate !== 'attestation.create' || $preferredJudgment))
+                ?? 'attestation.create';
             $definition = $actions[$action];
             $input = ['action' => $action];
             foreach (['proposition_id', 'other_proposition_id', 'receipt_id'] as $key) {
                 if (isset($definition['properties'][$key]['enum'])) {
                     $input[$key] = $definition['properties'][$key]['enum'][0];
                 }
+            }
+            if ($action === 'preparation.start') {
+                $selection = $plan['preparation_options'][0];
+                $input += ['proposition_id' => $plan['gate_id'], 'purpose' => 'Examine the evidence before developing this continuation.',
+                    'artifacts' => [['receipt_id' => $selection['receipt_id'], 'artifact_id' => $selection['artifact_id'],
+                        'read_type' => 'text', 'parameters' => ['max_chars' => 4000]]]];
             }
             if ($action === 'proposition.variant') {
                 $input['statement'] = 'Opportunity '.$step;
@@ -78,6 +122,20 @@ trait HorizonCycleFixture
             try {
                 $result = $service->contribute($participant, $plan['phase']['id'], $input);
                 $recordAction?->__invoke($participant, $state, $input, $result);
+                if ($action === 'preparation.start') {
+                    $execution = EvidenceExecution::findOrFail($result['plan']['preparation']['execution_id']);
+                    $preparation = app(PreparationService::class);
+                    $delivery = $preparation->delivery($participant, $execution, 'inline-text');
+                    $preparation->acknowledge($participant, $execution, $delivery['presentation_token']);
+                    $prepared = $service->stateFor($participant);
+                    $resolution = isset($prepared['plan']['schema']['$defs']['actions']['proposition.variant'])
+                        ? ['action' => 'proposition.variant', 'statement' => 'Prepared opportunity '.$step]
+                        : ['action' => 'preparation.defer', 'reason' => 'No structurally lawful fresh Variant is available.'];
+                    $resolution['execution_id'] = $execution->id;
+                    $trace[] = [$prepared['cycle']['sequence'], $prepared['plan']['phase']['number'], $resolution['action'], null, null];
+                    $resolved = $service->contribute($participant, $prepared['plan']['phase']['id'], $resolution);
+                    $recordAction?->__invoke($participant, $prepared, $resolution, $resolved);
+                }
             } catch (\Throwable $error) {
                 $this->fail($error->getMessage().' '.json_encode($trace));
             }
@@ -96,6 +154,6 @@ trait HorizonCycleFixture
             }
         }
         $this->fail('The single-participant motor stalled. Last Commit eligibility: '
-            .json_encode($lastCommitment).'; trace: '.json_encode($trace));
+            .json_encode($lastCommitment).'; last Bias eligibility: '.json_encode($lastBias).'; trace: '.json_encode($trace));
     }
 }

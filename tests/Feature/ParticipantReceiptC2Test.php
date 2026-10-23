@@ -4,14 +4,15 @@ namespace Tests\Feature;
 
 use App\Domain\Evidence\SearchObservation;
 use App\Domain\Evidence\VerifiedHyperlink;
+use App\Models\Attestation;
 use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Services\ContributionDispatcher;
 use App\Services\Evidence\ReceiptEvidenceService;
+use App\Services\EvidenceExecutionService;
 use App\Services\InputPlanService;
-use App\Services\InstrumentExecutionService;
 use App\Services\ParticipantReceiptProjection;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ReceiptContextService;
@@ -42,10 +43,12 @@ class ParticipantReceiptC2Test extends TestCase
     private function receipt(ParticipantContextFixture $f, ?Proposition $node = null): Receipt
     {
         $node ??= $f->gate;
-        $service = app(InstrumentExecutionService::class);
+        $service = app(EvidenceExecutionService::class);
 
         return $service->complete($service->start($f->phase, $node, 'hyperlink', 'https://example.test/body'), $node,
-            verification: new VerifiedHyperlink('example.test/body', hash('sha256', 'body'), CarbonImmutable::now(), contentExcerpt: 'C2-IMMUTABLE-BODY'));
+            verification: new VerifiedHyperlink('example.test/body', hash('sha256', 'body'), CarbonImmutable::now(), contentExcerpt: 'C2-IMMUTABLE-BODY',
+                description: ['links' => [['url' => 'https://example.test/discovered?version=2', 'text' => 'C2-NAVIGATION']],
+                    'links_count' => 1, 'links_truncated' => false]));
     }
 
     private function catalogue(ParticipantContextFixture $f, $receipt, array $roles, ?Participant $viewer = null): array
@@ -74,6 +77,7 @@ class ParticipantReceiptC2Test extends TestCase
         $visible = $loaded;
         $this->assertSame($visible, array_key_exists('loaded_inline_content', $catalogue[0]));
         $this->assertSame($visible ? 1 : 0, substr_count(json_encode($catalogue), 'C2-IMMUTABLE-BODY'));
+        $this->assertSame($visible ? 1 : 0, substr_count(json_encode($catalogue), 'C2-NAVIGATION'));
         $this->assertSame($before, $this->snapshot());
     }
 
@@ -82,7 +86,7 @@ class ParticipantReceiptC2Test extends TestCase
         $f = new ParticipantContextFixture(1, 0, false);
         $other = (new Participant)->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'Other']);
         $other->save();
-        $service = app(InstrumentExecutionService::class);
+        $service = app(EvidenceExecutionService::class);
         $empty = $service->complete($service->start($f->phase, $f->gate, 'web_search', 'query', ['query' => 'query']), $f->gate,
             observation: new SearchObservation('query', CarbonImmutable::now(), [], 'fixture'));
         $failed = $service->complete($service->start($f->phase, $f->gate, 'web_search', 'failure'), $f->gate,
@@ -112,13 +116,13 @@ class ParticipantReceiptC2Test extends TestCase
             $this->assertSame('Rollback', $e->getMessage());
         }
         $this->assertSame($before, $this->snapshot());
-        $this->assertDatabaseCount('instrument_executions', 0);
+        $this->assertDatabaseCount('evidence_executions', 0);
     }
 
     public function test_instrument_failure_without_a_receipt_creates_no_load(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
-        $service = app(InstrumentExecutionService::class);
+        $service = app(EvidenceExecutionService::class);
         $execution = $service->start($f->phase, $f->gate, 'hyperlink', 'https://example.test/unavailable');
         $service->fail($execution, 'Failed before an observation was recorded.');
         $this->assertSame('failed', $execution->fresh()->status);
@@ -146,7 +150,7 @@ class ParticipantReceiptC2Test extends TestCase
     public function test_loaded_historical_citation_uses_canonical_content_without_operational_activation(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
-        $service = app(InstrumentExecutionService::class);
+        $service = app(EvidenceExecutionService::class);
         $receipt = $service->complete($service->start($f->phase, $f->gate, 'citation', $f->seed->id), $f->gate);
         $context = new ParticipationContext($f->phase);
         // Historical cognitive Reads may be outside the current operational working set.
@@ -166,13 +170,13 @@ class ParticipantReceiptC2Test extends TestCase
     {
         $f = new ParticipantContextFixture(1, 0, false);
         $foreign = new ParticipantContextFixture(1, 0, false);
-        $vote = (new \App\Models\Attestation)->forceFill(['phase_id' => $f->phase->id,
+        $vote = (new Attestation)->forceFill(['phase_id' => $f->phase->id,
             'proposition_id' => $f->gate->id, 'direction' => 'refute', 'rationale' => 'Recorded rationale']);
         $vote->save();
-        $service = app(InstrumentExecutionService::class);
+        $service = app(EvidenceExecutionService::class);
         $receipts = collect([$f->seed->id, $vote->id, $foreign->seed->id, strtolower((string) str()->ulid())])
             ->map(fn ($reference) => $service->complete($service->start($f->phase, $f->gate, 'citation', $reference), $f->gate));
-        $receipts->each(fn ($receipt) => $receipt->loadMissing('instrumentExecution'));
+        $receipts->each(fn ($receipt) => $receipt->loadMissing('evidenceExecution'));
         $evidence = app(ReceiptEvidenceService::class);
         $context = new ParticipationContext($f->phase);
         $expected = $receipts->mapWithKeys(fn ($r) => [$r->id => $evidence->citation($r, $context)]);

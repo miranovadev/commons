@@ -15,12 +15,11 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\BiasGateService;
 use App\Services\ContributionDispatcher;
+use App\Services\EvidenceExecutionService;
 use App\Services\InputPlanService;
-use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ChiralityCalculator;
 use App\Services\OpenAIResponseSchema;
-use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
 use App\Services\PropositionMeasurementService;
@@ -127,7 +126,7 @@ class BiasGateTest extends TestCase
         $this->assertSame([$this->gate->id], $this->optionIds());
         // The Settlement projection is distinct from the raw population lean.
         $this->assertNotEquals($service->leanFor($this->phase), (float) $this->gate->fresh()->measurement->chirality);
-        $instruments = app(InstrumentExecutionService::class);
+        $instruments = app(EvidenceExecutionService::class);
         foreach (range(1, 4) as $i) {
             $this->loadedReceiptFixture($refute, $negative);
         }
@@ -158,7 +157,7 @@ class BiasGateTest extends TestCase
             $this->attest($source, 'support');
         }
         $this->attest($opposite, 'refute');
-        app(OperationalInstrumentService::class)->execute($this->history, $selected,
+        $this->observationFixture($this->history, $selected,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/selected']);
         foreach (range(1, 3) as $i) {
             $touch = $this->newPhase($this->history->cycle->participant, PhaseKind::Persist, $register, true);
@@ -223,7 +222,7 @@ class BiasGateTest extends TestCase
         $this->assertSame([$this->gate->id], $bias->forPhase($this->phase)->pluck('id')->all());
     }
 
-    public function test_inference_keeps_bias_gate_ids_separate_from_write_instrument_and_attestation_ids(): void
+    public function test_inference_keeps_bias_gate_ids_separate_from_write_attestation_ids_and_rejects_instruments(): void
     {
         $this->fixture();
         $this->attest($this->gate, 'support');
@@ -231,7 +230,7 @@ class BiasGateTest extends TestCase
         $this->edge($this->gate, $concord);
         $this->receiptFixture($concord);
         $schema = $this->plan()['schema'];
-        $this->assertArrayHasKey('instrument.execute', $schema['$defs']['actions']);
+        $this->assertArrayNotHasKey('instrument.execute', $schema['$defs']['actions']);
         $this->assertArrayHasKey('attestation.create', $schema['$defs']['actions']);
         $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
         $variant = $transport['properties']['contribution']['anyOf'][0];
@@ -242,7 +241,7 @@ class BiasGateTest extends TestCase
             $this->assertInput($transport, ['contribution' => array_replace($empty, $input)], $target->is($this->gate));
             $input = ['action' => 'instrument.execute', 'proposition_id' => $target->id,
                 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/concord']];
-            $this->assertInput($transport, ['contribution' => array_replace($empty, $input)], $target->is($concord));
+            $this->assertInput($transport, ['contribution' => array_replace($empty, $input)], false);
             $input = ['action' => 'attestation.create', 'proposition_id' => $target->id, 'direction' => 'support'];
             $this->assertInput($transport, ['contribution' => array_replace($empty, $input)], $target->is($concord));
         }

@@ -17,9 +17,9 @@ use App\Services\ContributionService;
 use App\Services\InputPlanService;
 use App\Services\InputSchemaService;
 use App\Services\LedgerService;
+use App\Services\Observables\ProspectiveClosureService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\OpenAIResponsesClient;
-use App\Services\OperationalInstrumentService;
 use App\Services\ParticipationService;
 use App\Services\PotentialProjectionService;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +29,7 @@ use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
 use Tests\TestCase;
 
@@ -59,8 +60,9 @@ class ParticipantActionContractTest extends TestCase
         // participant's generative opportunity. Fresh generation is covered by
         // FullEvidenceFlowTest and SharedReclassificationTest.
         $spent = match ($kind) {
-            PhaseKind::Distinguish, PhaseKind::Disperse => ['proposition.variant', 'instrument.execute'],
-            PhaseKind::Persist => ['proposition.variant', 'proposition.reclassify'],
+            PhaseKind::Distinguish => ['proposition.variant'],
+            PhaseKind::Disperse => ['proposition.variant', 'preparation.start'],
+            PhaseKind::Persist => ['proposition.variant', 'proposition.reclassify', 'instrument.execute'],
             PhaseKind::Constrain, PhaseKind::Bias => [],
             default => [],
         };
@@ -86,7 +88,7 @@ class ParticipantActionContractTest extends TestCase
                 try {
                     app(ParticipationService::class)->contribute($participant, $phase->id, $input);
                     $this->fail('Backend accepted unavailable action '.$action.' in '.$kind->name);
-                } catch (InvalidArgumentException) {
+                } catch (InvalidArgumentException|\DomainException|ConflictHttpException) {
                     $this->addToAssertionCount(1);
                 }
                 $this->assertSame($before, $phase->fresh()->getAttributes(), $action.' changed the phase');
@@ -130,7 +132,12 @@ class ParticipantActionContractTest extends TestCase
                     $this->assertValid($schema, $decoded);
                     app(ContributionService::class)->validate($participant, $decoded);
                     app(ParticipationService::class)->contribute($participant, $phase->id, $decoded);
-                    $this->assertNotNull($phase->fresh()->completed_at, $action);
+                    if ($action === 'instrument.execute') {
+                        $this->assertNull($phase->fresh()->completed_at, $action);
+                        $this->assertNull($phase->cycle->fresh()->completed_at);
+                    } else {
+                        $this->assertNotNull($phase->fresh()->completed_at, $action);
+                    }
                     if ($action === 'attestation.create') {
                         $attestation = Attestation::where('phase_id', $phase->id)->sole();
                         $this->assertSame($decoded['direction'], $attestation->direction);
@@ -243,11 +250,18 @@ class ParticipantActionContractTest extends TestCase
         }
         if ($type === 'object') {
             $value = [];
-            foreach ($schema['required'] as $field) {
+            foreach ($schema['required'] ?? [] as $field) {
                 $value[$field] = $field === 'reference' ? $reference : $this->sample($schema['properties'][$field], $definitions, $reference);
             }
 
-            return $value;
+            return $value === [] ? new \stdClass : $value;
+        }
+
+        if ($type === 'array') {
+            return [$this->sample($schema['items'], $definitions, $reference)];
+        }
+        if ($type === 'integer') {
+            return $schema['minimum'] ?? 1;
         }
 
         return isset($schema['pattern']) ? $reference : 'Schema contract contribution';
@@ -289,7 +303,7 @@ class ParticipantActionContractTest extends TestCase
                 $edge = new Supersession;
                 $edge->forceFill(['phase_id' => $past->id, 'source_proposition_id' => $parent->id, 'target_proposition_id' => $node->id, 'type' => $edgeType])->save();
                 app(LedgerService::class)->record($edge);
-                app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($node);
+                app(ProspectiveClosureService::class)->initialize($node);
             }
 
             $this->receiptFixture($node);
@@ -321,7 +335,7 @@ class ParticipantActionContractTest extends TestCase
             $edge->forceFill(['phase_id' => $ownerPhase->id, 'source_proposition_id' => $anchor->id,
                 'target_proposition_id' => $gate->id, 'type' => 'variant'])->save();
             app(LedgerService::class)->record($edge);
-            app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($gate);
+            app(ProspectiveClosureService::class)->initialize($gate);
         }
         if (! $empty) {
             $this->classificationEvidenceFixture($gate);
@@ -344,7 +358,7 @@ class ParticipantActionContractTest extends TestCase
                 app(LedgerService::class)->record($attestation);
             }
             if (in_array('instrument.execute', config('phases.'.$kind->value.'.actions'), true)) {
-                app(OperationalInstrumentService::class)->execute($past, $write, ['kind' => 'hyperlink', 'reference' => 'https://example.test/replay']);
+                $this->observationFixture($past, $write, ['kind' => 'hyperlink', 'reference' => 'https://example.test/replay']);
             }
             if ($kind === PhaseKind::Order) {
                 $this->groundFixture($write);

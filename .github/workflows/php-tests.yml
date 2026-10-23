@@ -26,7 +26,7 @@ jobs:
     name: PHP / PostgreSQL (${{ inputs.shard }}/${{ inputs.shards }})
     runs-on: ubuntu-latest
     # Core follows a frontend job capped at two minutes: 2 + 8 = 10.
-    timeout-minutes: ${{ inputs.suite == 'core' && 8 || inputs.suite == 'load' && 30 || 20 }}
+    timeout-minutes: ${{ inputs.suite == 'core' && 12 || inputs.suite == 'load' && 30 || 20 }}
 
     services:
       postgres:
@@ -70,6 +70,9 @@ jobs:
           extensions: mbstring, pdo_pgsql, pdo_sqlite, curl, intl
           coverage: none
           tools: composer:v2
+
+      - name: Install bounded native PDF reader
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends poppler-utils util-linux
 
       - name: Resolve Composer cache directory
         id: composer-cache

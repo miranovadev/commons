@@ -15,6 +15,7 @@
         "laravel/octane": "^2.19",
         "laravel/reverb": "^1.0",
         "laravel/tinker": "^3.0",
+        "league/flysystem-aws-s3-v3": "^3.0",
         "opis/json-schema": "^2.6"
     },
     "require-dev": {
@@ -123,4 +124,3 @@
     "minimum-stability": "stable",
     "prefer-stable": true
 }
-

@@ -23,8 +23,28 @@ final readonly class PhaseGenerationService
         private CausalWriteService $writes,
     ) {}
 
-    public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null): bool
+    /** Shared catalogue availability selects acquisition or generation, never attachment. */
+    public function epistemicActionAvailable(Phase $phase, string $action, ?ParticipationContext $context = null): bool
     {
+        // Acquisition and fresh generation share one authoritative Receipt prerequisite.
+        if (! in_array($phase->kind, [PhaseKind::Persist, PhaseKind::Disperse], true)
+            || ! in_array($action, ['instrument.execute', 'preparation.start', 'proposition.variant', 'proposition.revise'], true)) {
+            return true;
+        }
+
+        $available = app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
+
+        return in_array($action, ['instrument.execute', 'preparation.start'], true) ? ! $available : $available;
+    }
+
+    public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null, bool $prepared = false): bool
+    {
+        if (! $prepared && ! $this->epistemicActionAvailable($phase, $action, $context)) {
+            return false;
+        }
+        if ($action === 'preparation.start' && ! app(PreparationService::class)->eligible($phase, $context)) {
+            return false;
+        }
         if (in_array($action, ['proposition.variant', 'proposition.revise'], true)
             && DB::table('tragedies')->where('governing_committal_id', $phase->cycle->entry_committal_id)->exists()) {
             return false;
@@ -123,10 +143,12 @@ final readonly class PhaseGenerationService
                 return false;
             }
             if (in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)) {
-                $observed = app(HorizonReceiptService::class)->instrumentedIds($phase, $existing);
+                $shared = app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
+                $evidenced = $shared ? $existing : Proposition::whereIn('id', $existing)->get()
+                    ->filter(fn (Proposition $node) => $this->state->evidenceReceipts($node, $context)->isNotEmpty())->pluck('id');
                 $attested = Attestation::query()->effective()
                     ->whereIn('proposition_id', $existing)->distinct()->pluck('proposition_id');
-                if ($existing->diff($observed)->isNotEmpty() || $existing->diff($attested)->isNotEmpty()) {
+                if ($existing->diff($evidenced)->isNotEmpty() || $existing->diff($attested)->isNotEmpty()) {
                     return false;
                 }
             }

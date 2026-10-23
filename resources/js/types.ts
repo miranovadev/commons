@@ -204,6 +204,8 @@ export interface ConnectionOptions {
 }
 
 export type ActionName =
+  | 'preparation.start'
+  | 'preparation.defer'
   | 'attestation.create'
   | 'instrument.execute'
   | 'proposition.commit'
@@ -217,9 +219,23 @@ export type ActionName =
 export type InstrumentInput =
   | { kind: 'citation' | 'hyperlink'; reference: string }
   | { kind: 'web_search'; query: string }
+  | { kind: 'load_file'; method: 'download'; reference: string }
   | { replay_receipt_id: string };
 
+export interface PreparationSelection { receipt_id: string; artifact_id: string; read_type: string; parameters?: { offset?: number; max_chars?: number }; }
+export interface PreparationOption { receipt_id: string; artifact_id: string; reference: string; source_type: string; size: number;
+  capabilities: Array<{ read_type: string; method: string; version: string; max_chars?: number; parameters: { offset?: number; max_chars?: number }; text_budget?: number }>;
+}
+export interface PreparationDelivery { execution_id: string; purpose: string; presentation_token: string;
+  deliveries: Array<{ request_id: string; artifact_id: string; source_type: string; read_type: string; method: string; version: string; content: string;
+    payload_bytes: number; representation_hash: string; receipt_ids: string[];
+    boundaries: { requested_offset: number; requested_max_chars: number | null; offset: number; end: number; length: number; total: number; has_more: boolean } }>;
+}
 export interface ContributionInput {
+  purpose?: string;
+  artifacts?: PreparationSelection[];
+  reason?: string;
+  execution_id?: string;
   action: ActionName;
   proposition_id?: Identifier;
   other_proposition_id?: Identifier;
@@ -274,6 +290,9 @@ export interface WorkspaceHorizon {
 }
 
 export interface ReceiptContext {
+  acquisition?: { method: 'download'; source_url: string; effective_url?: string; filename?: string | null;
+    processing_ms: number; content_verified: boolean; observation_error?: string;
+    artifacts: Array<{ hash: string; media_type: string; size: number }> };
   load_mode?: 'memory';
   memory_active?: boolean;
   tragedy_memory?: {
@@ -300,7 +319,11 @@ export interface ReceiptContext {
   can_replay: boolean;
   replayed_from_receipt_id: Identifier | null;
   observation_error?: string | null;
-  evidence?: { tragedy_id?: Identifier; terminal_proposition_id?: Identifier; opening_proposition_id?: Identifier; exhausted_committals?: Array<{ id: Identifier; statement: string; statement_truncated: boolean; register: RegisterName; phase_number: number; exhausted_horizon_id: Identifier; exhausted_at: string; actionable: false }>; query?: string; executed_at?: string; results?: Array<{ title: string; url: string; excerpt: string; excerpt_truncated: boolean; source: string; rank: number; relevance: number | null; published_at: string | null }>; proposition_id?: Identifier; statement?: string; direction?: string; rationale?: string | null; resource?: string; fingerprint?: string; observed_at?: string; content_excerpt?: string | null; excerpt_truncated?: boolean };
+  preparation_history?: { purpose: string; participant_id: string; originating_gate_id: string; selections: PreparationSelection[];
+    deliveries: Array<{ artifact_id: string; read_type: string; method: string; version: string; payload_bytes: number;
+      boundaries: { offset: number; end: number; total: number; length?: number; requested_max_chars?: number | null; has_more?: boolean } }>;
+    outcome: { type: string; reason?: string; proposition_id?: string } };
+  evidence?: { tragedy_id?: Identifier; terminal_proposition_id?: Identifier; opening_proposition_id?: Identifier; exhausted_committals?: Array<{ id: Identifier; statement: string; statement_truncated: boolean; register: RegisterName; phase_number: number; exhausted_horizon_id: Identifier; exhausted_at: string; actionable: false }>; query?: string; executed_at?: string; results?: Array<{ title: string; url: string; excerpt: string; excerpt_truncated: boolean; source: string; rank: number; relevance: number | null; published_at: string | null }>; proposition_id?: Identifier; statement?: string; direction?: string; rationale?: string | null; resource?: string; title?: string | null; links?: Array<{ url: string; text: string }>; links_count?: number | null; links_truncated?: boolean; links_error?: string; fingerprint?: string; observed_at?: string; content_excerpt?: string | null; excerpt_truncated?: boolean };
 }
 
 export interface ExhaustedAlternative {
@@ -325,6 +348,10 @@ interface GateAdmissibility {
 }
 
 export interface ParticipantPlan {
+  preparation?: { execution_id: string; status: string; purpose: string; selections: PreparationSelection[] } | null;
+  preparation_options?: PreparationOption[];
+  preparation_failures?: Array<{ execution_id: string; purpose: string; diagnostic: { failure_reason?: string; failure?: { stage: string; method: string; classification?: string } } }>;
+
   correspondence_admissibility?: GateAdmissibility & {
     shape_topology_direction: ComponentDirection;
     phase_profile_direction: ComponentDirection;

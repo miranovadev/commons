@@ -12,8 +12,16 @@ $statement = [
 ];
 
 $instrument = [
-    'description' => 'Citation references a substrate object; hyperlink retrieves a public URL; web_search finds external resources; proposition_search retrieves bounded historical memory. Instruments record Receipts and load them for the performing Participant. Loading does not grant action permission.',
+    'description' => 'Citation references a substrate object; hyperlink retrieves a public URL; web_search finds external resources; proposition_search observes bounded historical lineage, including meaningful empty results. load_file with method download preserves a public HTTP(S) resource as an immutable Artifact. All produce ordinary Receipts. Load File Receipts contain acquisition metadata and are not loadable; other readable Instrument Receipts load for their creator. Loading does not grant action permission.',
     'anyOf' => [
+        [
+            'type' => 'object', 'additionalProperties' => false,
+            'required' => ['kind', 'method', 'reference'],
+            'properties' => [
+                'kind' => ['const' => 'load_file'], 'method' => ['const' => 'download'],
+                'reference' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 4096, 'pattern' => '^https?://'],
+            ],
+        ],
         [
             'type' => 'object', 'additionalProperties' => false,
             'required' => ['kind', 'reference'],
@@ -57,7 +65,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 27,
+    'version' => 30,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -74,6 +82,24 @@ return [
     ],
 
     'actions' => [
+        'preparation.start' => [
+            'description' => 'Read selected preserved Artifacts for a stated purpose, then contribute or explicitly defer in the same Disperse Phase.',
+            'title' => 'Prepare Artifacts', 'type' => 'object', 'additionalProperties' => false,
+            'required' => ['action', 'proposition_id', 'purpose', 'artifacts'],
+            'properties' => [
+                'action' => ['const' => 'preparation.start'], 'proposition_id' => $ulid,
+                'purpose' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 240],
+                'artifacts' => ['type' => 'array', 'minItems' => 1, 'maxItems' => 8, 'uniqueItems' => true,
+                    'items' => ['type' => 'object']],
+            ],
+        ],
+        'preparation.defer' => [
+            'description' => 'Complete this Preparation without a Proposition, recording your reason and preserving the current Phase.',
+            'title' => 'Defer after Preparation', 'type' => 'object', 'additionalProperties' => false,
+            'required' => ['action', 'reason'],
+            'properties' => ['action' => ['const' => 'preparation.defer'],
+                'reason' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 400]],
+        ],
         'proposition.traverse' => [
             'description' => 'Move to an available continuation.',
             'title' => 'Continue through an admissible Write',
@@ -149,8 +175,8 @@ return [
             ],
         ],
         'instrument.execute' => [
-            'description' => 'Observe the selected proposition with an Instrument and record its Receipt.',
-            'title' => 'Execute an instrument against a proposition',
+            'description' => 'Observe the current Persist Gate once per Cycle and record its Receipt. This does not advance the Phase; fresh cognition follows at the same Gate.',
+            'title' => 'Observe the current Persist Gate',
             'type' => 'object',
             'additionalProperties' => false,
             'required' => ['action', 'proposition_id', 'instrument'],

@@ -6,6 +6,7 @@ use App\Models\Participant;
 use App\Services\PotentialChargeService;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\PersistCommitHttpFixture;
 use Tests\Support\ScriptedParticipationTestCase;
 
 #[Group('http-participation')]
@@ -13,18 +14,16 @@ use Tests\Support\ScriptedParticipationTestCase;
 #[Group('constitutional')]
 class ParticipationRecoveryTest extends ScriptedParticipationTestCase
 {
+    use PersistCommitHttpFixture;
+
     public function test_successful_revisit_keeps_its_untraversed_commit_out_of_backward_recovery(): void
     {
-        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/recovery-revisit.json');
-        $this->assertParticipationScriptComplete();
-        $author = $journey['participants']['route-author'];
-        $observer = $journey['participants']['route-observer'];
-        $origin = $journey['responses'][0]['current_proposition_id'];
-        $committed = $journey['responses'][48];
+        [$author, $observer, $initial, $committed] = $this->persistCommitWithObserver('route-author', 'route-observer');
+        $origin = $initial['current_proposition_id'];
         $commit = $committed['last_commitment']['proposition_id'];
         $source = DB::table('supersessions')->where('type', 'commit')->where('target_proposition_id', $commit)->sole()->source_proposition_id;
         $biasGate = DB::table('supersessions')->where('type', 'reclassify')->where('target_proposition_id', $source)->sole()->source_proposition_id;
-        $before = $journey['responses'][53];
+        $before = $this->revisitPersistCommit($observer);
         $this->assertSame($biasGate, $before['plan']['gate_id']);
         // Stage 5 supersedes the Stage 4 expectation of Rest at this broken
         // Bias position: a successful route now has a valid forward Traverse.
@@ -61,11 +60,8 @@ class ParticipationRecoveryTest extends ScriptedParticipationTestCase
 
     public function test_actual_actionless_http_rest_recovers_by_the_traversed_edge_distance(): void
     {
-        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/recovery-distance.json', 3);
-        $actor = $journey['participants']['actionless-recovery'];
-        $origin = $journey['responses'][0]['current_proposition_id'];
-        $first = $journey['responses'][1];
-        $before = $journey['responses'][2];
+        ['actor' => $actor, 'initial' => $initial, 'first' => $first, 'state' => $before] = $this->developPersist('actionless-recovery');
+        $origin = $initial['current_proposition_id'];
         foreach ([[$origin, $first['current_proposition_id']], [$first['current_proposition_id'], $before['current_proposition_id']]] as [$source, $target]) {
             $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $source, 'target_proposition_id' => $target]);
         }
@@ -74,8 +70,7 @@ class ParticipationRecoveryTest extends ScriptedParticipationTestCase
             $participant->cycles()->latest('sequence')->first()->contextHorizon, $participant);
         $this->assertSame([$origin], $inspection['eligible_candidate_ids']);
         $this->assertSame(2, $inspection['selection']['distance']);
-        $after = $this->continueParticipationScript(1)['responses'][3];
-        $this->assertParticipationScriptComplete();
+        $after = $this->contribute($actor, ['action' => 'participant.rest']);
         $this->assertSame('distinguish', $after['plan']['phase']['kind']);
         $this->assertSame($origin, $after['current_proposition_id']);
         $this->assertSame($before['context_horizon_id'], $after['context_horizon_id']);

@@ -22,15 +22,18 @@ use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Services\ContextHorizonProjector;
+use App\Services\Evidence\ArtifactStore;
 use App\Services\Evidence\HyperlinkIdentity;
+use App\Services\Evidence\HyperlinkMetadataExtractor;
 use App\Services\Evidence\HyperlinkVerifier;
-use App\Services\Evidence\PublicResourceAddress;
+use App\Services\Evidence\PublicResourceRetriever;
+use App\Services\EvidenceExecutionService;
 use App\Services\HorizonReceiptService;
-use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ProspectiveClosureService;
+use App\Services\OperationalInstrumentService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
@@ -39,6 +42,8 @@ use App\Services\TragedyService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
+use Tests\Fixtures\ParticipantContextFixture;
+use Tests\Fixtures\PropositionBirth;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -197,7 +202,7 @@ abstract class TestCase extends BaseTestCase
                 'source_proposition_id' => $seed->id, 'target_proposition_id' => $terminal->id, 'type' => 'variant']);
             $edge->save();
             app(LedgerService::class)->record($edge);
-            \Tests\Fixtures\PropositionBirth::complete($terminal);
+            PropositionBirth::complete($terminal);
         }
         $this->controlledBirthClosureFixture(1, $terminal->id);
         $terminal->wasRecentlyCreated = true; // The fixture explicitly supplies the birth event.
@@ -315,7 +320,7 @@ abstract class TestCase extends BaseTestCase
         // Semantic fixtures use deterministic external evidence and never the network.
         // HyperlinkVerificationTest explicitly restores the real verifier/HTTP boundary.
         $this->app->bind(HyperlinkVerifier::class, function ($app) {
-            return new class($app->make(HyperlinkIdentity::class), $app->make(PublicResourceAddress::class)) extends HyperlinkVerifier
+            return new class($app->make(HyperlinkIdentity::class), $app->make(PublicResourceRetriever::class), $app->make(ArtifactStore::class), $app->make(HyperlinkMetadataExtractor::class)) extends HyperlinkVerifier
             {
                 public function verify(string $reference): VerifiedHyperlink
                 {
@@ -351,7 +356,7 @@ abstract class TestCase extends BaseTestCase
                 'source_proposition_id' => $source->id, 'proposition_id' => $target->id, 'consumed_at' => now()])->save();
             DB::table('proposition_receipt_links')->insert([
                 'proposition_id' => $target->id, 'receipt_id' => $receiptId, 'created_at' => now()]);
-            \Tests\Fixtures\PropositionBirth::complete($target);
+            PropositionBirth::complete($target);
 
             return $target;
         });
@@ -373,7 +378,7 @@ abstract class TestCase extends BaseTestCase
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,
             'gate_proposition_id' => $node->id, 'write_register' => $node->register, 'started_at' => now()])->save();
         $reference = 'https://example.test/verified/'.$node->id;
-        $instruments = app(InstrumentExecutionService::class);
+        $instruments = app(EvidenceExecutionService::class);
         $execution = $instruments->start($phase, $node, 'hyperlink', $reference);
 
         $receipt = $instruments->complete($execution, $subject ?? $node,
@@ -488,10 +493,45 @@ abstract class TestCase extends BaseTestCase
     {
         $source ??= $phase->gate;
         $available = app(HorizonReceiptService::class)->ordinaryAvailable($phase);
-        $receipt = $available->first(fn ($item) => $item->instrumentExecution?->proposition_id === $source->id)
+        $receipt = $available->first(fn ($item) => $item->evidenceExecution?->proposition_id === $source->id)
             ?? $available->firstOrFail();
 
         return ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id];
+    }
+
+    /**
+     * Observation-record fixture for catalogue, provenance and measurement tests.
+     * This deliberately uses the persistence primitive, not a contribution API:
+     * constructing history must not assert that acquisition is currently offered.
+     * Operational/lifecycle tests must use OperationalInstrumentService instead.
+     */
+    protected function observationFixture(Phase $phase, Proposition $node, array $input): Receipt
+    {
+        $observed = app(OperationalInstrumentService::class)->observe($input);
+        $reference = $observed->input['reference'] ?? $observed->input['query'];
+        $metadata = $observed->metadata;
+        if ($input['kind'] === 'citation') {
+            $target = Proposition::find($reference) ?? Attestation::findOrFail($reference);
+            $this->assertSame($phase->cycle->participant->substrate_id, $target->phase->cycle->participant->substrate_id);
+            $metadata = [...$metadata, 'validation' => 'commons-reference',
+                'target_type' => $target->getMorphClass(), 'target_id' => $target->id];
+        }
+        $executions = app(EvidenceExecutionService::class);
+
+        return DB::transaction(function () use ($executions, $phase, $node, $observed, $reference, $metadata): Receipt {
+            $execution = $executions->start($phase, $node, $observed->input['kind'], $reference, $observed->input);
+
+            return $executions->complete($execution, $node, metadata: $metadata,
+                verification: $observed->verification, observation: $observed->search, download: $observed->download);
+        });
+    }
+
+    /** Attach a catalogue observation through the existing one-use consumption operation. */
+    protected function consumeObservationFixture(ParticipantContextFixture $fixture, Receipt $receipt): void
+    {
+        $source = $fixture->node($fixture->phase->gate, 'frontier', position: PhaseKind::Persist);
+        $target = $fixture->node($source, 'canon', 'reclassify', position: PhaseKind::Constrain);
+        DB::transaction(fn () => app(HorizonReceiptService::class)->consume($target->phase, $source, $target, $receipt->id));
     }
 
     protected function receiptFixture(Proposition $node): void
@@ -499,7 +539,7 @@ abstract class TestCase extends BaseTestCase
         if (app(PropositionStateService::class)->receipts($node)->isNotEmpty()) {
             return;
         }
-        $executions = app(InstrumentExecutionService::class);
+        $executions = app(EvidenceExecutionService::class);
         $execution = $executions->start($node->phase, $node, 'citation', $node->id, ['kind' => 'citation', 'reference' => $node->id]);
         $executions->complete($execution, $node);
     }

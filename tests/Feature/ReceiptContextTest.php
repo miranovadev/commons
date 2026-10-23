@@ -15,11 +15,10 @@ use App\Models\Proposition;
 use App\Models\User;
 use App\Services\AttestationEvidenceService;
 use App\Services\ContributionDispatcher;
-use App\Services\InstrumentExecutionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ReinforcementService;
-use App\Services\OperationalInstrumentService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\ReceiptContextService;
@@ -52,7 +51,7 @@ class ReceiptContextTest extends TestCase
         $reference = $fixture->node($fixture->seed, 'activity');
         $subject = $fixture->node($reference, 'frontier', 'reclassify', position: PhaseKind::Persist);
         $fixture->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $reference->id, 'write_register' => 'frontier'])->save();
-        $receipt = app(OperationalInstrumentService::class)->execute($subject->phase, $subject, [
+        $receipt = $this->observationFixture($subject->phase, $subject, [
             'kind' => 'citation', 'reference' => $reference->id,
         ]);
 
@@ -159,7 +158,7 @@ class ReceiptContextTest extends TestCase
         }
         $foreign = new ParticipantContextFixture(1, 0);
         $hidden = $foreign->node($foreign->seed, 'canon');
-        $hiddenReceipt = app(OperationalInstrumentService::class)->execute($hidden->phase, $hidden, ['kind' => 'citation', 'reference' => $foreign->seed->id]);
+        $hiddenReceipt = $this->observationFixture($hidden->phase, $hidden, ['kind' => 'citation', 'reference' => $foreign->seed->id]);
         $phase = $this->move($fixture, $subject);
         foreach ([$hiddenReceipt->id, strtolower((string) str()->ulid())] as $id) {
             try {
@@ -203,7 +202,7 @@ class ReceiptContextTest extends TestCase
         [$fixture, , $subject, $citation] = $this->scenario();
         $phase = $this->move($fixture, $subject);
         app(ReceiptContextService::class)->clear($fixture->viewer, $phase, $citation->id);
-        $executions = app(InstrumentExecutionService::class);
+        $executions = app(EvidenceExecutionService::class);
         $receipts = [];
         foreach (['https://example.test/page?a=1', 'http://example.test/page#section'] as $url) {
             $execution = $executions->start($phase, $subject, 'hyperlink', $url);
@@ -235,8 +234,8 @@ class ReceiptContextTest extends TestCase
         $service = app(ReceiptContextService::class);
         $service->read($fixture->viewer, $phase, $first->id);
         // Legacy duplicate history still obeys load uniqueness; new dispatches reject it.
-        $execution = app(InstrumentExecutionService::class)->start($phase, $subject, 'citation', $reference->id);
-        $duplicate = app(InstrumentExecutionService::class)->complete($execution, $subject);
+        $execution = app(EvidenceExecutionService::class)->start($phase, $subject, 'citation', $reference->id);
+        $duplicate = app(EvidenceExecutionService::class)->complete($execution, $subject);
         $service->clear($fixture->viewer, $phase, $duplicate->id);
         $this->assertSame('already-in-context', $service->forPhase($phase)->firstWhere('id', $duplicate->id)['status']);
         $this->assertSame(6, ParticipantReceiptContext::count());
@@ -260,7 +259,7 @@ class ReceiptContextTest extends TestCase
         $next->forceFill(['kind' => PhaseKind::Distinguish, 'write_register' => $horizon->domain->registerFor(PhaseKind::Distinguish)])->save();
         $newSubject = app(ContributionDispatcher::class)->dispatch($fixture->viewer, $next,
             ['action' => 'proposition.variant', 'statement' => 'A new lineage']);
-        $duplicate = app(OperationalInstrumentService::class)->execute($next, $newSubject,
+        $duplicate = $this->observationFixture($next, $newSubject,
             ['kind' => 'citation', 'reference' => $reference->id]);
         $service->clear($fixture->viewer, $next, $duplicate->id);
         $context = new ParticipationContext($next->fresh());
@@ -287,7 +286,7 @@ class ReceiptContextTest extends TestCase
         $this->assertSame(0.0, $evidence->valueFor(collect([$subject])));
         $receipt = $this->loadedReceiptFixture($subject, $negative);
         $this->assertSame(0.0, $evidence->valueFor(collect([$subject])));
-        $reader = $receipt->instrumentExecution->phase->cycle->participant;
+        $reader = $receipt->evidenceExecution->phase->cycle->participant;
         $readerPhase = $this->newPhase($reader, $subject->id);
         app(ReceiptContextService::class)->clear($reader, $readerPhase, $receipt->id);
         $this->assertSame(0.0, $evidence->valueFor(collect([$subject])));

@@ -84,7 +84,8 @@ each schema-authorized Mediate Gate counterpart, opening the existing form with
 `other_proposition_id` selected. The current Gate is explicitly labelled as the
 retained statement. Hover or keyboard focus on a counterpart's Reconcile control
 subtly dims that card. Gate cards still show the same Mediate/Bias populations. Reclassify stays on its current Gate card; Revise,
-Instrument and Commit stay on eligible Write cards. Attest/Traverse retain the
+Commit stays on eligible Write cards. Instrument appears only on the current
+Persist Gate, while its Cycle allowance is unused. Attest/Traverse retain the
 existing direct-submission contract and phase concurrency guard.
 
 Compact cards group tier, register and Git-style operation badges above the
@@ -182,3 +183,10 @@ action populations. See [participant context](participant-context.md).
 It opens immediately at the bottom. Compact Provenance/Present controls appear
 only on overflow, disable at their endpoints and scroll smoothly on explicit
 interaction. Manual scroll position is preserved while the view stays open.
+
+## Preparation reading (Stage 2D)
+
+[Stage 2D](epistemic-evidence-stage-2d.md) adds explicit bounded reading of preserved
+Artifacts. Reading access follows ordinary Region/Horizon provenance independently
+of Receipt consumption or loading. Prepared content is transient; normal C3/loading
+continues to present historical Receipt metadata without replaying Artifact bodies.

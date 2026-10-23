@@ -1,8 +1,55 @@
 # Instruments and immutable observations
 
+> See [Stage 3C readers and adaptive Preparation](artifact-readers-stage-3c.md) for PDF text, CSV/HTML tables, HTML lists and shared reading budgets. Instrument acquisition and allowances remain unchanged.
+
+## Persist-only, phase-neutral Instrumentation (Stage 2A)
+
+One completed Instrument execution per Participant Cycle is permitted in Persist,
+against the exact current Gate. It leaves Phase, Cycle and position unchanged and
+returns fresh cognition. Readable Receipts automatically load for their creator;
+Load File Receipts remain non-loadable. Completed unsuccessful observations spend the allowance; infrastructure
+failures without an execution/Receipt do not. Receipt consumption or unloading
+does not restore it. See [the Stage 2A contract](epistemic-evidence-stage-2a.md).
+
+Stage 2B adds the shared catalogue prerequisite: Persist offers Instrument only
+when no eligible unattached ordinary Receipt is available. If one exists, lawful
+Variant/Revise replace acquisition. Neither loading nor authorship controls this
+choice, and generation does not consume the Receipt. An exhausted allowance does
+not suppress independently lawful Attestation or Traverse. Stage 2D activates the equivalent Disperse policy with Preparation and transient
+Artifact reading. Preparation reads accessible ordinary Receipt Artifacts even after
+consumption; this does not restore evidence availability.
+See [the Stage 2B contract](epistemic-evidence-stage-2b.md).
+
+## Hyperlink Artifact preservation (Stage 1)
+
+Successful Hyperlink observations now preserve the exact received resource as a
+private, immutable, content-addressed **Artifact**. Receipt metadata adds an
+`artifacts` array, independently selected title/description and extraction-source
+labels. Evidence fingerprints and the seven-day version rule remain unchanged.
+See [the Stage 1 contract](hyperlink-artifacts-stage-1.md) for metadata examples,
+atomic storage, failure semantics and required shared-storage configuration.
+Stage 2D permits deliberate bounded Artifact reading through Preparation. C2/C3
+ordinary context retains bounded Receipt metadata; Artifact bodies enter only the
+prepared interaction. Hyperlink acquisition, identity and stability are unchanged.
+See [Preparation and readers](epistemic-evidence-stage-2d.md).
+
+## Hyperlink references (Stage 3A)
+
+Successful HTML observations additionally describe bounded HTTP(S) anchor
+destinations and literal labels. Relative URLs resolve against the effective
+retrieved page URL, with query strings preserved. References enter existing loaded
+Receipt evidence; discovery never retrieves another resource or creates an
+execution. Artifact bytes, verification identity, stability and action eligibility
+remain unchanged. See [reference discovery](hyperlink-reference-discovery-stage-3a.md)
+for limits, failure semantics, cognition and a persisted example.
+
+
+> **C2/C3 update:** [Participant Context C3](participant-context-c3.md)
+> extends loaded ordinary evidence presentation to all causally selected
+> associations, including Write and extended history.
 > **C2 update:** [Participant Context C2](participant-context-c2-implementation.md)
 > supersedes the inference Receipt layout and loading timing described below.
-> New Instrument Receipts auto-load for their performer; eligible local Write
+> New readable Instrument Receipts auto-load for their performer; eligible local Write
 > loads and personal same-substrate unloads are supported. Loaded Read/Gate
 > content appears once in the top-level catalogue; Write alone exposes metadata.
 > Operational evidence, causal authority and measurement formulas are unchanged.
@@ -25,13 +72,13 @@ Capability support does not bypass operational eligibility or evidence qualifica
 
 ## Instrument replay and Participant memory
 
-`instrument.execute` accepts a fresh Citation, Hyperlink or Web Search invocation,
+`instrument.execute` accepts a fresh Citation, Hyperlink, Web Search, Proposition Search or Load File invocation,
 or `instrument: {"replay_receipt_id": "R"}` with the normal `proposition_id`.
 The forms are mutually exclusive. The schema enumerates replay IDs for each exact
 eligible Instrument target. Catalogue visibility or replay capability alone grants
 no execution authority. The server restores the immutable originating invocation;
 the Participant does not restate its URL or query. Replay follows ordinary Instrument
-eligibility and Phase progression. Order admits no Instrument execution.
+Persist Gate eligibility and the once-per-Cycle allowance, without Phase progression.
 
 Loading is separate: optional Gate `receipt_options.load/unload` accompanies a
 successful forward contribution atomically. There is no standalone Receipt Read
@@ -47,7 +94,7 @@ clearing does not change suppression. Gate memory selection remains independent.
 UI follows the server's target-bound Instrument schema. See
 [Receipt relevance and invocation exclusions](continuous-cycles-and-receipt-relevance.md).
 
-Replay stores a new `instrument_executions` row, copies the normalized structured
+Replay stores a new `evidence_executions` row, copies the normalized structured
 invocation from the source execution's `input`, and sets
 `replayed_from_receipt_id` on the **new execution**. Its new Receipt has the normal
 unique execution link and its own ledger entry. Replaying R2 links R3 to R2, so
@@ -56,22 +103,22 @@ The original observed Proposition is preserved; new Receipts ground it. Legacy A
 Receipt, execution result, invocation or provenance is rewritten. Domain model
 updates reject changes to saved Receipts and originating invocation fields.
 
-Execution and Replay never load a Receipt or create active Reinforcement.
-Explicit participant loading through Gate desired-state options is required. Even if multiple equivalent or changed observations
+Execution and Replay automatically load readable Receipts for their performer under C2.
+Load File is ordinary but non-loadable and creates no loading event.
+Qualifying loaded uptake uses the existing Reinforcement rules. Even if multiple equivalent or changed observations
 are loaded, each Participant still contributes at most one counted Reinforcement
 per active classification under the evidence inheritance rules. Reclassification
 attaches its selected Commit Region Receipt; committed results remain frozen.
 Receipt metadata is shared. Gate options establish optional personal loading
 for Reinforcement, independently of one-use consumption by Reclassify.
 
-## Proposition Search: bounded historical memory
+## Proposition Search: bounded historical observation
 
 ```json
 {"kind":"proposition_search","query":"optional text","limit":5}
 ```
 
-Proposition Search is an internal-memory Instrument, not an evidence-discovery
-Instrument. It reads backward from the exact Proposition on which the Instrument
+Proposition Search is an ordinary evidence Instrument observing bounded internal history. It reads backward from the exact Proposition on which the Instrument
 is executed by reusing `BackwardRecoveryLineage`: raw recorded causal hops,
 durable participant arrival provenance at multi-input Writes, revisions and
 historical intermediates all retain their real distance. It never starts from a
@@ -110,12 +157,14 @@ Each result is deliberately thin:
 time. Excluded visible, non-matching or complementary-Domain nodes still occupy
 their real hops, so returned distances are never renumbered.
 
-The persisted Receipt is type `proposition_search`, readable-only, and uses
-`load_mode: memory`. Once loaded its `proposition_collection` appears in
-Participant cognition outside the loaded-evidence prefix. It has no evidence
-signature, never enters ordinary Region Receipt catalogues, never counts as an
-instrumented evidence source, never produces Reinforcement, and never satisfies
-Attestation or Commitment grounding.
+The persisted Receipt is type `proposition_search`, readable-only, ordinary and
+initially unattached. Its immutable observation identity is its evidence signature.
+It enters the shared Region/Horizon catalogue, qualifies for grounding and Persist
+generation, and supports normal Reclassification consumption. A successful empty
+collection is equally valid evidence. Tragedy is the sole special Receipt type.
+Loading and unloading affect cognitive uptake and derived Reinforcement as for
+other ordinary evidence; they do not determine catalogue availability. Loaded
+search collections remain bounded cognitive content, never structural authority.
 
 Observation identity includes the normalized query and material
 PropositionCollection identity: head, Domain, ordered returned Proposition IDs
@@ -203,3 +252,15 @@ and Receipt kind constraints and adds nullable capability/provenance columns,
 without rewriting observations or backfilling any loads. Rollback refuses to
 remove recorded Search or replay history.
 
+
+Stage 2C stores Instrument rows as `EvidenceExecution(type=instrument)`. Preparation
+shares execution storage and ordinary Receipt creation but cannot replay an Instrument.
+See [unified evidence executions](epistemic-evidence-stage-2c.md).
+
+## Load File / Download (Stage 3B)
+
+Load File preserves a directly referenced HTTP(S) resource as an exact-byte Artifact.
+Its ordinary Receipt is non-loadable; acquisition metadata is visible in the existing
+catalogue and supported Artifacts remain preparable after consumption. See the
+[Download contract](load-file-download-stage-3b.md) for limits, identity, security,
+replay, examples and validation. No Upload method is implemented.

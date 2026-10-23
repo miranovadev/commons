@@ -3,13 +3,15 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
+use App\Models\EvidenceExecution;
 use App\Models\Tragedy;
 use App\Services\ContributionDispatcher;
+use App\Services\EvidenceExecutionService;
 use App\Services\ExhaustionAuditService;
 use App\Services\ExhaustionService;
 use App\Services\ExplorationEpochService;
 use App\Services\HorizonFailureService;
-use App\Services\InstrumentExecutionService;
+use App\Services\PhaseGenerationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Fixtures\SpentContinuationFixture;
@@ -30,6 +32,8 @@ class ExplorationEpochTest extends TestCase
         // Isolate structural rules from a new Charge-boundary event.
         $this->resolveExpressiveFieldFixture(.8);
         [$signal, $activity, $terminal, $return] = $this->testedLineage();
+        $this->assertSame(0, $activity->evidenceExecutions()->count());
+        $this->assertSame([PhaseKind::Persist], EvidenceExecution::with('phase')->get()->pluck('phase.kind')->unique()->all());
         $horizon = $terminal->cycle->context_horizon_id;
         foreach ([[$signal, 3], [$activity, 7]] as [$node, $epoch]) {
             DB::table('horizon_exploration_states')->insert(['context_horizon_id' => $horizon,
@@ -82,14 +86,31 @@ class ExplorationEpochTest extends TestCase
         } catch (\DomainException) {
             $this->assertSame(1, $epochs->forPhase($phase));
         }
-        $instruments = app(InstrumentExecutionService::class);
-        $receipt = $instruments->complete($instruments->start($phase, $node, 'citation', $this->origin->id), $node);
+        $instruments = app(EvidenceExecutionService::class);
+        $persist = $this->phase($node, PhaseKind::Persist);
+        $receipt = $instruments->complete($instruments->start($persist, $node, 'citation', $this->origin->id), $node);
         app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'attestation.create', 'proposition_id' => $node->id, 'direction' => 'support']);
         $this->assertSame(1, $epochs->forPhase($phase), 'Instrument, Receipt and Attestation do not advance an epoch');
         $this->assertNotNull($receipt->id);
         $this->assertSame(0, $epochs->current(['context_horizon_id' => $horizon,
             'structural_position' => PhaseKind::Disperse->value, 'structural_source_id' => $node->id]));
+    }
+
+    public function test_shared_persist_observation_proves_failure_without_instrumenting_either_expressive_write(): void
+    {
+        $this->resolveExpressiveFieldFixture(.8);
+        [$signal, $activity, $terminal, $return] = $this->testedLineage(separateObservation: true);
+        $this->assertSame(0, $signal->evidenceExecutions()->count());
+        $this->assertSame(0, $activity->evidenceExecutions()->count());
+        $this->rest($terminal);
+        foreach ([$signal, $activity] as $node) {
+            $this->assertTrue(app(ExplorationEpochService::class)->spentNow($node, $return));
+        }
+        // The separate observed sibling is still healthy, so shared evidence
+        // cannot by itself reopen the Distinguish position.
+        $this->assertFalse(app(PhaseGenerationService::class)->available($return, 'proposition.variant'));
+        $this->assertDatabaseMissing('continuation_failures', ['proposition_id' => $this->origin->id]);
     }
 
     public function test_unobserved_actionless_mediate_is_not_spent_even_at_zero_potential(): void

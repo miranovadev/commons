@@ -17,7 +17,7 @@ use App\Services\Observables\PhaseProfileService;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\HorizonCycleFixture;
-use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
+use Tests\Support\RefreshEvidenceDatabase as RefreshDatabase;
 use Tests\TestCase;
 
 #[Group('integration')]
@@ -68,7 +68,7 @@ class FreshBootstrapTest extends TestCase
         $this->assertSame('negative', $origin->orientation_direction);
         $this->assertSame('negative', $origin->attestation_cadence_direction);
         $this->assertSame($label, $origin->proposition->attestations()->sole()->direction);
-        $this->assertSame(0, $origin->proposition->instrumentExecutions()->count());
+        $this->assertSame(0, $origin->proposition->evidenceExecutions()->count());
         $snapshot = $commit->commitmentSnapshot;
         $this->assertSame(0.0, $snapshot->depth);
         $this->assertSame(0.0, $snapshot->cadence);

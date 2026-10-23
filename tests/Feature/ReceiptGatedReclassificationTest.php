@@ -7,9 +7,9 @@ use App\Models\Attestation;
 use App\Models\Proposition;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
-use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\PropositionStateService;
 use DomainException;
@@ -44,7 +44,7 @@ class ReceiptGatedReclassificationTest extends TestCase
         // Evidence produced by a different Participant at a different local position
         // is deliberately usable, provided the creating Horizon is the same.
         $producer = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
-        $instruments = app(InstrumentExecutionService::class);
+        $instruments = app(EvidenceExecutionService::class);
         $receipt = $instruments->complete($instruments->start($producer->phase, $producer, 'citation', $this->origin->id), $producer);
         $phase = $this->phase($source, $kind);
 

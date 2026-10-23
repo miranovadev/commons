@@ -40,7 +40,7 @@ class HorizonProofCompatibilityTest extends TestCase
         $input = $this->reclassificationInputFixture($phase, $source);
         $result = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase, $input);
         $receipt = Receipt::findOrFail($input['receipt_id']);
-        $before = $receipt->only(['metadata', 'reference', 'signature', 'instrument_execution_id']);
+        $before = $receipt->only(['metadata', 'reference', 'signature', 'evidence_execution_id']);
         DB::table('receipt_consumptions')->update(['legacy' => true]);
         $migration = require database_path('migrations/2026_09_18_000100_scope_receipts_to_horizons.php');
         $index = require database_path('migrations/2026_09_18_000500_index_horizon_receipt_lookup.php');

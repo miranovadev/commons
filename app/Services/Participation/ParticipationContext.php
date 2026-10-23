@@ -128,11 +128,11 @@ final class ParticipationContext
             ->where(fn ($q) => $q->where('receiptable_type', (new Proposition)->getMorphClass())->whereIn('receiptable_id', $ids))
             ->orWhere(fn ($q) => $q->where('receiptable_type', (new Attestation)->getMorphClass())->whereIn('receiptable_id', $this->attestations->keys()))
             ->orWhereIn('id', $this->receiptLinks->pluck('receipt_id')))
-            ->with(['ledgerEntry', 'instrumentExecution'])->get();
+            ->with(['ledgerEntry', 'evidenceExecution'])->get();
         // Historical load subjects need not match their Receipt's observed subject.
         // Resolve type in the existing batch even when that Receipt lies outside this graph.
         $this->receiptContexts = ParticipantReceiptContext::whereIn('proposition_id', $ids)
-            ->withExists(['receipt as ordinary_evidence' => fn ($q) => $q->whereNotIn('type', Receipt::MEMORY_TYPES)])->get();
+            ->withExists(['receipt as ordinary_evidence' => fn ($q) => $q->whereNotIn('type', Receipt::SPECIAL_RECEIPT_TYPES)])->get();
         $this->reinforcements = $this->receiptContexts->whereNull('cleared_at')->where('ordinary_evidence', true);
         $this->receiptContextEvents = ReceiptContextEvent::whereIn('participant_receipt_context_id', $this->receiptContexts->pluck('id'))->with('ledgerEntry')->get();
         $this->receiptsBySubject = $this->receipts->groupBy(fn ($receipt) => $receipt->receiptable_type.':'.$receipt->receiptable_id);

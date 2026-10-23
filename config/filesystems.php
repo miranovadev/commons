@@ -30,6 +30,32 @@ return [
 
     'disks' => [
 
+        // Dedicated private namespace: never add to links or enable local serving.
+        'artifacts' => [
+            'driver' => 'local',
+            'root' => env('ARTIFACT_LOCAL_ROOT', storage_path('app/private-artifacts')),
+            'visibility' => 'private',
+            'directory_visibility' => 'private',
+            'serve' => false,
+            'throw' => true,
+        ],
+
+        'artifacts-s3' => [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('ARTIFACT_S3_BUCKET'),
+            'token' => env('AWS_SESSION_TOKEN'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'visibility' => 'private',
+            'serve' => false,
+            'throw' => true,
+            'http' => ['connect_timeout' => 3, 'timeout' => 10],
+            'retries' => 0,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

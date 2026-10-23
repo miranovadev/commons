@@ -58,23 +58,19 @@ test('completion navigates to the Substrate Participants and respects waiting, r
   }
 });
 
-test('Instrument-only schema targets render centrally in Constrain and Bias and disappear without authorization', () => {
-  for (const [kind, number] of [['constrain', 3], ['bias', 6]]) {
-    const target = node('instrument-only');
-    const plan = { phase: { id: 'phase', kind, number, write_register: 'concord' }, gate: node('gate'), write_options: [], instrument_options: [target, node('forbidden')],
-      schema: { $defs: { actions: { 'instrument.execute': { properties: { proposition_id: { enum: [target.id] } } } } } } };
-    assert.deepEqual(ui.writePropositions(plan).map(n => n.id), [target.id]);
-    const html = ui.workspace(plan);
-    assert.match(html, /instrument-only/);
-    assert.doesNotMatch(html, /forbidden/);
-    const footer = html.slice(html.indexOf('write-option-card__actions--directional'));
-    assert.ok(footer.indexOf('data-action-region="left"') < footer.indexOf('>Instrument</span>'));
-    assert.ok(footer.indexOf('>Instrument</span>') < footer.indexOf('data-action-region="right"'));
-    const completed = ui.workspace(plan, true);
-    assert.match(completed, /instrument-only/);
-    assert.match(completed, /Cycle complete/);
-    assert.doesNotMatch(completed, />Instrument<\/span>|>Support<\/span>|>Refute<\/span>|Generate/);
-    plan.schema.$defs.actions = {};
-    assert.doesNotMatch(ui.workspace(plan), /instrument-only|>Instrument<\/span>/);
-  }
+test('Persist Instrument renders on the Gate and disappears when its allowance is consumed', () => {
+  const target = node('instrument-gate');
+  const plan = { phase: { id: 'phase', kind: 'persist', number: 2, write_register: 'frontier' }, gate: target, write_options: [], instrument_options: [target, node('forbidden')],
+    schema: { $defs: { actions: { 'instrument.execute': { properties: { proposition_id: { enum: [target.id] } } } } } } };
+  assert.deepEqual(ui.writePropositions(plan), []);
+  const html = ui.workspace(plan);
+  assert.match(html, /instrument-gate/);
+  assert.match(html, />Instrument<\/span>/);
+  assert.doesNotMatch(html, /forbidden/);
+  const completed = ui.workspace(plan, true);
+  assert.match(completed, /Cycle complete/);
+  assert.doesNotMatch(completed, />Instrument<\/span>/);
+  plan.schema.$defs.actions = {};
+  assert.match(ui.workspace(plan), /instrument-gate/);
+  assert.doesNotMatch(ui.workspace(plan), />Instrument<\/span>/);
 });

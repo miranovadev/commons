@@ -66,8 +66,10 @@ later), completed evidence and effective judgment. On recovery, an earlier
 actionless Phase may reuse current-epoch failure proof for all its Gate's children,
 with effective Gate judgment; an empty Write alone is not proof. An unobserved actionless
 Phase, numeric zero Potential alone, or a sibling Variant is insufficient.
-Generative Distinguish/Disperse ancestors additionally require their own
-completed Instrument, produced Receipt and effective Attestation.
+Generative Distinguish/Disperse ancestors require genuine ordinary evidence and
+effective Attestation. Under Stage 2A, evidence may be shared in the existing
+Region/Horizon catalogue or retained on the causal lineage; it need not originate
+from an Instrument on that exact Write. Acquisition occurs only at a Persist Gate.
 
 The existing backward walker follows only the tested causal lineage and its
 immediate child checks. A live child prevents failure propagating to its parent.
@@ -78,7 +80,7 @@ Publishing ordinary failure does not create a Tragedy Receipt or exhaust a
 Horizon.
 
 At Distinguish and Disperse, every existing opportunity must be spent, properly
-instrumented, evidenced and effectively attested before a further Variant is
+evidenced and effectively attested before a further Variant is
 available. Potential Charge is not an additional prerequisite. A healthy evidenced
 route still blocks redundant generation. There is no action priority, sibling
 quota, participant-count quota, or receipt-consumption shortcut. The initial

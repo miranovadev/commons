@@ -6,21 +6,23 @@ use App\Services\Observables\LineageMeasurementService;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\PersistCommitHttpFixture;
 use Tests\Support\ScriptedParticipationTestCase;
 
 #[Group('http-participation')]
 class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
 {
+    use PersistCommitHttpFixture;
+
     #[Group('integration')]
     public function test_real_http_actions_reach_an_operational_commit(): void
     {
-        $this->startSubstrate();
-        $actor = $this->joinParticipant('explorer');
-        $origin = $this->enterParticipant($actor, true)['current_proposition_id'];
-        // C1 reaches an advertised Commit at the old 100-action boundary.
-        // Execute it under the unchanged published-action policy.
-        $state = $this->driveUntil($actor,
-            fn ($state) => ($state['last_commitment']['proposition_id'] ?? $origin) !== $origin, 101);
+        [$actor, $initial] = $this->beginPersistJourney('explorer');
+        $origin = $initial['current_proposition_id'];
+        foreach (array_keys($this->persistJourneySteps) as $index) {
+            $state = $this->executePersistJourneyStep($actor, $index);
+        }
+        $this->assertNotSame($origin, $state['last_commitment']['proposition_id']);
         $this->assertSame('distinguish', $state['plan']['phase']['kind']);
         $this->assertSame($state['last_commitment']['proposition_id'], $state['plan']['gate_id']);
         $snapshot = DB::table('commitment_snapshots')->where('proposition_id', $state['last_commitment']['proposition_id'])->sole();
@@ -56,27 +58,25 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
     #[Group('constitutional')]
     public function test_retired_receipt_actions_are_rejected_without_mutating_memory_or_blocking_rest(): void
     {
-        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/rest-unread-receipt.json', 3);
-        $actor = $journey['participants']['rest-reader'];
-        $before = $journey['responses'][2];
+        ['actor' => $actor, 'state' => $before] = $this->developPersist('rest-reader');
         $this->assertActionAvailable($before, 'participant.rest');
         foreach (['receipt.read', 'receipt.replay'] as $action) {
             $this->assertActionUnavailable($before, $action);
             $this->postContribution($actor, $before['plan']['phase']['id'], ['action' => $action, 'receipt_id' => (string) str()->ulid()])->assertUnprocessable();
         }
-        $this->assertDatabaseCount('participant_receipt_contexts', 0);
-        $rested = $this->continueParticipationScript(1)['responses'][3];
-        $this->assertParticipationScriptComplete();
+        $this->assertDatabaseCount('participant_receipt_contexts', 1);
+        $rested = $this->contribute($actor, ['action' => 'participant.rest']);
         $this->assertGreaterThan($before['cycle']['sequence'], $rested['cycle']['sequence']);
     }
 
     public function test_proposition_search_limit_is_enforced_by_the_http_contract(): void
     {
-        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/rest-unread-receipt.json', 4);
-        $actor = $journey['participants']['rest-reader'];
-        $state = $journey['states']['rest-reader'];
+        $this->startSubstrate();
+        $actor = $this->joinParticipant('rest-reader');
+        $this->enterParticipant($actor, true);
+        $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Searchable distinction']);
         $this->assertActionAvailable($state, 'instrument.execute');
-        $target = $state['plan']['write_options'][0]['id'];
+        $target = $state['plan']['gate_id'];
 
         foreach ([0, 11, 1.5, '5'] as $limit) {
             $this->postContribution($actor, $state['plan']['phase']['id'], [
@@ -85,14 +85,14 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
                 'instrument' => ['kind' => 'proposition_search', 'limit' => $limit],
             ])->assertUnprocessable();
         }
-        $this->assertSame(0, DB::table('instrument_executions')->where('kind', 'proposition_search')->count());
+        $this->assertSame(0, DB::table('evidence_executions')->where('kind', 'proposition_search')->count());
 
         $this->postContribution($actor, $state['plan']['phase']['id'], [
             'action' => 'instrument.execute',
             'proposition_id' => $target,
             'instrument' => ['kind' => 'proposition_search', 'limit' => 10],
         ])->assertOk();
-        $this->assertSame(1, DB::table('instrument_executions')->where('kind', 'proposition_search')->count());
+        $this->assertSame(1, DB::table('evidence_executions')->where('kind', 'proposition_search')->count());
     }
 
     public function test_harness_rejects_direct_fixture_writes_before_they_execute(): void
@@ -108,21 +108,26 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
     }
 
     #[Group('constitutional')]
-    public function test_rest_rejects_a_productive_phase_and_accepts_an_unread_informational_receipt(): void
+    public function test_rest_rejects_productive_search_generation_and_accepts_a_structurally_spent_phase(): void
     {
-        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/rest-unread-receipt.json', 1);
-        $actor = $journey['participants']['rest-reader'];
-        $initial = $journey['responses'][0];
+        $this->startSubstrate();
+        $actor = $this->joinParticipant('rest-reader');
+        $initial = $this->enterParticipant($actor, true);
         $this->assertActionUnavailable($initial, 'participant.rest');
         $this->postContribution($actor, $initial['plan']['phase']['id'], ['action' => 'participant.rest'])
             ->assertUnprocessable();
         $this->assertSame($initial['plan']['phase']['id'], $this->readParticipation($actor)['plan']['phase']['id']);
-        $before = $this->continueParticipationScript(2)['responses'][2];
+        $persist = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'An informational encounter']);
+        $before = $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $persist['plan']['gate_id'],
+            'instrument' => ['kind' => 'proposition_search', 'limit' => 3]]);
+        $this->assertSame($persist['plan']['phase'], $before['plan']['phase']);
         $this->assertActionUnavailable($before, 'receipt.read');
+        $this->assertActionAvailable($before, 'proposition.variant');
+        $this->assertActionUnavailable($before, 'participant.rest');
+        $before = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Develop the observed distinction']);
         $this->assertActionAvailable($before, 'participant.rest');
         $loads = DB::table('participant_receipt_contexts')->count();
-        $after = $this->continueParticipationScript(1)['responses'][3];
-        $this->assertParticipationScriptComplete();
+        $after = $this->contribute($actor, ['action' => 'participant.rest']);
         $this->assertGreaterThan($before['cycle']['sequence'], $after['cycle']['sequence']);
         $this->assertSame($loads, DB::table('participant_receipt_contexts')->count());
         $this->assertDatabaseCount('tragedies', 0);

@@ -49,6 +49,12 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
         {!preview && <HorizonContext horizon={plan.workspace?.horizon} domain={domainName} provenance={provenance} onInspect={setInspection} />}
         <LineagePanel lineage={lineage} committalObservables={provenance.observables} onInspect={setInspection} />
         {!preview && <ReceiptContextPanel plan={plan} />}
+        {allowed('preparation.start') && <Button onClick={() => onAction('preparation.start')}>Prepare Artifacts</Button>}
+        {!preview && plan.preparation_failures?.map(failure => <Box key={failure.execution_id} p="sm">
+          <Text size="sm">Preparation failed · {failure.purpose}</Text>
+          <Text size="xs">{failure.diagnostic.failure?.stage}: {failure.diagnostic.failure_reason}</Text>
+          <Text size="xs" c="dimmed">No successful Preparation Receipt was created. Other lawful actions remain available; a later Cycle restores the allowance.</Text>
+        </Box>)}
         <Box className="operational-regions">
           {lanes.map((lane, index) => {
             const meta = metaForRegister(lane.register);
@@ -83,6 +89,10 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                       {item.id !== gate.id && plan.phase.kind === 'mediate' && allowed('proposition.reconcile') && targets.get('proposition.reconcile')?.has(item.id) && <Group className="write-option-card__context-actions" gap={4}>
                         <Button size="compact-xs" variant="subtle" color="gray" className="reconcile-action" leftSection={<OperationIcon operation="reconcile" />}
                           onClick={() => onAction('proposition.reconcile', { other_proposition_id: item.id })}>Reconcile</Button>
+                      </Group>}
+                      {item.id === gate.id && allowed('instrument.execute') && targets.get('instrument.execute')?.has(item.id) && <Group className="write-option-card__context-actions" gap={4}>
+                        <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconTool size={13} />}
+                          onClick={() => onAction('instrument.execute', { proposition_id: item.id })}>Instrument</Button>
                       </Group>}
                       {item.id === gate.id && allowed('proposition.variant') && <Group className="write-option-card__context-actions" gap={4}>
                         <Button size="compact-xs" variant="subtle" color="gray" leftSection={<OperationIcon operation="variant" />}

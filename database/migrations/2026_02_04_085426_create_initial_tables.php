@@ -235,8 +235,10 @@ return new class extends Migration
             $table->index(['proposition_id', 'direction']);
         });
 
-        Schema::create('instrument_executions', function (Blueprint $table) {
+        Schema::create('evidence_executions', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->foreignUlid('cycle_id')->constrained()->restrictOnDelete();
+            $table->enum('type', ['instrument', 'prepare'])->default('instrument');
             $table->foreignUlid('phase_id')
                 ->constrained()
                 ->restrictOnDelete();
@@ -247,20 +249,26 @@ return new class extends Migration
                 'citation',
                 'artefact',
                 'hyperlink',
-            ]);
-            $table->text('reference');
+            ])->nullable();
+            $table->text('reference')->nullable();
             $table->enum('status', [
                 'pending',
+                'presented',
                 'completed',
                 'failed',
             ])->default('pending');
             $table->jsonb('input')->nullable();
             $table->jsonb('metadata')->nullable();
+            $table->jsonb('presentation')->nullable();
+            $table->enum('outcome', ['contributed', 'deferred'])->nullable();
+            $table->foreignUlid('resulting_proposition_id')->nullable()->constrained('propositions')->restrictOnDelete();
+            $table->timestamp('presented_at')->nullable();
             $table->timestamp('started_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->timestamp('failed_at')->nullable();
             $table->text('failure_reason')->nullable();
             $table->timestamps();
+            $table->index(['cycle_id', 'type', 'status']);
 
             $table->index(['phase_id', 'status']);
             $table->index(['proposition_id', 'status']);
@@ -268,7 +276,7 @@ return new class extends Migration
 
         Schema::create('receipts', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('instrument_execution_id')
+            $table->foreignUlid('evidence_execution_id')
                 ->unique()
                 ->constrained()
                 ->restrictOnDelete();
@@ -293,7 +301,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('receipts');
-        Schema::dropIfExists('instrument_executions');
+        Schema::dropIfExists('evidence_executions');
         Schema::dropIfExists('attestations');
         Schema::dropIfExists('supersessions');
 

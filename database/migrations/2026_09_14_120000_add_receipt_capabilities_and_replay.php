@@ -14,31 +14,31 @@ return new class extends Migration
             // Null preserves deliberate legacy capability resolution; [] means archival.
             $table->jsonb('capabilities')->nullable();
         });
-        Schema::table('instrument_executions', function (Blueprint $table) {
+        Schema::table('evidence_executions', function (Blueprint $table) {
             $table->foreignUlid('replayed_from_receipt_id')->nullable()->constrained('receipts')->restrictOnDelete();
         });
     }
 
     public function down(): void
     {
-        if (DB::table('instrument_executions')->where('kind', 'web_search')->orWhereNotNull('replayed_from_receipt_id')->exists()) {
+        if (DB::table('evidence_executions')->where('kind', 'web_search')->orWhereNotNull('replayed_from_receipt_id')->exists()) {
             throw new RuntimeException('Cannot discard Web Search or Receipt replay history.');
         }
-        Schema::table('instrument_executions', fn (Blueprint $table) => $table->dropConstrainedForeignId('replayed_from_receipt_id'));
+        Schema::table('evidence_executions', fn (Blueprint $table) => $table->dropConstrainedForeignId('replayed_from_receipt_id'));
         Schema::table('receipts', fn (Blueprint $table) => $table->dropColumn('capabilities'));
         $this->kinds(['citation', 'artefact', 'hyperlink']);
     }
 
     private function kinds(array $values): void
     {
-        foreach (['instrument_executions' => 'kind', 'receipts' => 'type'] as $table => $column) {
+        foreach (['evidence_executions' => 'kind', 'receipts' => 'type'] as $table => $column) {
             if (DB::getDriverName() === 'pgsql') {
                 // Laravel implements enums as CHECK constraints on PostgreSQL.
                 DB::statement("ALTER TABLE {$table} DROP CONSTRAINT IF EXISTS {$table}_{$column}_check");
                 $allowed = "'".implode("','", $values)."'";
                 DB::statement("ALTER TABLE {$table} ADD CONSTRAINT {$table}_{$column}_check CHECK ({$column} IN ({$allowed}))");
             } else {
-                Schema::table($table, fn (Blueprint $blueprint) => $blueprint->enum($column, $values)->change());
+                Schema::table($table, fn (Blueprint $blueprint) => $blueprint->enum($column, $values)->nullable($table === 'evidence_executions')->change());
             }
         }
     }

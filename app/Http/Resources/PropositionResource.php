@@ -36,7 +36,7 @@ class PropositionResource extends JsonResource
             'field' => $this->when($this->field !== null, $this->field),
             'reinforcement_count' => $this->reinforcement_count ?? app(ReinforcementService::class)->count($this->resource),
             'attestation_summary' => $this->when($this->attestation_summary !== null, $this->attestation_summary),
-            'instruments' => $this->whenLoaded('instrumentExecutions', fn () => $this->instrumentExecutions->map(fn ($execution) => [
+            'instruments' => $this->whenLoaded('evidenceExecutions', fn () => $this->evidenceExecutions->where('type', 'instrument')->values()->map(fn ($execution) => [
                 'id' => $execution->id, 'kind' => $execution->kind,
                 'reference' => $execution->reference, 'status' => $execution->status,
                 'failure_reason' => $execution->failure_reason, 'receipt_id' => $execution->receipt?->id,

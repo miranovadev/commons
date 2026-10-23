@@ -16,8 +16,8 @@ use App\Services\AttestationEvidenceService;
 use App\Services\CommitmentSnapshotService;
 use App\Services\CommitRegionPolarityService;
 use App\Services\CommitRegionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\InputPlanService;
-use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Participation\ParticipationContext;
@@ -27,11 +27,12 @@ use App\Services\PropositionStateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\ParticipationScaleFixture;
 use Tests\TestCase;
 
-#[\PHPUnit\Framework\Attributes\Group('performance')]
-#[\PHPUnit\Framework\Attributes\Group('query')]
+#[Group('performance')]
+#[Group('query')]
 class ParticipationPerformanceTest extends TestCase
 {
     use RefreshDatabase;
@@ -255,8 +256,8 @@ class ParticipationPerformanceTest extends TestCase
                 $a = new Attestation;
                 $a->forceFill(['phase_id' => $history[$i % 3]->id, 'proposition_id' => $target->id, 'direction' => $i % 3 === 0 ? 'refute' : 'support'])->save();
                 app(LedgerService::class)->record($a);
-                $execution = app(InstrumentExecutionService::class)->start($a->phase, $target, 'hyperlink', 'https://example.test/'.$a->id);
-                app(InstrumentExecutionService::class)->complete($execution, $a, 'fixture-'.$a->id);
+                $execution = app(EvidenceExecutionService::class)->start($a->phase, $target, 'hyperlink', 'https://example.test/'.$a->id);
+                app(EvidenceExecutionService::class)->complete($execution, $a, 'fixture-'.$a->id);
             }
         }
         // Retired population evidence and fresh Revise/Reconcile history are

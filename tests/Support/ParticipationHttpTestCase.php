@@ -10,11 +10,29 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
 use LogicException;
-use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
+use Tests\Support\RefreshEvidenceDatabase as RefreshDatabase;
 
 /** Real participation requests; only external DNS and HTTP evidence are deterministic. */
 abstract class ParticipationHttpTestCase extends TestCase
 {
+    /** Fixed lawful two-edge history with phase-neutral Persist acquisition. */
+    protected function developPersist(string $name): array
+    {
+        $this->startSubstrate();
+        $actor = $this->joinParticipant($name);
+        $initial = $this->enterParticipant($actor, true);
+        $first = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'First distinction']);
+        $observed = $this->contribute($actor, ['action' => 'instrument.execute',
+            'proposition_id' => $first['plan']['gate_id'],
+            'instrument' => ['kind' => 'citation', 'reference' => $initial['current_proposition_id']]]);
+        $this->assertSame($first['plan']['phase'], $observed['plan']['phase']);
+        $this->assertSame($first['cycle'], $observed['cycle']);
+        $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Persistent development']);
+        $this->assertSame('constrain', $state['plan']['phase']['kind']);
+
+        return compact('actor', 'initial', 'first', 'observed', 'state');
+    }
+
     use RefreshDatabase;
 
     protected string $substrateSlug = 'http-lifecycle';
@@ -165,6 +183,31 @@ abstract class ParticipationHttpTestCase extends TestCase
         return $response->json('data');
     }
 
+    protected function prepareVariant(string $participant, string $statement): array
+    {
+        $state = $this->readParticipation($participant);
+        $this->assertActionAvailable($state, 'preparation.start');
+        $this->assertActionUnavailable($state, 'proposition.variant');
+        $source = $state['plan']['preparation_options'][0];
+        $started = $this->contribute($participant, ['action' => 'preparation.start',
+            'proposition_id' => $state['plan']['gate_id'], 'purpose' => 'Examine preserved evidence before exploring this continuation.',
+            'artifacts' => [['receipt_id' => $source['receipt_id'], 'artifact_id' => $source['artifact_id'],
+                'read_type' => 'text', 'parameters' => ['max_chars' => 4000]]]], $state);
+        $this->assertSame($state['plan']['phase'], $started['plan']['phase']);
+        $id = $started['plan']['preparation']['execution_id'];
+        $this->readAndAcknowledgePreparation($participant, $id);
+
+        return $this->contribute($participant, ['action' => 'proposition.variant', 'execution_id' => $id, 'statement' => $statement]);
+    }
+
+    protected function readAndAcknowledgePreparation(string $participant, string $execution): void
+    {
+        $url = '/api/substrates/'.$this->substrateSlug.'/participants/'.$participant.'/preparations/'.$execution;
+        $delivery = $this->getJson($url.'/reading')->assertOk()->json('data');
+        $this->assertNotEmpty($delivery['deliveries']);
+        $this->postJson($url.'/presented', ['presentation_token' => $delivery['presentation_token']])->assertOk();
+    }
+
     protected function postContribution(string $participant, string $phase, array $input): TestResponse
     {
         return $this->postJson($this->endpoint($participant), ['phase_id' => $phase, 'contribution' => $input]);
@@ -174,8 +217,8 @@ abstract class ParticipationHttpTestCase extends TestCase
     protected function chooseContribution(array $state): array
     {
         $actions = $this->actionDefinitions($state);
-        foreach (['proposition.commit', 'proposition.reclassify', 'proposition.variant', 'proposition.reconcile',
-            'proposition.traverse', 'attestation.create', 'instrument.execute', 'participant.rest'] as $action) {
+        foreach (['instrument.execute', 'proposition.commit', 'proposition.reclassify', 'proposition.variant', 'proposition.reconcile',
+            'proposition.traverse', 'attestation.create', 'participant.rest'] as $action) {
             if (isset($actions[$action])) {
                 $input = ['action' => $action];
                 foreach (['proposition_id', 'other_proposition_id', 'receipt_id'] as $key) {

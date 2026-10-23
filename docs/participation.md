@@ -114,7 +114,7 @@ Traverse cards. Order retains every causally local expressive Write in Write,
 including inadmissible and frozen sources, alongside their own traversable direct
 Committal results. Commit is available per admissible expressive Write; Closure
 refusal does not remove that Write or override its ordinary expressive rules.
-All Instruments are offered before Order. `write_options` is authoritative; `workspace.registers` remains
+Instruments are offered only on the current Persist Gate. `write_options` is authoritative for Write targets; `workspace.registers` remains
 broader inspection context and must never be merged into selectable Write cards.
 Revise remains limited to owned, revisable descendants. Commit cards and the
 Commit form select an explicit authorized `proposition_id`.
@@ -169,18 +169,19 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 | Position/state | Available progression |
 | --- | --- |
 | Empty Phase 1 or Phase 4 opportunity | Variant |
-| Existing Proposition without its own completed Instrument | Instrument, even if other shared Receipts exist; no Attest |
-| Own completed Instrument and available Commit Region Receipt | Attest |
+| Existing Proposition without available shared ordinary evidence | No Attest |
+| Available shared ordinary Commit Region Receipt | Attest, subject to ordinary eligibility |
 | Personal Attestation from an earlier Cycle | Same-side Traverse |
-| Phase 2 | Structural Variant, governed by viable existing results |
+| Phase 2, no eligible unattached ordinary Receipt | Phase-neutral Instrument on current Gate if Cycle allowance remains; no Variant/Revise |
+| Phase 2, eligible unattached ordinary Receipt | Structurally lawful Variant/Revise; no Instrument |
 | Phase 3 | Reclassify an attested Phase-2 source with an available Receipt |
 | Phase 5 | Existing directed reconciliation and Correspondence rules |
 | Phase 6 | Reclassify an attested Phase-5 source with Receipt and lineage agreement |
 | Phase 7 | Existing grounded, freshly attested and Closure-aligned Commit or Committal Traverse |
 
-During Exploration, Variant eligibility does not depend on Potential Charge, Receipt generation/consumption or Participant count. A further Variant requires all existing routes at its structural position to be spent in the current epoch, with their own completed Instrument and effective Attestation. Zero Potential does not suppress an otherwise structurally valid Variant; expression may increase Tension. A viable existing route blocks redundant generation. Only successful Variant advances that position's epoch; other positions remain unchanged. Spent routes remain visible without Traverse, Attestation or redundant Instrument targets. See [exploration epochs](exploration-epochs.md). Each new Variant repeats this sequence. No prior Mediate Rest or fixed sibling cap applies; see the [confirmed clarification](horizon-proof-variant-clarification.md).
+During Exploration, Variant eligibility does not depend on Potential Charge or Participant count. A further Variant requires all existing routes at its structural position to be spent in the current epoch, with genuine ordinary evidence and effective Attestation. Evidence may be shared or retained on the causal lineage; exact-Write Instrumentation is not required. Zero Potential does not suppress an otherwise structurally valid Variant; expression may increase Tension. A viable existing route blocks redundant generation. Only successful Variant advances that position's epoch; other positions remain unchanged. Receipt generation or consumption alone never reopens Variant. See [exploration epochs](exploration-epochs.md) and the [confirmed clarification](horizon-proof-variant-clarification.md).
 
-Instruments target mutable expressive Writes in phases 1–6. Phase 1/4 offer Instrument when a Write lacks its own completed Instrument or no shared Receipt remains available. Existing evidence makes Attestation available without a transfer from its author or a paid visibility action. Transactional execution rechecks the same rules advertised in the schema.
+Instruments target only the mutable current Persist Gate, with one completed execution per Participant Cycle and no Phase advancement. Stage 2B selects acquisition or generation using the existing shared, unconsumed ordinary Receipt catalogue, independently of personal loading. This prerequisite is additional to structural and epoch eligibility. Existing shared evidence makes Attestation available without a transfer from its author or a paid visibility action. Transactional execution rechecks the same rules advertised in the schema, including consumption that invalidates a stale generation request. Disperse retains its existing generation rules until Preparation and reading are available. See [Stage 2B](epistemic-evidence-stage-2b.md).
 
 ## Traverse and authoritative Rest
 
@@ -242,10 +243,10 @@ remain in place, and middle actions wrap without moving the directional slots.
 The UI renders Rest only from the authoritative schema, never from its own
 interpretation of the rest_available flag or visible cards.
 
-**No available move** means the current Phase has zero admissible Phase-advancing actions. The backend separately derives `no_remaining_potential` from an evidenced failure. That reason is a numerical diagnostic only. Neither Rest reason creates Tragedy or exhaustion.
+**No available move** means the current Phase has zero admissible contributions, including its optional Persist Instrument allowance. The backend separately derives `no_remaining_potential` from an evidenced failure. That reason is a numerical diagnostic only. Neither Rest reason creates Tragedy or exhaustion.
 The server first applies all phase-native, ownership, target and Commitment
-constraints, then specializes the complete action schema. When no Phase-advancing
-action remains it sets `rest_available: true` and injects `participant.rest`.
+constraints, then specializes the complete action schema. When no admissible contribution
+remains it sets `rest_available: true` and injects `participant.rest`.
 Informational Receipt metadata does not block Rest. Rest changes no Receipt load state.
 
 Rest is never a preference over a Phase-advancing action. An available
@@ -494,7 +495,7 @@ Phase's recorded result without inventing a second edge from its old Gate.
 No generic foreign Read, Traverse or Receipt catalogue is granted.
 
 Existing causal Write continuations of the current Gate offer their permitted
-Instrument and Attestation actions and, after earlier-Cycle personal
+Attestation actions and, after earlier-Cycle personal
 Attestation, Traverse to Order. Mediated and homologous additional Gates are Reclassify sources only;
 their existing Bias-produced Writes do not become this Participant's Traverse
 options. A foreign-source classification owned by another Cycle-entry Region
@@ -541,7 +542,7 @@ unchanged.
 
 ## Bias grounding
 
-Reclassification is separate from Instrument execution. All phases before Order expose Instruments on eligible expressive Writes, including Distinguish and Mediate. Receipt existence permits Attestation; both Receipt and effective Attestation permit reclassification. Reclassify attaches the selected regional Receipt and resets judgments. Variant, Revise and Reconcile need new evidence for their new Writes.
+Reclassification is separate from Instrument execution. Only Persist exposes Instruments, on its current Gate. Shared ordinary Receipt availability permits Attestation subject to its remaining eligibility rules; Receipt and effective Attestation are required for reclassification. Reclassify attaches the selected regional Receipt and resets judgments. New Writes do not require a new Instrument execution on that Write.
 
 A fresh Bias classification may reach Order before anyone attests it. If neither a qualifying Commit Gate nor an established Committal Write exists, Rest is valid. Another Participant can later attest the classification through Bias or an earlier eligible Write encounter. Receipt loading remains optional before Order and never advances a Phase.
 
@@ -577,8 +578,7 @@ Proposition references remain metadata without standalone Load controls.
 `instrument: {"replay_receipt_id": "R"}` and the exact schema-authorized
 `proposition_id`. It restores the stored invocation, preserves ordinary eligibility
 and equivalent-evidence exclusions, and creates a new Proposition-grounded Receipt
-with replay provenance. Neither fresh execution nor replay automatically loads
-source or result. There are no standalone Receipt Read or Replay action families.
+with replay provenance. Fresh execution and replay automatically load readable results for their performer under C2. Load File / Download instead exposes lightweight acquisition metadata and preserves an Artifact without persistent loading. Instrumentation is Persist-only, targets the current Gate, spends one completed-execution allowance per Cycle, and refreshes cognition without advancing the Phase. There are no standalone Receipt Read or Replay action families.
 
 A qualifying direct expressive Write encounter with resulting canonical Charge zero establishes the Region’s unique Tragedy and Receipt and permanently terminates that continuation. Resolution prohibits Variant and Revise throughout the Region while preserving ordinary authority on viable routes. Exhaustion follows atomically only when no lawful continuation remains; viable siblings and live committed descendants prevent it. Descendant Exhaustion closes only its corresponding route. No second catastrophe, Rest or Receipt consumption is required. Passive measurements and reads establish neither event. Recovery follows actual recorded backward lineage. See the approved [Tragedy/Resolution lifecycle](tragedy-resolution-target.md). Qualifying encounters include expressive birth, Attestation, Instrument and lawful expressive Traverse, including already-zero targets. An Exhausted Region offers Rest only. Historical alternatives remain visible and non-actionable.
 

@@ -70,6 +70,7 @@ class ParticipantCognitiveProjectionTest extends TestCase
         app(LedgerService::class)->record($own, $f->gate);
         $f->edge($f->gate, $own, 'variant');
         PropositionBirth::complete($own);
+        $f->evidence($own);
 
         app(PotentialProjectionService::class)->rebuild($f->substrate->id, false);
         $state = app(ParticipationService::class)->stateFor($observer);

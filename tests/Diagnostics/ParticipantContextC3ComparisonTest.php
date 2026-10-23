@@ -2,11 +2,10 @@
 
 namespace Tests\Diagnostics;
 
-use App\Enums\PhaseKind;
 use App\Models\Connection;
 use App\Models\Participant;
 use App\Models\Phase;
-use App\Models\Proposition;
+use App\Services\C2ReceiptProjection;
 use App\Services\CognitiveEvidenceHorizon;
 use App\Services\InputPlanService;
 use App\Services\ParticipantContextSerializer;
@@ -26,6 +25,17 @@ class ParticipantContextC3ComparisonTest extends TestCase
         $this->assertSame('pgsql', DB::getDriverName(), 'Recorded fixture validation requires PostgreSQL.');
         $this->assertSame('testing', DB::connection()->getDatabaseName(), 'Restore only the disposable CI test database.');
         $fixture = json_decode(gzdecode(file_get_contents(base_path('tests/Fixtures/c3/recorded-populations.json.gz'))), true, flags: JSON_THROW_ON_ERROR);
+        // Schema-only adaptation of the fixed historical diagnostic, not a
+        // production compatibility layer or a reconstructed observation history.
+        $cycles = array_column($fixture['tables']['phases'], 'cycle_id', 'id');
+        $fixture['tables']['evidence_executions'] = array_map(fn ($row) => [...$row,
+            'type' => 'instrument', 'cycle_id' => $cycles[$row['phase_id']]], $fixture['tables']['instrument_executions']);
+        unset($fixture['tables']['instrument_executions']);
+        foreach ($fixture['tables']['receipts'] as &$receipt) {
+            $receipt['evidence_execution_id'] = $receipt['instrument_execution_id'];
+            unset($receipt['instrument_execution_id']);
+        }
+        unset($receipt);
         // Restore a captured graph, not a new lifecycle. Replica mode handles
         // circular foreign keys during this isolated import only.
         DB::statement("SET LOCAL session_replication_role = 'replica'");
@@ -44,8 +54,10 @@ class ParticipantContextC3ComparisonTest extends TestCase
         $base = getenv('COMMONS_CONTEXT_BASELINE_DIR');
         $this->assertNotEmpty($base);
         $source = file_get_contents($base.'/app/Services/ParticipantReceiptProjection.php');
+        // Adapt only the captured baseline's execution relationship spelling; its projection policy is unchanged.
+        $source = str_replace(['instrumentExecution', 'instrument_execution_id'], ['evidenceExecution', 'evidence_execution_id'], $source);
         eval(str_replace('final class ParticipantReceiptProjection', 'final class C2ReceiptProjection', substr($source, 5)));
-        $old = new \App\Services\C2ReceiptProjection;
+        $old = new C2ReceiptProjection;
         $new = new ParticipantReceiptProjection;
         $factory = app(ParticipantPromptFactory::class);
         $connection = (new Connection)->forceFill(['configuration' => ['model' => 'test-model']]);

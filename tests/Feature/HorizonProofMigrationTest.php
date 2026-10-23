@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
+use App\Services\EvidenceExecutionService;
 use App\Services\HorizonReceiptService;
-use App\Services\InstrumentExecutionService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
@@ -37,7 +37,7 @@ class HorizonProofMigrationTest extends TestCase
     {
         $phase = $this->phase($this->origin, PhaseKind::Persist);
         $source = $this->node($phase, $this->origin);
-        $service = app(InstrumentExecutionService::class);
+        $service = app(EvidenceExecutionService::class);
         $receipt = $service->complete($service->start($phase, $source, 'citation', $this->origin->id), $source);
 
         return [$source, $receipt];
@@ -79,7 +79,7 @@ class HorizonProofMigrationTest extends TestCase
             $migration->up();
         }
         $after = DB::table('receipts')->where('id', $receipt->id)->first();
-        foreach (['id', 'reference', 'metadata', 'created_at', 'receiptable_id', 'instrument_execution_id'] as $field) {
+        foreach (['id', 'reference', 'metadata', 'created_at', 'receiptable_id', 'evidence_execution_id'] as $field) {
             $this->assertSame($original->$field, $after->$field);
         }
         $this->assertSame($source->phase->cycle->context_horizon_id, $after->context_horizon_id);

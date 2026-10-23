@@ -1,0 +1,159 @@
+{
+  "note": "Illustrative record, not production data. Sources contain 500 A, 3000 B and 15000 C characters; no source bodies are persisted here.",
+  "request": {
+    "action": "preparation.start",
+    "proposition_id": "01K00000000000000000000005",
+    "purpose": "Compare the preserved observations before developing a conclusion.",
+    "artifacts": [
+      {
+        "receipt_id": "01K00000000000000000000001",
+        "artifact_id": "sha256:e1a00da865cef6e0b33aa2fce4bcf27435d9830824abb08fa8f2181cfd33e119",
+        "read_type": "text",
+        "parameters": {
+          "max_chars": 2000
+        }
+      },
+      {
+        "receipt_id": "01K00000000000000000000002",
+        "artifact_id": "sha256:19f2a4b976c8390457042c54cbaa196fe13b2747caddd9f160754a63029b8ac8",
+        "read_type": "text"
+      },
+      {
+        "receipt_id": "01K00000000000000000000003",
+        "artifact_id": "sha256:ecbc22889e1c71331211c83ce1b4de903cf50118058b7840612a4aa34279f41a",
+        "read_type": "text"
+      }
+    ]
+  },
+  "allocated_characters": [
+    500,
+    3000,
+    8500
+  ],
+  "receipt": {
+    "type": "preparation",
+    "evidence_execution_id": "01K00000000000000000000004",
+    "receiptable_id": "01K00000000000000000000005",
+    "consumption": null,
+    "metadata": {
+      "originating_gate_id": "01K00000000000000000000005",
+      "participant_id": "01K00000000000000000000006",
+      "purpose": "Compare the preserved observations before developing a conclusion.",
+      "selections": [
+        {
+          "receipt_id": "01K00000000000000000000001",
+          "artifact_id": "sha256:e1a00da865cef6e0b33aa2fce4bcf27435d9830824abb08fa8f2181cfd33e119",
+          "read_type": "text",
+          "parameters": {
+            "max_chars": 2000
+          }
+        },
+        {
+          "receipt_id": "01K00000000000000000000002",
+          "artifact_id": "sha256:19f2a4b976c8390457042c54cbaa196fe13b2747caddd9f160754a63029b8ac8",
+          "read_type": "text"
+        },
+        {
+          "receipt_id": "01K00000000000000000000003",
+          "artifact_id": "sha256:ecbc22889e1c71331211c83ce1b4de903cf50118058b7840612a4aa34279f41a",
+          "read_type": "text"
+        }
+      ],
+      "deliveries": [
+        {
+          "artifact_id": "sha256:e1a00da865cef6e0b33aa2fce4bcf27435d9830824abb08fa8f2181cfd33e119",
+          "request_id": "d9ff6bdf648159393ffd0ee440c4adb806fda1e6445966ec5b0d5bf53ede292d",
+          "receipt_ids": [
+            "01K00000000000000000000001"
+          ],
+          "delivery_id": "01K00000000000000000000004:d9ff6bdf648159393ffd0ee440c4adb806fda1e6445966ec5b0d5bf53ede292d",
+          "source_type": "plain-text",
+          "read_type": "text",
+          "parameters": {
+            "max_chars": 2000
+          },
+          "method": "commons-native-text",
+          "version": "2",
+          "representation": "text",
+          "representation_hash": "sha256:e1a00da865cef6e0b33aa2fce4bcf27435d9830824abb08fa8f2181cfd33e119",
+          "delivery_method": "inline-text",
+          "payload_hash": "sha256:e1a00da865cef6e0b33aa2fce4bcf27435d9830824abb08fa8f2181cfd33e119",
+          "payload_bytes": 500,
+          "boundaries": {
+            "unit": "unicode-characters",
+            "requested_offset": 0,
+            "requested_max_chars": 2000,
+            "offset": 0,
+            "end": 500,
+            "length": 500,
+            "total": 500,
+            "has_more": false
+          }
+        },
+        {
+          "artifact_id": "sha256:19f2a4b976c8390457042c54cbaa196fe13b2747caddd9f160754a63029b8ac8",
+          "request_id": "cc44a7a6ddac6962a535019fab27ffb6d885546753eef35878a2f1952c9703c4",
+          "receipt_ids": [
+            "01K00000000000000000000002"
+          ],
+          "delivery_id": "01K00000000000000000000004:cc44a7a6ddac6962a535019fab27ffb6d885546753eef35878a2f1952c9703c4",
+          "source_type": "plain-text",
+          "read_type": "text",
+          "parameters": {},
+          "method": "commons-native-text",
+          "version": "2",
+          "representation": "text",
+          "representation_hash": "sha256:19f2a4b976c8390457042c54cbaa196fe13b2747caddd9f160754a63029b8ac8",
+          "delivery_method": "inline-text",
+          "payload_hash": "sha256:19f2a4b976c8390457042c54cbaa196fe13b2747caddd9f160754a63029b8ac8",
+          "payload_bytes": 3000,
+          "boundaries": {
+            "unit": "unicode-characters",
+            "requested_offset": 0,
+            "requested_max_chars": null,
+            "offset": 0,
+            "end": 3000,
+            "length": 3000,
+            "total": 3000,
+            "has_more": false
+          }
+        },
+        {
+          "artifact_id": "sha256:ecbc22889e1c71331211c83ce1b4de903cf50118058b7840612a4aa34279f41a",
+          "request_id": "db9383d552c9f2f1a4b36cc468952c8ca02c49e5902faf9f3e9d4af8bee330a5",
+          "receipt_ids": [
+            "01K00000000000000000000003"
+          ],
+          "delivery_id": "01K00000000000000000000004:db9383d552c9f2f1a4b36cc468952c8ca02c49e5902faf9f3e9d4af8bee330a5",
+          "source_type": "plain-text",
+          "read_type": "text",
+          "parameters": {},
+          "method": "commons-native-text",
+          "version": "2",
+          "representation": "text",
+          "representation_hash": "sha256:ecbc22889e1c71331211c83ce1b4de903cf50118058b7840612a4aa34279f41a",
+          "delivery_method": "inline-text",
+          "payload_hash": "sha256:8815205bb8df410fe771ab1e6a100928c4e82f9dbdc95d3134c5cd7fbd59d42f",
+          "payload_bytes": 8500,
+          "boundaries": {
+            "unit": "unicode-characters",
+            "requested_offset": 0,
+            "requested_max_chars": null,
+            "offset": 0,
+            "end": 8500,
+            "length": 8500,
+            "total": 15000,
+            "has_more": true
+          }
+        }
+      ],
+      "presented_at": "2026-10-24T00:00:00Z",
+      "outcome": {
+        "type": "deferred",
+        "reason": "Inspect the remaining 6500 characters of the third representation later."
+      },
+      "content_verified": true,
+      "reinforcement_version": "observed-preparation"
+    }
+  }
+}

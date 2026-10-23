@@ -10,11 +10,11 @@ use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\ContributionDispatcher;
+use App\Services\HorizonReceiptService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
-use App\Services\PropositionStateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use Opis\JsonSchema\Helper;
@@ -107,7 +107,7 @@ class TragedyTest extends TestCase
     {
         if ($kind === PhaseKind::Persist && $action === 'instrument.execute') {
             $fixture = new GovernedExpressionFixture;
-            $fixture->writePersist();
+            $fixture->phase = app(PhaseProgressionService::class)->advance($fixture->phase, $fixture->expression);
 
             return [$fixture->actor->fresh(), $fixture->phase];
         }
@@ -116,10 +116,12 @@ class TragedyTest extends TestCase
             $fixture = new GovernedExpressionFixture;
             $fixture->advanceToConstrain();
             if ($kind === PhaseKind::Disperse) {
-                $receipt = app(PropositionStateService::class)->receipts($fixture->expression)->sole();
+                $receipt = app(HorizonReceiptService::class)->ordinaryAvailable($fixture->phase)->sole();
                 $result = app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,
                     ['action' => 'proposition.reclassify', 'proposition_id' => $fixture->expression->id, 'receipt_id' => $receipt->id]);
                 $fixture->phase = app(PhaseProgressionService::class)->advance($fixture->phase, $result);
+                // This case isolates action exhaustion with shared ordinary evidence available.
+                $this->observationFixture($fixture->phase, $result, ['kind' => 'citation', 'reference' => $result->id]);
             }
 
             return [$fixture->actor->fresh(), $fixture->phase];
@@ -135,6 +137,9 @@ class TragedyTest extends TestCase
             if ($kind === PhaseKind::Persist) {
                 $state = $service->contribute($viewer, $state['plan']['phase']['id'],
                     ['action' => 'proposition.variant', 'statement' => 'First distinction']);
+                $state = $service->contribute($viewer, $state['plan']['phase']['id'],
+                    ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+                        'instrument' => ['kind' => 'citation', 'reference' => Phase::findOrFail($state['plan']['phase']['id'])->cycle->entry_committal_id]]);
             }
 
             return [$viewer->fresh(), Phase::findOrFail($state['plan']['phase']['id'])];

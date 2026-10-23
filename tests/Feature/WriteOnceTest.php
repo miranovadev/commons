@@ -18,7 +18,6 @@ use App\Services\ContributionService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\Observables\ReinforcementService;
-use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
 use App\Services\ReceiptContextService;
@@ -26,6 +25,7 @@ use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\Fixtures\PropositionBirth;
 use Tests\TestCase;
 
@@ -89,7 +89,7 @@ class WriteOnceTest extends TestCase
         try {
             app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
             $this->fail('The Variant opportunity must be consumed immediately.');
-        } catch (DomainException) {
+        } catch (DomainException|ConflictHttpException) {
             $this->assertSame($counts, [Proposition::count(), Supersession::count()]);
         }
         $return = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
@@ -114,7 +114,7 @@ class WriteOnceTest extends TestCase
         $this->assertArrayNotHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
         $this->assertSame([], $this->targets($plan, 'proposition.revise'));
         $this->assertContains($write->id, $this->targets($plan, 'attestation.create'));
-        $this->assertContains($write->id, $this->targets($plan, 'instrument.execute'));
+        $this->assertSame([], $this->targets($plan, 'instrument.execute'));
         $this->assertFalse($plan['rest_available']);
         $this->assertArrayNotHasKey('participant.rest', $plan['schema']['$defs']['actions']);
         app(ContributionDispatcher::class)->dispatch($participant, $return, [
@@ -150,7 +150,7 @@ class WriteOnceTest extends TestCase
         $this->assertUnavailable($participant, $return, $input);
         $plan = $this->plan($participant);
         $this->assertContains($revised->id, $this->targets($plan, 'attestation.create'));
-        $this->assertContains($revised->id, $this->targets($plan, 'instrument.execute'));
+        $this->assertSame([], $this->targets($plan, 'instrument.execute'));
         $this->assertSame([], $this->targets($plan, 'proposition.revise'));
         $this->assertFalse($plan['rest_available']);
     }
@@ -167,7 +167,7 @@ class WriteOnceTest extends TestCase
         try {
             $this->phase($participant, PhaseKind::Persist, 'stance', $gate);
             $this->fail('An expressive Gate cannot be moved into the opposite Domain.');
-        } catch (DomainException) {
+        } catch (DomainException|ConflictHttpException) {
             $this->assertSame('activity', $gate->fresh()->register);
         }
         $later = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
@@ -271,7 +271,7 @@ class WriteOnceTest extends TestCase
         $phase = $this->phase($participant, PhaseKind::Constrain, 'canon', $gate);
         $input = ['action' => 'proposition.reclassify'];
         $this->assertUnavailable($participant, $phase, $input);
-        $receipt = app(OperationalInstrumentService::class)->execute($phase, $gate, ['kind' => 'citation', 'reference' => $gate->id]);
+        $receipt = $this->observationFixture($phase, $gate, ['kind' => 'citation', 'reference' => $gate->id]);
         app(ReceiptContextService::class)->clear($participant, $phase, $receipt->id);
         $this->assertSame(0, app(ReinforcementService::class)->count($gate));
         $this->assertUnavailable($participant, $phase, $input);
@@ -305,7 +305,7 @@ class WriteOnceTest extends TestCase
         $this->phase($participant, PhaseKind::Bias, 'canon', $a);
         $local = $this->plan($participant);
         $this->assertContains($written->id, $this->targets($local, 'attestation.create'));
-        $this->assertContains($written->id, $this->targets($local, 'instrument.execute'));
+        $this->assertSame([], $this->targets($local, 'instrument.execute'));
         $other = $this->participant($participant->substrate, 'other');
         $otherPhase = $this->phase($other, PhaseKind::Bias, 'canon', $b);
         app(ContributionService::class)->validate($other, $this->reclassificationInputFixture($otherPhase, $b));
@@ -376,7 +376,7 @@ class WriteOnceTest extends TestCase
         try {
             app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
             $this->fail('Direct dispatch must reject the invalid action.');
-        } catch (DomainException) {
+        } catch (DomainException|ConflictHttpException) {
         }
         $this->assertSame($counts, [Proposition::count(), Supersession::count(), $participant->substrate->ledgerEntries()->count()]);
     }
@@ -416,6 +416,11 @@ class WriteOnceTest extends TestCase
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register,
             'gate_proposition_id' => $gate?->id, 'started_at' => now()])->save();
+
+        // These cases isolate structural generation from shared evidence availability.
+        if (in_array($kind, [PhaseKind::Persist, PhaseKind::Disperse], true) && $gate !== null) {
+            $this->receiptFixture($gate);
+        }
 
         return $phase;
     }

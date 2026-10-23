@@ -19,7 +19,7 @@ final class ReceiptEvidenceService
         return $context->remember('loaded-citation-targets', function () use ($context): Collection {
             $references = Receipt::where('type', 'citation')->whereIn('id', ParticipantReceiptContext::active()
                 ->where('participant_id', $context->phase->cycle->participant_id)->select('receipt_id'))
-                ->whereHas('instrumentExecution', fn ($q) => $q->where('status', 'completed')
+                ->whereHas('evidenceExecution', fn ($q) => $q->where('status', 'completed')
                     ->whereHas('proposition.phase.cycle.participant', fn ($q) => $q->where('substrate_id', $context->substrate->id)))
                 ->get(['id', 'reference', 'type', 'capabilities'])
                 ->filter(fn ($receipt) => $receipt->supports(ReceiptCapability::Readable))->pluck('reference')->unique();
@@ -35,10 +35,10 @@ final class ReceiptEvidenceService
 
     public function describe(Receipt $receipt, ParticipationContext $context): ?array
     {
-        if ($receipt->isMemory()) {
-            return null; // Readable internal memory is not evidential grounding.
+        if ($receipt->isSpecial()) {
+            return null; // Tragedy retains its separate authority contract.
         }
-        $execution = $receipt->instrumentExecution;
+        $execution = $receipt->evidenceExecution;
         if (! $receipt->supports(ReceiptCapability::Readable) || $execution?->status !== 'completed'
             || ($receipt->context_horizon_id !== $context->phase->cycle->context_horizon_id
                 && ! $context->propositions->has($execution->proposition_id))) {
@@ -116,20 +116,44 @@ final class ReceiptEvidenceService
         ];
     }
 
-    /** Immutable external evidence, independent of operational activation. */
+    /** Immutable observations, independent of operational activation. */
     public function observation(Receipt $receipt): ?array
     {
         if (! $receipt->supports(ReceiptCapability::Readable) || ! $receipt->observationComplete()) {
             return null;
         }
+        if ($receipt->type === 'preparation' && $receipt->evidenceExecution->type === 'prepare'
+            && $receipt->signature !== null && ($receipt->metadata['content_verified'] ?? false) === true
+            && ($receipt->metadata['reinforcement_version'] ?? null) === 'observed-preparation') {
+            // Historical delivery/outcome metadata grants no Artifact or Proposition expansion.
+            return ['signature' => $receipt->signature, 'evidence' => array_intersect_key($receipt->metadata,
+                array_flip(['originating_gate_id', 'participant_id', 'purpose', 'selections', 'deliveries', 'presented_at', 'outcome']))];
+        }
+        if ($receipt->type === 'proposition_search' && $receipt->signature !== null
+            && ($receipt->metadata['content_verified'] ?? false) === true
+            && ($receipt->metadata['reinforcement_version'] ?? null) === 'observed-proposition-search'
+            && is_array($receipt->metadata['proposition_collection']['results'] ?? null)) {
+            // An empty collection is a completed observation, not a failed search.
+            return ['signature' => $receipt->signature, 'evidence' => $receipt->metadata['proposition_collection']];
+        }
         if ($receipt->type === 'hyperlink' && $receipt->signature !== null
             && ($receipt->metadata['content_verified'] ?? false) === true
             && ($receipt->metadata['reinforcement_version'] ?? null) === 'accepted-version') {
+            $content = array_intersect_key($receipt->metadata, array_flip([
+                'resource', 'fingerprint', 'observed_at', 'last_modified', 'content_excerpt', 'excerpt_truncated',
+                'title', 'title_source', 'description_source',
+                'links', 'links_count', 'links_truncated', 'links_error',
+            ]));
+            // Keep the existing small presentation slot; do not duplicate the description
+            // or reveal storage keys. Historical Receipts keep their original excerpt.
+            if (array_key_exists('description', $receipt->metadata)) {
+                $content['content_excerpt'] = $receipt->metadata['description'];
+                $content['excerpt_truncated'] = $receipt->metadata['description_truncated'] ?? false;
+            }
+
             return [
                 'signature' => $receipt->signature,
-                'evidence' => array_intersect_key($receipt->metadata, array_flip([
-                    'resource', 'fingerprint', 'observed_at', 'last_modified', 'content_excerpt', 'excerpt_truncated',
-                ])),
+                'evidence' => $content,
             ];
         }
         if ($receipt->type === 'web_search' && $receipt->signature !== null
@@ -140,6 +164,22 @@ final class ReceiptEvidenceService
         }
 
         return null;
+    }
+
+    /** Non-loadable acquisition metadata follows existing catalogue/C3 scope, never file bodies. */
+    public function acquisition(Receipt $receipt): ?array
+    {
+        if ($receipt->type !== 'load_file' || ! $receipt->observationComplete()) {
+            return null;
+        }
+        $metadata = array_intersect_key($receipt->metadata, array_flip([
+            'method', 'source_url', 'effective_url', 'filename', 'processing_ms', 'content_verified',
+            'validation', 'observation_error',
+        ]));
+        $metadata['artifacts'] = array_map(fn ($artifact) => array_intersect_key($artifact,
+            array_flip(['hash', 'media_type', 'size'])), $receipt->metadata['artifacts'] ?? []);
+
+        return $metadata;
     }
 
     /** A recorded failure is information, never a qualifying evidence signature. */
