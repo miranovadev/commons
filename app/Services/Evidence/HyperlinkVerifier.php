@@ -92,7 +92,7 @@ class HyperlinkVerifier
                 $mediaType = 'application/octet-stream';
             }
             $artifact = $this->artifacts->preserve($original, $mediaType);
-            $description = $this->descriptions->extract($original, $mediaType, $excerpt, $truncated);
+            $description = $this->descriptions->extract($original, $mediaType, $excerpt, $truncated, $url);
 
             return new VerifiedHyperlink($this->identity->resource($url), hash('sha256', $body), $observed, $modified,
                 $excerpt, $truncated, [$artifact], $description);

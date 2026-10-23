@@ -55,6 +55,36 @@ test('Search evidence renders escaped text and resource links', () => {
   assert.match(html, /Observed 2026-09-14/);
 });
 
+test('Loaded active Hyperlink evidence renders bounded references as escaped navigation metadata', () => {
+  const evidence = { title: 'Page <title>', content_excerpt: 'Short description', links: [
+    { url: 'https://example.org/paper?q=1&version=2', text: '<script>Source label</script>' },
+    { url: 'https://example.org/empty', text: '' },
+  ], links_count: 47, links_truncated: true };
+  const receipt = { id: 'page', type: 'hyperlink', reference: 'https://example.org', loaded: true, status: 'loaded', active: true, evidence };
+  const html = module.exports.panel({ receipts: [receipt] });
+  assert.match(html, /Page &lt;title&gt;/);
+  assert.match(html, /href="https:\/\/example.org\/paper\?q=1&amp;version=2"/);
+  assert.match(html, /&lt;script&gt;Source label&lt;\/script&gt;/);
+  assert.doesNotMatch(html, /<script>Source label/);
+  assert.match(html, /rel="noopener noreferrer"/);
+  assert.match(html, />https:\/\/example.org\/empty</);
+  assert.match(html, /Showing 2 of 47 discovered destinations/);
+  assert.match(html, /linked resources have not been acquired/);
+  for (const state of [{ loaded: false, active: false }, { loaded: true, active: false }]) {
+    assert.doesNotMatch(module.exports.panel({ receipts: [{ ...receipt, ...state }] }), /Source label|Page references|Short description/);
+  }
+});
+
+test('Empty references and supplementary extraction failure remain distinct from HTTP observation failure', () => {
+  const receipt = { id: 'page', type: 'hyperlink', reference: 'https://example.org', loaded: true, active: true,
+    evidence: { content_excerpt: 'Verified description', links: [], links_count: 0, links_truncated: false } };
+  assert.match(module.exports.panel({ receipts: [receipt] }), /No navigable references found/);
+  const failed = module.exports.panel({ receipts: [{ ...receipt, evidence: { ...receipt.evidence, links_count: null, links_error: 'html_reference_extraction_failed' } }] });
+  assert.match(failed, /References could not be extracted/);
+  assert.match(failed, /Verified description/);
+  assert.doesNotMatch(failed, /No navigable references found/);
+});
+
 test('Search has a bounded query field and switches create disjoint Instrument payloads', () => {
   const html = module.exports.fields({ kind: 'web_search', query: 'discovery' });
   assert.match(html, /Search query/);

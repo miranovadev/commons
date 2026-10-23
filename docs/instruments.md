@@ -31,6 +31,16 @@ ordinary context retains bounded Receipt metadata; Artifact bodies enter only th
 prepared interaction. Hyperlink acquisition, identity and stability are unchanged.
 See [Preparation and readers](epistemic-evidence-stage-2d.md).
 
+## Hyperlink references (Stage 3A)
+
+Successful HTML observations additionally describe bounded HTTP(S) anchor
+destinations and literal labels. Relative URLs resolve against the effective
+retrieved page URL, with query strings preserved. References enter existing loaded
+Receipt evidence; discovery never retrieves another resource or creates an
+execution. Artifact bytes, verification identity, stability and action eligibility
+remain unchanged. See [reference discovery](hyperlink-reference-discovery-stage-3a.md)
+for limits, failure semantics, cognition and a persisted example.
+
 
 > **C2/C3 update:** [Participant Context C3](participant-context-c3.md)
 > extends loaded ordinary evidence presentation to all causally selected

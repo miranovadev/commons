@@ -1,5 +1,11 @@
 # Participant Context C3: causal evidence and perspective
 
+Stage 3A extends loaded Hyperlink evidence with a bounded outgoing reference list.
+The same personal load state, causal associations, Region/Horizon boundaries and
+single catalogue projection below govern its visibility. Unloaded Receipts expose
+no reference collection, and discovered URLs grant no new cognition, acquisition
+or movement authority. See [reference discovery](hyperlink-reference-discovery-stage-3a.md).
+
 Authority: Claire's approved 18 October 2026 implementation handoff, subordinate
 to the ten [Core Invariants](core-invariants.md). This supersedes the C3 diagnostic
 candidates where the handoff explicitly corrects terminal and Write visibility.

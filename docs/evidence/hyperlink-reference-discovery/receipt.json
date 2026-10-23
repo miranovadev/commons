@@ -1,0 +1,54 @@
+{
+    "id": "01m5mem4rct7f7wdkmfs3jn39w",
+    "type": "hyperlink",
+    "reference": "https://example.com/page",
+    "evidence_execution_id": "01m5mem4r8j4khk56d9wk8w7ey",
+    "receiptable_type": "App\\Models\\Proposition",
+    "receiptable_id": "01m5mem4mejsxa7z1egxcvnram",
+    "phase_id": "01m5mem4mc6kzajg3s0dswrqck",
+    "context_horizon_id": "01m5mem4k364eq3rbntjczhhd4",
+    "signature": "49a1617ec1382770ef47dcbefdab5e0b7f930e29564a6a19746e17d7aeb2d83c",
+    "capabilities": [
+        "readable",
+        "replayable"
+    ],
+    "metadata": {
+        "validation": "http-content-v1",
+        "content_verified": true,
+        "resource": "example.com/page",
+        "fingerprint": "a1a6c062103f49ec9acddfdffa29ca80063785747073c7ee00c6b6426b873324",
+        "observed_at": "2026-10-23T13:18:53+00:00",
+        "last_modified": null,
+        "version_clock": "server-observed",
+        "content_excerpt": "Evidence pagePaperSupporting data",
+        "excerpt_truncated": false,
+        "title": "Evidence page",
+        "title_source": "html_title",
+        "description": "Research and supporting data.",
+        "description_source": "meta_description",
+        "description_truncated": false,
+        "links": [
+            {
+                "url": "https://example.com/first?edition=1",
+                "text": "Paper"
+            },
+            {
+                "url": "https://example.com/data.csv",
+                "text": "Supporting data"
+            }
+        ],
+        "links_count": 2,
+        "links_truncated": false,
+        "artifacts": [
+            {
+                "path": "artifacts/sha256/f8/cc/f8cc60e601548aea385e357a46a5256df6cf950c971668e875ae7985f5bfd38e",
+                "hash": "sha256:f8cc60e601548aea385e357a46a5256df6cf950c971668e875ae7985f5bfd38e",
+                "media_type": "text/html",
+                "size": 168
+            }
+        ],
+        "reinforcement_version": "accepted-version",
+        "reinforcement_status": "not-loaded"
+    },
+    "consumption": null
+}

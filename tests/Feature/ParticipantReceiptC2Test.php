@@ -46,7 +46,9 @@ class ParticipantReceiptC2Test extends TestCase
         $service = app(EvidenceExecutionService::class);
 
         return $service->complete($service->start($f->phase, $node, 'hyperlink', 'https://example.test/body'), $node,
-            verification: new VerifiedHyperlink('example.test/body', hash('sha256', 'body'), CarbonImmutable::now(), contentExcerpt: 'C2-IMMUTABLE-BODY'));
+            verification: new VerifiedHyperlink('example.test/body', hash('sha256', 'body'), CarbonImmutable::now(), contentExcerpt: 'C2-IMMUTABLE-BODY',
+                description: ['links' => [['url' => 'https://example.test/discovered?version=2', 'text' => 'C2-NAVIGATION']],
+                    'links_count' => 1, 'links_truncated' => false]));
     }
 
     private function catalogue(ParticipantContextFixture $f, $receipt, array $roles, ?Participant $viewer = null): array
@@ -75,6 +77,7 @@ class ParticipantReceiptC2Test extends TestCase
         $visible = $loaded;
         $this->assertSame($visible, array_key_exists('loaded_inline_content', $catalogue[0]));
         $this->assertSame($visible ? 1 : 0, substr_count(json_encode($catalogue), 'C2-IMMUTABLE-BODY'));
+        $this->assertSame($visible ? 1 : 0, substr_count(json_encode($catalogue), 'C2-NAVIGATION'));
         $this->assertSame($before, $this->snapshot());
     }
 

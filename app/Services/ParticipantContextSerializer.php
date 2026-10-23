@@ -162,6 +162,7 @@ final class ParticipantContextSerializer
             ...(($receipt['active'] ?? false) && isset($receipt['evidence']) ? ['evidence' => Arr::only($receipt['evidence'], [
                 'proposition_id', 'statement', 'attestation_id', 'direction', 'rationale',
                 'resource', 'fingerprint', 'observed_at', 'last_modified', 'content_excerpt', 'excerpt_truncated',
+                'title', 'title_source', 'description_source', 'links', 'links_count', 'links_truncated', 'links_error',
                 'query', 'executed_at', 'results', 'provider', 'request_id',
                 'originating_gate_id', 'participant_id', 'purpose', 'selections', 'deliveries', 'presented_at', 'outcome',
                 'tragedy_id', 'terminal_proposition_id', 'opening_proposition_id', 'exhausted_committals',

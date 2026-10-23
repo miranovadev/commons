@@ -1,5 +1,10 @@
 # Hyperlink Artifacts Stage 1
 
+Stage 3A adds [bounded anchor-reference metadata](hyperlink-reference-discovery-stage-3a.md)
+to the same successful HTML observation. Its extraction preserves every Artifact
+and evidence-identity contract below; discovered resources are never fetched
+automatically.
+
 Authority: Claire's approved 20 October 2026 implementation handoff, subordinate
 to the ten [Core Invariants](core-invariants.md). This stage preserves retrieved
 resources and adds descriptive metadata; it grants no Artifact reading authority.
