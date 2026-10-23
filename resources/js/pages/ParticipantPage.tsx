@@ -47,6 +47,7 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
   const [selectedAction, setSelectedAction] = useState<{ name: ActionName; initialValues: ContributionInitialValues } | null>(null);
   const [originOpened, { open: openOrigin, close: closeOrigin }] = useDisclosure(false);
   const plan = participation?.plan;
+  const awaitingPresentation = Boolean(plan?.preparation && plan.preparation.status !== 'presented');
   const [completedWorkspace, setCompletedWorkspace] = useState<{ plan: ParticipantPlan; phaseId: string } | null>(null);
   const completed = participation?.status === 'waiting' && participation.completion?.phase_id === completedWorkspace?.phaseId ? completedWorkspace : null;
   const displayPlan = completed?.plan || plan;
@@ -67,13 +68,13 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
 
   function openAction(name: ActionName, initialValues: ContributionInitialValues = {}) { contribution.reset(); setSelectedAction({ name, initialValues }); }
   function workspaceAction(name: ActionName, initialValues: ContributionInitialValues = {}) {
-    if (previewKind || !plan || submitting.current || submittedPhase.current === plan.phase.id) return;
+    if (previewKind || awaitingPresentation || !plan || submitting.current || submittedPhase.current === plan.phase.id) return;
     const input = quickContribution(plan, name, initialValues);
     if (input) { contribution.reset(); void submit(input); }
     else openAction(name, initialValues);
   }
   async function submit(contributionInput: ContributionInput) {
-    if (previewKind || !plan || submitting.current || submittedPhase.current === plan.phase.id) return false;
+    if (previewKind || awaitingPresentation || !plan || submitting.current || submittedPhase.current === plan.phase.id) return false;
     submitting.current = true;
     try {
       const result = await contribute({ slug, participantId, phaseId: plan.phase.id, contribution: contributionInput, expectedClosure: plan.schema?.$comment }).unwrap();
@@ -110,7 +111,7 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
       {participant && displayPlan && (
         <Box className="participant-cycle-shell">
           <Box className="cycle-context-header">
-            <PhaseIdentity kind={displayPlan.phase.kind} selectedKind={previewKind || displayPlan.phase.kind} onSelect={completed ? undefined : selectPhase} busy={Boolean(plan?.preparation && plan.preparation.status !== 'presented') || contribution.isLoading || (!completed && submittedPhase.current === displayPlan.phase.id)} />
+            <PhaseIdentity kind={displayPlan.phase.kind} selectedKind={previewKind || displayPlan.phase.kind} onSelect={completed ? undefined : selectPhase} busy={awaitingPresentation || contribution.isLoading || (!completed && submittedPhase.current === displayPlan.phase.id)} />
             <ParticipantIdentity participant={participant} onSelect={() => setSwitcherOpened(true)} opened={switcherOpened} />
           </Box>
           {previewKind && <Group className="phase-preview-notice" justify="space-between" gap="xs">
@@ -120,7 +121,7 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
           {!previewKind && plan?.preparation && <PreparationPanel key={plan.preparation.execution_id} slug={slug} participantId={participantId} preparation={plan.preparation} onDefer={() => workspaceAction('preparation.defer')} />}
           <Box className="participant-cycle-content">
             <ParticipantWorkspace key={previewKind || 'live'} previewKind={previewKind} plan={{ ...displayPlan, perspectiveLimit: participant.max_read_count }} availableActions={previewKind || completed ? [] : availableActions} onAction={workspaceAction}
-              busy={contribution.isLoading || (!completed && submittedPhase.current === displayPlan.phase.id)} onSubmit={previewKind || completed ? undefined : submit} error={contribution.error}
+              busy={awaitingPresentation || contribution.isLoading || (!completed && submittedPhase.current === displayPlan.phase.id)} onSubmit={previewKind || completed ? undefined : submit} error={contribution.error}
               completion={completed && participation ? <CycleCompletion slug={slug} participation={participation} loading={cycleEntry.isLoading} error={cycleEntry.error} onEnter={enterFromPotential} onOrigin={openOrigin} /> : undefined}
               status={previewKind || completed ? undefined : <WorkspaceStatus notices={notices} closeDetails={selectedAction !== null || switcherOpened} />} />
           </Box>

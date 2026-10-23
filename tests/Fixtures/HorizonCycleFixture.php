@@ -9,6 +9,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\ReceiptConsumption;
 use App\Models\Substrate;
+use App\Services\ChiralityGateService;
 use App\Services\Evidence\ArtifactStore;
 use App\Services\Evidence\HyperlinkIdentity;
 use App\Services\Evidence\HyperlinkMetadataExtractor;
@@ -68,6 +69,7 @@ trait HorizonCycleFixture
         $participantCount = count($participants);
         $trace = [];
         $lastCommitment = null;
+        $lastBias = null;
         for ($step = 0; $step < $actionBudget * $participantCount; $step++) {
             $participant = $participants[$step % $participantCount];
             $state = $service->stateFor($participant);
@@ -76,6 +78,9 @@ trait HorizonCycleFixture
             $lastCommitment = $plan['commitment'] ?? $lastCommitment;
             $observe?->__invoke($participant, $state);
             $actions = $plan['schema']['$defs']['actions'];
+            if ($plan['phase']['number'] === 6 && ! isset($actions['proposition.reclassify'])) {
+                $lastBias = app(ChiralityGateService::class)->evaluate(Phase::findOrFail($plan['phase']['id'])->gate);
+            }
             $needsEvidence = app(HorizonReceiptService::class)
                 ->ordinaryAvailable(Phase::findOrFail($plan['phase']['id']))->isEmpty();
             $preferredJudgment = collect($actions['attestation.create']['anyOf'] ?? [])
@@ -127,6 +132,7 @@ trait HorizonCycleFixture
                         ? ['action' => 'proposition.variant', 'statement' => 'Prepared opportunity '.$step]
                         : ['action' => 'preparation.defer', 'reason' => 'No structurally lawful fresh Variant is available.'];
                     $resolution['execution_id'] = $execution->id;
+                    $trace[] = [$prepared['cycle']['sequence'], $prepared['plan']['phase']['number'], $resolution['action'], null, null];
                     $resolved = $service->contribute($participant, $prepared['plan']['phase']['id'], $resolution);
                     $recordAction?->__invoke($participant, $prepared, $resolution, $resolved);
                 }
@@ -148,6 +154,6 @@ trait HorizonCycleFixture
             }
         }
         $this->fail('The single-participant motor stalled. Last Commit eligibility: '
-            .json_encode($lastCommitment).'; trace: '.json_encode($trace));
+            .json_encode($lastCommitment).'; last Bias eligibility: '.json_encode($lastBias).'; trace: '.json_encode($trace));
     }
 }

@@ -77,7 +77,7 @@ final class ArtifactReaderRegistry
             'source_type' => $sourceType, 'read_type' => $type,
             'method' => self::METHOD, 'version' => self::VERSION,
             'delivery_methods' => self::DELIVERIES,
-            'parameters' => $type === 'text' ? ['offset' => 0, 'max_chars' => (int) config('preparation.default_chars')] : [],
+            'parameters' => $type === 'text' ? ['offset' => 0, 'max_chars' => min((int) config('preparation.default_chars'), (int) config('preparation.max_chars'))] : [],
             'max_chars' => $type === 'text' ? (int) config('preparation.max_chars') : null,
             'max_bytes' => (int) config('preparation.selection_bytes'),
         ], $sourceType === 'html' ? ['raw', 'sanitised', 'text'] : ['raw', 'text']);

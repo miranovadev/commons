@@ -5,16 +5,20 @@ namespace Tests\Feature;
 use App\Enums\PhaseKind;
 use App\Exceptions\ArtifactStorageException;
 use App\Jobs\WakeParticipant;
+use App\Models\Attestation;
 use App\Models\Connection;
 use App\Models\EvidenceExecution;
 use App\Models\ParticipantConnection;
+use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\User;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
 use App\Services\Evidence\ArtifactStore;
+use App\Services\ExplorationEpochService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
+use App\Services\LedgerService;
 use App\Services\ParticipationService;
 use App\Services\PotentialProjectionService;
 use App\Services\PreparationService;
@@ -263,9 +267,49 @@ class PreparationJourneyTest extends TestCase
         $this->assertSame(1, Receipt::where('type', 'preparation')->count());
     }
 
+    private function refutedWrite(PreparationFixture $fixture): Proposition
+    {
+        return DB::transaction(function () use ($fixture) {
+            $f = $fixture->context;
+            $head = $f->node($f->gate, 'activity', position: PhaseKind::Disperse);
+            $vote = (new Attestation)->forceFill(['phase_id' => $head->phase_id,
+                'proposition_id' => $head->id, 'direction' => 'refute']);
+            $vote->save();
+            app(LedgerService::class)->record($vote);
+
+            return $head;
+        });
+    }
+
+    public function test_human_prepared_revision_uses_existing_ownership_and_structural_progression(): void
+    {
+        $this->postJson('/api/bootstrap', ['name' => 'Owner', 'email' => 'owner@example.test',
+            'password' => 'test-password-1234', 'password_confirmation' => 'test-password-1234'])->assertCreated();
+        $this->actingAs(User::firstOrFail());
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        $head = $this->refutedWrite($fixture);
+        $this->publishPotentialFixture($f->viewer);
+        $epoch = app(ExplorationEpochService::class)->forPhase($f->phase);
+        $url = '/api/substrates/'.$f->substrate->slug.'/participants/'.$f->viewer->id;
+        $started = $this->postJson($url.'/participate', ['phase_id' => $f->phase->id,
+            'contribution' => ['action' => 'preparation.start', 'proposition_id' => $f->gate->id, ...$fixture->input()]])->assertOk();
+        $id = $started->json('data.plan.preparation.execution_id');
+        $delivery = $this->getJson($url.'/preparations/'.$id.'/reading')->assertOk()->json('data');
+        $this->postJson($url.'/preparations/'.$id.'/presented', ['presentation_token' => $delivery['presentation_token']])->assertOk();
+        $this->postJson($url.'/participate', ['phase_id' => $f->phase->id, 'contribution' => [
+            'action' => 'proposition.revise', 'proposition_id' => $head->id, 'execution_id' => $id,
+            'statement' => 'Reconsider this account after reading its source.']])->assertOk()->assertJsonPath('data.plan.phase.number', 5);
+        $execution = EvidenceExecution::findOrFail($id);
+        $this->assertSame([$head->id], $execution->resultingProposition->parents()->pluck('propositions.id')->all());
+        $this->assertSame($epoch, app(ExplorationEpochService::class)->forPhase($f->phase));
+        $this->assertSame('contributed', $execution->outcome);
+        $this->assertNull($execution->receipt->consumption);
+    }
+
     public static function autonomousOutcomes(): array
     {
-        return [['contributed'], ['deferred'], ['failed']];
+        return [['contributed'], ['deferred'], ['failed'], ['revised']];
     }
 
     #[DataProvider('autonomousOutcomes')]
@@ -273,6 +317,7 @@ class PreparationJourneyTest extends TestCase
     {
         $fixture = new PreparationFixture;
         $f = $fixture->context;
+        $revision = $outcome === 'revised' ? $this->refutedWrite($fixture) : null;
         $this->publishPotentialFixture($f->viewer);
         $connection = (new Connection)->forceFill(['name' => 'Preparation transport', 'provider' => 'openai',
             'configuration' => ['model' => 'gpt-test'], 'credentials' => ['api_key' => 'test-secret']]);
@@ -281,7 +326,7 @@ class PreparationJourneyTest extends TestCase
             'is_enabled' => true, 'configuration' => ['trigger' => ['mode' => 'manual'], 'wake' => ['termination' => 'phase']]]);
         $link->save();
         $requests = [];
-        Http::fake(function ($request) use (&$requests, $fixture, $f, $outcome) {
+        Http::fake(function ($request) use (&$requests, $fixture, $f, $outcome, $revision) {
             $payload = $request->data();
             $requests[] = $payload;
             if (count($requests) === 1) {
@@ -303,7 +348,8 @@ class PreparationJourneyTest extends TestCase
                     }
                     $input = $outcome === 'deferred'
                         ? ['action' => 'preparation.defer', 'execution_id' => $execution->id, 'reason' => 'Compare more sources.']
-                        : ['action' => 'proposition.variant', 'execution_id' => $execution->id, 'statement' => 'Prepared autonomous contribution.'];
+                        : ['action' => $revision ? 'proposition.revise' : 'proposition.variant', 'execution_id' => $execution->id,
+                            ...($revision ? ['proposition_id' => $revision->id] : []), 'statement' => 'Prepared autonomous contribution.'];
                 } else {
                     $this->assertSame('deferred', $execution->outcome);
                     $this->assertStringNotContainsString('preserved artifact body', json_encode($payload));
@@ -329,13 +375,13 @@ class PreparationJourneyTest extends TestCase
             $this->assertNull($f->phase->fresh()->completed_at);
             $this->assertNull(app(PreparationService::class)->active($f->phase));
         } else {
-            $this->assertSame($outcome, $execution->outcome);
+            $this->assertSame($outcome === 'revised' ? 'contributed' : $outcome, $execution->outcome);
             $this->assertNotNull($f->phase->fresh()->completed_at);
             $this->assertNull($execution->receipt->consumption);
             $this->assertCount($outcome === 'deferred' ? 3 : 2, $requests);
         }
         $this->assertStringNotContainsString('preserved artifact body', json_encode($execution->toArray()));
-        if ($path = getenv('COMMONS_PREPARATION_READING_EXAMPLES')) {
+        if ($outcome !== 'revised' && ($path = getenv('COMMONS_PREPARATION_READING_EXAMPLES'))) {
             $examples = is_file($path) ? json_decode(file_get_contents($path), true, flags: JSON_THROW_ON_ERROR) : [];
             $examples[$outcome] = ['source' => 'Isolated automated journey, real application request with deterministic provider response',
                 'execution' => $execution->getAttributes(), 'receipt' => $execution->receipt?->getAttributes(),

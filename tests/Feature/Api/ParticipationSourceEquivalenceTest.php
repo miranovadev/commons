@@ -100,9 +100,11 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
             $this->assertSame($connected['plan']['schema'], $prompt['schema']);
             $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
             $contribution = $transport['properties']['contribution'];
-            $variant = $contribution['anyOf'][0] ?? $contribution;
+            $variant = collect($contribution['anyOf'] ?? [$contribution])->first(
+                fn ($branch) => in_array($input['action'], $branch['properties']['action']['enum'] ?? [], true));
+            $this->assertNotNull($variant, 'The provider schema must contain this exact action.');
             $envelope = ['contribution' => array_replace(array_fill_keys($variant['required'], null), $input)];
-            $this->assertTrue(app(Validator::class)->validate(Helper::toJSON($envelope), Helper::toJSON($transport))->isValid());
+            $this->assertTrue(app(Validator::class)->validate(Helper::toJSON($envelope), Helper::toJSON($transport))->isValid(), 'Step '.$step.' '.json_encode($envelope));
             $seen[$connected['plan']['phase']['kind']] = true;
             $seen[$input['action']] = true;
             $after = $this->executePersistJourneyStep($actor, $step);

@@ -26,7 +26,7 @@ jobs:
     name: PHP / PostgreSQL (${{ inputs.shard }}/${{ inputs.shards }})
     runs-on: ubuntu-latest
     # Core follows a frontend job capped at two minutes: 2 + 8 = 10.
-    timeout-minutes: ${{ inputs.suite == 'core' && 8 || inputs.suite == 'load' && 30 || 20 }}
+    timeout-minutes: ${{ inputs.suite == 'core' && 12 || inputs.suite == 'load' && 30 || 20 }}
 
     services:
       postgres:

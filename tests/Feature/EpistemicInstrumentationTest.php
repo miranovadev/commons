@@ -47,14 +47,14 @@ class EpistemicInstrumentationTest extends TestCase
     {
         $snapshot = [];
         foreach (['propositions', 'supersessions', 'phases', 'cycles', 'attestations', 'phase_profile_observations', 'chirality_observations'] as $table) {
-            $snapshot[$table] = DB::table($table)->get()->map(fn ($row) => (array) $row)->all();
+            $snapshot[$table] = DB::table($table)->get()->map(fn ($row) => (array) $row)->sortBy(fn ($row) => json_encode($row))->values()->all();
         }
         $snapshot['measurements'] = DB::table('proposition_measurements')->get()->map(function ($row) {
             $values = (array) $row;
             unset($values['calculated_at'], $values['updated_at']);
 
             return $values;
-        })->all();
+        })->sortBy(fn ($row) => json_encode($row))->values()->all();
 
         return $snapshot;
     }

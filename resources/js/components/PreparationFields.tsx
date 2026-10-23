@@ -13,7 +13,7 @@ export function PreparationFields({ options, value, onChange }: { options: Prepa
           data={options.map(item => ({ value: `${item.receipt_id}:${item.artifact_id}`, label: `${item.reference} · ${item.source_type} · ${item.receipt_id}` }))}
           onChange={key => { const chosen = options.find(item => `${item.receipt_id}:${item.artifact_id}` === key); if (chosen) update(index, { receipt_id: chosen.receipt_id, artifact_id: chosen.artifact_id, read_type: 'text', parameters: { offset: 0, max_chars: chosen.capabilities.find(c => c.read_type === 'text')?.parameters.max_chars ?? 4000 } }); }} />
         <Select label="Read Type" required value={selection.read_type} data={option?.capabilities.map(item => item.read_type) ?? []}
-          onChange={type => { if (type) update(index, { read_type: type, parameters: type === 'text' ? { offset: 0, max_chars: 4000 } : undefined }); }} />
+          onChange={type => { if (type) update(index, { read_type: type, parameters: type === 'text' ? { offset: 0, max_chars: option?.capabilities.find(c => c.read_type === 'text')?.parameters.max_chars ?? 4000 } : undefined }); }} />
         {selection.read_type === 'text' && <Group grow>
           <NumberInput label="Character offset" min={0} value={selection.parameters?.offset ?? 0} allowDecimal={false}
             onChange={offset => update(index, { parameters: { ...selection.parameters, offset: Number(offset), max_chars: selection.parameters?.max_chars ?? 4000 } })} />

@@ -108,7 +108,8 @@
             },
             "read_type": "text",
             "parameters": {
-              "max_chars": 4000
+              "max_chars": 4000,
+              "offset": 0
             }
           }
         ]
@@ -288,7 +289,8 @@
             },
             "read_type": "text",
             "parameters": {
-              "max_chars": 4000
+              "max_chars": 4000,
+              "offset": 0
             }
           }
         ]
@@ -410,7 +412,8 @@
             },
             "read_type": "text",
             "parameters": {
-              "max_chars": 4000
+              "max_chars": 4000,
+              "offset": 0
             }
           }
         ]
@@ -682,7 +685,8 @@
             },
             "read_type": "text",
             "parameters": {
-              "max_chars": 4000
+              "max_chars": 4000,
+              "offset": 0
             }
           }
         ]
@@ -804,7 +808,8 @@
             },
             "read_type": "text",
             "parameters": {
-              "max_chars": 4000
+              "max_chars": 4000,
+              "offset": 0
             }
           }
         ]
