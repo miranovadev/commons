@@ -6,6 +6,7 @@ import { IconAlertCircle, IconSparkles } from '@tabler/icons-react';
 import { Link, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
 import { quickContribution } from '../participationOptions';
+import { PreparationPanel } from '../components/PreparationPanel';
 import { ContributionForm } from '../components/ContributionForm';
 import { OriginCycleForm } from '../components/OriginCycleForm';
 import { ParticipantWorkspace } from '../components/ParticipantWorkspace';
@@ -109,13 +110,14 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
       {participant && displayPlan && (
         <Box className="participant-cycle-shell">
           <Box className="cycle-context-header">
-            <PhaseIdentity kind={displayPlan.phase.kind} selectedKind={previewKind || displayPlan.phase.kind} onSelect={completed ? undefined : selectPhase} busy={contribution.isLoading || (!completed && submittedPhase.current === displayPlan.phase.id)} />
+            <PhaseIdentity kind={displayPlan.phase.kind} selectedKind={previewKind || displayPlan.phase.kind} onSelect={completed ? undefined : selectPhase} busy={Boolean(plan?.preparation && plan.preparation.status !== 'presented') || contribution.isLoading || (!completed && submittedPhase.current === displayPlan.phase.id)} />
             <ParticipantIdentity participant={participant} onSelect={() => setSwitcherOpened(true)} opened={switcherOpened} />
           </Box>
           {previewKind && <Group className="phase-preview-notice" justify="space-between" gap="xs">
             <Text size="xs" c="dimmed" role="status">Read-only active lineage · showing the resolved history in each register.</Text>
             <Button size="compact-xs" variant="light" color="indigo" onClick={() => setPreviewSelection(null)}>Return to current Phase</Button>
           </Group>}
+          {!previewKind && plan?.preparation && <PreparationPanel key={plan.preparation.execution_id} slug={slug} participantId={participantId} preparation={plan.preparation} onDefer={() => workspaceAction('preparation.defer')} />}
           <Box className="participant-cycle-content">
             <ParticipantWorkspace key={previewKind || 'live'} previewKind={previewKind} plan={{ ...displayPlan, perspectiveLimit: participant.max_read_count }} availableActions={previewKind || completed ? [] : availableActions} onAction={workspaceAction}
               busy={contribution.isLoading || (!completed && submittedPhase.current === displayPlan.phase.id)} onSubmit={previewKind || completed ? undefined : submit} error={contribution.error}
@@ -135,6 +137,8 @@ function isActionName(value?: string): value is ActionName {
   return [
     'attestation.create',
     'instrument.execute',
+    'preparation.start',
+    'preparation.defer',
     'proposition.commit',
     'proposition.reclassify',
     'proposition.reconcile',

@@ -36,6 +36,7 @@ class PreparationConcurrencyTest extends TestCase
         Storage::fake('artifacts');
         $fixture = DB::transaction(fn () => new PreparationFixture);
         $f = $fixture->context;
+        app(PreparationService::class)->options($f->phase);
         $this->whileWorkerWaits($f->substrate, ['operation' => 'preparation-start-conflict',
             'participant_id' => $f->viewer->id, 'phase_id' => $f->phase->id, 'preparation' => $fixture->input()],
             fn () => app(PreparationService::class)->start($f->viewer, $f->phase, $fixture->input()));
@@ -66,7 +67,7 @@ class PreparationConcurrencyTest extends TestCase
     private function whileWorkerWaits(Substrate $substrate, array $input, callable $competing): void
     {
         $process = new Process([PHP_BINARY, base_path('tests/Support/concurrent-commons-worker.php')], base_path(), null,
-            json_encode([...$input, 'database' => config('database.connections.'.DB::getDefaultConnection())], JSON_THROW_ON_ERROR), 15);
+            json_encode([...$input, 'artifact_root' => Storage::disk('artifacts')->path(''), 'database' => config('database.connections.'.DB::getDefaultConnection())], JSON_THROW_ON_ERROR), 15);
         DB::beginTransaction();
         try {
             Substrate::query()->lockForUpdate()->findOrFail($substrate->id);

@@ -1,5 +1,11 @@
 # Epistemic evidence Stage 2C
 
+> Stage 2D supersedes the dormant activation and reader-interface details below.
+> Claire explicitly corrected consumed-source selection: attached and unattached
+> ordinary Receipts within the same lawful Region/Horizon both grant Artifact
+> access. Consumption still controls evidence availability, never reading. See
+> [the active Stage 2D contract](epistemic-evidence-stage-2d.md).
+
 Stage 2C introduces one `EvidenceExecution` / `evidence_executions` lifecycle for
 `instrument` and `prepare`. It establishes the Preparation domain without exposing
 Prepare, readers, provider attachments, or a new human/autonomous interaction.

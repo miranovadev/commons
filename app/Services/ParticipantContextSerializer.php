@@ -38,6 +38,8 @@ final class ParticipantContextSerializer
         return [
             'phase' => Arr::only($plan['phase'], ['id', 'number', 'kind', 'write_register']),
             'provenance_id' => $plan['provenance_id'] ?? null,
+            'preparation' => $plan['preparation'] ?? null,
+            'preparation_options' => $plan['preparation_options'] ?? [],
             'exhausted_alternatives' => array_map($this->historical(...), $plan['exhausted_alternatives'] ?? []),
             'gate_id' => $plan['gate']['id'],
             ...(isset($plan['chirality_admissibility']) ? ['chirality_admissibility' => $plan['chirality_admissibility']] : []),
@@ -155,12 +157,13 @@ final class ParticipantContextSerializer
         }
 
         return [
-            ...Arr::only($receipt, ['id', 'loaded', 'active', 'proposition_id', 'context_horizon_id', 'availability', 'consumed_at', 'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'can_replay', 'replayed_from_receipt_id']),
+            ...Arr::only($receipt, ['id', 'loaded', 'active', 'proposition_id', 'context_horizon_id', 'availability', 'consumed_at', 'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'can_replay', 'replayed_from_receipt_id', 'preparation_history']),
             ...(($receipt['active'] ?? false) ? Arr::only($receipt, ['signature', 'observation_error']) : []),
             ...(($receipt['active'] ?? false) && isset($receipt['evidence']) ? ['evidence' => Arr::only($receipt['evidence'], [
                 'proposition_id', 'statement', 'attestation_id', 'direction', 'rationale',
                 'resource', 'fingerprint', 'observed_at', 'last_modified', 'content_excerpt', 'excerpt_truncated',
                 'query', 'executed_at', 'results', 'provider', 'request_id',
+                'originating_gate_id', 'participant_id', 'purpose', 'selections', 'deliveries', 'presented_at', 'outcome',
                 'tragedy_id', 'terminal_proposition_id', 'opening_proposition_id', 'exhausted_committals',
             ])] : []),
         ];

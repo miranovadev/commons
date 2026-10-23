@@ -33,6 +33,15 @@ export function ReceiptContextPanel({ plan }: { plan: ParticipantPlan }) {
           ? `Historical Tension ${receipt.tragedy_memory.catastrophe.tension} · Charge ${receipt.tragedy_memory.catastrophe.charge}`
           : 'Historical boundary field unavailable'}</Text>
       </Box>}
+      {receipt.preparation_history && <Stack gap={3} mt="xs">
+        <Text size="xs" fw={600}>Preparation purpose: {receipt.preparation_history.purpose}</Text>
+        <Text size="xs">Participant {receipt.preparation_history.participant_id} · Gate {receipt.preparation_history.originating_gate_id}</Text>
+        {receipt.preparation_history.selections.map((item, index) => <Text size="xs" key={index}>Source Receipt {item.receipt_id} · Artifact {item.artifact_id} · {item.read_type}</Text>)}
+        {receipt.preparation_history.deliveries.map((item, index) => <Text size="xs" key={index}>Presented using {item.method} v{item.version} · {item.read_type} · characters {item.boundaries.offset}–{item.boundaries.end} of {item.boundaries.total}</Text>)}
+        <Text size="xs">Outcome: {receipt.preparation_history.outcome.type}{receipt.preparation_history.outcome.proposition_id ? ` · Proposition ${receipt.preparation_history.outcome.proposition_id}` : ''}</Text>
+        {receipt.preparation_history.outcome.reason && <Text size="xs">Participant’s deferment reason: {receipt.preparation_history.outcome.reason}</Text>}
+        <Text size="xs" c="dimmed">Historical investigation metadata. Source content is not replayed by loading this Receipt.</Text>
+      </Stack>}
       {receipt.attached_proposition_id && <Text size="xs" c="dimmed">Attached to {receipt.attached_proposition_id}</Text>}
       {receipt.status === 'already-in-context' && <Text size="xs" c="dimmed">Referenced Proposition is already in this context.</Text>}
       {receipt.observation_error && <Text size="xs" c="dimmed">{receipt.observation_error}</Text>}

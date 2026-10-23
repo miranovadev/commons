@@ -43,6 +43,9 @@ final readonly class InputSchemaService
     ): array {
         $occurrence = $context?->phase ?? $this->phases->currentFor($participant);
         $kind = $occurrence->kind;
+        if ($execution = app(PreparationService::class)->active($occurrence)) {
+            return app(PreparationService::class)->resolutionSchema($participant, $occurrence, $execution);
+        }
         $plan = $this->phases->plan($kind);
         $gate = $context?->propositions->get($occurrence->gate_proposition_id) ?? $this->gates->forPhase($occurrence);
         if (app(ExhaustionService::class)->unavailable($gate)) {
@@ -79,6 +82,31 @@ final readonly class InputSchemaService
             $instrumentOptionIds,
             $commitOptionIds,
         );
+
+        if (isset($schema['$defs']['actions']['preparation.start'])) {
+            $action = &$schema['$defs']['actions']['preparation.start'];
+            $action['properties']['proposition_id']['enum'] = [$gate->id];
+            $selections = [];
+            foreach (app(PreparationService::class)->options($occurrence, $context) as $option) {
+                foreach ($option['capabilities'] as $capability) {
+                    $properties = [
+                        'receipt_id' => ['type' => 'string', 'const' => $option['receipt_id']],
+                        'artifact_id' => ['type' => 'string', 'const' => $option['artifact_id']],
+                        'read_type' => ['type' => 'string', 'const' => $capability['read_type']],
+                    ];
+                    $required = array_keys($properties);
+                    if ($capability['read_type'] === 'text') {
+                        $required[] = 'parameters';
+                        $properties['parameters'] = ['type' => 'object', 'additionalProperties' => false, 'required' => ['max_chars'],
+                            'properties' => ['offset' => ['type' => 'integer', 'minimum' => 0],
+                                'max_chars' => ['type' => 'integer', 'minimum' => 1, 'maximum' => $capability['max_chars']]]];
+                    }
+                    $selections[] = ['type' => 'object', 'additionalProperties' => false, 'required' => $required, 'properties' => $properties];
+                }
+            }
+            $action['properties']['artifacts']['items'] = ['anyOf' => $selections];
+            unset($action);
+        }
 
         if (isset($schema['$defs']['actions']['proposition.reclassify'])) {
             $schema['$defs']['actions']['proposition.reclassify']['properties']['proposition_id']['enum'] =
@@ -193,7 +221,7 @@ final readonly class InputSchemaService
                 : ['type' => 'array', 'uniqueItems' => true, 'items' => ['type' => 'string', 'enum' => $eligibleIds]];
         }
         foreach ($schema['$defs']['actions'] as $name => &$action) {
-            if ($name === 'participant.rest') {
+            if (in_array($name, ['participant.rest', 'preparation.start', 'preparation.defer'], true)) {
                 continue;
             }
             $action['properties']['receipt_options'] = ['type' => 'object', 'additionalProperties' => false,

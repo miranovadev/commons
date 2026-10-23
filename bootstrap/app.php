@@ -13,7 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withBroadcasting(__DIR__.'/../routes/channels.php', ['middleware' => ['web', 'auth']])
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Authored Preparation history preserves exact submitted wording.
+        $middleware->trimStrings(except: ['contribution.purpose', 'contribution.reason']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

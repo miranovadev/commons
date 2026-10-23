@@ -1,4 +1,4 @@
-import type { AutonomousParticipation, ParticipantContext } from '../types';
+import type { AutonomousParticipation, ParticipantContext, PreparationDelivery } from '../types';
 import type { GraphSubscriptions } from '../realtime/notifications';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { systemBootstrapRequired } from '../systemSlice';
@@ -178,6 +178,16 @@ export const commonsApi = createApi({
       transformResponse: data,
       providesTags: (_result, _error, { participantId }) => [{ type: 'Participation', id: participantId }],
     }),
+    readPreparation: builder.mutation<PreparationDelivery, ParticipantParameters & { executionId: string }>({
+      query: ({ slug, participantId, executionId }) => `/substrates/${slug}/participants/${participantId}/preparations/${executionId}/reading`,
+      transformResponse: data,
+      invalidatesTags: (_result, error) => error ? ['Participation'] : [],
+    }),
+    acknowledgePreparation: builder.mutation<{ presented: boolean }, ParticipantParameters & { executionId: string; token: string }>({
+      query: ({ slug, participantId, executionId, token }) => ({ url: `/substrates/${slug}/participants/${participantId}/preparations/${executionId}/presented`, method: 'POST', body: { presentation_token: token } }),
+      transformResponse: data,
+      invalidatesTags: ['Participation'],
+    }),
     contribute: builder.mutation<AutonomousParticipation, ParticipantParameters & { phaseId: Identifier; contribution: ContributionInput; expectedClosure?: string }>({
       query: ({ slug, participantId, phaseId, contribution, expectedClosure }) => ({
         url: `/substrates/${slug}/participants/${participantId}/participate`,
@@ -285,6 +295,8 @@ export const {
   useCreateParticipantConnectionMutation,
   useCreateSubstrateMutation,
   useContributeMutation,
+  useReadPreparationMutation,
+  useAcknowledgePreparationMutation,
   useDeleteConnectionMutation,
   useDeleteParticipantConnectionMutation,
   useEnterCycleMutation,

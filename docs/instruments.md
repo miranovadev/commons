@@ -13,8 +13,9 @@ Stage 2B adds the shared catalogue prerequisite: Persist offers Instrument only
 when no eligible unattached ordinary Receipt is available. If one exists, lawful
 Variant/Revise replace acquisition. Neither loading nor authorship controls this
 choice, and generation does not consume the Receipt. An exhausted allowance does
-not suppress independently lawful Attestation or Traverse. Disperse keeps its
-existing generation rules until Preparation and reading can be activated.
+not suppress independently lawful Attestation or Traverse. Stage 2D activates the equivalent Disperse policy with Preparation and transient
+Artifact reading. Preparation reads accessible ordinary Receipt Artifacts even after
+consumption; this does not restore evidence availability.
 See [the Stage 2B contract](epistemic-evidence-stage-2b.md).
 
 ## Hyperlink Artifact preservation (Stage 1)
@@ -25,9 +26,10 @@ private, immutable, content-addressed **Artifact**. Receipt metadata adds an
 labels. Evidence fingerprints and the seven-day version rule remain unchanged.
 See [the Stage 1 contract](hyperlink-artifacts-stage-1.md) for metadata examples,
 atomic storage, failure semantics and required shared-storage configuration.
-Artifacts do not become readable documents in Participant cognition. C2/C3
-continue presenting one bounded description for eligible personally loaded
-observations; internal storage keys and full bytes are omitted.
+Stage 2D permits deliberate bounded Artifact reading through Preparation. C2/C3
+ordinary context retains bounded Receipt metadata; Artifact bodies enter only the
+prepared interaction. Hyperlink acquisition, identity and stability are unchanged.
+See [Preparation and readers](epistemic-evidence-stage-2d.md).
 
 
 > **C2/C3 update:** [Participant Context C3](participant-context-c3.md)

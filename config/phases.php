@@ -46,6 +46,7 @@ return [
         'description' => 'Open a structurally needed expressive opportunity, attest, or traverse an already-attested Write.',
         'gate' => 'previous-phase-position',
         'actions' => [
+            'preparation.start',
             'proposition.variant',
             'proposition.revise',
             'attestation.create',

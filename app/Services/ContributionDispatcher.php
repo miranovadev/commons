@@ -6,6 +6,7 @@ use App\Domain\Evidence\InstrumentObservation;
 use App\Domain\Observables\ObservableValues;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -48,10 +49,11 @@ final readonly class ContributionDispatcher
         Phase $phase,
         array $input,
         ?InstrumentObservation $observed = null,
+        ?EvidenceExecution $preparation = null,
     ): Proposition {
         $observed ??= $this->observeInstrument($participant, $phase, $input);
 
-        return DB::transaction(function () use ($participant, $phase, $input, $observed): Proposition {
+        return DB::transaction(function () use ($participant, $phase, $input, $observed, $preparation): Proposition {
             // Also protect direct service callers before attestations or FK inserts.
             Substrate::query()->lockForUpdate()->findOrFail($participant->substrate_id);
             if ($phase->cycle->participant->substrate_id !== $participant->substrate_id) {
@@ -65,15 +67,25 @@ final readonly class ContributionDispatcher
             $receiptOptions = $input['receipt_options'] ?? null;
             unset($input['receipt_options']);
             $action = $input['action'];
+            if ($preparation !== null) {
+                app(PreparationService::class)->assertResolution($participant, $phase, $preparation);
+                if (! in_array($action, ['proposition.variant', 'proposition.revise'], true)
+                    || ($input['execution_id'] ?? null) !== $preparation->id) {
+                    throw new DomainException('A prepared contribution must resolve its exact execution.');
+                }
+            } elseif (app(PreparationService::class)->active($phase) !== null) {
+                throw new ConflictHttpException('Resolve the unfinished Preparation before ordinary participation.');
+            }
+            unset($input['execution_id']);
             if (! in_array($action, config("phases.{$phase->kind->value}.actions", []), true)
                 || $phase->cycle->participant_id !== $participant->id) {
                 throw new DomainException('The contribution must belong to this Participant and Phase.');
             }
             if (in_array($action, ['proposition.variant', 'proposition.revise'], true)
-                && ! $this->generation->epistemicActionAvailable($phase, $action)) {
+                && $preparation === null && ! $this->generation->epistemicActionAvailable($phase, $action)) {
                 throw new ConflictHttpException('Shared Receipt availability changed. Refresh before generating.');
             }
-            if (! $this->generation->available($phase, $action)) {
+            if (! $this->generation->available($phase, $action, prepared: $preparation !== null)) {
                 if ($action === 'instrument.execute') {
                     throw new ConflictHttpException('Instrumentation requires the active Persist Gate, an unused Cycle allowance and no available ordinary Receipt.');
                 }
@@ -93,7 +105,7 @@ final readonly class ContributionDispatcher
                 'attestation.create' => $this->options->attestationOptionsFor($phase),
                 'instrument.execute' => $this->options->instrumentOptionsFor($phase),
                 'proposition.traverse' => $this->options->traversalOptionsFor($phase),
-                'proposition.revise' => $this->options->revisionOptionsFor($phase, $participant),
+                'proposition.revise' => $this->options->revisionOptionsFor($phase, $participant, prepared: $preparation !== null),
                 default => null,
             };
             if ($targets !== null && ! $targets->contains('id', $input['proposition_id'] ?? null)) {

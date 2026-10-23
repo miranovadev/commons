@@ -5,11 +5,14 @@ namespace App\Jobs;
 use App\Contracts\ParticipantInference;
 use App\Enums\WakeTermination;
 use App\Models\Cycle;
+use App\Models\EvidenceExecution;
 use App\Models\ParticipantConnection;
 use App\Models\Phase;
+use App\Services\Evidence\ArtifactReaderRegistry;
 use App\Services\ParticipantActivityService;
 use App\Services\ParticipantConnectionTriggerService;
 use App\Services\ParticipationService;
+use App\Services\PreparationService;
 use App\Services\WakeClock;
 use App\Support\WakeConfiguration;
 use Illuminate\Bus\Queueable;
@@ -78,6 +81,7 @@ class WakeParticipant implements ShouldQueue
 
         // Observability outages must not fail an otherwise valid wake.
         $token = rescue(fn () => $activity->begin($participantConnection->participant, $this->timeout), report: true);
+        $preparedExecution = null;
         try {
             $state = $participation->prepare($participantConnection->participant);
             if (($state['status'] ?? null) !== 'ready') {
@@ -133,10 +137,22 @@ class WakeParticipant implements ShouldQueue
                 }
                 $actingCycleId = $state['cycle']['id'];
                 $observedCycleId = $actingCycleId;
+                $preparedExecution = null;
+                $delivery = null;
+                if ($executionId = data_get($state, 'plan.preparation.execution_id')) {
+                    $preparedExecution = EvidenceExecution::findOrFail($executionId);
+                    $delivery = app(PreparationService::class)->delivery($participant, $preparedExecution, 'inline-text');
+                    $state['prepared_context'] = array_diff_key($delivery, ['presentation_token' => true]);
+                }
                 $contribution = $inference->contribute($currentConnection->connection, $state, [
                     'participant_id' => $participant->id,
                     'substrate_id' => $participant->substrate_id,
                 ]);
+                if ($preparedExecution !== null) {
+                    // A successful inference call received this exact transient context.
+                    // Extraction alone and failed inference never acknowledge presentation.
+                    app(PreparationService::class)->acknowledge($participant, $preparedExecution, $delivery['presentation_token']);
+                }
                 // Preserve the separate transport timeout, but never start a new
                 // contribution after an inference has consumed the whole deadline.
                 if ($clock->now() >= $deadline) {
@@ -166,6 +182,12 @@ class WakeParticipant implements ShouldQueue
             }
             $triggers->recordSuccess($participantConnection);
         } catch (Throwable $exception) {
+            if ($preparedExecution !== null) {
+                rescue(fn () => app(PreparationService::class)->fail($participantConnection->participant,
+                    $preparedExecution, ArtifactReaderRegistry::METHOD,
+                    ArtifactReaderRegistry::VERSION, 'inference',
+                    'Prepared interaction failed: '.mb_substr($exception->getMessage(), 0, 900)), report: true);
+            }
             $triggers->recordFailure(
                 $participantConnection,
                 str($exception->getMessage())->limit(4000)->toString(),
@@ -179,4 +201,3 @@ class WakeParticipant implements ShouldQueue
         }
     }
 }
-

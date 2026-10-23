@@ -5,6 +5,7 @@ import type { FormEvent } from 'react';
 import { messageFrom } from '../errors';
 import { actionPropositions, attestationDirections, receiptChoices, reclassificationReceiptRule } from '../participationOptions';
 import { duplicateInstrument, replayReceiptIds } from '../instrumentInvocations';
+import { PreparationFields } from './PreparationFields';
 import { InstrumentFields } from './InstrumentFields';
 import { AttestationDirectionControl } from './AttestationDirectionControl';
 import type {
@@ -71,6 +72,8 @@ export function ContributionForm({
     setValues({
       direction: 'support',
       instrument: { kind: 'citation', reference: '' },
+      ...(action === 'preparation.start' ? { proposition_id: plan.gate.id, artifacts: [] } : {}),
+      ...(plan.preparation ? { execution_id: plan.preparation.execution_id } : {}),
       ...initialValues,
     });
   }, [action, initialValues, opened]);
@@ -138,6 +141,9 @@ export function ContributionForm({
             })}
           </Stack>}
 
+          {properties.purpose && <Textarea label="Preparation purpose" required maxLength={240} value={values.purpose ?? ''} onChange={event => set('purpose', event.currentTarget.value)} />}
+          {properties.artifacts && <PreparationFields options={plan.preparation_options ?? []} value={values.artifacts ?? []} onChange={items => set('artifacts', items)} />}
+          {properties.reason && <Textarea label="Deferment reason" description="Your reason is shared historical context, not a verified claim about the sources." required maxLength={400} value={values.reason ?? ''} onChange={event => set('reason', event.currentTarget.value)} />}
           {properties.statement && (
             <Textarea
               label="Statement"
@@ -150,7 +156,7 @@ export function ContributionForm({
             />
           )}
 
-          {properties.proposition_id && (
+          {properties.proposition_id && action !== 'preparation.start' && (
             <Select
               searchable
               label="Proposition"

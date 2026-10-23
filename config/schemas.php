@@ -57,7 +57,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 27,
+    'version' => 28,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -74,6 +74,22 @@ return [
     ],
 
     'actions' => [
+        'preparation.start' => [
+            'title' => 'Prepare Artifacts', 'type' => 'object', 'additionalProperties' => false,
+            'required' => ['action', 'proposition_id', 'purpose', 'artifacts'],
+            'properties' => [
+                'action' => ['const' => 'preparation.start'], 'proposition_id' => $ulid,
+                'purpose' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 240],
+                'artifacts' => ['type' => 'array', 'minItems' => 1, 'maxItems' => 8, 'uniqueItems' => true,
+                    'items' => ['type' => 'object']],
+            ],
+        ],
+        'preparation.defer' => [
+            'title' => 'Defer after Preparation', 'type' => 'object', 'additionalProperties' => false,
+            'required' => ['action', 'reason'],
+            'properties' => ['action' => ['const' => 'preparation.defer'],
+                'reason' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 400]],
+        ],
         'proposition.traverse' => [
             'description' => 'Move to an available continuation.',
             'title' => 'Continue through an admissible Write',

@@ -222,3 +222,10 @@ object, or HEAD + GET for reuse; remote latency and production storage cost have
 not been measured. Reuse avoids upload but deliberately still verifies content.
 
 Final automated validation results are recorded in the PR and validation report.
+
+## Preparation reading (Stage 2D)
+
+[Stage 2D](epistemic-evidence-stage-2d.md) adds explicit bounded reading of preserved
+Artifacts. Reading access follows ordinary Region/Horizon provenance independently
+of Receipt consumption or loading. Prepared content is transient; normal C3/loading
+continues to present historical Receipt metadata without replaying Artifact bodies.

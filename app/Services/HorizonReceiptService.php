@@ -10,6 +10,7 @@ use App\Models\ReceiptConsumption;
 use App\Models\Substrate;
 use App\Services\Participation\ParticipationContext;
 use DomainException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -26,15 +27,33 @@ final class HorizonReceiptService
             if ($seed === null) {
                 return collect();
             }
-            $subjects = array_keys(array_filter($regions->seeds($context), fn ($id) => $id === $seed));
             $tragedies = array_keys(array_filter(app(TragedyReceiptScopeService::class)->seeds($context), fn ($id) => $id === $seed));
 
-            return Receipt::whereDoesntHave('consumption')->where(fn ($q) => $q
-                ->where(fn ($ordinary) => $ordinary->whereNotIn('type', Receipt::SPECIAL_RECEIPT_TYPES)->where('context_horizon_id', $phase->cycle->context_horizon_id)
-                    ->whereHas('evidenceExecution', fn ($execution) => $execution->where('status', 'completed')->whereIn('proposition_id', $subjects)))
+            return Receipt::whereDoesntHave('consumption')->where(fn ($query) => $query
+                ->whereIn('id', $this->ordinaryQuery($phase, $context)->select('id'))
                 ->orWhere(fn ($special) => $special->where('type', 'tragedy')->whereKey($tragedies)))
                 ->with(['evidenceExecution', 'consumption', 'phase'])->orderBy('created_at')->orderBy('id')->get();
         });
+    }
+
+    /** Artifact access keeps the exact ordinary Region/Horizon scope, independent of consumption or loading. */
+    public function accessibleOrdinary(Phase $phase, ?ParticipationContext $context = null): Collection
+    {
+        $context ??= new ParticipationContext($phase);
+
+        return $context->remember('accessible-region-receipts', fn () => $this->ordinaryQuery($phase, $context)
+            ->with(['evidenceExecution', 'consumption', 'phase'])->orderBy('created_at')->orderBy('id')->get());
+    }
+
+    private function ordinaryQuery(Phase $phase, ParticipationContext $context): Builder
+    {
+        $regions = app(ReceiptRegionService::class);
+        $seed = $regions->current($phase, $context);
+        $subjects = $seed === null ? [] : array_keys(array_filter($regions->seeds($context), fn ($id) => $id === $seed));
+
+        return Receipt::whereNotIn('type', Receipt::SPECIAL_RECEIPT_TYPES)
+            ->where('context_horizon_id', $phase->cycle->context_horizon_id)
+            ->whereHas('evidenceExecution', fn ($execution) => $execution->where('status', 'completed')->whereIn('proposition_id', $subjects));
     }
 
     /** Presentation union only. Operational evidence callers must use this ordinary subset. */
