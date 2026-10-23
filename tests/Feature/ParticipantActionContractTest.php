@@ -29,6 +29,7 @@ use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
 use Tests\TestCase;
 
@@ -59,7 +60,8 @@ class ParticipantActionContractTest extends TestCase
         // participant's generative opportunity. Fresh generation is covered by
         // FullEvidenceFlowTest and SharedReclassificationTest.
         $spent = match ($kind) {
-            PhaseKind::Distinguish, PhaseKind::Disperse => ['proposition.variant'],
+            PhaseKind::Distinguish => ['proposition.variant'],
+            PhaseKind::Disperse => ['proposition.variant', 'preparation.start'],
             PhaseKind::Persist => ['proposition.variant', 'proposition.reclassify', 'instrument.execute'],
             PhaseKind::Constrain, PhaseKind::Bias => [],
             default => [],
@@ -86,7 +88,7 @@ class ParticipantActionContractTest extends TestCase
                 try {
                     app(ParticipationService::class)->contribute($participant, $phase->id, $input);
                     $this->fail('Backend accepted unavailable action '.$action.' in '.$kind->name);
-                } catch (InvalidArgumentException) {
+                } catch (InvalidArgumentException|\DomainException|ConflictHttpException) {
                     $this->addToAssertionCount(1);
                 }
                 $this->assertSame($before, $phase->fresh()->getAttributes(), $action.' changed the phase');
@@ -248,11 +250,18 @@ class ParticipantActionContractTest extends TestCase
         }
         if ($type === 'object') {
             $value = [];
-            foreach ($schema['required'] as $field) {
+            foreach ($schema['required'] ?? [] as $field) {
                 $value[$field] = $field === 'reference' ? $reference : $this->sample($schema['properties'][$field], $definitions, $reference);
             }
 
-            return $value;
+            return $value === [] ? new \stdClass : $value;
+        }
+
+        if ($type === 'array') {
+            return [$this->sample($schema['items'], $definitions, $reference)];
+        }
+        if ($type === 'integer') {
+            return $schema['minimum'] ?? 1;
         }
 
         return isset($schema['pattern']) ? $reference : 'Schema contract contribution';

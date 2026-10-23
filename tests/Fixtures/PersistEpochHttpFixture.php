@@ -28,13 +28,13 @@ trait PersistEpochHttpFixture
         $receipt = $state['plan']['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'][0];
         $slot = $this->contribute($actor, ['action' => 'proposition.reclassify', 'proposition_id' => $persist, 'receipt_id' => $receipt]);
         $constrain = $slot['current_proposition_id'];
-        $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Disperse opportunity B']);
+        $state = $this->prepareVariant($actor, 'Disperse opportunity B');
         $b = $state['current_proposition_id'];
         $this->contribute($actor, ['action' => 'participant.rest']);
         $this->contribute($actor, ['action' => 'proposition.traverse', 'proposition_id' => $a]);
-        $this->observePersist($actor, $a, 'third');
-        // Constrain consumed the first observation. The returning actor's new
-        // Persist observation now supplies shared evidence for both observers.
+        $this->assertActionUnavailable($this->readParticipation($actor), 'instrument.execute');
+        // The completed Preparation supplies shared evidence for both observers;
+        // its source Instrument Receipt remains consumed.
         $observer = $this->joinParticipant('disperse-observer');
         $this->enterParticipant($observer);
         $this->judge($observer, $a);
@@ -64,7 +64,7 @@ trait PersistEpochHttpFixture
         $before = $this->readParticipation($participant);
         $this->assertSame('persist', $before['plan']['phase']['kind']);
         $after = $this->contribute($participant, ['action' => 'instrument.execute', 'proposition_id' => $gate,
-            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/staggered/'.$reference]]);
+            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://evidence.example.test/staggered/'.$reference]]);
         $this->assertSame($before['plan']['phase'], $after['plan']['phase']);
         $this->assertSame($before['cycle'], $after['cycle']);
         $this->assertSame($gate, $after['current_proposition_id']);

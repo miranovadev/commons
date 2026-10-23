@@ -254,18 +254,18 @@ class ReceiptGovernedGenerationTest extends TestCase
         $this->assertEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($f->phase));
     }
 
-    public function test_only_persist_activates_the_epistemic_policy(): void
+    public function test_persist_and_disperse_activate_the_epistemic_policy(): void
     {
         $f = $this->fixture();
         foreach (PhaseKind::cases() as $kind) {
             $f->phase->kind = $kind;
             foreach (['proposition.variant', 'proposition.revise'] as $action) {
-                $this->assertSame($kind !== PhaseKind::Persist, app(PhaseGenerationService::class)->epistemicActionAvailable($f->phase, $action));
+                $this->assertSame(! in_array($kind, [PhaseKind::Persist, PhaseKind::Disperse], true), app(PhaseGenerationService::class)->epistemicActionAvailable($f->phase, $action));
             }
             foreach (['attestation.create', 'proposition.traverse', 'proposition.reclassify', 'participant.rest'] as $action) {
                 $this->assertTrue(app(PhaseGenerationService::class)->epistemicActionAvailable($f->phase, $action));
             }
-            $this->assertNotContains('preparation.execute', config("phases.{$kind->value}.actions"));
+            $this->assertSame($kind === PhaseKind::Disperse, in_array('preparation.start', config("phases.{$kind->value}.actions"), true));
         }
     }
 

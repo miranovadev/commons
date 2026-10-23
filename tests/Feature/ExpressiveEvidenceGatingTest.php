@@ -64,10 +64,21 @@ class ExpressiveEvidenceGatingTest extends TestCase
     public function test_empty_position_then_shared_persist_evidence_then_attestation(PhaseKind $kind): void
     {
         $phase = $this->position($kind);
+        if ($kind === PhaseKind::Disperse) {
+            $this->assertArrayNotHasKey('proposition.variant', $this->actions($phase));
+            $initialReceipt = $this->sharedObservation();
+        }
         $this->assertArrayHasKey('proposition.variant', $this->actions($phase));
         $write = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'Explore this possibility']);
         $actions = $this->actions($phase);
+        if (isset($initialReceipt)) {
+            // Consume the generation prerequisite before testing independent Attestation evidence.
+            $consumerPhase = $this->phase($write, PhaseKind::Constrain);
+            $consumer = $this->node($consumerPhase, $write);
+            DB::transaction(fn () => app(HorizonReceiptService::class)->consume($consumerPhase, $write, $consumer, $initialReceipt->id));
+            $actions = $this->actions($phase);
+        }
         $this->assertArrayNotHasKey('instrument.execute', $actions);
         $this->assertArrayNotHasKey('proposition.variant', $actions);
         $this->assertArrayNotHasKey('attestation.create', $actions);

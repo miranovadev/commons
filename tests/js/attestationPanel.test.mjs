@@ -56,6 +56,8 @@ test('main page submits a footer action once, retries failures and does not reop
          export const useGetParticipantQuery = () => ({ data: { callsign: 'Viewer' } });
          export const useGetParticipationQuery = (...args) => useGetParticipantWorkspaceQuery(...args);
 export const useGetParticipantWorkspaceQuery = () => ({ data: globalThis.attestationHarness.participation });
+         export const useReadPreparationMutation = () => [() => {}, { reset() {} }];
+         export const useAcknowledgePreparationMutation = () => [() => {}, { reset() {} }];
          export const useContributeMutation = () => [globalThis.attestationHarness.contribute, { isLoading: false, reset() {} }];
          export const useEnterCycleMutation = () => [() => {}, { reset() {} }];` }));
   } }], bundle: true, platform: 'node', format: 'cjs', write: false, jsx: 'automatic' });

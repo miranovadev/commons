@@ -204,6 +204,8 @@ export interface ConnectionOptions {
 }
 
 export type ActionName =
+  | 'preparation.start'
+  | 'preparation.defer'
   | 'attestation.create'
   | 'instrument.execute'
   | 'proposition.commit'
@@ -219,7 +221,19 @@ export type InstrumentInput =
   | { kind: 'web_search'; query: string }
   | { replay_receipt_id: string };
 
+export interface PreparationSelection { receipt_id: string; artifact_id: string; read_type: string; parameters?: { offset?: number; max_chars: number }; }
+export interface PreparationOption { receipt_id: string; artifact_id: string; reference: string; source_type: string; size: number;
+  capabilities: Array<{ read_type: string; method: string; version: string; max_chars?: number; parameters: { max_chars?: number } }>;
+}
+export interface PreparationDelivery { execution_id: string; purpose: string; presentation_token: string;
+  deliveries: Array<{ request_id: string; artifact_id: string; source_type: string; read_type: string; method: string; version: string; content: string;
+    boundaries: { offset: number; end: number; total: number; has_more: boolean } }>;
+}
 export interface ContributionInput {
+  purpose?: string;
+  artifacts?: PreparationSelection[];
+  reason?: string;
+  execution_id?: string;
   action: ActionName;
   proposition_id?: Identifier;
   other_proposition_id?: Identifier;
@@ -300,6 +314,9 @@ export interface ReceiptContext {
   can_replay: boolean;
   replayed_from_receipt_id: Identifier | null;
   observation_error?: string | null;
+  preparation_history?: { purpose: string; participant_id: string; originating_gate_id: string; selections: PreparationSelection[];
+    deliveries: Array<{ artifact_id: string; read_type: string; method: string; version: string; boundaries: { offset: number; end: number; total: number } }>;
+    outcome: { type: string; reason?: string; proposition_id?: string } };
   evidence?: { tragedy_id?: Identifier; terminal_proposition_id?: Identifier; opening_proposition_id?: Identifier; exhausted_committals?: Array<{ id: Identifier; statement: string; statement_truncated: boolean; register: RegisterName; phase_number: number; exhausted_horizon_id: Identifier; exhausted_at: string; actionable: false }>; query?: string; executed_at?: string; results?: Array<{ title: string; url: string; excerpt: string; excerpt_truncated: boolean; source: string; rank: number; relevance: number | null; published_at: string | null }>; proposition_id?: Identifier; statement?: string; direction?: string; rationale?: string | null; resource?: string; fingerprint?: string; observed_at?: string; content_excerpt?: string | null; excerpt_truncated?: boolean };
 }
 
@@ -325,6 +342,10 @@ interface GateAdmissibility {
 }
 
 export interface ParticipantPlan {
+  preparation?: { execution_id: string; status: string; purpose: string; selections: PreparationSelection[] } | null;
+  preparation_options?: PreparationOption[];
+  preparation_failures?: Array<{ execution_id: string; purpose: string; diagnostic: { failure_reason?: string; failure?: { stage: string; method: string; classification?: string } } }>;
+
   correspondence_admissibility?: GateAdmissibility & {
     shape_topology_direction: ComponentDirection;
     phase_profile_direction: ComponentDirection;

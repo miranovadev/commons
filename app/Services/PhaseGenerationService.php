@@ -26,20 +26,23 @@ final readonly class PhaseGenerationService
     /** Shared catalogue availability selects acquisition or generation, never attachment. */
     public function epistemicActionAvailable(Phase $phase, string $action, ?ParticipationContext $context = null): bool
     {
-        // Disperse activates this policy only when Preparation and reading exist.
-        if ($phase->kind !== PhaseKind::Persist
-            || ! in_array($action, ['instrument.execute', 'proposition.variant', 'proposition.revise'], true)) {
+        // Acquisition and fresh generation share one authoritative Receipt prerequisite.
+        if (! in_array($phase->kind, [PhaseKind::Persist, PhaseKind::Disperse], true)
+            || ! in_array($action, ['instrument.execute', 'preparation.start', 'proposition.variant', 'proposition.revise'], true)) {
             return true;
         }
 
         $available = app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
 
-        return $action === 'instrument.execute' ? ! $available : $available;
+        return in_array($action, ['instrument.execute', 'preparation.start'], true) ? ! $available : $available;
     }
 
-    public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null): bool
+    public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null, bool $prepared = false): bool
     {
-        if (! $this->epistemicActionAvailable($phase, $action, $context)) {
+        if (! $prepared && ! $this->epistemicActionAvailable($phase, $action, $context)) {
+            return false;
+        }
+        if ($action === 'preparation.start' && ! app(PreparationService::class)->eligible($phase, $context)) {
             return false;
         }
         if (in_array($action, ['proposition.variant', 'proposition.revise'], true)

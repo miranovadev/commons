@@ -10,7 +10,7 @@ use App\Services\Observables\ProspectiveClosureService;
 use App\Services\PropositionStateService;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\HorizonCycleFixture;
-use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
+use Tests\Support\RefreshEvidenceDatabase as RefreshDatabase;
 use Tests\TestCase;
 
 /** Independent skeptical-development transcript; the historical aligned transcript is unchanged. */

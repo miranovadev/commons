@@ -9,6 +9,7 @@ use App\Exceptions\PotentialProjectionUnavailable;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
 use App\Models\Cycle;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Substrate;
@@ -135,6 +136,7 @@ final readonly class ParticipationService
             );
         }
 
+        app(PreparationService::class)->recover($participant, $phase);
         $version = app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id);
         $plan = $this->plans->forPhase($participant, $phase, $workspace);
         if ($version !== app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id)) {
@@ -205,6 +207,36 @@ final readonly class ParticipationService
         if ($observedPhase === null || $observedPhase->cycle->participant_id !== $participant->id
             || $observedPhase->completed_at !== null || $observedPhase->cycle->completed_at !== null) {
             throw new ConflictHttpException('The participation state changed. Refresh before contributing.');
+        }
+
+        if (($input['action'] ?? null) === 'preparation.start') {
+            if (($input['proposition_id'] ?? null) !== $observedPhase->gate_proposition_id
+                || array_diff(array_keys($input), ['action', 'proposition_id', 'purpose', 'artifacts']) !== []) {
+                throw new ConflictHttpException('Preparation requires the exact current Gate and validated selections.');
+            }
+            app(PreparationService::class)->start($participant, $observedPhase, array_intersect_key($input, array_flip(['purpose', 'artifacts'])));
+
+            return $this->stateFor($participant->fresh());
+        }
+        if (isset($input['execution_id'])) {
+            $execution = EvidenceExecution::findOrFail($input['execution_id']);
+            if ($execution->phase_id !== $phaseId) {
+                throw new ConflictHttpException('The Preparation does not belong to this Phase.');
+            }
+            if (($input['action'] ?? null) === 'preparation.defer') {
+                $schema = app(PreparationService::class)->resolutionSchema($participant, $observedPhase, $execution);
+                $this->contributions->validateSchema($schema, $input);
+                app(PreparationService::class)->defer($participant, $execution, $input['reason']);
+            } else {
+                app(PreparationService::class)->contribute($participant, $execution, $input);
+            }
+            app(PotentialProjectionService::class)->refresh($participant->substrate_id);
+            $this->cycleEntry->prepare($participant->fresh());
+
+            return $this->stateFor($participant->fresh());
+        }
+        if (app(PreparationService::class)->active($observedPhase) !== null) {
+            throw new ConflictHttpException('Resolve the unfinished Preparation before ordinary participation.');
         }
 
         // Validate before network I/O, then guard the prepared plan by version.
@@ -293,6 +325,9 @@ final readonly class ParticipationService
 
             if ((int) $substrate->field_version !== $validatedVersion) {
                 throw new ConflictHttpException('The active field changed during contribution validation. Retry from fresh state.');
+            }
+            if (app(PreparationService::class)->active($phase) !== null) {
+                throw new ConflictHttpException('A Preparation started while this contribution was pending.');
             }
             if ($input['action'] === 'participant.rest') {
                 // The Rest witness describes the guarded pre-completion field.

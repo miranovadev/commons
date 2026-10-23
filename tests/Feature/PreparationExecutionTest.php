@@ -23,7 +23,8 @@ use App\Services\PreparationService;
 use App\Services\PropositionOptionService;
 use App\Services\ReceiptContextService;
 use DomainException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -34,7 +35,17 @@ use Tests\TestCase;
 
 class PreparationExecutionTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseMigrations;
+
+    public function runDatabaseMigrations(): void
+    {
+        $this->beforeRefreshingDatabase();
+        $this->refreshTestDatabase();
+        $this->afterRefreshingDatabase();
+        $this->beforeApplicationDestroyed(static function (): void {
+            RefreshDatabaseState::$migrated = false;
+        });
+    }
 
     protected function setUp(): void
     {
@@ -70,7 +81,7 @@ class PreparationExecutionTest extends TestCase
         $this->assertNull($execution->fresh()->resulting_proposition_id);
         $this->assertSame(['type' => 'deferred', 'reason' => $reason], $receipt->metadata['outcome']);
         $this->assertSame($fixture->input()['purpose'], $receipt->metadata['purpose']);
-        $this->assertSame($fixture->input()['artifacts'], $receipt->metadata['selections']);
+        $this->assertEquals($fixture->input()['artifacts'], $receipt->metadata['selections']);
         $this->assertOrdinary($receipt, $execution);
         $this->assertNotNull(app(ReceiptEvidenceService::class)->observation($receipt));
         $this->assertDatabaseHas('participant_receipt_contexts', ['participant_id' => $f->viewer->id, 'receipt_id' => $receipt->id, 'cleared_at' => null]);
@@ -186,7 +197,7 @@ class PreparationExecutionTest extends TestCase
         }
     }
 
-    public function test_foreign_and_consumed_receipt_selections_are_rejected_but_loading_is_irrelevant(): void
+    public function test_foreign_receipts_are_rejected_and_consumed_artifacts_remain_accessible_independently_of_loading(): void
     {
         $fixture = new PreparationFixture;
         $foreign = new PreparationFixture;
@@ -202,15 +213,16 @@ class PreparationExecutionTest extends TestCase
         DB::table('participant_receipt_contexts')->where('receipt_id', $fixture->source->id)->update(['cleared_at' => now()]);
         $execution = app(PreparationService::class)->start($f->viewer, $f->phase, $fixture->input());
         $this->assertSame('pending', $execution->status);
-        $this->reclassify($fixture, $fixture->source);
         $other = $this->other($f->phase);
-        $this->expectException(DomainException::class);
-        app(PreparationService::class)->start($other->cycle->participant, $other, $fixture->input());
+        $second = app(PreparationService::class)->start($other->cycle->participant, $other, $fixture->input());
+        $this->assertSame('pending', $second->status);
+        $this->assertTrue(app(HorizonReceiptService::class)->accessibleOrdinary($other)->contains('id', $fixture->source->id));
+        $this->assertTrue(app(HorizonReceiptService::class)->ordinaryAvailable($other)->isEmpty());
     }
 
     public static function invalidPresentations(): array
     {
-        return array_map(fn ($v) => [$v], ['unknown-reader', 'wrong-version', 'unsupported', 'omitted', 'duplicate', 'budget', 'zero', 'unselected', 'body']);
+        return array_map(fn ($v) => [$v], ['unknown-reader', 'wrong-version', 'unsupported', 'omitted', 'duplicate', 'budget', 'negative', 'unselected', 'body']);
     }
 
     #[DataProvider('invalidPresentations')]
@@ -235,7 +247,7 @@ class PreparationExecutionTest extends TestCase
                 break;
             case 'budget': $deliveries[0]['payload_bytes'] = PreparationInput::MAX_PAYLOAD_BYTES + 1;
                 break;
-            case 'zero': $deliveries[0]['payload_bytes'] = 0;
+            case 'negative': $deliveries[0]['payload_bytes'] = -1;
                 break;
             case 'unselected': $deliveries[0]['artifact_id'] = 'sha256:'.str_repeat('0', 64);
                 break;
@@ -252,18 +264,15 @@ class PreparationExecutionTest extends TestCase
         }
     }
 
-    public function test_production_has_no_reader_or_prepare_action_and_keeps_disperse_generation(): void
+    public function test_production_exposes_prepare_in_disperse_only_when_consumed_artifacts_remain_accessible(): void
     {
         $fixture = new PreparationFixture;
         $f = $fixture->context;
         $actions = app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema']['$defs']['actions'];
-        $this->assertArrayHasKey('proposition.variant', $actions);
-        $this->assertStringNotContainsString('prepare', json_encode($actions));
-        $this->assertSame([], iterator_to_array(app()->tagged('preparation.readers')));
-        $service = app(PreparationService::class);
-        $execution = $service->start($f->viewer, $f->phase, $fixture->input());
-        $this->expectException(DomainException::class);
-        $service->present($f->viewer, $execution, $fixture->presentation());
+        $this->assertArrayHasKey('preparation.start', $actions);
+        $this->assertArrayNotHasKey('proposition.variant', $actions);
+        $this->assertArrayNotHasKey('proposition.revise', $actions);
+        $this->assertTrue(app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->isEmpty());
     }
 
     public function test_failure_records_method_and_diagnostic_without_receipt_or_outcome_and_keeps_allowance_reserved(): void
@@ -366,7 +375,7 @@ class PreparationExecutionTest extends TestCase
     {
         $fixture = new PreparationFixture;
         $f = $fixture->context;
-        $head = $f->node($f->gate, 'activity', position: PhaseKind::Disperse);
+        $head = DB::transaction(fn () => $f->node($f->gate, 'activity', position: PhaseKind::Disperse));
         $vote = (new Attestation)->forceFill(['phase_id' => $head->phase_id, 'proposition_id' => $head->id, 'direction' => 'refute']);
         $vote->save();
         app(LedgerService::class)->record($vote);
@@ -387,16 +396,15 @@ class PreparationExecutionTest extends TestCase
         $f = $fixture->context;
         [$service, $execution] = $this->presented($fixture);
         $receipt = $service->defer($f->viewer, $execution, 'The observation stands.');
+        $this->reclassify($fixture, $receipt);
         $other = $this->other($f->phase);
         $second = $service->start($other->cycle->participant, $other, $fixture->input());
         $this->assertNotSame($execution->cycle_id, $second->cycle_id);
         $this->assertSame(0, EvidenceExecution::where('cycle_id', $execution->cycle_id)->where('type', 'instrument')->where('status', 'completed')->count());
         // Isolate the allowance predicate from Phase ordering: a completed prepare
         // row must not be counted as an Instrument, even in the same Cycle.
-        foreach ([$fixture->source, $receipt] as $available) {
-            $this->reclassify($fixture, $available);
-        }
-        $persistGate = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $this->assertTrue(app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->isEmpty());
+        $persistGate = DB::transaction(fn () => $f->node($f->seed, 'activity', position: PhaseKind::Distinguish));
         $probe = $f->phase->replicate();
         $probe->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $persistGate->id, 'write_register' => 'frontier']);
         $this->assertNotEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($probe));
@@ -419,11 +427,11 @@ class PreparationExecutionTest extends TestCase
         PreparationFixture::registerReader();
         $service = app(PreparationService::class);
         $execution = $service->start($f->viewer, $f->phase, $fixture->input());
-        $this->reclassify($fixture, $fixture->source);
+        $this->assertNotNull($fixture->source->consumption);
         $this->assertFalse(app(HorizonReceiptService::class)->catalogue($f->phase)->contains('id', $fixture->source->id));
         $service->present($f->viewer, $execution, $fixture->presentation());
         $receipt = $service->defer($f->viewer, $execution, 'The selected material was supplied.');
-        $this->assertSame($fixture->input()['artifacts'], $receipt->metadata['selections']);
+        $this->assertEquals($fixture->input()['artifacts'], $receipt->metadata['selections']);
     }
 
     public function test_failed_phase_advance_rolls_back_receipt_outcome_and_contribution(): void
@@ -483,9 +491,9 @@ class PreparationExecutionTest extends TestCase
         $f = $fixture->context;
         [$service, $execution] = $this->presented($fixture);
         $receipt = $service->defer($f->viewer, $execution, 'Preserve the comparison for later development.');
-        $this->reclassify($fixture, $fixture->source);
+        $this->assertNotNull($fixture->source->consumption);
         $other = $this->other($f->phase);
-        $gate = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $gate = DB::transaction(fn () => $f->node($f->seed, 'activity', position: PhaseKind::Distinguish));
         $other->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $gate->id, 'write_register' => 'frontier'])->save();
         $actor = $other->cycle->participant;
         $actor->forceFill(['current_proposition_id' => $gate->id])->save();
@@ -564,23 +572,12 @@ class PreparationExecutionTest extends TestCase
     /** Full ordinary dispatch, including effective Attestation and independent ownership. */
     private function reclassify(PreparationFixture $fixture, Receipt $receipt): Proposition
     {
-        $f = $fixture->context;
-        $other = $this->other($f->phase);
-        $participant = $other->cycle->participant;
-        $source = $f->node($f->seed, 'frontier', position: PhaseKind::Persist, participant: $participant);
-        $vote = (new Attestation)->forceFill(['phase_id' => $source->phase_id, 'proposition_id' => $source->id, 'direction' => 'support']);
-        $vote->save();
-        app(LedgerService::class)->record($vote);
-        $other->forceFill(['kind' => PhaseKind::Constrain, 'gate_proposition_id' => $source->id, 'write_register' => 'canon'])->save();
-        $participant->forceFill(['current_proposition_id' => $source->id])->save();
-
-        return app(ContributionDispatcher::class)->dispatch($participant, $other, ['action' => 'proposition.reclassify',
-            'proposition_id' => $source->id, 'receipt_id' => $receipt->id]);
+        return $fixture->consume($receipt);
     }
 
     private function structuralSnapshot(): array
     {
         return collect(['propositions', 'supersessions', 'phases', 'cycles', 'horizon_exploration_states',
-            'chirality_observations', 'closure_births', 'chirality_population_observations', 'phase_profile_observations', 'proposition_attestation_cursors'])->mapWithKeys(fn ($t) => [$t => DB::table($t)->get()->toJson()])->all();
+            'chirality_observations', 'closure_births', 'chirality_population_observations', 'phase_profile_observations', 'proposition_attestation_cursors'])->mapWithKeys(fn ($t) => [$t => DB::table($t)->get()->sortBy(fn ($row) => json_encode($row))->values()->toJson()])->all();
     }
 }

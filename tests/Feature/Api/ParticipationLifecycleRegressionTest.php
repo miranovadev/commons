@@ -67,14 +67,14 @@ class ParticipationLifecycleRegressionTest extends ScriptedParticipationTestCase
         $receipt = $new['plan']['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'][0];
         $new = $this->contribute($explorer, ['action' => 'proposition.reclassify', 'proposition_id' => $persist, 'receipt_id' => $receipt]);
         $constrain = $new['current_proposition_id'];
-        $new = $this->contribute($explorer, ['action' => 'proposition.variant', 'statement' => 'Test the downstream continuation']);
+        $new = $this->prepareVariant($explorer, 'Test the downstream continuation');
         $activity = $new['current_proposition_id'];
         $counterpart = $new['plan']['schema']['$defs']['actions']['proposition.reconcile']['properties']['other_proposition_id']['enum'][0];
         $new = $this->contribute($explorer, ['action' => 'proposition.reconcile', 'other_proposition_id' => $counterpart]);
         $mediated = $new['current_proposition_id'];
         $this->contribute($explorer, ['action' => 'participant.rest']);
         $traverse($signal);
-        $this->observePersist($explorer, $signal, 'after-independent-classification');
+        $this->assertActionUnavailable($this->readParticipation($explorer), 'instrument.execute');
         $traverse($persist);
         $attest($constrain);
         $attest($activity);
@@ -129,7 +129,7 @@ class ParticipationLifecycleRegressionTest extends ScriptedParticipationTestCase
         $this->assertNotEmpty($failures);
         $this->assertSame($firstSlot['context_horizon_id'], $secondSlot['context_horizon_id']);
         $this->assertSame($firstSlot['last_commitment']['proposition_id'], $secondSlot['last_commitment']['proposition_id']);
-        $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Other Disperse slot']);
+        $this->prepareVariant($actor, 'Other Disperse slot');
         $afterState = $this->readParticipation($observer);
         $this->assertSame($beforeState['plan']['phase']['id'], $afterState['plan']['phase']['id']);
         $this->assertSame($firstGate, $afterState['plan']['gate_id']);

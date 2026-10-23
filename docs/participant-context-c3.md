@@ -39,3 +39,10 @@ CI results, baseline failure comparisons, actual PHP/PostgreSQL C2/C3 measuremen
 and remaining limitations. Graph fixtures, authorised lifecycle components and
 natural end-to-end paths are distinguished explicitly. No model sampling was
 performed and no behavioural improvement is claimed from prompt construction.
+
+## Preparation reading (Stage 2D)
+
+[Stage 2D](epistemic-evidence-stage-2d.md) adds explicit bounded reading of preserved
+Artifacts. Reading access follows ordinary Region/Horizon provenance independently
+of Receipt consumption or loading. Prepared content is transient; normal C3/loading
+continues to present historical Receipt metadata without replaying Artifact bodies.

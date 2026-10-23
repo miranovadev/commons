@@ -179,8 +179,9 @@ final class PropositionOptionService
         Phase $phase,
         Participant $participant,
         ?ParticipationContext $context = null,
+        bool $prepared = false,
     ): Collection {
-        if ($phase->write_register === null || ! $this->generation->available($phase, 'proposition.revise', $context)) {
+        if ($phase->write_register === null || ! $this->generation->available($phase, 'proposition.revise', $context, prepared: $prepared)) {
             return collect();
         }
 

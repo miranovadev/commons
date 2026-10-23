@@ -29,6 +29,10 @@ $input = json_decode(stream_get_contents(STDIN), true, flags: JSON_THROW_ON_ERRO
 config()->set('database.default', 'concurrency_worker');
 config()->set('database.connections.concurrency_worker', $input['database']);
 config()->set('broadcasting.default', 'null');
+if (isset($input['artifact_root'])) {
+    config()->set('filesystems.disks.artifacts', ['driver' => 'local', 'root' => $input['artifact_root'], 'visibility' => 'private', 'serve' => false]);
+}
+
 DB::statement("SET lock_timeout = '8s'");
 DB::statement("SET statement_timeout = '12s'");
 echo DB::selectOne('select pg_backend_pid() as pid')->pid."\n";

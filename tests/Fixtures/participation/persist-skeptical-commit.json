@@ -1,5 +1,5 @@
 {
-  "description": "Fixed Stage 2A skeptical journey, independently validated by CommitSourceHistoryLifecycleTest. Explicit Phase/Cycle/Gate and result identities; no runtime action selection.",
+  "description": "Stage 2D fixed skeptical journey, recorded from real CommitSourceHistoryLifecycleTest. Preparation reads consumed source Artifacts and completes via ordinary Variant. Explicit Phase/Cycle/Gate/results; no runtime action selection.",
   "steps": [
     {
       "cycle": 2,
@@ -22,7 +22,7 @@
         },
         "instrument": {
           "kind": "hyperlink",
-          "reference": "https://example.test/evidence/1"
+          "reference": "https://evidence.example.test/evidence/1"
         }
       },
       "result": "p1",
@@ -93,10 +93,43 @@
       "phase": 4,
       "gate": "p3",
       "input": {
-        "action": "proposition.variant",
-        "statement": "Opportunity 7"
+        "action": "preparation.start",
+        "proposition_id": {
+          "ref": "p3"
+        },
+        "purpose": "Examine the evidence before developing this continuation.",
+        "artifacts": [
+          {
+            "receipt_id": {
+              "ref": "r1"
+            },
+            "artifact_id": {
+              "artifact_of": "r1"
+            },
+            "read_type": "text",
+            "parameters": {
+              "max_chars": 4000,
+              "offset": 0
+            }
+          }
+        ]
       },
-      "result": "p4"
+      "result": "p3",
+      "execution": "e1"
+    },
+    {
+      "cycle": 3,
+      "phase": 4,
+      "gate": "p3",
+      "input": {
+        "action": "proposition.variant",
+        "statement": "Prepared opportunity 7",
+        "execution_id": {
+          "ref": "e1"
+        }
+      },
+      "result": "p4",
+      "receipt": "r2"
     },
     {
       "cycle": 3,
@@ -118,23 +151,6 @@
         }
       },
       "result": "p1"
-    },
-    {
-      "cycle": 4,
-      "phase": 2,
-      "gate": "p1",
-      "input": {
-        "action": "instrument.execute",
-        "proposition_id": {
-          "ref": "p1"
-        },
-        "instrument": {
-          "kind": "hyperlink",
-          "reference": "https://example.test/evidence/10"
-        }
-      },
-      "result": "p1",
-      "receipt": "r2"
     },
     {
       "cycle": 4,
@@ -189,7 +205,7 @@
       "gate": "origin",
       "input": {
         "action": "proposition.variant",
-        "statement": "Opportunity 15"
+        "statement": "Opportunity 14"
       },
       "result": "p5"
     },
@@ -199,7 +215,7 @@
       "gate": "p5",
       "input": {
         "action": "proposition.variant",
-        "statement": "Opportunity 16"
+        "statement": "Opportunity 15"
       },
       "result": "p6"
     },
@@ -258,10 +274,43 @@
       "phase": 4,
       "gate": "p7",
       "input": {
-        "action": "proposition.variant",
-        "statement": "Opportunity 21"
+        "action": "preparation.start",
+        "proposition_id": {
+          "ref": "p7"
+        },
+        "purpose": "Examine the evidence before developing this continuation.",
+        "artifacts": [
+          {
+            "receipt_id": {
+              "ref": "r1"
+            },
+            "artifact_id": {
+              "artifact_of": "r1"
+            },
+            "read_type": "text",
+            "parameters": {
+              "max_chars": 4000,
+              "offset": 0
+            }
+          }
+        ]
       },
-      "result": "p8"
+      "result": "p7",
+      "execution": "e2"
+    },
+    {
+      "cycle": 6,
+      "phase": 4,
+      "gate": "p7",
+      "input": {
+        "action": "proposition.variant",
+        "statement": "Prepared opportunity 20",
+        "execution_id": {
+          "ref": "e2"
+        }
+      },
+      "result": "p8",
+      "receipt": "r3"
     },
     {
       "cycle": 6,
@@ -289,25 +338,8 @@
       "phase": 2,
       "gate": "p1",
       "input": {
-        "action": "instrument.execute",
-        "proposition_id": {
-          "ref": "p1"
-        },
-        "instrument": {
-          "kind": "hyperlink",
-          "reference": "https://example.test/evidence/24"
-        }
-      },
-      "result": "p1",
-      "receipt": "r3"
-    },
-    {
-      "cycle": 7,
-      "phase": 2,
-      "gate": "p1",
-      "input": {
         "action": "proposition.variant",
-        "statement": "Opportunity 25"
+        "statement": "Opportunity 23"
       },
       "result": "p9"
     },
@@ -365,10 +397,43 @@
       "phase": 4,
       "gate": "p10",
       "input": {
-        "action": "proposition.variant",
-        "statement": "Opportunity 30"
+        "action": "preparation.start",
+        "proposition_id": {
+          "ref": "p10"
+        },
+        "purpose": "Examine the evidence before developing this continuation.",
+        "artifacts": [
+          {
+            "receipt_id": {
+              "ref": "r1"
+            },
+            "artifact_id": {
+              "artifact_of": "r1"
+            },
+            "read_type": "text",
+            "parameters": {
+              "max_chars": 4000,
+              "offset": 0
+            }
+          }
+        ]
       },
-      "result": "p11"
+      "result": "p10",
+      "execution": "e3"
+    },
+    {
+      "cycle": 8,
+      "phase": 4,
+      "gate": "p10",
+      "input": {
+        "action": "proposition.variant",
+        "statement": "Prepared opportunity 28",
+        "execution_id": {
+          "ref": "e3"
+        }
+      },
+      "result": "p11",
+      "receipt": "r4"
     },
     {
       "cycle": 8,
@@ -390,23 +455,6 @@
         }
       },
       "result": "p1"
-    },
-    {
-      "cycle": 9,
-      "phase": 2,
-      "gate": "p1",
-      "input": {
-        "action": "instrument.execute",
-        "proposition_id": {
-          "ref": "p1"
-        },
-        "instrument": {
-          "kind": "hyperlink",
-          "reference": "https://example.test/evidence/33"
-        }
-      },
-      "result": "p1",
-      "receipt": "r4"
     },
     {
       "cycle": 9,
@@ -553,7 +601,7 @@
       "gate": "origin",
       "input": {
         "action": "proposition.variant",
-        "statement": "Opportunity 46"
+        "statement": "Opportunity 43"
       },
       "result": "p12"
     },
@@ -563,7 +611,7 @@
       "gate": "p12",
       "input": {
         "action": "proposition.variant",
-        "statement": "Opportunity 47"
+        "statement": "Opportunity 44"
       },
       "result": "p13"
     },
@@ -622,10 +670,43 @@
       "phase": 4,
       "gate": "p14",
       "input": {
-        "action": "proposition.variant",
-        "statement": "Opportunity 52"
+        "action": "preparation.start",
+        "proposition_id": {
+          "ref": "p14"
+        },
+        "purpose": "Examine the evidence before developing this continuation.",
+        "artifacts": [
+          {
+            "receipt_id": {
+              "ref": "r1"
+            },
+            "artifact_id": {
+              "artifact_of": "r1"
+            },
+            "read_type": "text",
+            "parameters": {
+              "max_chars": 4000,
+              "offset": 0
+            }
+          }
+        ]
       },
-      "result": "p15"
+      "result": "p14",
+      "execution": "e4"
+    },
+    {
+      "cycle": 13,
+      "phase": 4,
+      "gate": "p14",
+      "input": {
+        "action": "proposition.variant",
+        "statement": "Prepared opportunity 49",
+        "execution_id": {
+          "ref": "e4"
+        }
+      },
+      "result": "p15",
+      "receipt": "r5"
     },
     {
       "cycle": 13,
@@ -653,25 +734,8 @@
       "phase": 2,
       "gate": "p1",
       "input": {
-        "action": "instrument.execute",
-        "proposition_id": {
-          "ref": "p1"
-        },
-        "instrument": {
-          "kind": "hyperlink",
-          "reference": "https://example.test/evidence/55"
-        }
-      },
-      "result": "p1",
-      "receipt": "r5"
-    },
-    {
-      "cycle": 14,
-      "phase": 2,
-      "gate": "p1",
-      "input": {
         "action": "proposition.variant",
-        "statement": "Opportunity 56"
+        "statement": "Opportunity 52"
       },
       "result": "p16"
     },
@@ -729,10 +793,43 @@
       "phase": 4,
       "gate": "p17",
       "input": {
-        "action": "proposition.variant",
-        "statement": "Opportunity 61"
+        "action": "preparation.start",
+        "proposition_id": {
+          "ref": "p17"
+        },
+        "purpose": "Examine the evidence before developing this continuation.",
+        "artifacts": [
+          {
+            "receipt_id": {
+              "ref": "r1"
+            },
+            "artifact_id": {
+              "artifact_of": "r1"
+            },
+            "read_type": "text",
+            "parameters": {
+              "max_chars": 4000,
+              "offset": 0
+            }
+          }
+        ]
       },
-      "result": "p18"
+      "result": "p17",
+      "execution": "e5"
+    },
+    {
+      "cycle": 15,
+      "phase": 4,
+      "gate": "p17",
+      "input": {
+        "action": "proposition.variant",
+        "statement": "Prepared opportunity 57",
+        "execution_id": {
+          "ref": "e5"
+        }
+      },
+      "result": "p18",
+      "receipt": "r6"
     },
     {
       "cycle": 15,
@@ -766,23 +863,6 @@
         }
       },
       "result": "p1"
-    },
-    {
-      "cycle": 16,
-      "phase": 2,
-      "gate": "p1",
-      "input": {
-        "action": "instrument.execute",
-        "proposition_id": {
-          "ref": "p1"
-        },
-        "instrument": {
-          "kind": "hyperlink",
-          "reference": "https://example.test/evidence/65"
-        }
-      },
-      "result": "p1",
-      "receipt": "r6"
     },
     {
       "cycle": 16,
@@ -948,7 +1028,7 @@
         },
         "instrument": {
           "kind": "hyperlink",
-          "reference": "https://example.test/evidence/79"
+          "reference": "https://evidence.example.test/evidence/74"
         }
       },
       "result": "p1",

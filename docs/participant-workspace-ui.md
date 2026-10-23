@@ -183,3 +183,10 @@ action populations. See [participant context](participant-context.md).
 It opens immediately at the bottom. Compact Provenance/Present controls appear
 only on overflow, disable at their endpoints and scroll smoothly on explicit
 interaction. Manual scroll position is preserved while the view stays open.
+
+## Preparation reading (Stage 2D)
+
+[Stage 2D](epistemic-evidence-stage-2d.md) adds explicit bounded reading of preserved
+Artifacts. Reading access follows ordinary Region/Horizon provenance independently
+of Receipt consumption or loading. Prepared content is transient; normal C3/loading
+continues to present historical Receipt metadata without replaying Artifact bodies.

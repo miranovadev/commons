@@ -100,6 +100,7 @@ final readonly class ReceiptContextService
                     'consumed_at' => $receipt->consumption?->consumed_at?->toISOString(),
                     'attached_proposition_id' => $receipt->consumption?->proposition_id,
                     'type' => $receipt->type, 'reference' => $receipt->reference,
+                    ...($receipt->type === 'preparation' && $verified !== null ? ['preparation_history' => $verified['evidence']] : []),
                     ...($receipt->type === 'tragedy' ? ['purpose' => 'homologous_boundary_escape', 'warrant' => app(TragedyEvidenceService::class)->describe($receipt)] : []),
                     'capabilities' => [
                         'readable' => $receipt->supports(ReceiptCapability::Readable),

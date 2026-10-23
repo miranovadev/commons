@@ -46,7 +46,9 @@ test('the participant page offers Rest only when the authoritative schema expose
          export const useGetParticipantQuery = () => ({ data: { id: 'viewer', callsign: 'Viewer', max_read_count: 25 } });
             export const useGetParticipationQuery = (...args) => useGetParticipantWorkspaceQuery(...args);
 export const useGetParticipantWorkspaceQuery = () => ({ data: participation });
-            export const useContributeMutation = () => [() => {}, { reset() {} }];
+            export const useReadPreparationMutation = () => [() => {}, { reset() {} }];
+         export const useAcknowledgePreparationMutation = () => [() => {}, { reset() {} }];
+         export const useContributeMutation = () => [() => {}, { reset() {} }];
             export const useEnterCycleMutation = () => [() => {}, {}];
           `,
           loader: 'ts',

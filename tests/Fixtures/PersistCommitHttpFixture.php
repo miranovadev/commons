@@ -25,12 +25,22 @@ trait PersistCommitHttpFixture
     private function persistJourneyInput(int $index): array
     {
         $input = $this->persistJourneySteps[$index]['input'];
-        foreach (['proposition_id', 'other_proposition_id', 'receipt_id'] as $key) {
-            if (isset($input[$key]['ref'])) {
-                $this->assertArrayHasKey($input[$key]['ref'], $this->persistJourneyIds);
-                $input[$key] = $this->persistJourneyIds[$input[$key]['ref']];
+        $resolve = function ($value) use (&$resolve) {
+            if (! is_array($value)) {
+                return $value;
             }
-        }
+            if (isset($value['ref'])) {
+                $this->assertArrayHasKey($value['ref'], $this->persistJourneyIds);
+
+                return $this->persistJourneyIds[$value['ref']];
+            }
+            if (isset($value['artifact_of'])) {
+                return Receipt::findOrFail($this->persistJourneyIds[$value['artifact_of']])->metadata['artifacts'][0]['hash'];
+            }
+
+            return array_map($resolve, $value);
+        };
+        $input = $resolve($input);
 
         return $input;
     }
@@ -73,13 +83,24 @@ trait PersistCommitHttpFixture
         }
         $this->assertSame($this->persistJourneyIds[$step['result']], $after['current_proposition_id']);
         if (isset($step['receipt'])) {
-            $this->assertSame(2, $step['phase']);
-            $this->assertSame($before['plan']['phase'], $after['plan']['phase']);
-            $this->assertSame($before['cycle'], $after['cycle']);
+            $instrument = $step['input']['action'] === 'instrument.execute';
+            $this->assertSame($instrument ? 2 : 4, $step['phase']);
+            if ($instrument) {
+                $this->assertSame($before['plan']['phase'], $after['plan']['phase']);
+                $this->assertSame($before['cycle'], $after['cycle']);
+            } else {
+                $this->assertNotSame($before['plan']['phase']['id'], $after['plan']['phase']['id']);
+            }
             $receipt = Receipt::whereHas('evidenceExecution', fn ($q) => $q->where('phase_id', $before['plan']['phase']['id']))->sole();
             $this->assertSame($before['plan']['gate_id'], $receipt->evidenceExecution->proposition_id);
             $this->assertNotContains($receipt->id, $this->persistJourneyIds);
             $this->persistJourneyIds[$step['receipt']] = $receipt->id;
+        } elseif (isset($step['execution'])) {
+            $this->assertSame($before['plan']['phase'], $after['plan']['phase']);
+            $id = $after['plan']['preparation']['execution_id'];
+            $this->persistJourneyIds[$step['execution']] = $id;
+            $this->readAndAcknowledgePreparation($actor, $id);
+            $after = $this->readParticipation($actor);
         } else {
             $this->assertNotSame($before['plan']['phase']['id'], $after['plan']['phase']['id']);
         }

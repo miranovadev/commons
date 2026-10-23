@@ -7,6 +7,7 @@ use Aws\S3\Exception\S3Exception;
 use Illuminate\Filesystem\AwsS3V3Adapter;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Filesystem\FilesystemManager;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /** Private content-addressed publication. Never replace or delete a published key. */
@@ -46,6 +47,53 @@ class ArtifactStore
         }
 
         return ['path' => $path, 'hash' => 'sha256:'.$hash, 'media_type' => $mediaType, 'size' => strlen($body)];
+    }
+
+    /** Trusted callers must first authorize the descriptor through its Receipt. */
+    public function read(array $artifact): string
+    {
+        if (DB::transactionLevel() > 0) {
+            throw new ArtifactStorageException('Artifact reads must occur outside database write transactions.');
+        }
+        $id = $artifact['hash'] ?? '';
+        if (! is_string($id) || ! preg_match('/^sha256:([a-f0-9]{64})$/D', $id, $match)) {
+            throw new ArtifactStorageException('Invalid immutable Artifact identity.');
+        }
+        $hash = $match[1];
+        $path = 'artifacts/sha256/'.substr($hash, 0, 2).'/'.substr($hash, 2, 2).'/'.$hash;
+        $size = $artifact['size'] ?? null;
+        if (($artifact['path'] ?? null) !== $path || ! is_int($size) || $size < 0
+            || $size > (int) config('preparation.source_bytes')) {
+            throw new ArtifactStorageException('Artifact path or source size is outside the supported reading limits.');
+        }
+        $name = config('artifacts.disk');
+        $config = config('filesystems.disks.'.$name, []);
+        if (($config['visibility'] ?? null) !== 'private' || ($config['serve'] ?? false)
+            || ! empty($config['url']) || ! in_array($config['driver'] ?? null, ['local', 's3'], true)) {
+            throw new ArtifactStorageException('Artifact reading requires its private configured store.');
+        }
+        $disk = $this->filesystems->disk($name);
+        if ($config['driver'] === 'local') {
+            $root = realpath($disk->path(''));
+            $resolved = realpath($disk->path($path));
+            if ($root === false || $resolved === false || ! str_starts_with($resolved, $root.DIRECTORY_SEPARATOR)) {
+                throw new ArtifactStorageException('Artifact path escapes or is absent from its store.');
+            }
+        }
+        $stream = $disk->readStream($path);
+        if (! is_resource($stream)) {
+            throw new ArtifactStorageException('Artifact material is unavailable.');
+        }
+        try {
+            $body = stream_get_contents($stream, $size + 1);
+            if (! is_string($body) || strlen($body) !== $size || ! hash_equals($hash, hash('sha256', $body))) {
+                throw new ArtifactStorageException('Artifact bytes do not match the preserved identity.');
+            }
+
+            return $body;
+        } finally {
+            fclose($stream);
+        }
     }
 
     private function publishLocal(FilesystemAdapter $disk, string $path, string $body): void

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Enums\RestReason;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
@@ -110,10 +111,12 @@ final readonly class InputPlanService
         );
         $lineage = $lineage->filter(fn ($node) => $context === null || $context->activeIds->has($node->id))->values();
         $writeOptions = $this->options->writeOptionsFor($phase, $context);
+        $preparation = app(PreparationService::class)->active($phase);
         $revisionOptions = $this->options->revisionOptionsFor(
             $phase,
             $participant,
             $context,
+            prepared: $preparation !== null,
         );
         $readOptions = $phase->kind === PhaseKind::Order ? $this->options->orderReadsFor($phase, $context) : $this->mediation->visibleReadsFor($phase, $context);
         $gateOptions = $this->options->gateOptionsFor($phase, $context);
@@ -187,6 +190,15 @@ final readonly class InputPlanService
                 'started_at' => $phase->started_at,
             ],
             ...($includeWorkspace ? ['workspace' => $workspace] : []),
+            'preparation' => $preparation === null ? null : [
+                'execution_id' => $preparation->id, 'status' => $preparation->status,
+                'purpose' => $preparation->input['purpose'], 'selections' => $preparation->input['artifacts'],
+            ],
+            'preparation_options' => isset($schema['$defs']['actions']['preparation.start']) ? app(PreparationService::class)->options($phase, $context) : [],
+            'preparation_failures' => $includeWorkspace ? EvidenceExecution::where('cycle_id', $phase->cycle_id)
+                ->where('type', 'prepare')->where('status', 'failed')->get()->map(fn ($e) => [
+                    'execution_id' => $e->id, 'purpose' => $e->input['purpose'], 'diagnostic' => $e->metadata,
+                ])->all() : [],
             'commitment' => $phase->kind === PhaseKind::Order
                 ? $this->admissibility->evaluate($gate, $phase, $context)
                 : null,

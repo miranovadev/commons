@@ -24,14 +24,20 @@ final readonly class PreparationInput
         }
         $seen = [];
         foreach ($input['artifacts'] as $selection) {
-            if (! is_array($selection) || count($selection) !== 2
+            if (! is_array($selection) || array_diff(array_keys($selection), ['receipt_id', 'artifact_id', 'read_type', 'parameters']) !== []
                 || ! is_string($selection['receipt_id'] ?? null)
                 || ! preg_match('/^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$/D', $selection['receipt_id'])
                 || ! is_string($selection['artifact_id'] ?? null)
-                || ! preg_match('/^sha256:[a-f0-9]{64}$/D', $selection['artifact_id'])) {
+                || ! preg_match('/^sha256:[a-f0-9]{64}$/D', $selection['artifact_id'])
+                || ! is_string($selection['read_type'] ?? null) || ! preg_match('/^[a-z][a-z_]{0,31}$/D', $selection['read_type'])
+                || ! is_array($selection['parameters'] ?? [])
+                || array_diff(array_keys($selection['parameters'] ?? []), ['offset', 'max_chars']) !== []
+                || collect($selection['parameters'] ?? [])->contains(fn ($value) => ! is_int($value) || $value < 0)
+                || (isset($selection['parameters']['max_chars']) && ($selection['parameters']['max_chars'] < 1
+                    || $selection['parameters']['max_chars'] > (int) config('preparation.max_chars')))) {
                 throw new DomainException('Each selection requires a Receipt ID and canonical Artifact hash.');
             }
-            $key = $selection['receipt_id'].':'.$selection['artifact_id'];
+            $key = $selection['receipt_id'].':'.self::requestId($selection);
             if (isset($seen[$key])) {
                 throw new DomainException('Duplicate Receipt/Artifact selections are not allowed.');
             }
@@ -39,6 +45,18 @@ final readonly class PreparationInput
         }
 
         return new self($input['purpose'], $input['artifacts']);
+    }
+
+    /** Equal representations share delivery, while every Receipt association survives. */
+    public static function requestId(array $selection): string
+    {
+        $parameters = $selection['parameters'] ?? [];
+        if (($selection['read_type'] ?? null) === 'text') {
+            $parameters['offset'] ??= 0;
+        }
+        ksort($parameters);
+
+        return hash('sha256', json_encode([$selection['artifact_id'], $selection['read_type'], $parameters], JSON_THROW_ON_ERROR));
     }
 
     public function payload(): array
