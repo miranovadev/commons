@@ -175,7 +175,7 @@ return [
             ],
         ],
         'instrument.execute' => [
-            'description' => 'Observe the current eligible Gate once per Cycle (Persist, or Disperse without readable Artifacts) and record its Receipt. This does not advance the Phase; fresh cognition follows at the same Gate.',
+            'description' => 'Observe the current Gate in Persist or fallback Disperse once per Cycle. Record its Receipt without advancing the Phase.',
             'title' => 'Observe the current eligible Gate',
             'type' => 'object',
             'additionalProperties' => false,

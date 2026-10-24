@@ -243,7 +243,7 @@ remain in place, and middle actions wrap without moving the directional slots.
 The UI renders Rest only from the authoritative schema, never from its own
 interpretation of the rest_available flag or visible cards.
 
-**No available move** means the current Phase has zero admissible contributions, including its optional Persist Instrument allowance. The backend separately derives `no_remaining_potential` from an evidenced failure. That reason is a numerical diagnostic only. Neither Rest reason creates Tragedy or exhaustion.
+**No available move** means the current Phase has zero admissible contributions, including eligible Instrument or Preparation acquisition. The backend separately derives `no_remaining_potential` from an evidenced failure. That reason is a numerical diagnostic only. Neither Rest reason creates Tragedy or exhaustion.
 The server first applies all phase-native, ownership, target and Commitment
 constraints, then specializes the complete action schema. When no admissible contribution
 remains it sets `rest_available: true` and injects `participant.rest`.
@@ -542,7 +542,7 @@ unchanged.
 
 ## Bias grounding
 
-Reclassification is separate from Instrument execution. Only Persist exposes Instruments, on its current Gate. Shared ordinary Receipt availability permits Attestation subject to its remaining eligibility rules; Receipt and effective Attestation are required for reclassification. Reclassify attaches the selected regional Receipt and resets judgments. New Writes do not require a new Instrument execution on that Write.
+Reclassification is separate from Instrument execution. Persist and the eligible Disperse fallback expose Instruments on the current Gate, sharing one completed execution per Cycle. Shared ordinary Receipt availability permits Attestation subject to its remaining eligibility rules; Receipt and effective Attestation are required for reclassification. Reclassify attaches the selected regional Receipt and resets judgments. New Writes do not require a new Instrument execution on that Write.
 
 A fresh Bias classification may reach Order before anyone attests it. If neither a qualifying Commit Gate nor an established Committal Write exists, Rest is valid. Another Participant can later attest the classification through Bias or an earlier eligible Write encounter. Receipt loading remains optional before Order and never advances a Phase.
 

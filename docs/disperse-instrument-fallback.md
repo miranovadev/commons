@@ -77,3 +77,23 @@ The HTTP journey uses two Participants and real application requests: shared
 Persist acquisition → generation by another Participant → Reclassification
 consumption → Disperse fallback → same-Phase refresh → ordinary Variant → Mediate.
 It needs no fixture writes, new lifecycle authority or fabricated Commit.
+
+## Resolved implementation boundaries
+
+Authority: Claire's approved Disperse Instrument Fallback handoff, continued on
+24 October 2026; the ten [Core Invariants](core-invariants.md) and existing
+Preparation / ordinary Receipt contracts remain governing constraints.
+
+| Boundary | Question | Resolution | Authority | Status | Verification |
+| --- | --- | --- | --- | --- | --- |
+| No available ordinary Receipt | When may Disperse acquire evidence? | Prepare accessible supported Artifacts; otherwise use the remaining Instrument allowance. | Handoff §§1–3 | Documented | Fallback eligibility and readable Artifact tests |
+| Spent Preparation allowance | Does this permit Instrument despite readable Artifacts? | No. Readability excludes fallback independently of the allowance. | Handoff §3 | Documented | Spent Preparation test |
+| Instrument used in Persist | Is Disperse a new allowance? | No; both share one completed Instrument execution per Participant Cycle. | Handoff §§1–2 | Documented | Persist/Disperse spent-allowance cases and PostgreSQL contention |
+| Evidence arrives after preflight | May the old fallback still execute? | Recheck shared Receipt and causal Artifact access under the Substrate lock; an unprobed descriptor requires refresh. | Handoff §4; Invariant 8 | Documented | Stale Receipt and probed/unprobed Artifact tests |
+| Completed failed verification | Is its Receipt automatically non-qualifying? | No; preserve existing ordinary observation qualification and consumed allowance. | Handoff §§2, 7; existing Receipt contract | Documented | Failed-verification and later-consumption cases |
+| Tragedy-only catalogue | Does a warrant satisfy ordinary evidence eligibility? | No; it neither enables ordinary generation nor suppresses an otherwise lawful acquisition. | Handoff §7; Invariants 3, 8, 9 | Documented | Tragedy warrant separation in Persist and Disperse |
+| Phase and measurements | Does fallback create a structural event? | No Phase/Cycle/Gate advancement, structural birth or independent measurement update. | Handoff §§1–2, 6; Invariants 1, 4, 6, 7 | Documented | Exact structural snapshot, HTTP and autonomous refresh tests |
+
+No unresolved domain decision, data migration or production/shared-database
+modification is required. The live-cook database hypothesis remains unverified;
+the isolated reproduction establishes only the existing eligibility dead end.
