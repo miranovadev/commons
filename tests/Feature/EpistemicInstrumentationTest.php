@@ -80,14 +80,14 @@ class EpistemicInstrumentationTest extends TestCase
         $this->assertDatabaseHas('participant_receipt_contexts', ['receipt_id' => $receipt->id, 'participant_id' => $f->viewer->id, 'cleared_at' => null]);
     }
 
-    public function test_only_persist_offers_exact_gate(): void
+    public function test_persist_and_disperse_fallback_offer_exact_gate(): void
     {
         $f = $this->fixture();
         foreach (PhaseKind::cases() as $kind) {
             $f->phase->kind = $kind;
             $ids = app(PropositionOptionService::class)->instrumentOptionsFor($f->phase)->pluck('id')->all();
-            $this->assertSame($kind === PhaseKind::Persist ? [$f->gate->id] : [], $ids);
-            $this->assertSame($kind === PhaseKind::Persist, in_array('instrument.execute', config("phases.{$kind->value}.actions"), true));
+            $this->assertSame(in_array($kind, [PhaseKind::Persist, PhaseKind::Disperse], true) ? [$f->gate->id] : [], $ids);
+            $this->assertSame(in_array($kind, [PhaseKind::Persist, PhaseKind::Disperse], true), in_array('instrument.execute', config("phases.{$kind->value}.actions"), true));
         }
     }
 

@@ -79,7 +79,8 @@ class ExpressiveEvidenceGatingTest extends TestCase
             DB::transaction(fn () => app(HorizonReceiptService::class)->consume($consumerPhase, $write, $consumer, $initialReceipt->id));
             $actions = $this->actions($phase);
         }
-        $this->assertArrayNotHasKey('instrument.execute', $actions);
+        $this->assertSame($kind === PhaseKind::Disperse ? [$phase->gate_proposition_id] : [],
+            $actions['instrument.execute']['properties']['proposition_id']['enum'] ?? []);
         $this->assertArrayNotHasKey('proposition.variant', $actions);
         $this->assertArrayNotHasKey('attestation.create', $actions);
         $this->assertArrayNotHasKey('proposition.reclassify', $actions);
@@ -122,7 +123,8 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $actions = $this->actions($next);
         $this->assertSame([$write->id], $actions['proposition.traverse']['properties']['proposition_id']['enum']);
         $this->assertArrayNotHasKey('proposition.variant', $actions);
-        $this->assertArrayNotHasKey('instrument.execute', $actions);
+        $this->assertSame($kind === PhaseKind::Disperse ? [$next->gate_proposition_id] : [],
+            $actions['instrument.execute']['properties']['proposition_id']['enum'] ?? []);
     }
 
     #[DataProvider('expressivePhases')]

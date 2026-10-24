@@ -24,9 +24,12 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Throwable;
 
 /** Preparation selection, operational lifecycle and atomic structural resolution. */
-final readonly class PreparationService
+final class PreparationService
 {
-    public function __construct(private EvidenceExecutionService $executions) {}
+    /** Request-local immutable descriptor capabilities; never cache catalogue membership. */
+    private array $readingCapabilities = [];
+
+    public function __construct(private readonly EvidenceExecutionService $executions) {}
 
     public function start(Participant $participant, Phase $phase, array $input): EvidenceExecution
     {
@@ -186,42 +189,79 @@ final readonly class PreparationService
             && $this->options($phase, $context) !== [];
     }
 
-    /** Capability discovery reads immutable bytes outside write transactions; no content is cached. */
-    public function options(Phase $phase, ?ParticipationContext $context = null): array
+    /** Independent of the Preparation allowance: spending it must not enable fallback. */
+    public function hasReadableArtifacts(Phase $phase, ?ParticipationContext $context = null): bool
     {
-        if ($phase->kind !== PhaseKind::Disperse) {
-            return [];
-        }
-        $result = [];
-        foreach (app(HorizonReceiptService::class)->accessibleOrdinary($phase, $context) as $receipt) {
-            foreach ($receipt->metadata['artifacts'] ?? [] as $artifact) {
-                if (! is_array($artifact) || $this->artifact($receipt, $artifact['hash'] ?? '') === null) {
-                    continue;
-                }
-                try {
-                    $key = 'artifact-source:'.ArtifactReaderRegistry::VERSION.':'.hash('sha256', json_encode([
-                        config('artifacts.disk'), config('filesystems.disks.'.config('artifacts.disk')), $artifact, config('preparation'),
-                    ], JSON_THROW_ON_ERROR));
-                    $source = Cache::get($key);
-                    if ($source === null) {
-                        $body = app(ArtifactStore::class)->read($artifact);
-                        $source = app(ArtifactReaderRegistry::class)->sourceType($body, $artifact['media_type'] ?? '');
-                        Cache::put($key, $source, 3600);
-                    }
-                    $capabilities = app(ArtifactReaderRegistry::class)->capabilities($source, 'inline-text');
-                    if ($capabilities === []) {
-                        continue;
-                    }
-                    $result[] = ['receipt_id' => $receipt->id, 'artifact_id' => $artifact['hash'],
-                        'reference' => $receipt->reference, 'source_type' => $source, 'size' => $artifact['size'], 'capabilities' => $capabilities];
-                } catch (Throwable) {
-                    // Unsupported/unavailable material is not advertised as readable.
-                    // An actual selected execution records its own diagnostic on read.
-                }
+        foreach ($this->accessibleArtifacts($phase, $context) as [, $artifact]) {
+            // A newly accessible, unprobed descriptor under a write lock is unknown,
+            // not proof of absence. Withhold fallback and require a fresh preflight.
+            if ($this->readingCapability($artifact) !== []) {
+                return true;
             }
         }
 
+        return false;
+    }
+
+    /** Capability discovery reads immutable bytes outside write transactions; no content is cached. */
+    public function options(Phase $phase, ?ParticipationContext $context = null): array
+    {
+        $result = [];
+        foreach ($this->accessibleArtifacts($phase, $context) as [$receipt, $artifact]) {
+            $reading = $this->readingCapability($artifact);
+            if ($reading === null || $reading === []) {
+                continue;
+            }
+            $result[] = ['receipt_id' => $receipt->id, 'artifact_id' => $artifact['hash'],
+                'reference' => $receipt->reference, 'source_type' => $reading['source_type'],
+                'size' => $artifact['size'], 'capabilities' => $reading['capabilities']];
+        }
+
         return $result;
+    }
+
+    private function accessibleArtifacts(Phase $phase, ?ParticipationContext $context): iterable
+    {
+        if ($phase->kind !== PhaseKind::Disperse) {
+            return;
+        }
+        foreach (app(HorizonReceiptService::class)->accessibleOrdinary($phase, $context) as $receipt) {
+            foreach ($receipt->metadata['artifacts'] ?? [] as $artifact) {
+                if (is_array($artifact) && $this->artifact($receipt, $artifact['hash'] ?? '') !== null) {
+                    yield [$receipt, $artifact];
+                }
+            }
+        }
+    }
+
+    /** null means unprobed under a write lock; [] means no supported capability. */
+    private function readingCapability(array $artifact): ?array
+    {
+        $key = 'artifact-source:'.ArtifactReaderRegistry::VERSION.':'.hash('sha256', json_encode([
+            config('artifacts.disk'), config('filesystems.disks.'.config('artifacts.disk')), $artifact, config('preparation'),
+        ], JSON_THROW_ON_ERROR));
+        if (array_key_exists($key, $this->readingCapabilities)) {
+            return $this->readingCapabilities[$key];
+        }
+        if (DB::transactionLevel() > 0) {
+            return null;
+        }
+        try {
+            $source = Cache::get($key);
+            if ($source === null) {
+                $body = app(ArtifactStore::class)->read($artifact);
+                $source = app(ArtifactReaderRegistry::class)->sourceType($body, $artifact['media_type'] ?? '');
+                Cache::put($key, $source, 3600);
+            }
+            $capabilities = app(ArtifactReaderRegistry::class)->capabilities($source, 'inline-text');
+
+            return $this->readingCapabilities[$key] = $capabilities === [] ? []
+                : ['source_type' => $source, 'capabilities' => $capabilities];
+        } catch (Throwable) {
+            // Only this request remembers failed discovery; later requests may retry.
+            // A selected execution records its own diagnostic on actual reading.
+            return $this->readingCapabilities[$key] = [];
+        }
     }
 
     public function resolutionSchema(Participant $participant, Phase $phase, EvidenceExecution $execution): array

@@ -2,10 +2,11 @@
 
 > See [Stage 3C readers and adaptive Preparation](artifact-readers-stage-3c.md) for PDF text, CSV/HTML tables, HTML lists and shared reading budgets. Instrument acquisition and allowances remain unchanged.
 
-## Persist-only, phase-neutral Instrumentation (Stage 2A)
+## Phase-neutral Instrumentation and Disperse fallback
 
 One completed Instrument execution per Participant Cycle is permitted in Persist,
-against the exact current Gate. It leaves Phase, Cycle and position unchanged and
+or as a Disperse fallback when no eligible unattached ordinary Receipt and no
+accessible supported Artifact exist, against the exact current Gate. It leaves Phase, Cycle and position unchanged and
 returns fresh cognition. Readable Receipts automatically load for their creator;
 Load File Receipts remain non-loadable. Completed unsuccessful observations spend the allowance; infrastructure
 failures without an execution/Receipt do not. Receipt consumption or unloading
@@ -18,7 +19,10 @@ choice, and generation does not consume the Receipt. An exhausted allowance does
 not suppress independently lawful Attestation or Traverse. Stage 2D activates the equivalent Disperse policy with Preparation and transient
 Artifact reading. Preparation reads accessible ordinary Receipt Artifacts even after
 consumption; this does not restore evidence availability.
-See [the Stage 2B contract](epistemic-evidence-stage-2b.md).
+Preparation retains priority whenever readable Artifacts exist, even if its allowance
+is exhausted. The fallback shares the Instrument allowance with Persist.
+See [Disperse fallback](disperse-instrument-fallback.md) and
+[the Stage 2B contract](epistemic-evidence-stage-2b.md).
 
 ## Hyperlink Artifact preservation (Stage 1)
 
@@ -78,7 +82,7 @@ The forms are mutually exclusive. The schema enumerates replay IDs for each exac
 eligible Instrument target. Catalogue visibility or replay capability alone grants
 no execution authority. The server restores the immutable originating invocation;
 the Participant does not restate its URL or query. Replay follows ordinary Instrument
-Persist Gate eligibility and the once-per-Cycle allowance, without Phase progression.
+Gate acquisition eligibility and the once-per-Cycle allowance, without Phase progression.
 
 Loading is separate: optional Gate `receipt_options.load/unload` accompanies a
 successful forward contribution atomically. There is no standalone Receipt Read

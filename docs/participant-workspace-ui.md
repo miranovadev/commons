@@ -85,7 +85,8 @@ each schema-authorized Mediate Gate counterpart, opening the existing form with
 retained statement. Hover or keyboard focus on a counterpart's Reconcile control
 subtly dims that card. Gate cards still show the same Mediate/Bias populations. Reclassify stays on its current Gate card; Revise,
 Commit stays on eligible Write cards. Instrument appears only on the current
-Persist Gate, while its Cycle allowance is unused. Attest/Traverse retain the
+Persist or eligible Disperse fallback Gate, while its shared Cycle allowance is unused.
+Disperse requires both no available ordinary Receipt and no accessible readable Artifact. Attest/Traverse retain the
 existing direct-submission contract and phase concurrency guard.
 
 Compact cards group tier, register and Git-style operation badges above the

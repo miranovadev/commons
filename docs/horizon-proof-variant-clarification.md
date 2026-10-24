@@ -28,7 +28,7 @@ not establish remaining capacity. Ordinary epoch-scoped failures remain separate
 
 Each new Variant repeats that sequence. Stage 2A abolishes the exact-Write
 Instrument prerequisite: shared ordinary evidence can support later participation.
-Instrumentation occurs only in Persist, targets its current Gate, does not
+Instrumentation occurs in Persist or as the eligible Disperse fallback, targets its current Gate, does not
 advance the Phase, and allows one completed execution per Participant Cycle.
 Receipts retain their existing Region/Horizon identity and any eligible
 Participant may consume them through Reclassify. This is not Stage 2B's future

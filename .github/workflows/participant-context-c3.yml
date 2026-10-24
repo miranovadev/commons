@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - 'app/Services/CognitiveEvidenceHorizon.php'
+      - 'app/Services/PhaseGenerationService.php'
+      - 'app/Services/PreparationService.php'
+      - 'app/Services/PropositionOptionService.php'
+      - 'config/phases.php'
       - 'app/Services/ParticipantReceiptProjection.php'
       - 'app/Services/ParticipantPrompt*.php'
       - 'tests/**/Participant*C3*'

@@ -114,7 +114,7 @@ Traverse cards. Order retains every causally local expressive Write in Write,
 including inadmissible and frozen sources, alongside their own traversable direct
 Committal results. Commit is available per admissible expressive Write; Closure
 refusal does not remove that Write or override its ordinary expressive rules.
-Instruments are offered only on the current Persist Gate. `write_options` is authoritative for Write targets; `workspace.registers` remains
+Instruments are offered on the current Persist Gate or the eligible Disperse fallback Gate. `write_options` is authoritative for Write targets; `workspace.registers` remains
 broader inspection context and must never be merged into selectable Write cards.
 Revise remains limited to owned, revisable descendants. Commit cards and the
 Commit form select an explicit authorized `proposition_id`.
@@ -181,7 +181,7 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 
 During Exploration, Variant eligibility does not depend on Potential Charge or Participant count. A further Variant requires all existing routes at its structural position to be spent in the current epoch, with genuine ordinary evidence and effective Attestation. Evidence may be shared or retained on the causal lineage; exact-Write Instrumentation is not required. Zero Potential does not suppress an otherwise structurally valid Variant; expression may increase Tension. A viable existing route blocks redundant generation. Only successful Variant advances that position's epoch; other positions remain unchanged. Receipt generation or consumption alone never reopens Variant. See [exploration epochs](exploration-epochs.md) and the [confirmed clarification](horizon-proof-variant-clarification.md).
 
-Instruments target only the mutable current Persist Gate, with one completed execution per Participant Cycle and no Phase advancement. Stage 2B selects acquisition or generation using the existing shared, unconsumed ordinary Receipt catalogue, independently of personal loading. This prerequisite is additional to structural and epoch eligibility. Existing shared evidence makes Attestation available without a transfer from its author or a paid visibility action. Transactional execution rechecks the same rules advertised in the schema, including consumption that invalidates a stale generation request. Disperse retains its existing generation rules until Preparation and reading are available. See [Stage 2B](epistemic-evidence-stage-2b.md).
+Instruments target only the mutable current Persist or eligible Disperse fallback Gate, with one completed execution per Participant Cycle and no Phase advancement. Stage 2B selects acquisition or generation using the existing shared, unconsumed ordinary Receipt catalogue, independently of personal loading. This prerequisite is additional to structural and epoch eligibility. Existing shared evidence makes Attestation available without a transfer from its author or a paid visibility action. Transactional execution rechecks the same rules advertised in the schema, including consumption that invalidates a stale generation request. Disperse uses the same Receipt prerequisite for generation, prioritizes Preparation when readable Artifacts exist, and otherwise permits Instrument fallback with the remaining Instrument allowance. See [Disperse fallback](disperse-instrument-fallback.md). See [Stage 2B](epistemic-evidence-stage-2b.md).
 
 ## Traverse and authoritative Rest
 
@@ -243,7 +243,7 @@ remain in place, and middle actions wrap without moving the directional slots.
 The UI renders Rest only from the authoritative schema, never from its own
 interpretation of the rest_available flag or visible cards.
 
-**No available move** means the current Phase has zero admissible contributions, including its optional Persist Instrument allowance. The backend separately derives `no_remaining_potential` from an evidenced failure. That reason is a numerical diagnostic only. Neither Rest reason creates Tragedy or exhaustion.
+**No available move** means the current Phase has zero admissible contributions, including eligible Instrument or Preparation acquisition. The backend separately derives `no_remaining_potential` from an evidenced failure. That reason is a numerical diagnostic only. Neither Rest reason creates Tragedy or exhaustion.
 The server first applies all phase-native, ownership, target and Commitment
 constraints, then specializes the complete action schema. When no admissible contribution
 remains it sets `rest_available: true` and injects `participant.rest`.
@@ -542,7 +542,7 @@ unchanged.
 
 ## Bias grounding
 
-Reclassification is separate from Instrument execution. Only Persist exposes Instruments, on its current Gate. Shared ordinary Receipt availability permits Attestation subject to its remaining eligibility rules; Receipt and effective Attestation are required for reclassification. Reclassify attaches the selected regional Receipt and resets judgments. New Writes do not require a new Instrument execution on that Write.
+Reclassification is separate from Instrument execution. Persist and the eligible Disperse fallback expose Instruments on the current Gate, sharing one completed execution per Cycle. Shared ordinary Receipt availability permits Attestation subject to its remaining eligibility rules; Receipt and effective Attestation are required for reclassification. Reclassify attaches the selected regional Receipt and resets judgments. New Writes do not require a new Instrument execution on that Write.
 
 A fresh Bias classification may reach Order before anyone attests it. If neither a qualifying Commit Gate nor an established Committal Write exists, Rest is valid. Another Participant can later attest the classification through Bias or an earlier eligible Write encounter. Receipt loading remains optional before Order and never advances a Phase.
 
@@ -578,7 +578,7 @@ Proposition references remain metadata without standalone Load controls.
 `instrument: {"replay_receipt_id": "R"}` and the exact schema-authorized
 `proposition_id`. It restores the stored invocation, preserves ordinary eligibility
 and equivalent-evidence exclusions, and creates a new Proposition-grounded Receipt
-with replay provenance. Fresh execution and replay automatically load readable results for their performer under C2. Load File / Download instead exposes lightweight acquisition metadata and preserves an Artifact without persistent loading. Instrumentation is Persist-only, targets the current Gate, spends one completed-execution allowance per Cycle, and refreshes cognition without advancing the Phase. There are no standalone Receipt Read or Replay action families.
+with replay provenance. Fresh execution and replay automatically load readable results for their performer under C2. Load File / Download instead exposes lightweight acquisition metadata and preserves an Artifact without persistent loading. Instrumentation occurs in Persist or as the eligible Disperse fallback, targets the current Gate, spends one completed-execution allowance per Cycle, and refreshes cognition without advancing the Phase. There are no standalone Receipt Read or Replay action families.
 
 A qualifying direct expressive Write encounter with resulting canonical Charge zero establishes the Region’s unique Tragedy and Receipt and permanently terminates that continuation. Resolution prohibits Variant and Revise throughout the Region while preserving ordinary authority on viable routes. Exhaustion follows atomically only when no lawful continuation remains; viable siblings and live committed descendants prevent it. Descendant Exhaustion closes only its corresponding route. No second catastrophe, Rest or Receipt consumption is required. Passive measurements and reads establish neither event. Recovery follows actual recorded backward lineage. See the approved [Tragedy/Resolution lifecycle](tragedy-resolution-target.md). Qualifying encounters include expressive birth, Attestation, Instrument and lawful expressive Traverse, including already-zero targets. An Exhausted Region offers Rest only. Historical alternatives remain visible and non-actionable.
 

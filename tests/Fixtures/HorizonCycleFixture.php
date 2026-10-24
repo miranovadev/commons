@@ -48,6 +48,9 @@ trait HorizonCycleFixture
         // Isolate numeric eligibility with a consistent birth observation, after Origin.
         if (! $realClosure) {
             $this->controlledBirthClosureFixture(1.0, includeCommittal: true);
+            // Origin already resolved the request-scoped Preparation service.
+            // Rebuild its dependencies after installing this fixture's numeric boundary.
+            $this->app->forgetInstance(PreparationService::class);
             $service = app(ParticipationService::class);
         }
         $participants = [$participant];

@@ -61,7 +61,7 @@ class ParticipantActionContractTest extends TestCase
         // FullEvidenceFlowTest and SharedReclassificationTest.
         $spent = match ($kind) {
             PhaseKind::Distinguish => ['proposition.variant'],
-            PhaseKind::Disperse => ['proposition.variant', 'preparation.start'],
+            PhaseKind::Disperse => ['proposition.variant', 'preparation.start', 'instrument.execute'],
             PhaseKind::Persist => ['proposition.variant', 'proposition.reclassify', 'instrument.execute'],
             PhaseKind::Constrain, PhaseKind::Bias => [],
             default => [],
