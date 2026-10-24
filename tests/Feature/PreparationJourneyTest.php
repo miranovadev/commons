@@ -303,7 +303,7 @@ class PreparationJourneyTest extends TestCase
 
     public static function autonomousOutcomes(): array
     {
-        return [['contributed'], ['deferred'], ['failed'], ['revised']];
+        return [['contributed'], ['deferred'], ['failed'], ['revised'], ['rejected']];
     }
 
     #[DataProvider('autonomousOutcomes')]
@@ -356,6 +356,9 @@ class PreparationJourneyTest extends TestCase
                         ? ['action' => 'preparation.defer', 'execution_id' => $execution->id, 'reason' => 'Compare more sources.']
                         : ['action' => $revision ? 'proposition.revise' : 'proposition.variant', 'execution_id' => $execution->id,
                             ...($revision ? ['proposition_id' => $revision->id] : []), 'statement' => 'Prepared autonomous contribution.'];
+                    if ($outcome === 'rejected') {
+                        $input = ['action' => 'proposition.variant', 'execution_id' => $execution->id, 'statement' => '', 'failure_reason' => 'Client-supplied invented failure'];
+                    }
                 } else {
                     $this->assertSame('deferred', $execution->outcome);
                     $this->assertStringNotContainsString('preserved artifact body', json_encode($payload));
@@ -368,13 +371,21 @@ class PreparationJourneyTest extends TestCase
         });
         try {
             app()->call([new WakeParticipant($link->id), 'handle']);
-            $this->assertNotSame('failed', $outcome);
+            $this->assertNotContains($outcome, ['failed', 'rejected']);
+        } catch (\InvalidArgumentException) {
+            $this->assertSame('rejected', $outcome);
         } catch (RequestException) {
             $this->assertSame('failed', $outcome);
         }
         $execution = EvidenceExecution::where('type', 'prepare')->sole();
         $this->assertSame($f->phase->id, $execution->phase_id);
-        if ($outcome === 'failed') {
+        if ($outcome === 'rejected') {
+            $this->assertSame('presented', $execution->status);
+            $this->assertNull($execution->receipt);
+            $this->assertNull($execution->outcome);
+            $this->assertNull($execution->failed_at);
+            $this->assertNull($f->phase->fresh()->completed_at);
+        } elseif ($outcome === 'failed') {
             $this->assertSame('failed', $execution->status);
             $this->assertNull($execution->presented_at);
             $this->assertSame('failed', $execution->receipt->metadata['outcome']['type']);
