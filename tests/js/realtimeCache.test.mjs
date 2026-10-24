@@ -50,9 +50,10 @@ test('Participant refresh invalidates only that Participant and its derived plan
     await s.dispatch(commonsApi.util.upsertQueryData('getParticipant', { slug: 'test', participantId: id }, { id }));
     await s.dispatch(commonsApi.util.upsertQueryData('getParticipation', { slug: 'test', participantId: id }, { status: 'waiting' }));
     await s.dispatch(commonsApi.util.upsertQueryData('getParticipantWorkspace', { slug: 'test', participantId: id }, { status: 'waiting' }));
+    await s.dispatch(commonsApi.util.upsertQueryData('getPreparationHistory', { slug: 'test', participantId: id }, { items: [], next_cursor: null }));
   }
   refreshParticipant(s.dispatch, 'a');
-  for (const endpoint of ['getParticipant', 'getParticipation', 'getParticipantWorkspace']) {
+  for (const endpoint of ['getParticipant', 'getParticipation', 'getParticipantWorkspace', 'getPreparationHistory']) {
     assert.equal(commonsApi.endpoints[endpoint].select({ slug: 'test', participantId: 'a' })(s.getState()).isUninitialized, true);
     assert.equal(commonsApi.endpoints[endpoint].select({ slug: 'test', participantId: 'b' })(s.getState()).isSuccess, true);
   }

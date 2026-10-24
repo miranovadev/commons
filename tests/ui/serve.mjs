@@ -15,6 +15,8 @@ const bundle = await build({ absWorkingDir: root, entryPoints: ['tests/ui/worksp
       const listeners = new Set(); let version = 0;
       function useFixture() { useSyncExternalStore(callback => { listeners.add(callback); return () => listeners.delete(callback); }, () => version); }
       export const useGetSessionQuery = () => ({ data: { has_system_access: true } });
+      export const useGetPreparationHistoryQuery = () => ({ currentData: { items: [], next_cursor: null } });
+export const useGetPreparationQuery = () => ({});
       export const useGetParticipantsQuery = () => { useFixture(); return { data: previewParticipants }; };
       export const useGetParticipantQuery = ({ participantId }) => { useFixture(); return { data: previewParticipants.find(p => p.id === participantId) || fixture.participant }; };
       export const useGetParticipationQuery = (...args) => useGetParticipantWorkspaceQuery(...args);

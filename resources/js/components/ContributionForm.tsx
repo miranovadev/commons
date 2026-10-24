@@ -10,6 +10,7 @@ import { InstrumentFields } from './InstrumentFields';
 import { AttestationDirectionControl } from './AttestationDirectionControl';
 import type {
   ActionName,
+  ActionSchema,
   AttestationDirection,
   ContributionInitialValues,
   ContributionInput,
@@ -41,6 +42,8 @@ export function ContributionForm({
   initialValues = emptyValues,
   onClose,
   onSubmit,
+  fallbackSchema,
+  allowStaleSubmission = false,
 }: {
   action: ActionName | null | undefined;
   plan: ParticipantPlan;
@@ -50,8 +53,10 @@ export function ContributionForm({
   initialValues?: ContributionInitialValues;
   onClose: () => void;
   onSubmit: (contribution: ContributionInput) => void;
+  fallbackSchema?: ActionSchema;
+  allowStaleSubmission?: boolean;
 }) {
-  const schema = action ? plan.schema?.$defs?.actions?.[action] : undefined;
+  const schema = (action ? plan.schema?.$defs?.actions?.[action] : undefined) ?? fallbackSchema;
   const [values, setValues] = useState<FormValues>({
     direction: 'support',
     instrument: { kind: 'citation', reference: '' },
@@ -79,7 +84,7 @@ export function ContributionForm({
   }, [action, initialValues, opened]);
 
   const directions = attestationDirections(plan, values.proposition_id);
-  const direction = directions.includes(values.direction) ? values.direction : directions[0];
+  const direction = allowStaleSubmission || directions.includes(values.direction) ? values.direction : directions[0];
   const duplicate = action === 'instrument.execute' ? duplicateInstrument(plan, values.proposition_id, values.instrument) : undefined;
 
   const invalidReplay = action === 'instrument.execute' && 'replay_receipt_id' in values.instrument
@@ -100,7 +105,7 @@ export function ContributionForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (duplicate || invalidReplay || invalidReceipt) return;
+    if (!allowStaleSubmission && (duplicate || invalidReplay || invalidReceipt)) return;
     const contribution: ContributionInput = { action: (properties.action?.const as ActionName) || activeAction };
 
     (Object.keys(properties) as Array<keyof ContributionInput>).forEach((name) => {
@@ -160,7 +165,7 @@ export function ContributionForm({
             <Select
               searchable
               label="Proposition"
-              data={propositionOptions}
+              data={withSelected(propositionOptions, values.proposition_id)}
               required={required.includes('proposition_id')}
               value={values.proposition_id || null}
               onChange={(value) => set('proposition_id', value ?? undefined)}
@@ -169,9 +174,9 @@ export function ContributionForm({
 
           {properties.receipt_id && (
             <Select label="Receipt" description={receiptRule?.description ?? "Shared Commit Region evidence. Reclassification consumes this Receipt once."}
-              data={receiptChoices(plan).filter(receipt => receiptIds.includes(receipt.id))
-                .map(receipt => ({ value: receipt.id, label: `${receipt.type === 'tragedy' ? 'Tragedy Receipt' : receipt.type} · ${receipt.id}` }))}
-              required={required.includes('receipt_id')} value={receiptIds.includes(values.receipt_id ?? '') ? values.receipt_id : null}
+              data={withSelected(receiptChoices(plan).filter(receipt => receiptIds.includes(receipt.id))
+                .map(receipt => ({ value: receipt.id, label: `${receipt.type === 'tragedy' ? 'Tragedy Receipt' : receipt.type} · ${receipt.id}` })), allowStaleSubmission ? values.receipt_id : undefined)}
+              required={required.includes('receipt_id')} value={allowStaleSubmission || receiptIds.includes(values.receipt_id ?? '') ? values.receipt_id : null}
               onChange={value => set('receipt_id', value ?? undefined)} />
           )}
 
@@ -179,7 +184,7 @@ export function ContributionForm({
             <Select
               searchable
               label="Reconcile with"
-              data={gateOptions}
+              data={withSelected(gateOptions, values.other_proposition_id)}
               required
               value={values.other_proposition_id || null}
               onChange={(value) => set('other_proposition_id', value ?? undefined)}
@@ -231,7 +236,7 @@ export function ContributionForm({
               type="submit"
               color={action === 'proposition.commit' ? 'indigo' : 'blue'}
               loading={loading}
-              disabled={Boolean(duplicate) || invalidReplay || invalidReceipt || (action === 'attestation.create' && !direction)}
+              disabled={!allowStaleSubmission && (Boolean(duplicate) || invalidReplay || invalidReceipt || (action === 'attestation.create' && !direction))}
             >
               Apply contribution
             </Button>
@@ -240,4 +245,9 @@ export function ContributionForm({
       </form>
     </Modal>
   );
+}
+
+function withSelected(options: Array<{ value: string; label: string }>, selected?: string) {
+  return selected && !options.some(option => option.value === selected)
+    ? [...options, { value: selected, label: `${selected} · previously selected` }] : options;
 }

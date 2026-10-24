@@ -223,6 +223,33 @@ export type InstrumentInput =
   | { replay_receipt_id: string };
 
 export interface PreparationSelection { receipt_id: string; artifact_id: string; read_type: string; parameters?: { offset?: number; max_chars?: number }; }
+export interface PreparationHistorySummary {
+  id: string;
+  participant: { id: string; callsign: string };
+  originating_gate_id: string;
+  cycle: { id: string; sequence: number };
+  phase: { id: string; number: number; name: string };
+  purpose: string | null;
+  status: 'pending' | 'presented' | 'completed' | 'failed';
+  outcome: 'contributed' | 'deferred' | 'failed' | null;
+  resulting_proposition_id: string | null;
+  receipt_id: string | null;
+  created_at: string | null;
+  started_at: string | null;
+  presented_at: string | null;
+  resolved_at: string | null;
+}
+export interface PreparationHistoryRecord extends PreparationHistorySummary {
+  selections: Array<PreparationSelection & { source: { receipt_type: string; reference: string | null; filename: string | null; media_type: string | null; size: number | null } | null }>;
+  deliveries: Array<{
+    request_id?: string; artifact_id: string; receipt_ids: string[]; read_type: string; source_type?: string;
+    method?: string; version?: string; representation?: string; representation_hash?: string;
+    delivery_method?: string; payload_bytes?: number;
+    boundaries?: Partial<{ requested_offset: number; requested_max_chars: number | null; offset: number; end: number; length: number; total: number; has_more: boolean }>;
+  }>;
+  deferment_reason: string | null;
+  failure: { stage?: string; classification?: string; method?: string; version?: string; reason: string | null } | null;
+}
 export interface PreparationOption { receipt_id: string; artifact_id: string; reference: string; source_type: string; size: number;
   capabilities: Array<{ read_type: string; method: string; version: string; max_chars?: number; parameters: { offset?: number; max_chars?: number }; text_budget?: number }>;
 }
