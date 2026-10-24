@@ -39,13 +39,16 @@ final class ReceiptEvidenceService
             return null; // Tragedy retains its separate authority contract.
         }
         $execution = $receipt->evidenceExecution;
-        if (! $receipt->supports(ReceiptCapability::Readable) || $execution?->status !== 'completed'
+        if (! $receipt->supports(ReceiptCapability::Readable) || ! $receipt->observationComplete()
             || ($receipt->context_horizon_id !== $context->phase->cycle->context_horizon_id
                 && ! $context->propositions->has($execution->proposition_id))) {
             return null;
         }
         if (($observation = $this->observation($receipt)) !== null) {
             return $observation;
+        }
+        if ($receipt->isPreparationFailure()) {
+            return ['signature' => null, 'evidence' => $this->failure($receipt)];
         }
 
         return $this->citation($receipt, $context);
@@ -186,6 +189,12 @@ final class ReceiptEvidenceService
     public function failure(Receipt $receipt): ?array
     {
         $metadata = $receipt->metadata ?? [];
+        if ($receipt->isPreparationFailure()) {
+            return ['content_verified' => false,
+                'interpretation' => 'Operational failure only; no source content supports or refutes a Proposition.',
+                ...array_intersect_key($metadata, array_flip(['execution_id', 'originating_gate_id', 'participant_id',
+                    'purpose', 'selections', 'deliveries', 'presented_at', 'outcome', 'failure', 'failure_reason']))];
+        }
         if (! $receipt->observationComplete() || (! isset($metadata['observation_error']) && ! isset($metadata['verification_error']))) {
             return null;
         }

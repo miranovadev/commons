@@ -70,7 +70,6 @@ class ArtifactReaderRegistryTest extends TestCase
             ['text', 'text/plain', 'raw', ['max_chars' => 0], 'invalid_parameters'],
             ['text', 'text/plain', 'text', ['offset' => 10, 'max_chars' => 2], 'invalid_parameters'],
             ['text', 'text/plain', 'text', ['offset' => -1, 'max_chars' => 2], 'invalid_parameters'],
-            [str_repeat('💚', 12000), 'text/plain', 'raw', ['max_chars' => 12000], 'payload_limit'],
         ];
     }
 

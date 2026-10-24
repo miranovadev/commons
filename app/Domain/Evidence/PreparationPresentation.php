@@ -56,9 +56,8 @@ final readonly class PreparationPresentation
                 || $bounds['offset'] !== ($parameters['offset'] ?? 0)
                 || $bounds['length'] > min(PreparationInput::MAX_PAYLOAD_BYTES, (int) config('preparation.max_chars'))
                 || (isset($parameters['max_chars']) && ($parameters['max_chars'] < 1
-                    || $parameters['max_chars'] > min(PreparationInput::MAX_PAYLOAD_BYTES, (int) config('preparation.max_chars'))
-                    || $bounds['length'] !== min($parameters['max_chars'], $bounds['total'] - $bounds['offset'])))) {
-                throw new DomainException('Delivered boundaries must preserve explicit ranges and bounded automatic allocation.');
+                    || $bounds['length'] > $parameters['max_chars']))) {
+                throw new DomainException('Delivered boundaries must preserve offsets and bounded requested allocation.');
             }
             if (isset($ids[$delivery['request_id']])) {
                 throw new DomainException('Deliver each identical representation once, retaining all Receipt associations.');

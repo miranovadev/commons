@@ -127,24 +127,17 @@ class PreparationJourneyTest extends TestCase
         $this->assertCount(2, $receipt->metadata['deliveries']);
     }
 
-    public function test_unsupported_request_records_method_and_artifact_failure_without_receipt(): void
+    public function test_unsupported_request_is_rejected_before_reserving_or_minting_evidence(): void
     {
         $fixture = new PreparationFixture;
-        $f = $fixture->context;
         $input = $fixture->input();
         $input['artifacts'][0]['read_type'] = 'regex';
-        $service = app(PreparationService::class);
-        $execution = $service->start($f->viewer, $f->phase, $input);
         try {
-            $service->delivery($f->viewer, $execution, 'inline-text');
+            app(PreparationService::class)->start($fixture->context->viewer, $fixture->context->phase, $input);
             $this->fail('Unsupported reading accepted.');
         } catch (\DomainException) {
-            $this->assertSame('failed', $execution->fresh()->status);
-            $this->assertSame('missing_capability', $execution->fresh()->metadata['failure']['classification']);
-            $this->assertSame('regex', $execution->fresh()->metadata['failure']['read_type']);
-            $this->assertSame($input['artifacts'][0]['artifact_id'], $execution->fresh()->metadata['failure']['artifact_id']);
-            $this->assertNull($execution->fresh()->receipt);
-            $this->assertNull($execution->fresh()->presented_at);
+            $this->assertSame(0, EvidenceExecution::where('type', 'prepare')->count());
+            $this->assertSame(0, Receipt::where('type', 'preparation')->count());
         }
     }
 
@@ -183,7 +176,7 @@ class PreparationJourneyTest extends TestCase
         $this->assertArrayHasKey('participant.rest', app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema']['$defs']['actions']);
     }
 
-    public function test_combined_delivery_budget_fails_without_partial_success_or_receipt(): void
+    public function test_combined_oversized_requests_share_budget_and_complete_successfully(): void
     {
         $fixture = new PreparationFixture;
         $f = $fixture->context;
@@ -198,17 +191,13 @@ class PreparationJourneyTest extends TestCase
         }
         unset($selection);
         $execution = $service->start($f->viewer, $f->phase, $input);
-        try {
-            $service->delivery($f->viewer, $execution, 'human-text');
-            $this->fail('The combined budget was bypassed.');
-        } catch (\DomainException) {
-            $execution->refresh();
-            $this->assertSame('failed', $execution->status);
-            $this->assertSame('payload_limit', $execution->metadata['failure']['classification']);
-            $this->assertNull($execution->presentation);
-            $this->assertNull($execution->receipt);
-            $this->assertNull($f->phase->fresh()->completed_at);
-        }
+        $delivery = $service->delivery($f->viewer, $execution, 'human-text');
+        $this->assertSame([3000, 3000, 3000, 3000], array_column(array_column($delivery['deliveries'], 'boundaries'), 'length'));
+        $service->acknowledge($f->viewer, $execution, $delivery['presentation_token']);
+        $receipt = $service->defer($f->viewer, $execution, 'The bounded reading was useful.');
+        $this->assertSame('deferred', $execution->fresh()->outcome);
+        $this->assertSame($input['artifacts'], $receipt->metadata['selections']);
+        $this->assertNull($f->phase->fresh()->completed_at);
     }
 
     public function test_empty_preserved_material_can_be_delivered_and_resolved_without_fabricated_content(): void
@@ -388,7 +377,8 @@ class PreparationJourneyTest extends TestCase
         if ($outcome === 'failed') {
             $this->assertSame('failed', $execution->status);
             $this->assertNull($execution->presented_at);
-            $this->assertNull($execution->receipt);
+            $this->assertSame('failed', $execution->receipt->metadata['outcome']['type']);
+            $this->assertSame([], $execution->receipt->metadata['deliveries']);
             $this->assertNull($f->phase->fresh()->completed_at);
             $this->assertNull(app(PreparationService::class)->active($f->phase));
         } else {

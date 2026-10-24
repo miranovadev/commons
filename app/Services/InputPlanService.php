@@ -197,7 +197,8 @@ final readonly class InputPlanService
             'preparation_options' => isset($schema['$defs']['actions']['preparation.start']) ? app(PreparationService::class)->options($phase, $context) : [],
             'preparation_failures' => $includeWorkspace ? EvidenceExecution::where('cycle_id', $phase->cycle_id)
                 ->where('type', 'prepare')->where('status', 'failed')->get()->map(fn ($e) => [
-                    'execution_id' => $e->id, 'purpose' => $e->input['purpose'], 'diagnostic' => $e->metadata,
+                    'execution_id' => $e->id, 'receipt_id' => $e->receipt?->id,
+                    'purpose' => $e->input['purpose'], 'diagnostic' => $e->metadata,
                 ])->all() : [],
             'commitment' => $phase->kind === PhaseKind::Order
                 ? $this->admissibility->evaluate($gate, $phase, $context)

@@ -4,10 +4,9 @@ import type { PreparationOption, PreparationSelection } from '../types';
 export function PreparationFields({ options, value, onChange }: { options: PreparationOption[]; value: PreparationSelection[]; onChange: (items: PreparationSelection[]) => void }) {
   function update(index: number, patch: Partial<PreparationSelection>) { onChange(value.map((item, i) => i === index ? { ...item, ...patch } : item)); }
   return <Stack gap="sm">
-    <Text size="sm">Choose up to eight Artifact representations. Source Receipts may already be consumed. Reading lengths are allocated automatically across the shared budget unless you set a maximum.</Text>
+    <Text size="sm">Choose up to eight Artifact representations. Source Receipts may already be consumed. Reading lengths are allocated automatically unless you set a preferred maximum. Oversized requests share the safe reading budget.</Text>
     {value.map((selection, index) => {
       const option = options.find(item => item.receipt_id === selection.receipt_id && item.artifact_id === selection.artifact_id);
-      const capability = option?.capabilities.find(item => item.read_type === selection.read_type);
       return <Stack key={index} gap="xs">
         <Select label={`Artifact ${index + 1}`} required searchable value={`${selection.receipt_id}:${selection.artifact_id}`}
           data={options.map(item => ({ value: `${item.receipt_id}:${item.artifact_id}`, label: `${item.reference} · ${item.source_type} · ${item.receipt_id}` }))}
@@ -17,7 +16,7 @@ export function PreparationFields({ options, value, onChange }: { options: Prepa
         <Group grow>
           <NumberInput label="Character offset" min={0} value={selection.parameters?.offset ?? 0} allowDecimal={false}
             onChange={offset => update(index, { parameters: { ...selection.parameters, offset: Number(offset) } })} />
-          <NumberInput label="Maximum characters (optional)" placeholder="Automatic" min={1} max={capability?.max_chars ?? 12000} allowDecimal={false} value={selection.parameters?.max_chars ?? ''}
+          <NumberInput label="Maximum characters (optional)" placeholder="Automatic" min={1} max={Number.MAX_SAFE_INTEGER} allowDecimal={false} value={selection.parameters?.max_chars ?? ''}
             onChange={max => { const parameters = { ...selection.parameters }; if (max === '') delete parameters.max_chars; else parameters.max_chars = Number(max); update(index, { parameters }); }} />
         </Group>
         <Button variant="subtle" color="gray" size="compact-xs" onClick={() => onChange(value.filter((_, i) => i !== index))}>Remove selection</Button>

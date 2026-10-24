@@ -212,11 +212,11 @@ final readonly class ReceiptContextService
             ->orderBy('receipt_id')->pluck('receipt_id');
     }
 
-    /** Called inside Instrument completion, after immutable Receipt persistence. */
+    /** Called after immutable ordinary observation persistence, including Preparation failures. */
     public function loadCreated(Receipt $receipt): ?ParticipantReceiptContext
     {
         if (DB::transactionLevel() === 0 || ! $receipt->observationComplete()) {
-            throw new DomainException('Creator loading requires completed Instrument persistence in its transaction.');
+            throw new DomainException('Creator loading requires a recorded observation in its transaction.');
         }
         if (! $receipt->supports(ReceiptCapability::Readable)) {
             return null;
@@ -313,7 +313,7 @@ final readonly class ReceiptContextService
         $event->setRelation('phase', $phase);
         $event->setRelation('context', $load);
         app(LedgerService::class)->record($event);
-        if ($load->receipt->isSpecial()) {
+        if ($load->receipt->isSpecial() || $load->receipt->isPreparationFailure()) {
             // Cognition only: no field invalidation, recalculation or evidence signature.
             app(RealtimePublisher::class)->participant($load->participant_id);
 
