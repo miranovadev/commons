@@ -208,12 +208,40 @@ final readonly class EvidenceExecutionService
         $receipt->receiptable()->associate($execution->proposition);
         $receipt->save();
         $this->ledger->record($receipt);
-        $execution->forceFill(['status' => 'completed', 'metadata' => $metadata, 'completed_at' => now()])->save();
+        if ($execution->status !== 'failed') {
+            $execution->forceFill(['status' => 'completed', 'metadata' => $metadata, 'completed_at' => now()])->save();
+        }
         $receipt->setRelation('evidenceExecution', $execution);
         app(ReceiptContextService::class)->loadCreated($receipt);
-        $this->measurements->recalculateIfMeasurable($execution->proposition);
+        if (! $receipt->isPreparationFailure()) {
+            $this->measurements->recalculateIfMeasurable($execution->proposition);
+        }
 
         return $receipt;
+    }
+
+    /** Trusted Preparation adapter only; caller holds root, owner, Phase and execution locks. */
+    public function recordPreparationFailure(EvidenceExecution $execution, string $reason, array $diagnostic): Receipt
+    {
+        if (DB::transactionLevel() === 0 || $execution->type !== 'prepare'
+            || ! in_array($execution->status, ['pending', 'presented'], true)) {
+            throw new DomainException('Failure observation requires a locked unresolved Preparation.');
+        }
+        $metadata = [
+            'execution_id' => $execution->id, 'originating_gate_id' => $execution->proposition_id,
+            'participant_id' => $execution->phase->cycle->participant_id,
+            'purpose' => $execution->input['purpose'], 'selections' => $execution->input['artifacts'],
+            'deliveries' => $execution->presentation ?? [],
+            'presented_at' => $execution->presented_at?->toISOString(),
+            'outcome' => ['type' => 'failed'], 'failure' => $diagnostic['failure'], 'failure_reason' => $reason,
+            'content_verified' => false, 'reinforcement_version' => 'preparation-failure',
+            'reinforcement_status' => 'not-loaded',
+        ];
+        $execution->forceFill(['status' => 'failed', 'outcome' => 'failed', 'failure_reason' => $reason,
+            'metadata' => $metadata, 'failed_at' => now()])->save();
+
+        // No signature: this records an operational failure, never source support/refutation.
+        return $this->receipt($execution, 'preparation', $execution->id, null, $metadata);
     }
 
     public function fail(

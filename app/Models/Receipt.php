@@ -130,7 +130,14 @@ class Receipt extends Model
 
     public function observationComplete(): bool
     {
-        return $this->type !== 'tragedy' && $this->evidenceExecution?->status === 'completed';
+        return $this->type !== 'tragedy' && ($this->evidenceExecution?->observationRecorded() ?? false);
+    }
+
+    public function isPreparationFailure(): bool
+    {
+        return $this->type === 'preparation' && $this->evidenceExecution?->type === 'prepare'
+            && $this->evidenceExecution->status === 'failed' && $this->evidenceExecution->outcome === 'failed'
+            && ($this->metadata['outcome']['type'] ?? null) === 'failed';
     }
 
     public function consumption(): HasOne

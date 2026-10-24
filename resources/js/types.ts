@@ -320,8 +320,10 @@ export interface ReceiptContext {
   replayed_from_receipt_id: Identifier | null;
   observation_error?: string | null;
   preparation_history?: { purpose: string; participant_id: string; originating_gate_id: string; selections: PreparationSelection[];
+    execution_id?: string; content_verified?: boolean; failure_reason?: string;
+    failure?: { stage: string; classification: string; method: string; version: string };
     deliveries: Array<{ artifact_id: string; read_type: string; method: string; version: string; payload_bytes: number;
-      boundaries: { offset: number; end: number; total: number; length?: number; requested_max_chars?: number | null; has_more?: boolean } }>;
+      boundaries: { offset: number; end: number; total: number; length?: number; requested_offset?: number; requested_max_chars?: number | null; has_more?: boolean } }>;
     outcome: { type: string; reason?: string; proposition_id?: string } };
   evidence?: { tragedy_id?: Identifier; terminal_proposition_id?: Identifier; opening_proposition_id?: Identifier; exhausted_committals?: Array<{ id: Identifier; statement: string; statement_truncated: boolean; register: RegisterName; phase_number: number; exhausted_horizon_id: Identifier; exhausted_at: string; actionable: false }>; query?: string; executed_at?: string; results?: Array<{ title: string; url: string; excerpt: string; excerpt_truncated: boolean; source: string; rank: number; relevance: number | null; published_at: string | null }>; proposition_id?: Identifier; statement?: string; direction?: string; rationale?: string | null; resource?: string; title?: string | null; links?: Array<{ url: string; text: string }>; links_count?: number | null; links_truncated?: boolean; links_error?: string; fingerprint?: string; observed_at?: string; content_excerpt?: string | null; excerpt_truncated?: boolean };
 }
@@ -350,7 +352,7 @@ interface GateAdmissibility {
 export interface ParticipantPlan {
   preparation?: { execution_id: string; status: string; purpose: string; selections: PreparationSelection[] } | null;
   preparation_options?: PreparationOption[];
-  preparation_failures?: Array<{ execution_id: string; purpose: string; diagnostic: { failure_reason?: string; failure?: { stage: string; method: string; classification?: string } } }>;
+  preparation_failures?: Array<{ execution_id: string; receipt_id?: string | null; purpose: string; diagnostic: { failure_reason?: string; failure?: { stage: string; method: string; classification?: string } } }>;
 
   correspondence_admissibility?: GateAdmissibility & {
     shape_topology_direction: ComponentDirection;

@@ -281,7 +281,7 @@ class PreparationExecutionTest extends TestCase
         $this->assertTrue(app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->isEmpty());
     }
 
-    public function test_failure_records_method_and_diagnostic_without_receipt_or_outcome_and_keeps_allowance_reserved(): void
+    public function test_failure_records_method_diagnostic_and_ordinary_receipt_and_keeps_allowance_reserved(): void
     {
         $fixture = new PreparationFixture;
         $f = $fixture->context;
@@ -292,8 +292,8 @@ class PreparationExecutionTest extends TestCase
         $execution->refresh();
         $this->assertSame('failed', $execution->status);
         $this->assertNull($execution->presentation);
-        $this->assertNull($execution->outcome);
-        $this->assertNull($execution->receipt);
+        $this->assertSame('failed', $execution->outcome);
+        $this->assertOrdinary($execution->receipt, $execution);
         $this->assertNotNull($execution->failed_at);
         $this->assertSame('native-extract', $execution->metadata['failure']['method']);
         $this->assertSame('1', $execution->metadata['failure']['version']);
@@ -479,12 +479,12 @@ class PreparationExecutionTest extends TestCase
         $samples = ['instrument' => ['execution' => $fixture->source->evidenceExecution->fresh()->toArray(), 'receipt' => $fixture->source->fresh()->toArray()],
             'contributed' => ['execution' => $execution->fresh()->toArray(), 'receipt' => $contributed->fresh()->toArray()],
             'deferred' => ['execution' => $deferredExecution->fresh()->toArray(), 'receipt' => $deferred->fresh()->toArray()],
-            'failed' => ['execution' => $failed->fresh()->toArray(), 'receipt' => null]];
+            'failed' => ['execution' => $failed->fresh()->toArray(), 'receipt' => $failed->fresh()->receipt->toArray()]];
         $this->assertSame('instrument', $samples['instrument']['execution']['type']);
         $this->assertSame('contributed', $samples['contributed']['execution']['outcome']);
         $this->assertSame('deferred', $samples['deferred']['execution']['outcome']);
         $this->assertSame('failed', $samples['failed']['execution']['status']);
-        $this->assertNull($samples['failed']['execution']['outcome']);
+        $this->assertSame('failed', $samples['failed']['execution']['outcome']);
         if ($path = getenv('COMMONS_PREPARATION_EXAMPLES')) {
             file_put_contents($path, json_encode(['description' => 'Rows from isolated domain tests; delivery acknowledgements use a test-only reader, not a Stage 2D implementation.',
                 'records' => $samples], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n");
@@ -531,8 +531,8 @@ class PreparationExecutionTest extends TestCase
         $presented = $execution->fresh()->presentation;
         $service->fail($fixture->context->viewer, $execution, 'test-acknowledgement', '1', 'delivery', 'Resolution channel failed after presentation.');
         $this->assertSame($presented, $execution->fresh()->presentation);
-        $this->assertNull($execution->fresh()->outcome);
-        $this->assertNull($execution->fresh()->receipt);
+        $this->assertSame('failed', $execution->fresh()->outcome);
+        $this->assertSame($presented, $execution->fresh()->receipt->metadata['deliveries']);
         $this->assertSame('failed', $execution->fresh()->status);
     }
 
