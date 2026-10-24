@@ -21,7 +21,7 @@ class PreOrderInstrumentPathTest extends TestCase
     }
 
     #[DataProvider('phases')]
-    public function test_non_persist_phases_do_not_offer_instrumentation(PhaseKind $kind, string $register): void
+    public function test_only_acquisition_phases_offer_instrumentation_and_never_on_a_write(PhaseKind $kind, string $register): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
         $gate = $kind === PhaseKind::Distinguish ? $f->seed : $f->gate;
@@ -30,8 +30,8 @@ class PreOrderInstrumentPathTest extends TestCase
         $service = app(ParticipationService::class);
         $this->publishPotentialFixture($f->viewer);
         $before = $service->stateFor($f->viewer)['plan'];
-        $this->assertArrayNotHasKey('instrument.execute', $before['schema']['$defs']['actions']);
-        $this->assertSame([], app(PropositionOptionService::class)->instrumentOptionsFor($f->phase)->all());
+        $this->assertSame($kind === PhaseKind::Disperse, isset($before['schema']['$defs']['actions']['instrument.execute']));
+        $this->assertSame($kind === PhaseKind::Disperse ? [$gate->id] : [], app(PropositionOptionService::class)->instrumentOptionsFor($f->phase)->pluck('id')->all());
         $this->expectException(\DomainException::class);
         app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase,
             ['action' => 'instrument.execute', 'proposition_id' => $write->id,

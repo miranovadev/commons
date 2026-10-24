@@ -96,11 +96,12 @@ final class PropositionOptionService
             ));
     }
 
-    /** Persist observes its exact Gate once per Participant Cycle; Receipt uptake is independent. */
+    /** Persist acquisition and Disperse fallback share one exact-Gate allowance per Cycle. */
     public function instrumentOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        if ($phase->kind !== PhaseKind::Persist || $phase->completed_at !== null
+        if (! in_array($phase->kind, [PhaseKind::Persist, PhaseKind::Disperse], true) || $phase->completed_at !== null
             || $phase->cycle->completed_at !== null
+            || app(PreparationService::class)->active($phase) !== null
             || ! $this->generation->epistemicActionAvailable($phase, 'instrument.execute', $context)
             || EvidenceExecution::query()->where('type', 'instrument')->where('status', 'completed')
                 ->where('cycle_id', $phase->cycle_id)->exists()) {

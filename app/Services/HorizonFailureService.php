@@ -146,7 +146,7 @@ final class HorizonFailureService
         }
 
         // Evidence can be inherited or shared; observing this exact Write is
-        // not required by Persist-only acquisition. Consumption does not erase
+        // not required by Gate-targeted acquisition. Consumption does not erase
         // genuine evidence already attached to its causal lineage.
         return $state->evidenceReceipts($node)->isNotEmpty()
             || app(HorizonReceiptService::class)->ordinaryAvailable($node->phase)->isNotEmpty();

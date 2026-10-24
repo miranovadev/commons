@@ -65,7 +65,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 30,
+    'version' => 31,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -175,8 +175,8 @@ return [
             ],
         ],
         'instrument.execute' => [
-            'description' => 'Observe the current Persist Gate once per Cycle and record its Receipt. This does not advance the Phase; fresh cognition follows at the same Gate.',
-            'title' => 'Observe the current Persist Gate',
+            'description' => 'Observe the current eligible Gate once per Cycle (Persist, or Disperse without readable Artifacts) and record its Receipt. This does not advance the Phase; fresh cognition follows at the same Gate.',
+            'title' => 'Observe the current eligible Gate',
             'type' => 'object',
             'additionalProperties' => false,
             'required' => ['action', 'proposition_id', 'instrument'],

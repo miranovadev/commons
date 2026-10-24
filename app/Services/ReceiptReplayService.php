@@ -25,7 +25,7 @@ final readonly class ReceiptReplayService
             || $phase->cycle->completed_at !== null || ! ($option['can_replay'] ?? false)
             || ($propositionId !== null && ($option['proposition_id'] ?? null) !== $propositionId)
             || $receipt === null || ! $receipt->supports(ReceiptCapability::Replayable)) {
-            throw new DomainException('Replay requires a replayable encountered Receipt on an Instrument-eligible Persist Gate.');
+            throw new DomainException('Replay requires a replayable encountered Receipt on an Instrument-eligible Gate.');
         }
 
         return $this->instruments->observeFor($phase, $context->propositions->get($option['proposition_id']), $receipt->replayInvocation());
@@ -48,7 +48,7 @@ final readonly class ReceiptReplayService
             $receipt = $context->receipts->firstWhere('id', $receiptId);
             if (! ($option['can_replay'] ?? false) || ($propositionId !== null && ($option['proposition_id'] ?? null) !== $propositionId)
             || $receipt === null || ! $receipt->supports(ReceiptCapability::Replayable)) {
-                throw new DomainException('Replay requires a replayable encountered Receipt on an Instrument-eligible Persist Gate.');
+                throw new DomainException('Replay requires a replayable encountered Receipt on an Instrument-eligible Gate.');
             }
 
             return $this->instruments->execute($phase, $context->propositions->get($option['proposition_id']),
