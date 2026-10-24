@@ -40,18 +40,18 @@ class InstrumentAllowanceConcurrencyTest extends TestCase
 
     public static function instrumentKinds(): array
     {
-        return [['citation'], ['load_file']];
+        return [['citation', PhaseKind::Persist], ['load_file', PhaseKind::Persist], ['citation', PhaseKind::Disperse], ['load_file', PhaseKind::Disperse]];
     }
 
     #[DataProvider('instrumentKinds')]
-    public function test_two_independent_connections_cannot_complete_the_same_cycle_allowance(string $kind): void
+    public function test_two_independent_connections_cannot_complete_the_same_cycle_allowance(string $kind, PhaseKind $phaseKind): void
     {
         if (DB::getDriverName() !== 'pgsql') {
             $this->markTestSkipped('Requires independent PostgreSQL connections and row locks.');
         }
         $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
-        $gate = DB::transaction(fn () => $f->node($f->seed, 'activity', position: PhaseKind::Distinguish));
-        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $gate->id, 'write_register' => 'frontier'])->save();
+        $gate = DB::transaction(fn () => $f->node($f->seed, $phaseKind === PhaseKind::Persist ? 'activity' : 'canon', position: $phaseKind === PhaseKind::Persist ? PhaseKind::Distinguish : PhaseKind::Constrain));
+        $f->phase->forceFill(['kind' => $phaseKind, 'gate_proposition_id' => $gate->id, 'write_register' => $phaseKind === PhaseKind::Persist ? 'frontier' : 'activity'])->save();
         $f->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
         $input = ['action' => 'instrument.execute', 'proposition_id' => $gate->id,
             'instrument' => $kind === 'citation' ? ['kind' => 'citation', 'reference' => $f->seed->id]

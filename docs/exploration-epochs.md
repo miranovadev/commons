@@ -69,7 +69,7 @@ Phase, numeric zero Potential alone, or a sibling Variant is insufficient.
 Generative Distinguish/Disperse ancestors require genuine ordinary evidence and
 effective Attestation. Under Stage 2A, evidence may be shared in the existing
 Region/Horizon catalogue or retained on the causal lineage; it need not originate
-from an Instrument on that exact Write. Acquisition occurs only at a Persist Gate.
+from an Instrument on that exact Write. Acquisition occurs at the Persist Gate or an eligible Disperse fallback Gate.
 
 The existing backward walker follows only the tested causal lineage and its
 immediate child checks. A live child prevents failure propagating to its parent.

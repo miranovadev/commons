@@ -34,6 +34,10 @@ final readonly class PhaseGenerationService
 
         $available = app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
 
+        if ($action === 'instrument.execute' && $phase->kind === PhaseKind::Disperse) {
+            return ! $available && ! app(PreparationService::class)->hasReadableArtifacts($phase, $context);
+        }
+
         return in_array($action, ['instrument.execute', 'preparation.start'], true) ? ! $available : $available;
     }
 

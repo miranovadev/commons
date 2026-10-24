@@ -90,7 +90,7 @@ final readonly class ContributionDispatcher
             }
             if (! $this->generation->available($phase, $action, prepared: $preparation !== null)) {
                 if ($action === 'instrument.execute') {
-                    throw new ConflictHttpException('Instrumentation requires the active Persist Gate, an unused Cycle allowance and no available ordinary Receipt.');
+                    throw new ConflictHttpException('Instrumentation requires the active Persist or fallback Disperse Gate, an unused Cycle allowance and no available ordinary Receipt; Disperse also requires no readable Artifact.');
                 }
                 throw new DomainException('This generation opportunity is unavailable. Use the existing Write; reclassification requires a Receipt, an effective Attestation and an unused source/register classification.');
             }
@@ -102,7 +102,7 @@ final readonly class ContributionDispatcher
             // advanced since another Instrument request completed.
             if ($action === 'instrument.execute'
                 && ! $this->options->instrumentOptionsFor($phase)->contains('id', $input['proposition_id'] ?? null)) {
-                throw new ConflictHttpException('Instrumentation requires the active Persist Gate, an unused Cycle allowance and no available ordinary Receipt.');
+                throw new ConflictHttpException('Instrumentation requires the active Persist or fallback Disperse Gate, an unused Cycle allowance and no available ordinary Receipt; Disperse also requires no readable Artifact.');
             }
             $targets = match ($action) {
                 'attestation.create' => $this->options->attestationOptionsFor($phase),
@@ -192,12 +192,12 @@ final readonly class ContributionDispatcher
     {
         if ($phase->cycle->participant_id === $participant->id
             && ! $this->generation->epistemicActionAvailable($phase, 'instrument.execute')) {
-            throw new ConflictHttpException('Shared Receipt availability changed. Refresh before acquiring evidence.');
+            throw new ConflictHttpException('Evidence acquisition eligibility changed. Refresh before acquiring evidence.');
         }
         if ($phase->cycle->participant_id !== $participant->id
             || ! in_array('instrument.execute', config("phases.{$phase->kind->value}.actions", []), true)
             || ! $this->options->instrumentOptionsFor($phase)->contains('id', $input['proposition_id'] ?? null)) {
-            throw new DomainException('Instrumentation requires the current Persist Gate, an unused Cycle allowance and no available ordinary Receipt.');
+            throw new DomainException('Instrumentation requires the current Persist or fallback Disperse Gate, an unused Cycle allowance and no available ordinary Receipt; Disperse also requires no readable Artifact.');
         }
 
         if (array_key_exists('replay_receipt_id', $input['instrument'])) {

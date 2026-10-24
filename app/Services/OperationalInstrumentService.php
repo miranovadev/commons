@@ -62,7 +62,7 @@ final readonly class OperationalInstrumentService
                 throw new DomainException('Committed sources and Committal results cannot receive instruments. Develop a Variant from the Committal instead.');
             }
             if (! $origin && ! app(PropositionOptionService::class)->instrumentOptionsFor($phase->fresh())->contains('id', $proposition->id)) {
-                throw new ConflictHttpException('Instrumentation requires the active Persist Gate, an unused Cycle allowance and no available ordinary Receipt.');
+                throw new ConflictHttpException('Instrumentation requires the active Persist or fallback Disperse Gate, an unused Cycle allowance and no available ordinary Receipt; Disperse also requires no readable Artifact.');
             }
 
             $metadata = match ($input['kind']) {
@@ -95,7 +95,7 @@ final readonly class OperationalInstrumentService
             throw new DomainException('Committed sources and Committal results cannot receive instruments. Develop a Variant from the Committal instead.');
         }
         if (! $bootstrap && ! app(PropositionOptionService::class)->instrumentOptionsFor($phase->fresh())->contains('id', $proposition->id)) {
-            throw new ConflictHttpException('Instrumentation requires the active Persist Gate, an unused Cycle allowance and no available ordinary Receipt.');
+            throw new ConflictHttpException('Instrumentation requires the active Persist or fallback Disperse Gate, an unused Cycle allowance and no available ordinary Receipt; Disperse also requires no readable Artifact.');
         }
         app(RelevantInstrumentService::class)->assertAvailable($proposition, $input);
         $normalized = $this->normalize($input);
