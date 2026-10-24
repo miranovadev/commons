@@ -170,7 +170,7 @@ class DisperseInstrumentFallbackTest extends TestCase
         $this->assertArrayNotHasKey('instrument.execute', $this->actions($f));
         $service = app(PreparationService::class);
         $execution = $service->start($f->viewer, $f->phase, $fixture->input());
-        $service->fail($f->viewer, $execution, 'test-reader', '1', 'read', 'Technical failure.');
+        $service->fail($f->viewer, $execution, 'test-reader', '1', 'expired', 'Unattempted Preparation expired.');
         $this->assertTrue($service->hasReadableArtifacts($f->phase));
         $this->assertFalse($service->eligible($f->phase));
         $this->assertArrayNotHasKey('preparation.start', $this->actions($f));

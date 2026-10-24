@@ -128,8 +128,8 @@ final class ArtifactReaderRegistry
         if (array_diff(array_keys($parameters), ['offset', 'max_chars']) !== []
             || ! is_int($parameters['offset'] ?? 0) || ($parameters['offset'] ?? 0) < 0
             || (array_key_exists('max_chars', $parameters) && (! is_int($parameters['max_chars'])
-                || $parameters['max_chars'] < 1 || $parameters['max_chars'] > min(1048576, (int) config('preparation.max_chars'))))) {
-            throw new ArtifactReadingException('invalid_parameters', 'Reading accepts an optional nonnegative offset and optional bounded positive max_chars.');
+                || $parameters['max_chars'] < 1))) {
+            throw new ArtifactReadingException('invalid_parameters', 'Reading accepts an optional nonnegative offset and optional positive max_chars preference.');
         }
     }
 

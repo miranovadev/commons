@@ -120,7 +120,7 @@ final class ParticipantReceiptProjection
         // Tragedy keeps its plan-owned scope; ordinary search Receipts follow
         // these same causal associations without importing their result nodes.
         $receipts = Receipt::evidence()
-            ->whereHas('evidenceExecution', fn ($q) => $q->where('status', 'completed'))
+            ->whereHas('evidenceExecution', fn ($q) => $q->recordedObservation())
             ->where(fn ($q) => $q->whereIn('id', $links->pluck('receipt_id'))
                 ->orWhere(fn ($q) => $q->where('receiptable_type', (new Proposition)->getMorphClass())->whereIn('receiptable_id', $all))
                 ->orWhere(fn ($q) => $q->where('receiptable_type', (new Attestation)->getMorphClass())->whereIn('receiptable_id', $attestations->pluck('id'))))

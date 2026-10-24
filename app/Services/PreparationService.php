@@ -6,6 +6,7 @@ use App\Domain\Evidence\PreparationInput;
 use App\Domain\Evidence\PreparationPresentation;
 use App\Enums\PhaseKind;
 use App\Exceptions\ArtifactReadingException;
+use App\Exceptions\ArtifactStorageException;
 use App\Models\Cycle;
 use App\Models\EvidenceExecution;
 use App\Models\Participant;
@@ -40,6 +41,13 @@ final class PreparationService
         $readable = $this->options($phase);
         if ($readable === []) {
             throw new DomainException('No accessible Artifact has a supported reading capability.');
+        }
+        foreach ($input->artifacts as $selection) {
+            $option = array_find($readable, fn ($item) => $item['receipt_id'] === $selection['receipt_id']
+                && $item['artifact_id'] === $selection['artifact_id']);
+            if ($option === null || ! in_array($selection['read_type'], array_column($option['capabilities'], 'read_type'), true)) {
+                throw new DomainException('Each selection requires an accessible Artifact and supported Read Type.');
+            }
         }
 
         return DB::transaction(function () use ($participant, $phase, $input): EvidenceExecution {
@@ -144,7 +152,7 @@ final class PreparationService
         });
     }
 
-    /** Infrastructure failure is not a successful observation and creates no Receipt. */
+    /** Trusted adapter only. No action or HTTP endpoint accepts failure diagnostics. */
     public function fail(Participant $participant, EvidenceExecution $execution, string $method, string $version, string $stage, string $reason, array $details = []): void
     {
         if (! in_array($stage, ['unsupported', 'read', 'delivery', 'inference', 'expired', 'stale'], true)
@@ -167,11 +175,24 @@ final class PreparationService
             }
             $details = array_intersect_key($details, array_flip(['artifact_id', 'read_type', 'source_type', 'classification']));
             foreach ($details as $value) {
-                if (! is_string($value) || strlen($value) > 160) {
+                if (! is_string($value) || strlen($value) > 160 || preg_match('/[\x00-\x1F\x7F]/', $value)) {
                     throw new DomainException('Failure identity fields must be bounded.');
                 }
             }
-            $this->executions->fail($stored, $reason, ['failure' => [...compact('method', 'version', 'stage'), ...$details]]);
+            $reason = trim(preg_replace('/[\x00-\x1F\x7F]/u', ' ', $reason));
+            $details['classification'] ??= match ($stage) {
+                'unsupported' => 'missing_capability', 'read' => 'reader_failure',
+                'delivery' => 'delivery_failure', 'inference' => 'inference_failure', default => $stage,
+            };
+            $diagnostic = ['failure' => [...compact('method', 'version', 'stage'), ...$details], 'failure_reason' => $reason];
+            // A reservation alone does not prove an attempt. Acknowledged presentation
+            // does: expiry after that real delivery records its unsuccessful resolution.
+            if ($stage === 'stale' || ($stage === 'expired' && $stored->presentation === null)
+                || $details['classification'] === 'invalid_parameters') {
+                $this->executions->fail($stored, $reason, $diagnostic);
+            } else {
+                $this->executions->recordPreparationFailure($stored, $reason, $diagnostic);
+            }
         });
     }
 
@@ -341,13 +362,16 @@ final class PreparationService
             $deliveries = app(PreparationAllocation::class)->allocate($deliveries);
             $acknowledgement = new PreparationPresentation(array_map(fn ($item) => array_diff_key($item, ['content' => true]), $deliveries));
         } catch (Throwable $exception) {
-            $classification = $exception instanceof ArtifactReadingException ? $exception->classification : 'storage_failure';
+            $classification = $exception instanceof ArtifactReadingException ? $exception->classification
+                : ($exception instanceof ArtifactStorageException ? 'storage_failure' : 'reader_failure');
             if ($exception instanceof ArtifactReadingException) {
                 $attempt = [...$attempt, ...$exception->details];
                 $selection = [...$selection, ...array_intersect_key($exception->details, array_flip(['artifact_id', 'read_type']))];
             }
             $this->fail($participant, $execution, $attempt['method'] ?? ArtifactReaderRegistry::METHOD, $attempt['version'] ?? ArtifactReaderRegistry::VERSION,
-                $classification === 'missing_capability' ? 'unsupported' : 'read', mb_substr($exception->getMessage(), 0, 1000),
+                $classification === 'missing_capability' ? 'unsupported' : 'read',
+                $exception instanceof ArtifactReadingException || $exception instanceof ArtifactStorageException
+                    ? mb_substr($exception->getMessage(), 0, 1000) : 'The reading adapter could not complete. No presentation was acknowledged.',
                 ['classification' => $classification, ...array_intersect_key($attempt, ['source_type' => true]), ...array_intersect_key($selection, array_flip(['artifact_id', 'read_type']))]);
             throw new DomainException('Preparation reading failed: '.$exception->getMessage(), previous: $exception);
         }

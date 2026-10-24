@@ -79,6 +79,36 @@ class AdaptivePreparationJourneyTest extends TestCase
         $this->assertStringNotContainsString(str_repeat('C', 100), json_encode(app(InputPlanService::class)->forPhase($f->viewer, $f->phase)));
     }
 
+    public function test_oversized_explicit_preferences_survive_bounded_human_and_autonomous_delivery(): void
+    {
+        config(['preparation.text_budget' => 9000]);
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        $sources = [$fixture->receipt(str_repeat('A', 30000)), $fixture->receipt(str_repeat('B', 30000))];
+        $input = $fixture->input($sources);
+        $input['artifacts'][0]['parameters'] = ['offset' => 10, 'max_chars' => 20000];
+        $input['artifacts'][1]['parameters'] = ['offset' => 20, 'max_chars' => 10000];
+        $schema = app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema'];
+        app(ContributionService::class)->validateSchema($schema, ['action' => 'preparation.start', 'proposition_id' => $f->gate->id, ...$input]);
+        $service = app(PreparationService::class);
+        $execution = $service->start($f->viewer, $f->phase, $input);
+        $human = $service->delivery($f->viewer, $execution, 'human-text');
+        $autonomous = $service->delivery($f->viewer, $execution, 'inline-text');
+        $this->assertSame([6000, 3000], array_column(array_column($human['deliveries'], 'boundaries'), 'length'));
+        foreach ($human['deliveries'] as $index => $delivery) {
+            $this->assertSame($delivery['boundaries'], $autonomous['deliveries'][$index]['boundaries']);
+            $this->assertSame($delivery['content'], $autonomous['deliveries'][$index]['content']);
+            $this->assertTrue($delivery['boundaries']['has_more']);
+            $this->assertSame($input['artifacts'][$index]['parameters']['offset'], $delivery['boundaries']['offset']);
+        }
+        $service->acknowledge($f->viewer, $execution, $human['presentation_token']);
+        $receipt = $service->defer($f->viewer, $execution, 'A useful bounded reading.');
+        $this->assertSame($this->canonical($input), $this->canonical($execution->fresh()->input));
+        $this->assertSame($this->canonical($input['artifacts']), $this->canonical($receipt->metadata['selections']));
+        $this->assertSame([20000, 10000], array_column(array_column($receipt->metadata['deliveries'], 'boundaries'), 'requested_max_chars'));
+        $this->assertSame([6010, 3020], array_column(array_column($receipt->metadata['deliveries'], 'boundaries'), 'end'));
+    }
+
     public function test_duplicate_associations_share_budget_but_read_types_and_ranges_remain_distinct(): void
     {
         config(['preparation.text_budget' => 100]);
@@ -126,7 +156,7 @@ class AdaptivePreparationJourneyTest extends TestCase
         }
     }
 
-    public function test_pdf_failure_preserves_precise_reader_identity_without_fabricated_receipt(): void
+    public function test_pdf_failure_preserves_precise_reader_identity_in_a_truthful_failure_receipt(): void
     {
         $fixture = new PreparationFixture;
         $source = $fixture->receipt(TextPdf::make([null]));
@@ -141,7 +171,9 @@ class AdaptivePreparationJourneyTest extends TestCase
         } catch (\DomainException) {
             $execution->refresh();
             $this->assertSame('failed', $execution->status);
-            $this->assertNull($execution->receipt);
+            $this->assertSame('failed', $execution->receipt->metadata['outcome']['type']);
+            $this->assertFalse($execution->receipt->metadata['content_verified']);
+            $this->assertSame([], $execution->receipt->metadata['deliveries']);
             $this->assertNull($execution->presentation);
             $this->assertSame('no_extractable_text', $execution->metadata['failure']['classification']);
             $this->assertSame('commons-poppler-text', $execution->metadata['failure']['method']);

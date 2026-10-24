@@ -144,10 +144,21 @@ class WakeParticipant implements ShouldQueue
                     $delivery = app(PreparationService::class)->delivery($participant, $preparedExecution, 'inline-text');
                     $state['prepared_context'] = array_diff_key($delivery, ['presentation_token' => true]);
                 }
-                $contribution = $inference->contribute($currentConnection->connection, $state, [
-                    'participant_id' => $participant->id,
-                    'substrate_id' => $participant->substrate_id,
-                ]);
+                try {
+                    $contribution = $inference->contribute($currentConnection->connection, $state, [
+                        'participant_id' => $participant->id,
+                        'substrate_id' => $participant->substrate_id,
+                    ]);
+                } catch (Throwable $exception) {
+                    if ($preparedExecution !== null) {
+                        // Only trusted inference failure is evidence. A later rejected
+                        // contribution, stale action or invalid acknowledgement is not.
+                        app(PreparationService::class)->fail($participant, $preparedExecution,
+                            ArtifactReaderRegistry::METHOD, ArtifactReaderRegistry::VERSION, 'inference',
+                            'The prepared inference interaction could not complete. No new presentation was acknowledged.');
+                    }
+                    throw $exception;
+                }
                 if ($preparedExecution !== null) {
                     // A successful inference call received this exact transient context.
                     // Extraction alone and failed inference never acknowledge presentation.
@@ -182,12 +193,6 @@ class WakeParticipant implements ShouldQueue
             }
             $triggers->recordSuccess($participantConnection);
         } catch (Throwable $exception) {
-            if ($preparedExecution !== null) {
-                rescue(fn () => app(PreparationService::class)->fail($participantConnection->participant,
-                    $preparedExecution, ArtifactReaderRegistry::METHOD,
-                    ArtifactReaderRegistry::VERSION, 'inference',
-                    'Prepared interaction failed: '.mb_substr($exception->getMessage(), 0, 900)), report: true);
-            }
             $triggers->recordFailure(
                 $participantConnection,
                 str($exception->getMessage())->limit(4000)->toString(),
