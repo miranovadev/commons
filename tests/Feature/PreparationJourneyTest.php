@@ -196,7 +196,12 @@ class PreparationJourneyTest extends TestCase
         $service->acknowledge($f->viewer, $execution, $delivery['presentation_token']);
         $receipt = $service->defer($f->viewer, $execution, 'The bounded reading was useful.');
         $this->assertSame('deferred', $execution->fresh()->outcome);
-        $this->assertSame($input['artifacts'], $receipt->metadata['selections']);
+        // JSONB object-key order is immaterial; selection order and values are not.
+        $selections = collect($receipt->metadata['selections'])->map(fn ($item) => [
+            'receipt_id' => $item['receipt_id'], 'artifact_id' => $item['artifact_id'],
+            'read_type' => $item['read_type'], 'parameters' => $item['parameters'],
+        ])->all();
+        $this->assertSame($input['artifacts'], $selections);
         $this->assertNull($f->phase->fresh()->completed_at);
     }
 
