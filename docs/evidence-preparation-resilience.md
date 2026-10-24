@@ -24,8 +24,10 @@ safe summary rather than copying provider responses into authoritative history.
 
 Malformed selections, unsupported requested Read Types, foreign ownership and
 stale reads are rejected. An offset discovered beyond EOF terminates the execution
-as `invalid_parameters` without a Receipt. Existing stale/expired recovery also
-creates no Receipt. A reader that disappears *after* a valid start is instead a
+as `invalid_parameters` without a Receipt. Stale recovery and expiry of an
+unpresented reservation create no Receipt. Expiry after acknowledged presentation
+does record a failure Receipt with the actual delivery history: that presentation
+proves a genuine attempt. A reader that disappears *after* a valid start is instead a
 genuine `missing_capability` failure. These cases do not grant a second allowance.
 
 Failure persistence retains the Substrate → Participant → Cycle → Phase → execution
@@ -75,7 +77,7 @@ autonomous adapters use the same allocator, schema and acknowledgement validatio
 | --- | --- | --- | --- | --- | --- |
 | Failed execution vs observation | Must failure become successful completion? | Failed status and failed Receipt outcome coexist; no signature | Handoff §1 | Documented | Storage, extraction, inference and model tests |
 | Rejected request | Can invalid input manufacture evidence? | No Receipt for malformed, unauthorized, stale or invalid-offset requests | Handoff safeguards | Documented | Rejection and stale-read tests |
-| Recovery cancellation | Does expiration prove an attempted read? | Preserve recovery cancellation without Receipt | Handoff §§1,4; Stage 2D recovery | Documented | Existing expiration test |
+| Recovery expiration | Does expiration prove an attempted read? | A reservation alone does not; acknowledged presentation does. Only the latter records a failure Receipt. Stale requests remain excluded | Handoff §1 genuine-attempt safeguard; Stage 2D acknowledgement | Documented | Unpresented and presented expiration tests |
 | Presentation | Does extraction alone count as delivery? | Only acknowledged boundaries are historical deliveries | Handoff §§1,3; Stage 2D acknowledgement | Documented | Before/after-presentation failure tests |
 | Mixed allocation | Do explicit preferences lose existing priority? | Proportional explicit allocation first, unchanged automatic water filling second | Handoff §2; Stage 3C allocation invariant | Documented | Mixed, redistribution, UTF-8 and adapter tests |
 | Evidence authority | Does failure grant structural admissibility? | Ordinary evidence availability only; all independent guards remain | Handoff §§1,4 | Documented | Lawful Reclassification and unchanged structural snapshots |

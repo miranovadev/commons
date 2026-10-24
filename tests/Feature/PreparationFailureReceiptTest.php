@@ -129,6 +129,28 @@ class PreparationFailureReceiptTest extends TestCase
         $this->assertFalse(app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->contains('id', $receipt->id));
     }
 
+    public function test_expiry_after_acknowledged_presentation_records_the_genuine_attempt(): void
+    {
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        $service = app(PreparationService::class);
+        $execution = $service->start($f->viewer, $f->phase, $fixture->input());
+        $delivery = $service->delivery($f->viewer, $execution, 'human-text');
+        $service->acknowledge($f->viewer, $execution, $delivery['presentation_token']);
+        $presented = $execution->fresh()->presentation;
+        $this->travel(31)->minutes();
+        $service->recover($f->viewer, $f->phase);
+        $execution->refresh();
+        $this->assertSame('failed', $execution->status);
+        $this->assertSame('failed', $execution->outcome);
+        $this->assertSame('expired', $execution->receipt->metadata['failure']['stage']);
+        $this->assertSame($presented, $execution->receipt->metadata['deliveries']);
+        $this->assertFalse($execution->receipt->metadata['content_verified']);
+        $this->assertNull($f->phase->fresh()->completed_at);
+        $service->recover($f->viewer, $f->phase);
+        $this->assertSame(1, Receipt::where('evidence_execution_id', $execution->id)->count());
+    }
+
     public function test_failure_and_receipt_creation_roll_back_together(): void
     {
         $fixture = new PreparationFixture;

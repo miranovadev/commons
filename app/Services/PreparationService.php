@@ -185,9 +185,10 @@ final class PreparationService
                 'delivery' => 'delivery_failure', 'inference' => 'inference_failure', default => $stage,
             };
             $diagnostic = ['failure' => [...compact('method', 'version', 'stage'), ...$details], 'failure_reason' => $reason];
-            // Invalid ranges and recovery cancellations are not observations of an
-            // attempted technical failure. They retain their existing terminal record.
-            if (in_array($stage, ['stale', 'expired'], true) || $details['classification'] === 'invalid_parameters') {
+            // A reservation alone does not prove an attempt. Acknowledged presentation
+            // does: expiry after that real delivery records its unsuccessful resolution.
+            if ($stage === 'stale' || ($stage === 'expired' && $stored->presentation === null)
+                || $details['classification'] === 'invalid_parameters') {
                 $this->executions->fail($stored, $reason, $diagnostic);
             } else {
                 $this->executions->recordPreparationFailure($stored, $reason, $diagnostic);

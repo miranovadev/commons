@@ -188,8 +188,9 @@ reading or a failed acquisition. The existing failed EvidenceExecution records
 Artifact, Read Type, identified Source Type, attempted method/version and concise
 reason. Under [Evidence Resilience](evidence-preparation-resilience.md), genuine
 attempted technical failures also create an ordinary failure Receipt without
-changing execution status to completed. Rejected parameters and stale/expired
-recovery do not mint evidence. No failure implies contribution or deferment.
+changing execution status to completed. Rejected parameters, stale requests and
+expiry without acknowledged presentation do not mint evidence. No failure implies
+contribution or deferment.
 
 ## Ownership and remaining coupling
 
