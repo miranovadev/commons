@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('orientation_direction', 8);
             $table->string('attestation_cadence_direction', 8);
             $table->json('intervals');
+            // Frozen qualifying active-lineage context at the first local Attestation.
+            $table->json('cadence_reference_intervals')->nullable();
             // This is an own-Attestation position, never an inherited branch cursor.
             $table->unsignedBigInteger('last_position')->nullable();
             $table->foreignUlid('last_attestation_id')->nullable()->constrained('attestations')->nullOnDelete();
