@@ -66,10 +66,10 @@ class ExhaustedParticipantContextTest extends TestCase
             $this->assertNotContains($right->id, array_column($plan[$key], 'id'));
         }
         $this->assertSame([], $plan['exhausted_alternatives'], 'Explored is not Horizon Exhaustion');
-        $this->assertSame(! in_array($kind, [PhaseKind::Distinguish, PhaseKind::Constrain], true),
-            app(ParticipantExplorationService::class)->explored($right, $phase), 'An available acquisition move releases an earlier historical restriction');
+        $this->assertTrue(app(ParticipantExplorationService::class)->explored($right, $phase),
+            'Acquisition alone is not a forward continuation; historical encounters remain applicable');
         $compact = array_column(app(ParticipantContextSerializer::class)->plan($plan)['write_options'], 'id');
-        $this->assertSame(! in_array($kind, [PhaseKind::Distinguish, PhaseKind::Constrain], true), in_array($right->id, $compact, true));
+        $this->assertContains($right->id, $compact);
     }
 
     public function test_a_healthy_sibling_remains_actionable_alongside_visible_explored_evidence(): void

@@ -1,0 +1,75 @@
+{
+  "revision": "eeee6a6d81c4a32f605624f4804775f46af17bf4",
+  "database": "SQLite :memory:",
+  "php": "8.5.8",
+  "command": "php -d memory_limit=1G vendor/bin/phpunit --filter FreshBootstrapTest|NaturalChargeBoundaryLifecycleTest|ParticipationTragedyLifecycleTest|ParticipationHttpHarnessTest",
+  "executed": 10,
+  "passed": 7,
+  "failed": 3,
+  "assertions": 2218,
+  "tests": [
+    {
+      "class": "Tests.Feature.Api.ParticipationHttpHarnessTest",
+      "test": "test_real_http_actions_reach_an_operational_commit",
+      "status": "passed",
+      "assertions": 923
+    },
+    {
+      "class": "Tests.Feature.Api.ParticipationHttpHarnessTest",
+      "test": "test_stale_http_contribution_is_rejected_without_creating_a_second_proposition",
+      "status": "passed",
+      "assertions": 17
+    },
+    {
+      "class": "Tests.Feature.Api.ParticipationHttpHarnessTest",
+      "test": "test_retired_receipt_actions_are_rejected_without_mutating_memory_or_blocking_rest",
+      "status": "passed",
+      "assertions": 30
+    },
+    {
+      "class": "Tests.Feature.Api.ParticipationHttpHarnessTest",
+      "test": "test_proposition_search_limit_is_enforced_by_the_http_contract",
+      "status": "passed",
+      "assertions": 16
+    },
+    {
+      "class": "Tests.Feature.Api.ParticipationHttpHarnessTest",
+      "test": "test_harness_rejects_direct_fixture_writes_before_they_execute",
+      "status": "passed",
+      "assertions": 5
+    },
+    {
+      "class": "Tests.Feature.Api.ParticipationHttpHarnessTest",
+      "test": "test_rest_rejects_productive_search_generation_and_accepts_a_structurally_spent_phase",
+      "status": "passed",
+      "assertions": 33
+    },
+    {
+      "class": "Tests.Feature.Api.ParticipationTragedyLifecycleTest",
+      "test": "test_closed_crossover_alone_does_not_authorize_catastrophe_on_an_untested_continuation",
+      "status": "passed",
+      "assertions": 988
+    },
+    {
+      "class": "Tests.Feature.FreshBootstrapTest",
+      "test": "test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit with data set #0",
+      "status": "failed",
+      "assertions": 102,
+      "failure": "The single-participant motor stalled. Last Commit eligibility: null; last Bias eligibility: {\"gate_id\":\"01m5s2qdwnzstabg5e0zcyfeem\",\"admissible\":false,\"reason\":\"component_directions_disagree\",\"orientation_direction\":\"positive\",\"attestation_cadence_direction\":\"negative\",\"chirality_direction\":\"positive\"}; trace: [[2,1,\"proposition.variant\",null,null],[2,2,\"instrument.execute\",null,null],[2,2,\"proposition.variant\",null,null],[2,3,\"participant.rest\",null,\"no_available_move\"],[3,1,\"attestation.create\",\"support\",null],[3,2,\"attestation.create\",\"support\",null],[3,3,\"proposition.reclassify\",null,null]"
+    },
+    {
+      "class": "Tests.Feature.FreshBootstrapTest",
+      "test": "test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit with data set #1",
+      "status": "failed",
+      "assertions": 102,
+      "failure": "The single-participant motor stalled. Last Commit eligibility: null; last Bias eligibility: {\"gate_id\":\"01m5s2tb6fq5mae34ea8h5sv4t\",\"admissible\":false,\"reason\":\"component_directions_disagree\",\"orientation_direction\":\"positive\",\"attestation_cadence_direction\":\"negative\",\"chirality_direction\":\"positive\"}; trace: [[2,1,\"proposition.variant\",null,null],[2,2,\"instrument.execute\",null,null],[2,2,\"proposition.variant\",null,null],[2,3,\"participant.rest\",null,\"no_available_move\"],[3,1,\"attestation.create\",\"refute\",null],[3,2,\"attestation.create\",\"refute\",null],[3,3,\"proposition.reclassify\",null,null],["
+    },
+    {
+      "class": "Tests.Feature.NaturalChargeBoundaryLifecycleTest",
+      "test": "test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor",
+      "status": "failed",
+      "assertions": 2,
+      "failure": "Failed asserting that two strings are identical."
+    }
+  ]
+}

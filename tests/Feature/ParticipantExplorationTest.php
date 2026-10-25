@@ -6,6 +6,7 @@ use App\Domain\Observables\CorrespondenceValues;
 use App\Enums\PhaseKind;
 use App\Models\Supersession;
 use App\Models\Tragedy;
+use App\Services\ClosureOptionService;
 use App\Services\ContributionDispatcher;
 use App\Services\CorrespondenceGateService;
 use App\Services\EvidenceExecutionService;
@@ -77,6 +78,24 @@ class ParticipantExplorationTest extends TestCase
             ['action' => 'proposition.revise', 'proposition_id' => $head->id, 'statement' => 'Reconsidered at the same position']);
         $this->measure($revision, 0);
         self::assertTrue($exploration->explored($signal, $phase));
+        self::assertSame($history, DB::table('exploration_events')->get()->toJson());
+    }
+
+    public function test_rest_coexists_with_lawful_reconsideration_of_an_explored_write(): void
+    {
+        [, , , $activity, $mediate] = $this->personalJourney();
+        $stance = $this->node($mediate, $activity);
+        $this->measure($stance, 0);
+        // Historical selector input only: this Rest must not invent another encounter.
+        ExplorationHistory::record($stance, $mediate);
+        $this->publishPotentialFixture($this->substrate);
+        $plan = app(InputPlanService::class)->forPhase($mediate->cycle->participant, $mediate);
+        self::assertArrayHasKey('attestation.create', $plan['schema']['$defs']['actions']);
+        self::assertArrayHasKey('participant.rest', $plan['schema']['$defs']['actions']);
+        self::assertNull(app(ExplorationEventService::class)->inspect($mediate)['witness']);
+        $history = DB::table('exploration_events')->get()->toJson();
+        $this->rest($mediate);
+        self::assertNotNull($mediate->cycle->fresh()->rested_at);
         self::assertSame($history, DB::table('exploration_events')->get()->toJson());
     }
 
@@ -251,6 +270,29 @@ class ParticipantExplorationTest extends TestCase
             $this->assertSame($cold[$key]->pluck('id')->all(), $batch['homologous-mediate-structure:'.$terminal->id][$key]->pluck('id')->all());
         }
         $this->assertDatabaseCount('exploration_events', 1);
+    }
+
+    public function test_historical_head_is_rechecked_when_reconsideration_completes_commit_grounding(): void
+    {
+        // Isolated history applicability, not an event-publication or natural Commit proof.
+        [$signal, , , $activity, $mediate] = $this->personalJourney();
+        $stance = $this->node($mediate, $activity);
+        $bias = app(PhaseProgressionService::class)->advance($mediate, $stance);
+        $head = $this->node($bias, $stance);
+        $this->measure($head, .8);
+        $instruments = app(EvidenceExecutionService::class);
+        $instruments->complete($instruments->start($bias, $head, 'citation', $this->origin->id), $head);
+        ExplorationHistory::record($head, $bias);
+        $history = DB::table('exploration_events')->get()->toJson();
+        $exploration = app(ParticipantExplorationService::class);
+        self::assertTrue($exploration->explored($head, $bias));
+        $changed = app(ContributionDispatcher::class)->dispatch($bias->cycle->participant, $bias,
+            ['action' => 'attestation.create', 'proposition_id' => $head->id, 'direction' => 'support']);
+        $order = app(PhaseProgressionService::class)->advance($bias, $changed);
+        self::assertContains($head->id, app(ClosureOptionService::class)->committableFor($order)->pluck('id'));
+        self::assertFalse($exploration->explored($head, $order));
+        self::assertFalse($exploration->explored($signal, $order));
+        self::assertSame($history, DB::table('exploration_events')->get()->toJson());
     }
 
     public function test_new_receipt_alone_does_not_reopen_a_head_without_advancing_opportunities(): void
