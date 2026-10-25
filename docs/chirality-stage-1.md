@@ -1,5 +1,9 @@
 # Chirality Stage 1: proposition-local Attestation events
 
+> Historical stage report. The approved [active causal Cadence correction](active-causal-attestation-cadence.md)
+> supersedes local-only interval input and immediate-parent beat selection. Other
+> formulas, event ownership, direction rules and canonical preservation remain intact.
+
 Review branch: `feat/chirality-stage-1-proposition-local`.
 Base: `ea51bb8a4b0321050fdea82a620785605436f23c`.
 This stage is implemented for review, with the unresolved boundaries below. It is not a historical-data deployment migration. No Stage 2–5 work is included.

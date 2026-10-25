@@ -1,5 +1,9 @@
 # Chirality Stage 3: canonical Commit hard edge
 
+> Historical stage report. The approved [active causal Cadence correction](active-causal-attestation-cadence.md)
+> supersedes local-only interval input and immediate-parent beat selection. Other
+> formulas, event ownership, direction rules and canonical preservation remain intact.
+
 Branch: `feat/chirality-stage-3-canonical-commit`.
 Base: approved, unmerged Stage 2 `68a2fdd6fb44ed755b93f538cc4be4887ec86fb4` (`feat/chirality-stage-2-beat-continuity`).
 Stage 1 and Stage 2 remain intact. No merge, Stage 4 work, historical backfill, or trajectory-fixture changes are included.

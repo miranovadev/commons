@@ -1,0 +1,22 @@
+{
+  "method": "Recorded successful real CommitSourceHistoryLifecycleTest; all 73 fixed HTTP inputs compared with its actual operations, preserving Phase/Cycle/Gate/results. Only external evidence host and explicit default read offset normalized.",
+  "actions": 73,
+  "reconciles_verified": 2,
+  "receipt_count": 7,
+  "source": "p20",
+  "commit": "p21",
+  "fixture_sha256": "63a30d1b1196438e571432f2cb34d2e6dd48f2cb246b514de519b6d19471531b",
+  "canonical_values": {
+    "correspondence": -0.2793287,
+    "chirality": 0.0776924,
+    "orientation": -0.5,
+    "attestation_cadence": 1,
+    "depth": 0.0,
+    "cadence": 0.0,
+    "closure": 0,
+    "tension": -0.0672121,
+    "cadence_interval": 14,
+    "orientation_direction": "negative",
+    "attestation_cadence_direction": "positive"
+  }
+}

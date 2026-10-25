@@ -1,0 +1,172 @@
+{
+  "baseline": "231dbd8498d75cd8a280f17bd5edb0a4a39a5629",
+  "implementation": "30341ac384775429bb419481199577cbf92c0add",
+  "method": "Replay identical original 77-step HTTP transcript on both revisions. Preserve all fixed action/Phase/Cycle/Gate/result assertions. No state fabrication. Zero-based steps.",
+  "main_result": {
+    "steps": 77,
+    "passed": true
+  },
+  "corrected_result": {
+    "executed_steps": 53,
+    "first_rejected_step": 53,
+    "expected": {
+      "cycle": 12,
+      "phase": 6,
+      "gate": "p15",
+      "input": {
+        "action": "proposition.reclassify",
+        "proposition_id": {
+          "ref": "p15"
+        },
+        "receipt_id": {
+          "ref": "r5"
+        }
+      },
+      "result": "p16"
+    },
+    "available_actions": [
+      "participant.rest"
+    ]
+  },
+  "measurements": [
+    {
+      "step": 5,
+      "description": "first interval difference",
+      "operation": {
+        "cycle": 3,
+        "phase": 2,
+        "gate": "p1",
+        "input": {
+          "action": "attestation.create",
+          "proposition_id": {
+            "ref": "p2"
+          },
+          "direction": "refute"
+        },
+        "result": "p2"
+      },
+      "main": {
+        "orientation": -0.5,
+        "cadence": 0,
+        "orientation_direction": "negative",
+        "cadence_direction": "negative",
+        "own_intervals": [
+          2
+        ],
+        "reference": []
+      },
+      "corrected": {
+        "orientation": -0.5,
+        "cadence": 0,
+        "orientation_direction": "negative",
+        "cadence_direction": "negative",
+        "own_intervals": [
+          0
+        ],
+        "reference": [
+          {
+            "source": "p1",
+            "index": 0,
+            "interval": 2
+          }
+        ]
+      }
+    },
+    {
+      "step": 12,
+      "description": "first Cadence value/direction difference",
+      "operation": {
+        "cycle": 4,
+        "phase": 3,
+        "gate": "p2",
+        "input": {
+          "action": "attestation.create",
+          "proposition_id": {
+            "ref": "p3"
+          },
+          "direction": "refute"
+        },
+        "result": "p3"
+      },
+      "main": {
+        "orientation": -0.5,
+        "cadence": 0,
+        "orientation_direction": "negative",
+        "cadence_direction": "negative",
+        "own_intervals": [
+          1
+        ],
+        "reference": []
+      },
+      "corrected": {
+        "orientation": -0.5,
+        "cadence": 0.1010205,
+        "orientation_direction": "negative",
+        "cadence_direction": "positive",
+        "own_intervals": [
+          0
+        ],
+        "reference": [
+          {
+            "source": "p1",
+            "index": 0,
+            "interval": 2
+          },
+          {
+            "source": "p1",
+            "index": 1,
+            "interval": 1
+          }
+        ]
+      }
+    },
+    {
+      "step": 52,
+      "description": "first consequential Bias input difference",
+      "operation": {
+        "cycle": 12,
+        "phase": 5,
+        "gate": "p7",
+        "input": {
+          "action": "attestation.create",
+          "proposition_id": {
+            "ref": "p15"
+          },
+          "direction": "refute"
+        },
+        "result": "p15"
+      },
+      "main": {
+        "orientation": -0.5,
+        "cadence": 0,
+        "orientation_direction": "negative",
+        "cadence_direction": "negative",
+        "own_intervals": [
+          1
+        ],
+        "reference": []
+      },
+      "corrected": {
+        "orientation": -0.5,
+        "cadence": 0.1715729,
+        "orientation_direction": "negative",
+        "cadence_direction": "positive",
+        "own_intervals": [
+          0
+        ],
+        "reference": [
+          {
+            "source": "p1",
+            "index": 6,
+            "interval": 1
+          },
+          {
+            "source": "p1",
+            "index": 7,
+            "interval": 1
+          }
+        ]
+      }
+    }
+  ]
+}

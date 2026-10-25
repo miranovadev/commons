@@ -1,5 +1,9 @@
 # Chirality Stage 2: event-born beat continuity
 
+> Historical stage report. The approved [active causal Cadence correction](active-causal-attestation-cadence.md)
+> supersedes local-only interval input and immediate-parent beat selection. Other
+> formulas, event ownership, direction rules and canonical preservation remain intact.
+
 Branch: `feat/chirality-stage-2-beat-continuity`.
 Parent: approved Stage 1 `1aa462ef0ed57a9dbca979d08ac93dceeca079ad`.
 No Stage 3 canonical measurement preservation, historical backfill, trajectory-fixture rewrites, or merge is included.

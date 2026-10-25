@@ -36,7 +36,7 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
             $this->assertDatabaseHas('receipt_context_events', ['participant_receipt_context_id' => $load->id,
                 'phase_id' => $ordinary->phase_id, 'action' => 'loaded']);
         }
-        $classification = Proposition::findOrFail($this->persistJourneyIds['p18']);
+        $classification = Proposition::findOrFail($this->persistJourneyIds['p20']);
         $this->assertSame(1, app(ReinforcementService::class)->count($classification));
         $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $this->persistJourneyIds['r6'], 'proposition_id' => $classification->id]);
         $boundary = $committed['last_commitment'];
@@ -66,10 +66,10 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertSame($boundary['tension_after'], $seed->commitmentSnapshot->tension);
         $this->assertSame($seed->id, $diagnostic['governing_committal_id']);
         $this->assertSame('settlement', $diagnostic['domain']);
-        foreach (['correspondence' => -0.2793287, 'chirality' => -0.1287647,
+        foreach (['correspondence' => -0.2793287, 'chirality' => 0.077151,
             'prospective_depth' => 0, 'prospective_committed_cardinal_position' => 0, 'admissible_cadence_bound' => 0,
-            'tension_bound' => -0.1360312,
-            'crossover_margin' => -0.1360312] as $name => $value) {
+            'tension_bound' => -0.0673926,
+            'crossover_margin' => -0.0673926] as $name => $value) {
             $this->assertEqualsWithDelta($value, $diagnostic[$name], 1e-7, $name.' '.json_encode($diagnostic));
         }
         // Settlement's negative retained Cardinal direction admits a zero

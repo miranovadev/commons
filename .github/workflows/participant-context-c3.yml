@@ -5,6 +5,11 @@ on:
     paths:
       - 'app/Services/CognitiveEvidenceHorizon.php'
       - 'app/Services/PhaseGenerationService.php'
+      - 'app/Services/Observables/ActiveCadenceLineageService.php'
+      - 'app/Services/Observables/*Chirality*.php'
+      - 'app/Services/Observables/AttestationBeatCursorService.php'
+      - 'database/migrations/*chirality*'
+      - 'database/migrations/*cadence*'
       - 'app/Services/PreparationService.php'
       - 'app/Services/PropositionOptionService.php'
       - 'config/phases.php'
