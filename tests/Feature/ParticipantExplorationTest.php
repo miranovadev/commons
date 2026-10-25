@@ -73,6 +73,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_branching_ancestor_requires_all_active_heads_and_a_new_head_reopens_it(): void
     {
+        config(['schemas.options.limit' => 1]);
         [$signal, $persist, $constrain, $head, $terminal] = $this->personalJourney();
         $return = $this->returnAfterRest($terminal);
         $exploration = app(ParticipantExplorationService::class);
@@ -82,6 +83,7 @@ class ParticipantExplorationTest extends TestCase
         app(PropositionMeasurementService::class)->project($sibling, .8, .8, .8,
             correspondenceComponents: new CorrespondenceValues(.8, -.8));
         $this->assertFalse($exploration->explored($signal, $return));
+        $this->assertCount(2, $exploration->heads($signal->id, $return, new ParticipationContext($return)), 'Evaluate the complete frontier before display limits');
         $this->assertTrue($exploration->explored($head, $return));
         $this->assertFalse(app(PhaseGenerationService::class)->available($return, 'proposition.variant'));
         $phase = $return;
@@ -96,6 +98,10 @@ class ParticipantExplorationTest extends TestCase
         $this->publishPotentialFixture($this->substrate);
         $return = $this->returnAfterRest($terminal);
         $this->assertDatabaseCount('exploration_events', 2);
+        // Cycle closure refreshes the controlled measurements. Keep this test's
+        // independent branch incoherent; lawful new Reconcile is covered separately.
+        app(PropositionMeasurementService::class)->project($sibling, 0, 0, 0,
+            correspondenceComponents: new CorrespondenceValues(.8, -.8));
         $this->assertTrue($exploration->explored($signal, $return));
         $this->assertTrue(app(PhaseGenerationService::class)->available($return, 'proposition.variant'));
     }
@@ -261,7 +267,8 @@ class ParticipantExplorationTest extends TestCase
     public function test_a_reconcile_counterpart_edge_does_not_authorize_the_other_operands_route(): void
     {
         [$signal, , $constrain, $head, $terminal] = $this->personalJourney();
-        $other = $this->node($this->phase($constrain, PhaseKind::Disperse), $constrain);
+        $foreignEntry = $this->commitFrom($signal);
+        $other = $this->node($this->phase($foreignEntry, PhaseKind::Disperse), $foreignEntry);
         $otherMediate = $this->phase($other, PhaseKind::Mediate);
         $result = $this->node($otherMediate, $other);
         Supersession::where('target_proposition_id', $result->id)->update(['type' => 'reconcile']);
@@ -270,8 +277,28 @@ class ParticipantExplorationTest extends TestCase
         $context = new ParticipationContext($terminal);
         $exploration = app(ParticipantExplorationService::class);
         $this->assertFalse($exploration->heads($head->id, $terminal, $context)->has($result->id));
-        $this->assertSame([$result->id], $exploration->heads($other->id, $terminal, $context)->keys()->all());
+        $foreignContext = new ParticipationContext($otherMediate);
+        $this->assertSame([$result->id], $exploration->heads($other->id, $otherMediate, $foreignContext)->keys()->all());
         $this->assertFalse($exploration->heads($head->id, $terminal, $context)->has($head->id), 'Hard-superseded inputs are not heads');
+        $entry = $this->phase($this->origin, PhaseKind::Distinguish);
+        $this->assertEmpty($exploration->heads($signal->id, $entry, new ParticipationContext($entry)));
+        $this->assertFalse($exploration->explored($signal, $entry), 'Retired history does not invent a personal encounter');
+        $this->assertTrue(app(PhaseGenerationService::class)->available($entry, 'proposition.variant'), 'No active authorized continuation remains to explore');
+        $this->assertDatabaseCount('exploration_events', 0);
+    }
+
+    public function test_local_reconciliation_preserves_the_other_operands_existing_attestation_route(): void
+    {
+        [, , $constrain, $head, $terminal] = $this->personalJourney();
+        $other = $this->node($this->phase($constrain, PhaseKind::Disperse), $constrain);
+        $producer = $this->phase($other, PhaseKind::Mediate);
+        $result = $this->node($producer, $other);
+        Supersession::where('target_proposition_id', $result->id)->update(['type' => 'reconcile']);
+        (new Supersession)->forceFill(['phase_id' => $producer->id, 'source_proposition_id' => $head->id,
+            'target_proposition_id' => $result->id, 'type' => 'reconcile'])->save();
+        $context = new ParticipationContext($terminal);
+        $this->assertContains($result->id, app(PropositionOptionService::class)->attestationOptionsFor($terminal, $context)->pluck('id'));
+        $this->assertSame([$result->id], app(ParticipantExplorationService::class)->heads($head->id, $terminal, $context)->keys()->all());
     }
 
     public function test_event_publication_checks_frozen_arrival_identity_and_retries_are_idempotent(): void

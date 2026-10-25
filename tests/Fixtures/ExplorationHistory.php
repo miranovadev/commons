@@ -37,7 +37,8 @@ final class ExplorationHistory
         ]);
         DB::table('exploration_events')->insert(['phase_id' => $rest, 'proposition_id' => $head->id,
             'arrival_phase_id' => $arrival, 'observed_field_version' => $head->phase->cycle->participant->substrate->field_version,
-            'witness' => json_encode(['contract' => 1, 'fixture' => 'historical encounter input', 'head_id' => $head->id]),
+            'witness' => json_encode(['contract' => 1, 'fixture' => 'historical encounter input', 'head_id' => $head->id,
+                'arrival_phase_id' => $arrival, 'arrival_source_id' => $source, 'meaningful_continuation' => false]),
             'recorded_at' => now()]);
 
         return $rest;

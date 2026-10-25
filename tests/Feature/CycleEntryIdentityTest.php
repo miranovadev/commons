@@ -131,6 +131,8 @@ class CycleEntryIdentityTest extends TestCase
         $participant->forceFill(['current_proposition_id' => null])->save();
         $snapshots = CommitmentSnapshot::get()->map->getAttributes()->all();
         $horizons = DB::table('context_horizons')->orderBy('id')->get()->toJson();
+        // Roll back the later dependent trigger before rebuilding historical cycles.
+        (require database_path('migrations/2026_10_25_000000_record_personal_exploration.php'))->down();
         $rename = require database_path('migrations/2026_09_22_210000_rename_cycle_governance_to_entry.php');
         $rename->down();
         $migration = require database_path('migrations/2026_09_22_100000_bind_cycles_to_governing_committals.php');
@@ -146,6 +148,7 @@ class CycleEntryIdentityTest extends TestCase
     public function test_migration_rejects_missing_entry_instead_of_guessing_from_horizon(): void
     {
         [$participant, , $live] = $this->enter();
+        (require database_path('migrations/2026_10_25_000000_record_personal_exploration.php'))->down();
         $rename = require database_path('migrations/2026_09_22_210000_rename_cycle_governance_to_entry.php');
         $rename->down();
         $migration = require database_path('migrations/2026_09_22_100000_bind_cycles_to_governing_committals.php');

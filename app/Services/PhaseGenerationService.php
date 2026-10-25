@@ -137,6 +137,11 @@ final readonly class PhaseGenerationService
             if ($existing->isEmpty()) {
                 return true;
             }
+            $context ??= new ParticipationContext($phase);
+            $existing = $existing->filter(fn ($id) => app(ParticipantExplorationService::class)->heads($id, $phase, $context)->isNotEmpty());
+            if ($existing->isEmpty()) {
+                return true;
+            }
             if ($action !== 'proposition.variant') {
                 return false;
             }

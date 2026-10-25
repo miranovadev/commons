@@ -26,7 +26,7 @@ return new class extends Migration
               AND arrival.completed_at IS NOT NULL AND arrival.kind + 1 = rest.kind
               AND producer.kind + 1 = rest.kind AND head.tier = 'expressive'";
         if (DB::getDriverName() === 'pgsql') {
-            DB::unprepared("CREATE FUNCTION exploration_events_encounter() RETURNS trigger LANGUAGE plpgsql AS \$\$ BEGIN
+            DB::unprepared("CREATE OR REPLACE FUNCTION exploration_events_encounter() RETURNS trigger LANGUAGE plpgsql AS \$\$ BEGIN
                 IF NOT EXISTS ({$valid}) THEN RAISE EXCEPTION 'Exploration requires a completed personal Rest arrival'; END IF;
                 RETURN NEW; END; \$\$");
             DB::unprepared('CREATE TRIGGER exploration_events_encounter BEFORE INSERT ON exploration_events FOR EACH ROW EXECUTE FUNCTION exploration_events_encounter()');
@@ -35,7 +35,7 @@ return new class extends Migration
                 BEGIN SELECT RAISE(ABORT, 'Exploration requires a completed personal Rest arrival'); END");
         }
         if (DB::getDriverName() === 'pgsql') {
-            DB::unprepared("CREATE FUNCTION exploration_events_immutable() RETURNS trigger LANGUAGE plpgsql AS \$\$ BEGIN RAISE EXCEPTION 'Exploration history is immutable'; END; \$\$");
+            DB::unprepared("CREATE OR REPLACE FUNCTION exploration_events_immutable() RETURNS trigger LANGUAGE plpgsql AS \$\$ BEGIN RAISE EXCEPTION 'Exploration history is immutable'; END; \$\$");
             DB::unprepared('CREATE TRIGGER exploration_events_immutable BEFORE UPDATE OR DELETE ON exploration_events FOR EACH ROW EXECUTE FUNCTION exploration_events_immutable()');
         } else {
             foreach (['UPDATE', 'DELETE'] as $operation) {

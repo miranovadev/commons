@@ -173,7 +173,8 @@ class ExhaustionTest extends TestCase
             DB::disableQueryLog();
             $counts[] = count($queries);
             $this->assertSame('no_remaining_potential', $proof['rest_reason']);
-            $this->assertSame([$head->id], $proof['transitions']);
+            $this->assertSame($head->id, $proof['position_id']);
+            $this->assertNull($proof['witness'], 'An unrecorded personal arrival cannot establish exploration');
             foreach ($queries as $query) {
                 $this->assertDoesNotMatchRegularExpression('/insert |update |delete |for update/i', $query['query']);
             }

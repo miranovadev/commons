@@ -51,7 +51,8 @@ final class ParticipantExplorationService
 
     /**
      * Follow forward producing positions in this Cycle's Region/Horizon only.
-     * Reconcile's other operand is provenance, not an arrival. Revisions replace
+     * A foreign Reconcile operand grants no movement; local results retain their
+     * existing Attestation routes. Revisions replace
      * their source at the same position. A Committal ends this excursion.
      * Full frontier evaluation precedes every presentation limit.
      */
@@ -90,7 +91,7 @@ final class ParticipantExplorationService
                     $expected = $node->tier === 'committal' ? PhaseKind::Distinguish->value : $node->phase->kind->value + 1;
 
                     return $target->phase->kind->value === $expected
-                        && $target->phase->gate_proposition_id === $node->id
+                        && ($target->phase->gate_proposition_id === $node->id || $edge->type === 'reconcile')
                         && $target->register === $phase->cycle->contextHorizon->domain->registerFor($target->phase->kind);
                 });
                 if ($next->isNotEmpty()) {

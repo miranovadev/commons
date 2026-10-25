@@ -300,9 +300,4 @@ final class PropositionOptionService
                 ->whereHas('phase.cycle.participant', fn ($query) => $query->where('substrate_id', $phase->cycle->participant->substrate_id))
                 ->pluck('id');
     }
-
-    private function limit(): int
-    {
-        return max(1, (int) config('schemas.options.limit', 10));
-    }
 }
