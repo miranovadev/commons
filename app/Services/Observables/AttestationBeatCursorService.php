@@ -30,9 +30,11 @@ final readonly class AttestationBeatCursorService
             // evidence later cannot replace that event-born branch state.
             return;
         }
-        $source = $edge->source;
-        $cursor = $this->for($source);
-        if ($cursor === null && $source->tier === 'expressive' && Attestation::where('proposition_id', $source->id)->whereHas('ledgerEntry')->exists()) {
+        $source = in_array($edge->type, ['reclassify', 'revise'], true)
+            ? app(ActiveCadenceLineageService::class)->predecessor($edge->target)
+            : $edge->source;
+        $cursor = $source === null ? null : $this->for($source);
+        if ($cursor === null && $source !== null && $source->tier === 'expressive' && Attestation::where('proposition_id', $source->id)->whereHas('ledgerEntry')->exists()) {
             throw new DomainException('Historical expressive proposition '.$source->id.' has no event-born beat cursor; live vNext rhythm is unavailable at the prospective migration boundary.');
         }
         DB::table('proposition_attestation_cursors')->insert([
