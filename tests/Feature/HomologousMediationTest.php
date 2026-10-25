@@ -19,7 +19,6 @@ use App\Services\CommitRegionService;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\ExhaustedContinuationService;
-use App\Services\ExplorationPositionService;
 use App\Services\GraphProjectionService;
 use App\Services\HomeostaticDirectionService;
 use App\Services\HomologousMediationService;
@@ -40,6 +39,7 @@ use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\AssertsLatePhaseContract;
+use Tests\Fixtures\ExplorationHistory;
 use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
 use Tests\TestCase;
@@ -531,15 +531,8 @@ class HomologousMediationTest extends TestCase
         }
 
         $this->assertFalse($context->propositions->has($live->id));
-        $position = app(ExplorationPositionService::class)->forProposition($live);
-        DB::table('continuation_failures')->insert([
-            'proposition_id' => $live->id, 'context_horizon_id' => $horizonB,
-            'structural_position' => $position['structural_position'], 'exploration_epoch' => 0,
-            'phase_id' => $live->phase_id, 'failed_at' => now(),
-        ]);
-        // Temporary Rest/epoch failure is not persistent terminal authority.
-        $this->assertTrue($options->forPhase($this->mediate->fresh())->contains('id', $this->gateB->id));
-        DB::table('horizon_exploration_states')->insert([...$position, 'epoch' => 1]);
+        ExplorationHistory::record($live);
+        // Personal exploration does not become terminal authority in another Region.
         $this->assertTrue($options->forPhase($this->mediate->fresh())->contains('id', $this->gateB->id));
     }
 

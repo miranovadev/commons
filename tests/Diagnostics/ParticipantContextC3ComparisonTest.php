@@ -36,6 +36,13 @@ class ParticipantContextC3ComparisonTest extends TestCase
             unset($receipt['instrument_execution_id']);
         }
         unset($receipt);
+        // Stage B intentionally has no compatibility migration from shared
+        // failures. Reproject the captured structure/evidence with empty personal
+        // history; never relabel a global failure as someone's Rest encounter.
+        foreach (['continuation_failures', 'horizon_exploration_states', 'horizon_failure_witnesses'] as $retired) {
+            unset($fixture['tables'][$retired]);
+        }
+        $fixture['tables']['exploration_events'] = [];
         // Restore a captured graph, not a new lifecycle. Replica mode handles
         // circular foreign keys during this isolated import only.
         DB::statement("SET LOCAL session_replication_role = 'replica'");
@@ -136,6 +143,7 @@ class ParticipantContextC3ComparisonTest extends TestCase
                 'Full prompt bytes include system/user; strict response schema and provider transport excluded.',
                 'Tokens estimated as bytes/4, not billed tokens. Recorded state reprojection, not historical prompt reconstruction.',
                 'Operational plan creation measured separately; identical plans supplied to C2 and C3.',
+                'Retired shared exploration tables omitted; no personal Exploration Events reconstructed.',
                 'Whole restored domain snapshot unchanged after plan and prompt projection.'], 'cases' => $rows];
         file_put_contents(base_path('test-results/c3-performance.json'), json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
         fwrite(STDERR, "\nC3_PERFORMANCE ".json_encode($report, JSON_UNESCAPED_SLASHES)."\n");

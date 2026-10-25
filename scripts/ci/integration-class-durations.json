@@ -1,10 +1,8 @@
 {
   "Tests\\Feature\\Api\\ParticipationHttpHarnessTest": 106.89,
   "Tests\\Feature\\Api\\ParticipationLifecycleRegressionTest": 66.83,
-  "Tests\\Feature\\Api\\ParticipationLocalEpochTest": 21.84,
   "Tests\\Feature\\Api\\ParticipationRecoveryTest": 40.54,
   "Tests\\Feature\\Api\\ParticipationSourceEquivalenceTest": 34.65,
-  "Tests\\Feature\\Api\\ParticipationStaggeredEpochTest": 32.6,
   "Tests\\Feature\\Api\\ParticipationTragedyLifecycleTest": 21.6,
   "Tests\\Feature\\Api\\ParticipationVisibilityLifecycleTest": 9.43,
   "Tests\\Feature\\FreshBootstrapTest": 265.24,

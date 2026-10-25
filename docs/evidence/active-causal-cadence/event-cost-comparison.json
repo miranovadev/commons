@@ -1,0 +1,212 @@
+{
+  "baseline": "231dbd8498d75cd8a280f17bd5edb0a4a39a5629",
+  "implementation": "aecd7b1acccf081111f1547403700c9ff2f6884c",
+  "environment": "PHP 8.5.8; SQLite in-memory; same container; five same-Cycle sibling births and their first/second own events. Closure explicitly isolated; this is a component cost probe, not a lifecycle claim.",
+  "method": "Identical ActiveCadenceCostTest copied to an isolated baseline worktree. Event operation includes all its normal ledger/observation queries. Medians are diagnostic and are not a production throughput benchmark.",
+  "medians": {
+    "expressive_birth": {
+      "main": {
+        "queries": 85,
+        "sql_ms": 11.599999999999996,
+        "elapsed_ms": 43.845857
+      },
+      "current": {
+        "queries": 85,
+        "sql_ms": 11.41999999999999,
+        "elapsed_ms": 40.86056
+      }
+    },
+    "first_own_attestation": {
+      "main": {
+        "queries": 76,
+        "sql_ms": 7.789999999999998,
+        "elapsed_ms": 32.231938
+      },
+      "current": {
+        "queries": 76,
+        "sql_ms": 10.839999999999984,
+        "elapsed_ms": 44.744586
+      }
+    },
+    "second_own_attestation": {
+      "main": {
+        "queries": 78,
+        "sql_ms": 10.059999999999995,
+        "elapsed_ms": 42.199669
+      },
+      "current": {
+        "queries": 77,
+        "sql_ms": 12.58999999999999,
+        "elapsed_ms": 42.620048
+      }
+    }
+  },
+  "samples": {
+    "main": {
+      "expressive_birth": [
+        {
+          "queries": 85,
+          "sql_ms": 11.399999999999995,
+          "elapsed_ms": 53.088508
+        },
+        {
+          "queries": 85,
+          "sql_ms": 15.079999999999988,
+          "elapsed_ms": 50.758427
+        },
+        {
+          "queries": 85,
+          "sql_ms": 11.599999999999996,
+          "elapsed_ms": 43.845857
+        },
+        {
+          "queries": 85,
+          "sql_ms": 9.679999999999996,
+          "elapsed_ms": 43.047209
+        },
+        {
+          "queries": 85,
+          "sql_ms": 14.80999999999999,
+          "elapsed_ms": 43.666065
+        }
+      ],
+      "first_own_attestation": [
+        {
+          "queries": 76,
+          "sql_ms": 8.029999999999998,
+          "elapsed_ms": 31.979743
+        },
+        {
+          "queries": 76,
+          "sql_ms": 12.249999999999993,
+          "elapsed_ms": 47.982531
+        },
+        {
+          "queries": 76,
+          "sql_ms": 7.489999999999999,
+          "elapsed_ms": 32.231938
+        },
+        {
+          "queries": 76,
+          "sql_ms": 5.93,
+          "elapsed_ms": 35.725672
+        },
+        {
+          "queries": 76,
+          "sql_ms": 7.789999999999998,
+          "elapsed_ms": 31.709528
+        }
+      ],
+      "second_own_attestation": [
+        {
+          "queries": 78,
+          "sql_ms": 10.059999999999995,
+          "elapsed_ms": 65.036529
+        },
+        {
+          "queries": 78,
+          "sql_ms": 7.469999999999999,
+          "elapsed_ms": 40.122553
+        },
+        {
+          "queries": 78,
+          "sql_ms": 7.019999999999998,
+          "elapsed_ms": 32.749468
+        },
+        {
+          "queries": 78,
+          "sql_ms": 10.799999999999995,
+          "elapsed_ms": 42.199669
+        },
+        {
+          "queries": 78,
+          "sql_ms": 14.639999999999999,
+          "elapsed_ms": 89.554109
+        }
+      ]
+    },
+    "current": {
+      "expressive_birth": [
+        {
+          "queries": 85,
+          "sql_ms": 7.9099999999999975,
+          "elapsed_ms": 31.923027
+        },
+        {
+          "queries": 85,
+          "sql_ms": 16.889999999999997,
+          "elapsed_ms": 54.06149
+        },
+        {
+          "queries": 85,
+          "sql_ms": 13.84999999999999,
+          "elapsed_ms": 51.836611
+        },
+        {
+          "queries": 85,
+          "sql_ms": 9.239999999999993,
+          "elapsed_ms": 34.822328
+        },
+        {
+          "queries": 85,
+          "sql_ms": 11.41999999999999,
+          "elapsed_ms": 40.86056
+        }
+      ],
+      "first_own_attestation": [
+        {
+          "queries": 76,
+          "sql_ms": 16.239999999999995,
+          "elapsed_ms": 56.779368
+        },
+        {
+          "queries": 76,
+          "sql_ms": 10.839999999999984,
+          "elapsed_ms": 47.940354
+        },
+        {
+          "queries": 76,
+          "sql_ms": 11.549999999999994,
+          "elapsed_ms": 44.037022
+        },
+        {
+          "queries": 76,
+          "sql_ms": 9.929999999999998,
+          "elapsed_ms": 42.278075
+        },
+        {
+          "queries": 76,
+          "sql_ms": 10.709999999999992,
+          "elapsed_ms": 44.744586
+        }
+      ],
+      "second_own_attestation": [
+        {
+          "queries": 77,
+          "sql_ms": 8.82,
+          "elapsed_ms": 36.331018
+        },
+        {
+          "queries": 77,
+          "sql_ms": 12.68,
+          "elapsed_ms": 44.295704
+        },
+        {
+          "queries": 77,
+          "sql_ms": 13.299999999999997,
+          "elapsed_ms": 47.873082
+        },
+        {
+          "queries": 77,
+          "sql_ms": 12.58999999999999,
+          "elapsed_ms": 42.620048
+        },
+        {
+          "queries": 77,
+          "sql_ms": 7.7399999999999975,
+          "elapsed_ms": 33.565253
+        }
+      ]
+    }
+  }
+}

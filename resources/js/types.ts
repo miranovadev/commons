@@ -47,10 +47,9 @@ export interface Proposition {
   domain_transition?: 'settlement-emergence' | 'emergence-settlement' | null;
   closure_history?: { points: ClosureHistoryPoint[]; current: ClosureHistoryPoint | null; source: 'selected-committal' };
   receipts?: ReceiptReference[];
-  spent?: boolean;
+  explored?: boolean;
   structural_position?: number;
   structural_source_id?: Identifier | null;
-  exploration_epoch?: number;
   exhaustion?: { exhausted: boolean; basin_exhausted: boolean; exhausted_at: string | null };
   active?: boolean;
   id: Identifier;

@@ -5,11 +5,12 @@ namespace Tests\Feature;
 use App\Enums\PhaseKind;
 use App\Models\Receipt;
 use App\Models\Tragedy;
-use App\Services\ContributionDispatcher;
 use App\Services\ExhaustionService;
+use App\Services\ExplorationEventService;
 use App\Services\InputPlanService;
 use App\Services\ParticipantHistoricalContext;
 use App\Services\ReceiptContextService;
+use App\Services\TerminalContinuationService;
 use App\Services\TragedyEvidenceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -44,7 +45,7 @@ class RegionalBoundaryLifecycleTest extends TestCase
     {
         [$opening, $horizon, $tragedy] = $this->firstFailure();
         [$terminal] = $this->exercise($opening, $tragedy);
-        $proof = app(ExhaustionService::class)->inspect($terminal);
+        $proof = app(ExplorationEventService::class)->inspect($terminal);
         $this->assertSame('no_available_move', $proof['rest_reason']);
         $this->rest($terminal);
         $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($horizon));
@@ -64,7 +65,7 @@ class RegionalBoundaryLifecycleTest extends TestCase
         $this->assertTrue($retained['basin_exhausted']);
         $this->assertFalse($retained['actionable']);
         $this->assertSame('write', $retained['role']);
-        app(ExhaustionService::class)->publish($terminal, $proof);
+        app(ExplorationEventService::class)->publish($terminal, $proof);
         $this->assertDatabaseCount('commit_region_exhaustions', 1);
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon->parent), 'Parent failure needs its own evidence-bearing proof');
         $this->assertDatabaseHas('propositions', ['id' => $this->origin->id]);
@@ -78,7 +79,7 @@ class RegionalBoundaryLifecycleTest extends TestCase
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon));
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $tragedy->receipt_id]);
-        $this->assertFalse(app(\App\Services\TerminalContinuationService::class)->closed($survivor));
+        $this->assertFalse(app(TerminalContinuationService::class)->closed($survivor));
     }
 
     public function test_legacy_pruning_and_old_exhaustion_do_not_control_new_semantics(): void

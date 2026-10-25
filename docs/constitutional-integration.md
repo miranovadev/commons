@@ -1,5 +1,7 @@
 # Focused constitutional participation coverage
 
+> The exploration portions below are historical. Current personal events, active heads and their replacement proofs are documented in [Participant-relative exploration](participant-relative-exploration.md).
+
 > Historical checkpoint. Rest-born Tragedy, final-attempt permission, consumption-based exhaustion and recovery-following warrant scope described here are retired. Current authority is [first/later fresh Charge-boundary events](branch-tragedy.md); this document retains historical validation details.
 
 Constitutional acceptance is a collection of focused production-path invariant

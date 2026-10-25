@@ -1,0 +1,215 @@
+{
+  "revision": "0172cf92abfe9b66534345c0bb40abbafb1e5661",
+  "checkpoint": "80316ea7a24ceb510263dba1cba35d24894d50ee",
+  "main": "eeee6a6d81c4a32f605624f4804775f46af17bf4",
+  "core": {
+    "passed": 1503,
+    "baseline_failures": 1,
+    "assertions": 15511,
+    "run": 40179542937,
+    "shards": [
+      {
+        "job": 121127614722,
+        "name": "core (1) / PHP / PostgreSQL (1/5)",
+        "passed": 248,
+        "failed": 0,
+        "assertions": 2876,
+        "duration_seconds": 440.62
+      },
+      {
+        "job": 121127614780,
+        "name": "core (2) / PHP / PostgreSQL (2/5)",
+        "passed": 288,
+        "failed": 0,
+        "assertions": 2604,
+        "duration_seconds": 438.77
+      },
+      {
+        "job": 121127614782,
+        "name": "core (4) / PHP / PostgreSQL (4/5)",
+        "passed": 356,
+        "failed": 0,
+        "assertions": 3216,
+        "duration_seconds": 445.72
+      },
+      {
+        "job": 121127614794,
+        "name": "core (5) / PHP / PostgreSQL (5/5)",
+        "passed": 297,
+        "failed": 0,
+        "assertions": 3805,
+        "duration_seconds": 335.43
+      },
+      {
+        "job": 121127614878,
+        "name": "core (3) / PHP / PostgreSQL (3/5)",
+        "passed": 314,
+        "failed": 1,
+        "assertions": 3010,
+        "duration_seconds": 371.05
+      }
+    ]
+  },
+  "sqlite_migrations": {
+    "passed": 14,
+    "assertions": 46
+  },
+  "integration": {
+    "complete": true,
+    "discovered": 34,
+    "executed": 34,
+    "passed": 31,
+    "failed": 3,
+    "skipped": [],
+    "assertions": 7194,
+    "failures": [
+      {
+        "test": "Tests\\Feature\\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit#0",
+        "kind": "failure"
+      },
+      {
+        "test": "Tests\\Feature\\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit#1",
+        "kind": "failure"
+      },
+      {
+        "test": "Tests\\Feature\\NaturalChargeBoundaryLifecycleTest::test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor",
+        "kind": "failure"
+      }
+    ],
+    "runtimes": [
+      {
+        "suite": "integration",
+        "shard": 1,
+        "shards": 4,
+        "selected_tests": 2,
+        "php_wall_seconds": 281.65230683100003,
+        "exit_code": 1
+      },
+      {
+        "suite": "integration",
+        "shard": 2,
+        "shards": 4,
+        "selected_tests": 8,
+        "php_wall_seconds": 366.83386374,
+        "exit_code": 0
+      },
+      {
+        "suite": "integration",
+        "shard": 3,
+        "shards": 4,
+        "selected_tests": 16,
+        "php_wall_seconds": 429.726361819,
+        "exit_code": 1
+      },
+      {
+        "suite": "integration",
+        "shard": 4,
+        "shards": 4,
+        "selected_tests": 8,
+        "php_wall_seconds": 366.404447539,
+        "exit_code": 0
+      }
+    ]
+  },
+  "phase_profile": {
+    "passed_jobs": 12,
+    "run": 40179542901
+  },
+  "c3": {
+    "focused_tests": 107,
+    "focused_assertions": 1027,
+    "comparison_tests": 1,
+    "comparison_cases": 10,
+    "comparison_assertions": 1390,
+    "run": 40179547671
+  },
+  "frontend": {
+    "typescript": "passed",
+    "vite": "passed",
+    "ui_tests": 148,
+    "job": 121127430149
+  },
+  "inspector": {
+    "status": "passed",
+    "run": 40179547712
+  },
+  "query": {
+    "passed": 13,
+    "baseline_failures": 9,
+    "assertions": 953,
+    "duration_seconds": 615.48,
+    "run": 40179545369
+  },
+  "load": {
+    "passed": 18,
+    "baseline_failures": 8,
+    "assertions": 178,
+    "duration_seconds": 83.22,
+    "run": 40179545378
+  },
+  "runs": [
+    {
+      "id": 40179547671,
+      "name": "C3 context validation",
+      "branch": "feat/participant-relative-exploration",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 40179547712,
+      "name": "Inspector browser review",
+      "branch": "feat/participant-relative-exploration",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 40179547734,
+      "name": "Integration",
+      "branch": "feat/participant-relative-exploration",
+      "status": "completed",
+      "conclusion": "failure"
+    },
+    {
+      "id": 40179545356,
+      "name": "Phase Profile contracts",
+      "branch": "validate/participant-relative-exploration",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 40179545378,
+      "name": "Load / Concurrency",
+      "branch": "validate/participant-relative-exploration",
+      "status": "completed",
+      "conclusion": "failure"
+    },
+    {
+      "id": 40179545388,
+      "name": "Core",
+      "branch": "validate/participant-relative-exploration",
+      "status": "completed",
+      "conclusion": "failure"
+    },
+    {
+      "id": 40179545369,
+      "name": "Query Regression",
+      "branch": "validate/participant-relative-exploration",
+      "status": "completed",
+      "conclusion": "failure"
+    },
+    {
+      "id": 40179542901,
+      "name": "Phase Profile contracts",
+      "branch": "feat/participant-relative-exploration",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 40179542937,
+      "name": "Core",
+      "branch": "feat/participant-relative-exploration",
+      "status": "completed",
+      "conclusion": "failure"
+    }
+  ]
+}

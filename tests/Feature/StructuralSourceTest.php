@@ -4,17 +4,14 @@ namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
 use App\Models\Supersession;
-use App\Services\ExplorationEpochService;
-use App\Services\ExplorationPositionService;
-use App\Services\HorizonFailureService;
 use App\Services\Participation\ParticipationContext;
+use App\Services\StructuralSourceService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\Fixtures\SpentContinuationFixture;
 use Tests\TestCase;
 
-class ExplorationPositionTest extends TestCase
+class StructuralSourceTest extends TestCase
 {
     use RefreshDatabase, SpentContinuationFixture;
 
@@ -28,7 +25,7 @@ class ExplorationPositionTest extends TestCase
     {
         $first = $this->phase($this->origin, PhaseKind::Distinguish);
         $second = $this->phase($this->origin, PhaseKind::Distinguish);
-        $positions = app(ExplorationPositionService::class);
+        $positions = app(StructuralSourceService::class);
         $this->assertSame($positions->forPhase($first), $positions->forPhase($second));
         $gate = $this->node($first, $this->origin);
         $other = $this->phase($gate, PhaseKind::Persist);
@@ -43,27 +40,13 @@ class ExplorationPositionTest extends TestCase
         $revision = $this->node($this->phase($source, PhaseKind::Persist), $original);
         $latest = $this->node($this->phase($source, PhaseKind::Persist), $revision);
         Supersession::whereIn('target_proposition_id', [$revision->id, $latest->id])->update(['type' => 'revise']);
-        $positions = app(ExplorationPositionService::class);
+        $positions = app(StructuralSourceService::class);
         $expected = $positions->forProposition($original);
         $context = new ParticipationContext($latest->phase);
         foreach ([$original, $revision, $latest] as $node) {
             $this->assertSame($source->id, $positions->forProposition($node)['structural_source_id']);
             $this->assertSame($expected, $positions->forProposition($node, $context));
         }
-        DB::table('continuation_failures')->insert(['proposition_id' => $latest->id,
-            'context_horizon_id' => $expected['context_horizon_id'], 'structural_position' => $expected['structural_position'],
-            'exploration_epoch' => 0, 'phase_id' => $latest->phase_id, 'failed_at' => now()]);
-        $epochs = app(ExplorationEpochService::class);
-        $this->assertTrue($epochs->spentNow($latest, $latest->phase));
-        DB::table('horizon_exploration_states')->insert([...$expected, 'epoch' => 1]);
-        foreach ([$original, $revision, $latest] as $node) {
-            $this->assertSame(1, $epochs->forProposition($node));
-            $this->assertSame(1, $epochs->forProposition($node, new ParticipationContext($latest->phase)));
-        }
-        $this->assertFalse($epochs->spentNow($latest, $latest->phase));
-        $this->assertFalse($epochs->spentNow($latest, $latest->phase, new ParticipationContext($latest->phase)));
-        $this->assertDatabaseCount('continuation_failures', 1);
-
         // An output revision inherits its own slot, but it is still a distinct
         // structural source when a later phase actually traverses that revision.
         $underOriginal = $this->node($this->phase($original, PhaseKind::Disperse), $original);
@@ -85,7 +68,7 @@ class ExplorationPositionTest extends TestCase
         $other = $this->node($this->phase($left, PhaseKind::Mediate), $left);
         $classified = $this->node($this->phase($other, PhaseKind::Bias), $result);
         Supersession::where('target_proposition_id', $classified->id)->update(['type' => 'reclassify']);
-        $positions = app(ExplorationPositionService::class);
+        $positions = app(StructuralSourceService::class);
         $context = new ParticipationContext($classified->phase);
         foreach ([null, $context] as $read) {
             $this->assertSame($right->id, $positions->forProposition($result, $read)['structural_source_id']);
@@ -101,8 +84,8 @@ class ExplorationPositionTest extends TestCase
         $invalid = $this->node($this->phase($source, PhaseKind::Disperse), $source);
         Supersession::where('target_proposition_id', $invalid->id)->update(['type' => 'revise']);
         $this->expectException(DomainException::class);
-        $this->expectExceptionMessage('A revision cannot change its exploration position');
-        app(ExplorationPositionService::class)->forProposition($invalid);
+        $this->expectExceptionMessage('A revision cannot change its structural position');
+        app(StructuralSourceService::class)->forProposition($invalid);
     }
 
     public function test_revision_cycles_are_rejected_without_a_provenance_guess(): void
@@ -112,35 +95,7 @@ class ExplorationPositionTest extends TestCase
         Supersession::where('target_proposition_id', $first->id)->update(['type' => 'revise', 'source_proposition_id' => $second->id]);
         Supersession::where('target_proposition_id', $second->id)->update(['type' => 'revise']);
         $this->expectException(DomainException::class);
-        $this->expectExceptionMessage('Exploration provenance contains a revision cycle');
-        app(ExplorationPositionService::class)->forProposition($second);
-    }
-
-    public function test_wrong_producing_kind_never_counts_as_current_spentness(): void
-    {
-        $phase = $this->phase($this->origin, PhaseKind::Distinguish);
-        $node = $this->node($phase, $this->origin);
-        DB::table('continuation_failures')->insert(['proposition_id' => $node->id,
-            'context_horizon_id' => $phase->cycle->context_horizon_id, 'structural_position' => 4,
-            'exploration_epoch' => 0, 'phase_id' => $phase->id, 'failed_at' => now()]);
-        $epochs = app(ExplorationEpochService::class);
-        $this->assertFalse($epochs->spentNow($node, $phase));
-        $this->assertFalse($epochs->spentNow($node, $phase, new ParticipationContext($phase)));
-        $this->assertTrue($epochs->currentFailures($phase->cycle->context_horizon_id, collect([$node->id]))->isEmpty());
-        $this->assertDatabaseCount('continuation_failures', 1);
-    }
-
-    public function test_publication_revalidates_the_structural_source_even_when_epoch_and_version_match(): void
-    {
-        [, , $terminal] = $this->testedLineage();
-        $service = app(HorizonFailureService::class);
-        $proof = $service->inspect($terminal);
-        $this->assertNotEmpty($proof['failures']);
-        $proof['failures'][0]['structural_source_id'] = $this->origin->id;
-        $terminal->forceFill(['completed_at' => now()])->save();
-        $terminal->cycle->forceFill(['completed_at' => now(), 'rested_at' => now(), 'rest_reason' => $proof['rest_reason']])->save();
-        $service->publish($terminal, $proof);
-        $this->assertDatabaseCount('continuation_failures', 0);
-        $this->assertDatabaseCount('horizon_failure_witnesses', 0);
+        $this->expectExceptionMessage('Structural provenance contains a revision cycle');
+        app(StructuralSourceService::class)->forProposition($second);
     }
 }

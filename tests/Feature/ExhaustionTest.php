@@ -5,10 +5,11 @@ namespace Tests\Feature;
 use App\Enums\PhaseKind;
 use App\Models\Proposition;
 use App\Models\Tragedy;
-use App\Services\ContributionDispatcher;
 use App\Services\ExhaustionAuditService;
 use App\Services\ExhaustionService;
+use App\Services\ExplorationEventService;
 use App\Services\PotentialChargeService;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
@@ -88,21 +89,21 @@ class ExhaustionTest extends TestCase
     public function test_stale_witness_cannot_create_tragedy_or_exhaust_a_fresh_sibling(): void
     {
         [, $phase, , $commit] = $this->exhaustedBranch();
-        $proof = app(ExhaustionService::class)->inspect($phase);
+        $proof = app(ExplorationEventService::class)->inspect($phase);
         $fresh = $this->node($this->phase($commit, PhaseKind::Distinguish), $commit);
         $phase->forceFill(['completed_at' => now()])->save();
         $phase->cycle->forceFill(['rested_at' => now(), 'completed_at' => now(), 'rest_reason' => 'no_remaining_potential'])->save();
-        app(ExhaustionService::class)->publish($phase, $proof);
+        app(ExplorationEventService::class)->publish($phase, $proof);
         $this->assertDatabaseCount('tragedies', 0);
-        $this->assertDatabaseCount('continuation_failures', 0);
+        $this->assertDatabaseCount('exploration_events', 0);
         $this->assertFalse(app(ExhaustionService::class)->unavailable($fresh));
     }
 
     public function test_uncompleted_rest_witness_has_no_effect(): void
     {
         [, $phase] = $this->exhaustedBranch();
-        app(ExhaustionService::class)->publish($phase, app(ExhaustionService::class)->inspect($phase));
-        $this->assertDatabaseCount('horizon_failure_witnesses', 0);
+        app(ExplorationEventService::class)->publish($phase, app(ExplorationEventService::class)->inspect($phase));
+        $this->assertDatabaseCount('exploration_events', 0);
         $this->assertDatabaseCount('tragedies', 0);
     }
 
@@ -110,9 +111,9 @@ class ExhaustionTest extends TestCase
     {
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
         $before = $this->history();
-        $proof = app(ExhaustionService::class)->inspect($phase);
+        $proof = app(ExplorationEventService::class)->inspect($phase);
         $this->assertSame('no_available_move', $proof['rest_reason']);
-        $this->assertSame([], $proof['transitions']);
+        $this->assertNull($proof['witness']);
         $this->assertSame($before, $this->history());
         $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
     }
@@ -146,7 +147,7 @@ class ExhaustionTest extends TestCase
         $this->assertTrue($audit['matches'], json_encode($audit));
         DB::table('cycles')->where('id', $phase->cycle_id)->update(['rest_reason' => 'no_available_move']);
         $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
         DB::transaction(fn () => DB::table('commit_region_exhaustions')->update(['boundary_field' => '{"charge":0.2,"tension":0.8}']));
     }
 
@@ -167,12 +168,13 @@ class ExhaustionTest extends TestCase
             }
             DB::enableQueryLog();
             DB::flushQueryLog();
-            $proof = app(ExhaustionService::class)->inspect($phase->fresh());
+            $proof = app(ExplorationEventService::class)->inspect($phase->fresh());
             $queries = DB::getQueryLog();
             DB::disableQueryLog();
             $counts[] = count($queries);
             $this->assertSame('no_remaining_potential', $proof['rest_reason']);
-            $this->assertSame([$head->id], $proof['transitions']);
+            $this->assertSame($head->id, $proof['position_id']);
+            $this->assertNull($proof['witness'], 'An unrecorded personal arrival cannot establish exploration');
             foreach ($queries as $query) {
                 $this->assertDoesNotMatchRegularExpression('/insert |update |delete |for update/i', $query['query']);
             }

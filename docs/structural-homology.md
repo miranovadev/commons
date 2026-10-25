@@ -89,7 +89,7 @@ Immediate active canonical Disperse children in each eligible Read's own Region
 and Horizon become operands. ReconciliationOptionService still applies availability
 and directed-pair uniqueness. Foreign exhausted continuations are checked with
 one batched read of complete authoritative Horizon data. Backward completion
-and current failure epochs remain independent in each Horizon; a foreign causal
+and personal exploration remain independent of comparison populations; a foreign causal
 edge cannot transport another Horizon's exhaustion or failure. The partial
 comparison working set is never treated as an entire foreign Horizon.
 
@@ -124,7 +124,7 @@ HomologousMediationTest covers:
 - Public contribution execution, two causal parents, acting Cycle owner/Horizon/
   Phase Gate, producing-Gate lineage, Receipt isolation, and stale rejection.
 - Foreign exhaustion outside the hydrated comparison context, a live alternative
-  keeping that Gate eligible, current-epoch failure closing it, and a later epoch
+  keeping that Gate eligible independently of another Participant’s exploration, and later structure
   restoring eligibility. The existing exhaustion lifecycle tests remain the proof
   of how regional exhaustion records are produced.
 - Independent A→B and B→A execution, distinct A→C eligibility, and used-pair

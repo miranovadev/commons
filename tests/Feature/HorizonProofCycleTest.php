@@ -17,6 +17,6 @@ class HorizonProofCycleTest extends TestCase
         // Persist-only acquisition changes the event history. Use the lawful
         // skeptical path; all-Support now disagrees at the independent Bias
         // Orientation/Cadence gate. Do not weaken that mathematical constraint.
-        $this->driveHorizonCycle(actionBudget: 101, expressiveDirection: 'refute');
+        $this->driveHorizonCycle(actionBudget: 101, expressiveDirection: 'refute', mediateDirection: 'support');
     }
 }

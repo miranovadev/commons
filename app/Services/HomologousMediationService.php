@@ -60,6 +60,36 @@ final readonly class HomologousMediationService
             : $context->remember('homologous-mediate-structure:'.$phase->id, fn () => $this->discover($phase));
     }
 
+    /** Batch look-ahead for one actor's Region/Horizon without changing membership. */
+    public function structuralPoolsFor(Collection $phases, ParticipationContext $context): array
+    {
+        $anchors = $phases->mapWithKeys(function ($phase) use ($context): array {
+            $anchor = $this->mediation->anchorFor($phase);
+
+            return [$phase->id => $anchor !== null && $this->positions->matches($anchor, $phase, PhaseKind::Constrain)
+                && $this->regions->seedFor($anchor, $context)?->id === $phase->cycle->entry_committal_id ? $anchor : null];
+        });
+        $result = [];
+        // All supplied probes share an actor's entry and Horizon. The canonical
+        // Constrain population is identical; only the excluded anchor differs.
+        $anchor = $anchors->filter()->first();
+        $population = $anchor === null ? collect() : $this->populations->forPosition($anchor);
+        $gates = $anchor === null ? collect() : $this->discoverGates($phases->first(), $population);
+        $edges = Supersession::whereIn('source_proposition_id', $population->pluck('id'))
+            ->whereIn('target_proposition_id', $gates->pluck('id'))->get()->groupBy('target_proposition_id');
+        foreach ($phases as $phase) {
+            $anchor = $anchors[$phase->id];
+            $reads = $anchor === null ? collect() : $population->where('id', '!=', $anchor->id)->values();
+            $ids = $reads->pluck('id')->flip();
+            $result['homologous-mediate-structure:'.$phase->id] = ['anchor' => $anchor,
+                'population' => $anchor === null ? collect() : $population, 'reads' => $reads,
+                'gates' => $gates->filter(fn ($gate) => $edges->get($gate->id, collect())
+                    ->contains(fn ($edge) => $ids->has($edge->source_proposition_id)))->values()];
+        }
+
+        return $result;
+    }
+
     private function discover(Phase $phase): array
     {
         $empty = ['reads' => collect(), 'gates' => collect(), 'population' => collect(), 'anchor' => null];
@@ -74,9 +104,17 @@ final readonly class HomologousMediationService
         $population = $this->populations->forPosition($anchor);
         $reads = $population->where('id', '!=', $anchor->id)->values();
 
+        $gates = $this->discoverGates($phase, $reads);
+
+        return ['reads' => $reads, 'gates' => $gates, 'population' => $population, 'anchor' => $anchor];
+    }
+
+    private function discoverGates(Phase $phase, Collection $reads): Collection
+    {
         $domain = $phase->cycle->contextHorizon->domain;
         $register = $domain->registerFor(PhaseKind::Disperse);
-        $gates = Proposition::query()->active()->where('tier', 'expressive')->where('register', $register)
+
+        return Proposition::query()->active()->where('tier', 'expressive')->where('register', $register)
             ->whereHas('phase', fn ($q) => $q->where('kind', PhaseKind::Disperse->value)->where('write_register', $register)
                 ->whereHas('cycle', fn ($q) => $q
                     ->whereHas('contextHorizon', fn ($q) => $q->where('domain', $domain->value))
@@ -84,7 +122,6 @@ final readonly class HomologousMediationService
             ->whereHas('parents', fn ($q) => $q->whereKey($reads->pluck('id')))
             ->orderBy('id')->get();
 
-        return ['reads' => $reads, 'gates' => $gates, 'population' => $population, 'anchor' => $anchor];
     }
 
     private function resolve(Phase $phase, ParticipationContext $comparison): array
@@ -111,8 +148,8 @@ final readonly class HomologousMediationService
 
                 return $direction === $field->direction;
             })->keyBy('id');
-        $parents = Supersession::whereIn('source_proposition_id', $reads->keys())
-            ->whereIn('target_proposition_id', $gates->pluck('id'))->get()->groupBy('target_proposition_id');
+        $parents = $comparison->edges->whereIn('source_proposition_id', $reads->keys())
+            ->whereIn('target_proposition_id', $gates->pluck('id'))->groupBy('target_proposition_id');
         $seeds = $comparison->seedIds();
         $gates = $comparison->nodes($gates->pluck('id'))->filter(function ($gate) use ($comparison, $reads, $parents, $seeds): bool {
             if (! $this->availability->mutable($gate, $comparison)) {

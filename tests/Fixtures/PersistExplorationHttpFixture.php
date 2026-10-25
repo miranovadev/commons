@@ -3,9 +3,9 @@
 namespace Tests\Fixtures;
 
 /** Explicit Persist-only HTTP actions; no fixture writes or inferred failure rows. */
-trait PersistEpochHttpFixture
+trait PersistExplorationHttpFixture
 {
-    private function stage2AEpochJourney(): array
+    private function personalExplorationJourney(): array
     {
         // Authored HTTP journey: observation is an extra Persist action, not
         // an obsolete Distinguish/Disperse progression operation.

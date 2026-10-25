@@ -1,0 +1,124 @@
+{
+  "revision": "0172cf92abfe9b66534345c0bb40abbafb1e5661",
+  "checkpoint": "b6e701d2c70be8adfeeed3685f3df216435091e7",
+  "main": "eeee6a6d81c4a32f605624f4804775f46af17bf4",
+  "c3": {
+    "run": 40179547671,
+    "checkpoint_run": 40176883961,
+    "comparisons": [
+      {
+        "label": "Luna current Origin",
+        "checkpoint_queries": 72,
+        "current_queries": 73,
+        "delta": 1
+      },
+      {
+        "label": "Nova current first branch",
+        "checkpoint_queries": 76,
+        "current_queries": 77,
+        "delta": 1
+      },
+      {
+        "label": "Luna other branch",
+        "checkpoint_queries": 73,
+        "current_queries": 74,
+        "delta": 1
+      },
+      {
+        "label": "Luna before portfolio Disperse",
+        "checkpoint_queries": 73,
+        "current_queries": 73,
+        "delta": 0
+      },
+      {
+        "label": "Vela current committed entry",
+        "checkpoint_queries": 71,
+        "current_queries": 71,
+        "delta": 0
+      },
+      {
+        "label": "Greater-depth Committal",
+        "checkpoint_queries": 73,
+        "current_queries": 74,
+        "delta": 1
+      },
+      {
+        "label": "Larger recorded population 01m50kz8gy5jg8e36mbqykje79",
+        "checkpoint_queries": 73,
+        "current_queries": 74,
+        "delta": 1
+      },
+      {
+        "label": "Larger recorded population 01m50kznxd8y46rf7xhn1t954m",
+        "checkpoint_queries": 76,
+        "current_queries": 77,
+        "delta": 1
+      },
+      {
+        "label": "Larger recorded population 01m53kyyvav7ftb9q7fpjjrnwy",
+        "checkpoint_queries": 76,
+        "current_queries": 77,
+        "delta": 1
+      },
+      {
+        "label": "Larger recorded population 01m53kz9cs3mg8zzvkyvhdke3e",
+        "checkpoint_queries": 73,
+        "current_queries": 74,
+        "delta": 1
+      }
+    ]
+  },
+  "load": {
+    "current_job": 121127437273,
+    "current": [
+      "FAILED  Tests\\Feature\\BiasReceiptConcurrencyTe…  ClosureHistoryUnavailable",
+      "FAILED  Tests\\Feature\\HorizonProofConcurrencyTest > concurrent identical…",
+      "FAILED  Tests\\Feature\\HorizonProofConcurrencyTest > basin completion reje…",
+      "FAILED  Tests\\Feature\\TransactionLockOrderTest > graph and detail finish…",
+      "FAILED  Tests\\Feature\\TransactionLockOrderTest…  ClosureHistoryUnavailable",
+      "FAILED  Tests\\Feature\\TransactionLockOrderTest…  ClosureHistoryUnavailable",
+      "FAILED  Tests\\Feature\\TransactionLockOrderTest…  ClosureHistoryUnavailable",
+      "FAILED  Tests\\Feature\\TransactionLockOrderTest > concurrent fresh sibling…"
+    ],
+    "comparisons": [
+      {
+        "job": 121116843852,
+        "identicalFailureHeadings": true
+      },
+      {
+        "job": 121089080731,
+        "identicalFailureHeadings": true
+      }
+    ]
+  },
+  "query": {
+    "current_job": 121127437283,
+    "current": [
+      "FAILED  Tests\\Feature\\ParticipantContextTest > dense evidence and commitm…",
+      "FAILED  Tests\\Feature\\ParticipationPerformance…  ClosureHistoryUnavailable",
+      "FAILED  Tests\\Feature\\ParticipationPerformance…  ClosureHistoryUnavailable",
+      "FAILED  Tests\\Feature\\ParticipationPerformance…  ClosureHistoryUnavailable",
+      "FAILED  Tests\\Feature\\ParticipationPerformance…  ClosureHistoryUnavailable",
+      "FAILED  Tests\\Feature\\ParticipationPerformance…  ClosureHistoryUnavailable",
+      "FAILED  Tests\\Feature\\ParticipationPerformance…  ClosureHistoryUnavailable",
+      "FAILED  Tests\\Feature\\ParticipationPerformance…  ClosureHistoryUnavailable",
+      "FAILED  Tests\\Feature\\ParticipationPerformance…  ClosureHistoryUnavailable"
+    ],
+    "comparisons": [
+      {
+        "job": 121116844253,
+        "identicalFailureHeadings": true
+      },
+      {
+        "job": 121089080746,
+        "identicalFailureHeadings": true
+      }
+    ],
+    "dense_payload_bytes": {
+      "current": 54511,
+      "checkpoint": 54511,
+      "main": 55062,
+      "ceiling": 45000
+    }
+  }
+}

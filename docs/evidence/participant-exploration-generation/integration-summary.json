@@ -1,0 +1,57 @@
+{
+  "complete": true,
+  "discovered": 34,
+  "executed": 34,
+  "passed": 31,
+  "failed": 3,
+  "skipped": [],
+  "assertions": 7194,
+  "failures": [
+    {
+      "test": "Tests\\Feature\\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit#0",
+      "kind": "failure"
+    },
+    {
+      "test": "Tests\\Feature\\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit#1",
+      "kind": "failure"
+    },
+    {
+      "test": "Tests\\Feature\\NaturalChargeBoundaryLifecycleTest::test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor",
+      "kind": "failure"
+    }
+  ],
+  "runtimes": [
+    {
+      "suite": "integration",
+      "shard": 1,
+      "shards": 4,
+      "selected_tests": 2,
+      "php_wall_seconds": 281.65230683100003,
+      "exit_code": 1
+    },
+    {
+      "suite": "integration",
+      "shard": 2,
+      "shards": 4,
+      "selected_tests": 8,
+      "php_wall_seconds": 366.83386374,
+      "exit_code": 0
+    },
+    {
+      "suite": "integration",
+      "shard": 3,
+      "shards": 4,
+      "selected_tests": 16,
+      "php_wall_seconds": 429.726361819,
+      "exit_code": 1
+    },
+    {
+      "suite": "integration",
+      "shard": 4,
+      "shards": 4,
+      "selected_tests": 8,
+      "php_wall_seconds": 366.404447539,
+      "exit_code": 0
+    }
+  ]
+}

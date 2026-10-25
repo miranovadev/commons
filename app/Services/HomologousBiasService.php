@@ -64,13 +64,10 @@ final readonly class HomologousBiasService
                 ->reject(fn ($id) => $id === $phase->cycle->context_horizon_id)->unique()->sort()->values();
             // A comparison subset cannot prove exhaustion in another Horizon.
             $exhausted = app(ExhaustedContinuationService::class)->ids($phase, $context)
-                ->union(app(ExhaustedContinuationService::class)->idsForHorizons($horizons));
+                ->union($context->remember('foreign-terminal-continuations:'.$horizons->implode(','),
+                    fn () => app(ExhaustedContinuationService::class)->idsForHorizons($horizons)));
 
-            $spent = app(ExplorationEpochService::class)->currentFailuresForHorizons(
-                $horizons->push($phase->cycle->context_horizon_id)->unique(), $candidates->pluck('id'), $context,
-            );
-
-            return $candidates->reject(fn ($node) => $exhausted->has($node->id) || $spent->has($node->id))->sortBy('id')->values();
+            return $candidates->reject(fn ($node) => $exhausted->has($node->id))->sortBy('id')->values();
         });
     }
 

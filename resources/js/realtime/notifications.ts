@@ -4,8 +4,7 @@ export type Invalidation =
   | { type: 'participant.state_changed'; participant_id: Identifier }
   | { type: 'graph.participant_changed'; participant_id: Identifier; substrate_id: Identifier }
   | { type: 'graph.metrics_changed'; substrate_id: Identifier }
-  | { type: 'proposition.created' | 'proposition.updated' | 'proposition.spent' | 'attestation.created'; proposition_id: Identifier; context_horizon_id: Identifier }
-  | { type: 'exploration.epoch_advanced'; structural_position: number; structural_source_id: Identifier; exploration_epoch: number; context_horizon_id: Identifier }
+  | { type: 'proposition.created' | 'proposition.updated' | 'attestation.created'; proposition_id: Identifier; context_horizon_id: Identifier }
   | { type: 'receipt.created' | 'receipt.consumed'; receipt_id: Identifier; context_horizon_id: Identifier }
   | { type: 'horizon.tragedy'; governing_committal_id: Identifier; scope: 'commit_region'; tragedy_id: Identifier; receipt_id: Identifier; context_horizon_id: Identifier }
   | { type: 'horizon.exhausted'; governing_committal_id: Identifier; opening_region_exhausted: true; boundary_region_exhausted: boolean; opening_proposition_id: Identifier | null; context_horizon_id: Identifier }

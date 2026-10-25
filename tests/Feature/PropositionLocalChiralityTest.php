@@ -129,7 +129,7 @@ class PropositionLocalChiralityTest extends TestCase
         }
         $this->act($grandchild, 'refute');
         $this->assertSame($before, $this->state($parent));
-        $this->assertSame([2], json_decode($this->state($grandchild)['intervals'], true));
+        $this->assertSame([], json_decode($this->state($grandchild)['intervals'], true), 'The only ancestral beat belongs to the hard-replaced parent');
         $this->assertSame([], json_decode($this->state($child)['intervals'], true));
     }
 
@@ -199,6 +199,33 @@ class PropositionLocalChiralityTest extends TestCase
         $this->act($node);
         $this->assertSame([.5, 0.0, .25], array_slice($this->components($node), 0, 3));
         $this->assertSame([], json_decode($this->state($node)['intervals'], true));
+    }
+
+    public function test_additive_reference_migration_preserves_historical_measurements_without_backfill(): void
+    {
+        [$origin, $node] = $this->setupPosition();
+        $first = $this->act($node);
+        $before = $this->state($node);
+        unset($before['cadence_reference']);
+        $components = $this->components($node);
+        $migration = require database_path('migrations/2026_10_25_000000_add_active_cadence_reference.php');
+        $migration->down(); // Reproduce the pre-correction schema with an existing own event.
+        $migration->up();
+        $this->assertSame([...$before, 'cadence_reference' => null], $this->state($node));
+        $this->assertSame($components, $this->components($node));
+
+        $fresh = $this->position($origin);
+        $this->edge($origin, $fresh, 'variant');
+        $this->act($fresh);
+        $this->assertSame([], json_decode($this->state($fresh)['cadence_reference'], true));
+        try {
+            $this->act($node, 'refute', $first);
+            $this->fail('An absent event-time reference must not be reconstructed.');
+        } catch (\DomainException $error) {
+            $this->assertStringContainsString('prospective boundary', $error->getMessage());
+        }
+        $this->assertSame(1, $node->attestations()->count());
+        $this->assertSame([...$before, 'cadence_reference' => null], $this->state($node));
     }
 
     public function test_duplicate_ledger_record_is_not_another_beat(): void

@@ -4,8 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
 use App\Services\ExhaustedContinuationService;
-use App\Services\ExhaustionService;
-use App\Services\ExplorationPositionService;
+use App\Services\ExplorationEventService;
 use App\Services\InputPlanService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PotentialChargeService;
@@ -13,6 +12,7 @@ use App\Services\PotentialProjectionService;
 use App\Services\PotentialRegionCalculator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Fixtures\ExplorationHistory;
 use Tests\Fixtures\HorizonProofFixture;
 use Tests\TestCase;
 
@@ -38,7 +38,7 @@ class ExhaustedContinuationTest extends TestCase
         $historical = app(PotentialRegionCalculator::class)->candidates($local, shadowCompletedRegions: false);
         $this->assertGreaterThan(0, collect($historical)->max('raw_potential_charge'));
         $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInHorizon($phase));
-        $before = DB::table('continuation_failures')->count();
+        $before = DB::table('exploration_events')->count();
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);
         $this->assertSame(['participant.rest'], array_keys($plan['schema']['$defs']['actions']));
         $history = collect($plan['exhausted_alternatives'])->firstWhere('id', $source->id);
@@ -46,15 +46,15 @@ class ExhaustedContinuationTest extends TestCase
         $this->assertFalse($history['exhausted']);
         $this->assertFalse($history['basin_exhausted']);
         $this->assertFalse($history['actionable']);
-        $proof = app(ExhaustionService::class)->inspect($phase);
-        $this->assertSame([], $proof['failures']);
+        $proof = app(ExplorationEventService::class)->inspect($phase);
+        $this->assertNull($proof['witness']);
         $this->rest($phase);
-        $this->assertSame($before, DB::table('continuation_failures')->count());
+        $this->assertSame($before, DB::table('exploration_events')->count());
         $this->assertDatabaseHas('propositions', ['id' => $source->id]);
         $this->assertDatabaseHas('commitment_snapshots', ['proposition_id' => $opening->id]);
     }
 
-    public function test_temporary_epoch_failures_do_not_terminate_a_live_alternative(): void
+    public function test_personal_exploration_does_not_terminate_a_live_alternative(): void
     {
         [$opening, , $tragedy] = $this->firstFailure();
         [$terminal] = $this->exercise($opening, $tragedy);
@@ -67,20 +67,11 @@ class ExhaustedContinuationTest extends TestCase
         $this->assertTrue($service->ids($phase)->has($source->id));
         $this->assertFalse($service->ids($phase)->has($parent->id));
         $this->assertFalse($service->ids($phase)->has($live->id));
-        $position = app(ExplorationPositionService::class)->forProposition($live);
-        DB::table('continuation_failures')->insert([
-            'proposition_id' => $live->id, 'context_horizon_id' => $position['context_horizon_id'],
-            'structural_position' => $position['structural_position'], 'exploration_epoch' => 0,
-            'phase_id' => $phase->id, 'failed_at' => now(),
-        ]);
-        $this->assertFalse($service->ids($phase)->has($parent->id), 'A Rest failure is not terminal authority');
+        ExplorationHistory::record($live);
+        $this->assertFalse($service->ids($phase)->has($parent->id), 'Personal Rest is not terminal authority');
         $this->assertEquals($service->ids($phase), $service->ids($phase, new ParticipationContext($phase)));
-        // This isolated epoch rule deliberately constructs a later epoch; the
-        // HTTP lifecycle test establishes actual Variant-driven advancement.
-        DB::table('horizon_exploration_states')->insert([...$position, 'epoch' => 1]);
-        $this->assertFalse($service->ids($phase)->has($parent->id));
         $this->assertTrue($service->ids($phase)->has($source->id));
         $this->assertFalse($service->ids($phase)->has($this->origin->id));
-        $this->assertDatabaseHas('continuation_failures', ['proposition_id' => $live->id, 'exploration_epoch' => 0]);
+        $this->assertDatabaseHas('exploration_events', ['proposition_id' => $live->id]);
     }
 }
