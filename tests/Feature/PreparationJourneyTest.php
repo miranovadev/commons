@@ -15,7 +15,6 @@ use App\Models\User;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
 use App\Services\Evidence\ArtifactStore;
-use App\Services\ExplorationEpochService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
@@ -289,7 +288,7 @@ class PreparationJourneyTest extends TestCase
         $f = $fixture->context;
         $head = $this->refutedWrite($fixture);
         $this->publishPotentialFixture($f->viewer);
-        $epoch = app(ExplorationEpochService::class)->forPhase($f->phase);
+        $encounters = DB::table('exploration_events')->count();
         $url = '/api/substrates/'.$f->substrate->slug.'/participants/'.$f->viewer->id;
         $started = $this->postJson($url.'/participate', ['phase_id' => $f->phase->id,
             'contribution' => ['action' => 'preparation.start', 'proposition_id' => $f->gate->id, ...$fixture->input()]])->assertOk();
@@ -301,7 +300,7 @@ class PreparationJourneyTest extends TestCase
             'statement' => 'Reconsider this account after reading its source.']])->assertOk()->assertJsonPath('data.plan.phase.number', 5);
         $execution = EvidenceExecution::findOrFail($id);
         $this->assertSame([$head->id], $execution->resultingProposition->parents()->pluck('propositions.id')->all());
-        $this->assertSame($epoch, app(ExplorationEpochService::class)->forPhase($f->phase));
+        $this->assertSame($encounters, DB::table('exploration_events')->count());
         $this->assertSame('contributed', $execution->outcome);
         $this->assertNull($execution->receipt->consumption);
     }

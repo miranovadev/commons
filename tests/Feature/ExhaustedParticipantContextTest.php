@@ -7,14 +7,14 @@ use App\Enums\PhaseKind;
 use App\Models\Proposition;
 use App\Models\User;
 use App\Services\ContextHorizonProjector;
-use App\Services\ExplorationEpochService;
 use App\Services\InputPlanService;
 use App\Services\ParticipantContextSerializer;
+use App\Services\ParticipantExplorationService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Fixtures\ExplorationHistory;
 use Tests\Fixtures\HorizonProofFixture;
 use Tests\TestCase;
 
@@ -41,7 +41,7 @@ class ExhaustedParticipantContextTest extends TestCase
     }
 
     #[DataProvider('writePositions')]
-    public function test_spent_writes_remain_visible_at_their_producing_position_in_both_domains(ContextDomain $domain, PhaseKind $kind): void
+    public function test_historical_encounters_preserve_visibility_and_new_opportunities_in_both_domains(ContextDomain $domain, PhaseKind $kind): void
     {
         if ($domain === ContextDomain::Settlement) {
             $snapshot = $this->origin->commitmentSnapshot;
@@ -56,28 +56,31 @@ class ExhaustedParticipantContextTest extends TestCase
         $wrongKind = PhaseKind::from($kind->value > 3 ? $kind->value - 3 : $kind->value + 3);
         $wrong = $this->node($this->phase($gate, $wrongKind), $gate);
         $this->assertSame($right->register, $wrong->register, 'Labels alone cannot supply a structural position');
-        $this->spent($right, $wrong);
         $phase = $this->phase($gate, $kind);
+        ExplorationHistory::record($right, $phase);
+        ExplorationHistory::record($wrong, $phase);
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase, true);
         $this->assertContains($right->id, array_column($plan['write_options'], 'id'));
         $this->assertNotContains($wrong->id, array_column($plan['write_options'], 'id'));
         foreach (['traversal_options', 'attestation_options', 'instrument_options', 'revision_options'] as $key) {
             $this->assertNotContains($right->id, array_column($plan[$key], 'id'));
         }
-        $this->assertSame([], $plan['exhausted_alternatives'], 'Spent is not Horizon Exhaustion');
-        $this->assertTrue(app(ExplorationEpochService::class)->spentNow($right, $phase));
-        $this->assertContains($right->id, array_column(app(ParticipantContextSerializer::class)->plan($plan)['write_options'], 'id'));
+        $this->assertSame([], $plan['exhausted_alternatives'], 'Explored is not Horizon Exhaustion');
+        $this->assertSame(! in_array($kind, [PhaseKind::Distinguish, PhaseKind::Constrain], true),
+            app(ParticipantExplorationService::class)->explored($right, $phase), 'An available acquisition move releases an earlier historical restriction');
+        $compact = array_column(app(ParticipantContextSerializer::class)->plan($plan)['write_options'], 'id');
+        $this->assertSame(! in_array($kind, [PhaseKind::Distinguish, PhaseKind::Constrain], true), in_array($right->id, $compact, true));
     }
 
-    public function test_a_healthy_sibling_remains_actionable_alongside_visible_spent_evidence(): void
+    public function test_a_healthy_sibling_remains_actionable_alongside_visible_explored_evidence(): void
     {
         $creating = $this->phase($this->origin, PhaseKind::Distinguish);
-        $spent = $this->node($creating, $this->origin);
+        $explored = $this->node($creating, $this->origin);
         $healthy = $this->node($creating, $this->origin);
-        $this->spent($spent);
+        $this->explored($explored);
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
         $plan = app(InputPlanService::class)->forParticipant($phase->cycle->participant);
-        $this->assertEqualsCanonicalizing([$spent->id, $healthy->id], array_column($plan['write_options'], 'id'));
+        $this->assertEqualsCanonicalizing([$explored->id, $healthy->id], array_column($plan['write_options'], 'id'));
         $this->assertSame([], array_column($plan['instrument_options'], 'id'), 'Distinguish has no Instrument action');
         $this->assertArrayNotHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
     }
@@ -86,12 +89,12 @@ class ExhaustedParticipantContextTest extends TestCase
     {
         $creating = $this->phase($this->origin, PhaseKind::Distinguish);
         $roots = collect(range(1, 30))->map(fn () => $this->node($creating, $this->origin));
-        $this->spent(...$roots);
+        $this->explored(...$roots);
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
         $phase->cycle->participant->forceFill(['max_read_count' => 1])->save();
         $childPhase = $this->phase($roots->first(), PhaseKind::Disperse);
         $children = collect(range(1, 30))->map(fn () => $this->node($childPhase, $roots->first()));
-        $this->spent(...$children);
+        $this->explored(...$children);
         $this->publishPotentialFixture($this->substrate);
         $context = new ParticipationContext($phase->fresh());
         $this->assertCount(30, $context->propositions->keys()->intersect($roots->pluck('id')));
@@ -103,14 +106,14 @@ class ExhaustedParticipantContextTest extends TestCase
         }
     }
 
-    public function test_spent_scope_never_crosses_a_horizon_or_hides_nodes_from_the_active_graph(): void
+    public function test_explored_scope_never_crosses_a_horizon_or_hides_nodes_from_the_active_graph(): void
     {
         $root = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
-        $this->spent($root);
+        $this->explored($root);
         $horizon = $this->laterHorizonFixture($root->phase->cycle->contextHorizon);
         $opening = Proposition::findOrFail($horizon->opened_by_proposition_id);
         $viewer = $this->phase($opening, PhaseKind::Distinguish);
-        $this->assertFalse(app(ExplorationEpochService::class)->spentNow($root, $viewer));
+        $this->assertFalse(app(ParticipantExplorationService::class)->explored($root, $viewer));
         $this->assertTrue(Proposition::active()->whereKey($root->id)->exists());
         $plan = app(InputPlanService::class)->forPhase($viewer->cycle->participant, $viewer);
         $this->assertNotContains($root->id, array_column($plan['write_options'], 'id'));
@@ -140,7 +143,7 @@ class ExhaustedParticipantContextTest extends TestCase
         $this->assertStringNotContainsString($commit->id, json_encode($packet['actions']));
     }
 
-    public function test_first_tragedy_keeps_spent_evidence_in_live_participant_context_and_graph(): void
+    public function test_first_tragedy_keeps_explored_evidence_in_live_participant_context_and_graph(): void
     {
         $root = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
         $this->explore($root);
@@ -166,13 +169,10 @@ class ExhaustedParticipantContextTest extends TestCase
         }
     }
 
-    private function spent(Proposition ...$nodes): void
+    private function explored(Proposition ...$nodes): void
     {
         foreach ($nodes as $node) {
-            DB::table('continuation_failures')->insert(['proposition_id' => $node->id,
-                'context_horizon_id' => $node->phase->cycle->context_horizon_id,
-                'structural_position' => $node->phase->kind->value, 'exploration_epoch' => 0,
-                'phase_id' => $node->phase_id, 'failed_at' => now()]);
+            ExplorationHistory::record($node);
         }
     }
 }

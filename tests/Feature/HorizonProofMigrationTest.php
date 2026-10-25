@@ -63,8 +63,6 @@ class HorizonProofMigrationTest extends TestCase
             '2026_09_18_000300_record_horizon_tragedies.php',
             '2026_09_18_000400_record_proven_horizon_exhaustion.php',
             '2026_09_18_000500_index_horizon_receipt_lookup.php',
-            '2026_09_18_000600_scope_continuation_failures_to_exploration_epochs.php',
-            '2026_09_19_000100_localize_exploration_positions.php',
             '2026_09_19_000200_record_tragedy_final_attempts.php',
             '2026_09_21_000100_project_tragedy_receipt_basins.php',
             '2026_09_22_000000_scope_exhaustion_to_commit_regions.php',

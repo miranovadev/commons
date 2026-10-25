@@ -23,7 +23,7 @@ final class ParticipantContextSerializer
             ->concat($plan['instrument_options'] ?? [])
             ->concat($plan['attestation_options'] ?? [])
             ->filter(fn ($node) => ($plan['phase']['kind'] === 'order' && $node['tier'] === 'expressive')
-                || $targetIds->contains($node['id']) || ($node['spent'] ?? false)
+                || $targetIds->contains($node['id']) || ($node['explored'] ?? false)
                 || ($node['continuation_exhausted'] ?? false))->unique('id');
         // Current Gate is context even when it has no selectable Gate action.
         $gate = ($plan['phase']['kind'] === 'order' || ($plan['position_exhausted'] ?? false) ? collect() : collect([$plan['gate']]))
@@ -103,7 +103,7 @@ final class ParticipantContextSerializer
         foreach ($registers as &$register) {
             $register['propositions'] = array_map(fn ($node) => [
                 ...Arr::except($this->proposition($node), [
-                    'observables', 'attestation_summary', 'reinforcement_count', 'structural_position', 'exploration_epoch',
+                    'observables', 'attestation_summary', 'reinforcement_count', 'structural_position',
                 ]),
                 ...($authors->has($node['id']) ? ['participant' => $authors->get($node['id'])] : []),
                 ...Arr::only($node, ['relation', 'role', 'phase_number', 'statement_truncated',
@@ -202,7 +202,7 @@ final class ParticipantContextSerializer
 
     private function proposition(array $node): array
     {
-        $result = Arr::only($node, ['id', 'register', 'tier', 'statement', 'parent_ids', 'attestation_summary', 'reinforcement_count', 'spent', 'exploration_epoch', 'structural_position']);
+        $result = Arr::only($node, ['id', 'register', 'tier', 'statement', 'parent_ids', 'attestation_summary', 'reinforcement_count', 'explored', 'structural_position']);
         if ($node['continuation_exhausted'] ?? false) {
             $result['continuation_exhausted'] = true;
         }

@@ -37,7 +37,7 @@ final class PropositionOptionService
     }
 
     /** An effective personal Attestation establishes the forward traversal path. */
-    public function traversalOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
+    public function traversalOptionsFor(Phase $phase, ?ParticipationContext $context = null, bool $base = false): Collection
     {
         if ($phase->kind === PhaseKind::Order) {
             return $this->generation->committedWrites($phase, $context)
@@ -66,7 +66,11 @@ final class PropositionOptionService
         }
 
         // Receipt consumption never erases the path established by an earlier vote.
-        $options = $this->unspentWrites($phase, $context);
+        $options = $this->availableWrites($phase, $context);
+        if (! $base) {
+            $explored = app(ParticipantExplorationService::class)->exploredIds($phase, $options->pluck('id'), $context);
+            $options = $options->reject(fn ($node) => $explored->has($node->id));
+        }
         if ($context !== null) {
             $attested = $context->effectiveAttestations($options->pluck('id'))
                 ->filter(fn ($attestation) => $attestation->phase->cycle->participant_id === $phase->cycle->participant_id
@@ -125,14 +129,13 @@ final class PropositionOptionService
             : $writes->filter(fn (Proposition $node): bool => $this->availability->mutable($node, $context))->values();
     }
 
-    /** Keep historical Writes visible while suppressing spent action targets. */
-    private function unspentWrites(Phase $phase, ?ParticipationContext $context): Collection
+    /** Terminal lifecycle availability is independent of personal exploration. */
+    private function availableWrites(Phase $phase, ?ParticipationContext $context): Collection
     {
         $writes = $this->writeOptionsFor($phase, $context);
-        $spent = app(ExplorationEpochService::class)->failuresFor($phase, $writes->pluck('id'), $context);
         $exhausted = app(ExhaustedContinuationService::class)->ids($phase, $context);
 
-        return $writes->reject(fn (Proposition $node) => $spent->has($node->id) || $exhausted->has($node->id))->values();
+        return $writes->reject(fn (Proposition $node) => $exhausted->has($node->id))->values();
     }
 
     private function resolveWrites(Phase $phase, ?ParticipationContext $context = null): Collection
@@ -161,7 +164,7 @@ final class PropositionOptionService
         $shared = app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
         $expressive = in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true);
 
-        $writes = $this->unspentWrites($phase, $context);
+        $writes = $this->availableWrites($phase, $context);
 
         return $writes->filter(fn (Proposition $node): bool => $this->availability->mutable($node, $context)
             && ($expressive ? $shared
@@ -211,9 +214,7 @@ final class PropositionOptionService
         }
 
         return $query->latest('created_at')
-            ->limit($this->limit())
-            ->get()->reject(fn (Proposition $node) => app(ExplorationEpochService::class)->spentNow($node, $phase, $context)
-                || app(ExhaustedContinuationService::class)->ids($phase, $context)->has($node->id))->values();
+            ->get()->reject(fn (Proposition $node) => app(ExhaustedContinuationService::class)->ids($phase, $context)->has($node->id))->values();
     }
 
     /**

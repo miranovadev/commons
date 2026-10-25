@@ -26,8 +26,8 @@ final class RestReasonService
         // Unobserved structure has not failed a measured probe. A missing vote
         // or evidence can leave a Phase actionless while earlier work remains.
         $writes = app(PropositionOptionService::class)->writeOptionsFor($phase, $context);
-        $spent = app(ExplorationEpochService::class)->failuresFor($phase, $writes->pluck('id'), $context);
-        $testedWrites = $writes->isNotEmpty() && $writes->pluck('id')->diff($spent->keys())->isEmpty();
+        $explored = app(ParticipantExplorationService::class)->exploredIds($phase, $writes->pluck('id'), $context);
+        $testedWrites = $writes->isNotEmpty() && $writes->pluck('id')->diff($explored->keys())->isEmpty();
         if (! $testedWrites && ($state->attestations(collect([$gate]), $context)->isEmpty()
             || ($state->evidenceReceipts($gate, $context)->isEmpty()
                 && app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isEmpty()))) {

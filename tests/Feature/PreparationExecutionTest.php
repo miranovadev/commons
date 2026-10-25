@@ -14,7 +14,6 @@ use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Services\ContributionDispatcher;
 use App\Services\Evidence\ReceiptEvidenceService;
-use App\Services\ExplorationEpochService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
@@ -103,14 +102,14 @@ class PreparationExecutionTest extends TestCase
         $fixture = new PreparationFixture;
         $f = $fixture->context;
         [$service, $execution] = $this->presented($fixture);
-        $epoch = app(ExplorationEpochService::class)->forPhase($f->phase);
+        $encounters = DB::table('exploration_events')->count();
         $count = Proposition::count();
         $phaseCount = Phase::count();
         $receipt = $service->contribute($f->viewer, $execution, ['action' => 'proposition.variant', 'statement' => 'A conclusion from the prepared material.']);
         $result = $execution->fresh()->resultingProposition;
         $this->assertSame($count + 1, Proposition::count());
         $this->assertSame($phaseCount + 1, Phase::count());
-        $this->assertSame($epoch + 1, app(ExplorationEpochService::class)->forPhase($f->phase));
+        $this->assertSame($encounters, DB::table('exploration_events')->count());
         $this->assertSame($result->id, $f->viewer->fresh()->current_proposition_id);
         $this->assertDatabaseHas('phases', ['cycle_id' => $f->phase->cycle_id, 'kind' => PhaseKind::Mediate->value, 'gate_proposition_id' => $result->id, 'completed_at' => null]);
         $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $f->gate->id, 'target_proposition_id' => $result->id, 'type' => 'variant']);
@@ -386,12 +385,12 @@ class PreparationExecutionTest extends TestCase
         $vote->save();
         app(LedgerService::class)->record($vote);
         [$service, $execution] = $this->presented($fixture);
-        $epoch = app(ExplorationEpochService::class)->forPhase($f->phase);
+        $encounters = DB::table('exploration_events')->count();
         $receipt = $service->contribute($f->viewer, $execution, ['action' => 'proposition.revise',
             'proposition_id' => $head->id, 'statement' => 'Reconsider the refuted account after examination.']);
         $result = $execution->fresh()->resultingProposition;
         $this->assertSame([$head->id], $result->parents()->pluck('propositions.id')->all());
-        $this->assertSame($epoch, app(ExplorationEpochService::class)->forPhase($f->phase));
+        $this->assertSame($encounters, DB::table('exploration_events')->count());
         $this->assertOrdinary($receipt, $execution);
         $this->assertNotNull($f->phase->fresh()->completed_at);
     }
@@ -583,7 +582,7 @@ class PreparationExecutionTest extends TestCase
 
     private function structuralSnapshot(): array
     {
-        return collect(['propositions', 'supersessions', 'phases', 'cycles', 'horizon_exploration_states',
+        return collect(['propositions', 'supersessions', 'phases', 'cycles', 'exploration_events',
             'chirality_observations', 'closure_births', 'chirality_population_observations', 'phase_profile_observations', 'proposition_attestation_cursors'])->mapWithKeys(fn ($t) => [$t => DB::table($t)->get()->sortBy(fn ($row) => json_encode($row))->values()->toJson()])->all();
     }
 }

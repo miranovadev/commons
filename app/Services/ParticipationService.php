@@ -275,11 +275,11 @@ final readonly class ParticipationService
             throw $exception;
         }
 
-        $failureWitness = null;
+        $explorationWitness = null;
         if (($input['action'] ?? null) === 'participant.rest') {
             $restPhase = Phase::with('cycle.participant')->find($phaseId);
             if ($restPhase !== null && $restPhase->cycle->participant_id === $participant->id) {
-                $failureWitness = app(HorizonFailureService::class)->inspect($restPhase);
+                $explorationWitness = app(ExplorationEventService::class)->inspect($restPhase);
             }
         }
 
@@ -288,7 +288,7 @@ final readonly class ParticipationService
             $phaseId,
             $input,
             $observed,
-            $failureWitness,
+            $explorationWitness,
             $validatedVersion,
         ): void {
             // Acquire the shared root before any participant/phase or contribution lock.
@@ -332,11 +332,11 @@ final readonly class ParticipationService
             if ($input['action'] === 'participant.rest') {
                 // The Rest witness describes the guarded pre-completion field.
                 // A stale proof is discarded and can be retried after this Rest.
-                $validProof = $failureWitness !== null && $failureWitness['stable']
-                    && $failureWitness['field_version'] === (int) $substrate->field_version;
-                $this->rest($lockedParticipant, $phase, RestReason::from($failureWitness['rest_reason'] ?? 'no_available_move'));
+                $validProof = $explorationWitness !== null && $explorationWitness['stable']
+                    && $explorationWitness['field_version'] === (int) $substrate->field_version;
+                $this->rest($lockedParticipant, $phase, RestReason::from($explorationWitness['rest_reason'] ?? 'no_available_move'));
                 if ($validProof) {
-                    app(HorizonFailureService::class)->publish($phase, $failureWitness);
+                    app(ExplorationEventService::class)->publish($phase, $explorationWitness);
                 }
                 // Publish the existing Rest outcome before completion invalidates
                 // future Closure previews; both remain in this root-locked transaction.
@@ -362,7 +362,7 @@ final readonly class ParticipationService
         return $this->stateFor($participant->fresh());
     }
 
-    /** The validated plan exposes Rest only in a Phase with no admissible non-Rest actions. */
+    /** The validated plan exposes Rest only in a Phase with no meaningful remaining continuation. */
     private function rest(Participant $participant, Phase $phase, RestReason $reason): void
     {
         $participant->current_proposition_id = $phase->gate_proposition_id;

@@ -197,6 +197,18 @@ final readonly class InputSchemaService
             $schema['$defs']['actions']['attestation.create']['anyOf'] = $choices;
         }
 
+        // Repeat judgments remain lawful, but are not renewed exploration by themselves.
+        $meaningful = array_diff(array_keys($schema['$defs']['actions']), ['attestation.create']);
+        if ($meaningful === [] && isset($schema['$defs']['actions']['attestation.create'])) {
+            $ids = collect($attestationOptionIds ?? $writeOptionIds);
+            $explored = app(ParticipantExplorationService::class)->exploredIds($occurrence, $ids, $context);
+            if ($ids->diff($explored->keys())->isEmpty()) {
+                $rest = $this->forPhase($kind, ['participant.rest']);
+                $schema['$defs']['actions']['participant.rest'] = $rest['$defs']['actions']['participant.rest'];
+                $schema['oneOf'][] = ['$ref' => '#/$defs/actions/participant.rest'];
+            }
+        }
+
         if ($schema['$defs']['actions'] === []) {
             return $this->withReceiptOptions($this->forPhase($kind, ['participant.rest']), $occurrence, $context);
         }

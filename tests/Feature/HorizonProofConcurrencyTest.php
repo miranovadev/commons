@@ -11,8 +11,8 @@ use App\Models\Substrate;
 use App\Services\ClosureGateService;
 use App\Services\ContributionDispatcher;
 use App\Services\EvidenceExecutionService;
-use App\Services\ExplorationEpochService;
 use App\Services\LedgerService;
+use App\Services\PhaseGenerationService;
 use App\Services\ReceiptContextService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
@@ -91,13 +91,10 @@ class HorizonProofConcurrencyTest extends TestCase
     public function test_competing_variants_recheck_new_unobserved_opportunity_after_the_winner_commits(): void
     {
         $firstPhase = $this->phase($this->origin, PhaseKind::Distinguish);
-        $previous = $this->node($firstPhase, $this->origin);
-        $this->observeAndAttest($previous);
         $secondPhase = $this->phase($this->origin, PhaseKind::Distinguish);
-        $this->measure($previous, 0);
-        DB::table('continuation_failures')->insert(['proposition_id' => $previous->id,
-            'context_horizon_id' => $firstPhase->cycle->context_horizon_id, 'structural_position' => 1,
-            'exploration_epoch' => 0, 'phase_id' => $firstPhase->id, 'failed_at' => now()]);
+        foreach ([$firstPhase, $secondPhase] as $phase) {
+            $this->assertTrue(app(PhaseGenerationService::class)->available($phase, 'proposition.variant'));
+        }
         $before = Proposition::count();
         $input = ['action' => 'proposition.variant', 'statement' => 'Next opportunity'];
         $this->whileWorkerWaits($this->substrate, [
@@ -108,8 +105,8 @@ class HorizonProofConcurrencyTest extends TestCase
             app(ContributionDispatcher::class)->dispatch($firstPhase->cycle->participant, $firstPhase, $input);
         });
         $this->assertSame($before + 1, Proposition::count());
-        $this->assertSame(1, app(ExplorationEpochService::class)->forPhase($firstPhase));
-        $this->assertDatabaseCount('continuation_failures', 1);
+        $this->assertFalse(app(PhaseGenerationService::class)->available($secondPhase, 'proposition.variant'));
+        $this->assertDatabaseCount('exploration_events', 0);
     }
 
     public function test_concurrent_identical_gate_desired_states_emit_only_one_transition(): void

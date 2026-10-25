@@ -415,11 +415,10 @@ final readonly class InputPlanService
                 'statement',
                 'created_at',
             ]),
-            'spent' => app(ExplorationEpochService::class)->spentNow($proposition, $context?->phase ?? $this->phases->currentFor($viewer), $context),
+            'explored' => app(ParticipantExplorationService::class)->explored($proposition, $context?->phase ?? $this->phases->currentFor($viewer), $context),
             'continuation_exhausted' => app(ExhaustedContinuationService::class)->ids($context?->phase ?? $this->phases->currentFor($viewer), $context)->has($proposition->id),
             'structural_position' => $proposition->phase->kind->value,
-            'structural_source_id' => app(ExplorationPositionService::class)->forProposition($proposition, $context)['structural_source_id'] ?? null,
-            'exploration_epoch' => app(ExplorationEpochService::class)->forProposition($proposition, $context),
+            'structural_source_id' => app(StructuralSourceService::class)->forProposition($proposition, $context)['structural_source_id'] ?? null,
             'parent_ids' => $proposition->parents->pluck('id')->all(),
             'title' => str($proposition->statement)
                 ->before("\n")

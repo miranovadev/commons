@@ -10,10 +10,10 @@ use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Services\ContributionDispatcher;
 use App\Services\EvidenceExecutionService;
-use App\Services\ExplorationEpochService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
+use App\Services\ParticipantExplorationService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseGenerationService;
 use App\Services\PotentialChargeService;
@@ -27,10 +27,20 @@ class ExpressiveEvidenceGatingTest extends TestCase
 {
     use ExhaustionFixture, RefreshDatabase;
 
+    private array $explored = [];
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->initializeExhaustionFixture();
+        // Isolate unchanged evidence and Potential prerequisites. Actual personal
+        // event publication/frontier selection is covered in ParticipantExplorationTest.
+        $mock = \Mockery::mock(new ParticipantExplorationService);
+        $this->instance(ParticipantExplorationService::class, $mock);
+        (function ($mock): void {
+            $mock->shouldReceive('exploredIds')->andReturnUsing(fn ($phase, $ids) => $ids
+                ->filter(fn ($id) => isset($this->explored[$phase->cycle->participant_id][$id]))->flip());
+        })($mock);
     }
 
     public static function expressivePhases(): array
@@ -128,7 +138,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
     }
 
     #[DataProvider('expressivePhases')]
-    public function test_another_variant_requires_spent_evidenced_routes_independently_of_potential(PhaseKind $kind): void
+    public function test_another_variant_requires_explored_evidenced_routes_independently_of_potential(PhaseKind $kind): void
     {
         $phase = $this->position($kind);
         $first = $this->node($phase, $phase->gate);
@@ -144,21 +154,21 @@ class ExpressiveEvidenceGatingTest extends TestCase
             $this->measure($node, 1);
         }
         $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($phase));
-        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'An unspent route blocks generation even at zero Potential');
+        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'An unexplored route blocks generation even at zero Potential');
         $this->measure($first, 0);
         $this->assertFalse($generation->available($phase, 'proposition.variant'), 'A healthy evidenced route remains viable');
-        $this->recordSpent($first, $phase);
+        $this->recordExplored($first, $phase);
         $this->assertTrue(app(PotentialChargeService::class)->hasRemainingInRegion($phase));
         $this->assertTrue($generation->available($phase, 'proposition.variant'));
         $this->assertTrue($generation->available($phase, 'proposition.variant', new ParticipationContext($phase)));
         $this->assertArrayHasKey('proposition.variant', $this->actions($phase));
-        // Only the measured field changes: causal structure, evidence and epoch stay identical.
+        // Only the measured field changes: causal structure, evidence and personal exploration stay identical.
         $this->measure($first, 1);
         $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($phase));
         $this->assertTrue($generation->available($phase, 'proposition.variant'));
         $this->assertTrue($generation->available($phase, 'proposition.variant', new ParticipationContext($phase)));
         $this->assertArrayHasKey('proposition.variant', $this->actions($phase));
-        // Failure is a substrate fact, never an author-count or action-priority quota.
+        // Completed personal exploration permits a fresh shared alternative.
         $second = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'The next independent possibility']);
         $this->assertFalse($generation->available($phase, 'proposition.variant'));
@@ -172,8 +182,8 @@ class ExpressiveEvidenceGatingTest extends TestCase
         app(LedgerService::class)->record($vote);
         $this->measure($second, 0);
         $this->assertFalse($generation->available($phase, 'proposition.variant'), 'New and reopened routes must be tested');
-        $this->recordSpent($first, $phase);
-        $this->recordSpent($second, $phase);
+        $this->recordExplored($first, $phase);
+        $this->recordExplored($second, $phase);
         $this->assertTrue($generation->available($phase, 'proposition.variant'), 'The rule repeats after all current routes fail');
         $this->assertNull($receipt->fresh()->consumption, 'Variant eligibility never consumes evidence');
     }
@@ -195,7 +205,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
     }
 
     #[DataProvider('expressivePhases')]
-    public function test_zero_potential_does_not_bypass_evidence_or_current_epoch(PhaseKind $kind): void
+    public function test_zero_potential_does_not_bypass_evidence_or_personal_exploration(PhaseKind $kind): void
     {
         // This is a controlled zero-Potential eligibility test. Keep its field
         // premise stable when evidence writes recalculate the projections too.
@@ -206,17 +216,17 @@ class ExpressiveEvidenceGatingTest extends TestCase
             $this->measure($node, 1);
         }
         $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($phase));
-        $this->recordSpent($write, $phase);
+        $this->recordExplored($write, $phase);
         $generation = app(PhaseGenerationService::class);
         $this->assertFalse($generation->available($phase, 'proposition.variant'));
 
         $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $write->id, 'direction' => 'support']);
         $vote->save();
         app(LedgerService::class)->record($vote);
-        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'A spent attested route still needs genuine evidence');
+        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'A explored attested route still needs genuine evidence');
         $vote->delete();
         $this->sharedObservation($kind === PhaseKind::Distinguish ? $write : null);
-        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'A spent instrumented route still needs effective Attestation');
+        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'A explored instrumented route still needs effective Attestation');
         $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $write->id, 'direction' => 'support']);
         $vote->save();
         app(LedgerService::class)->record($vote);
@@ -224,20 +234,17 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($phase));
         $this->assertTrue($generation->available($phase, 'proposition.variant'));
 
-        // A failure from a different epoch cannot satisfy current-epoch spentness.
-        DB::table('continuation_failures')->where('proposition_id', $write->id)->update(['exploration_epoch' => 99]);
+        // Another Participant has no completed encounter, despite identical evidence.
+        $phase = $this->phase($phase->gate, $kind);
         $this->assertFalse($generation->available($phase, 'proposition.variant'));
         $this->assertArrayNotHasKey('proposition.variant', $this->actions($phase));
         $this->expectException(\DomainException::class);
         app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
-            ['action' => 'proposition.variant', 'statement' => 'A stale plan must not bypass spentness']);
+            ['action' => 'proposition.variant', 'statement' => 'A stale plan must not bypass exploredness']);
     }
 
-    private function recordSpent($node, Phase $phase): void
+    private function recordExplored($node, Phase $phase): void
     {
-        DB::table('continuation_failures')->insert(['proposition_id' => $node->id,
-            'context_horizon_id' => $phase->cycle->context_horizon_id, 'structural_position' => $phase->kind->value,
-            'exploration_epoch' => app(ExplorationEpochService::class)->forPhase($phase),
-            'phase_id' => $phase->id, 'failed_at' => now()]);
+        $this->explored[$phase->cycle->participant_id][$node->id] = true;
     }
 }

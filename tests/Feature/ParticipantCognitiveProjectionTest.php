@@ -33,7 +33,7 @@ class ParticipantCognitiveProjectionTest extends TestCase
         $node = [...$f->gate->only(['id', 'statement', 'register', 'tier']), 'parent_ids' => [],
             'observables' => ['correspondence' => 1, 'chirality' => -1, 'closure' => 0],
             'attestation_summary' => ['positive' => 3], 'reinforcement_count' => 2,
-            'structural_position' => 4, 'exploration_epoch' => 7,
+            'structural_position' => 4, 'explored' => true,
             'attestation' => ['direction' => 'support', 'rationale' => 'An individual judgment.']];
         $plan = ['gate_id' => $node['id'], 'gate_options' => [$node], 'read_options' => [], 'write_options' => [],
             'phase' => ['id' => $f->phase->id, 'kind' => 'persist', 'number' => 2, 'write_register' => 'frontier'],
@@ -42,7 +42,7 @@ class ParticipantCognitiveProjectionTest extends TestCase
         $state = ['participant' => $f->viewer->only(['id', 'callsign', 'designation']), 'plan' => $plan];
         $packet = app(ParticipantContextSerializer::class)->inference($state);
         $gate = $packet['gate']['propositions'][0];
-        foreach (['observables', 'attestation_summary', 'reinforcement_count', 'structural_position', 'exploration_epoch', 'commitment'] as $key) {
+        foreach (['observables', 'attestation_summary', 'reinforcement_count', 'structural_position', 'explored', 'commitment'] as $key) {
             $this->assertArrayNotHasKey($key, $gate);
         }
         $this->assertSame($node['attestation'], $gate['attestation']);

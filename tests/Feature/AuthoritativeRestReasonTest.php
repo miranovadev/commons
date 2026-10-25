@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Enums\PhaseKind;
 use App\Enums\RestReason;
 use App\Services\ContributionService;
-use App\Services\ExhaustionService;
+use App\Services\ExplorationEventService;
 use App\Services\InputPlanService;
 use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
@@ -30,10 +30,9 @@ class AuthoritativeRestReasonTest extends TestCase
         $head = $this->node($this->phase($this->origin, PhaseKind::Constrain), $this->origin);
         $terminal = $this->phase($head);
         $this->measure($head, 1);
-        $proof = app(ExhaustionService::class)->inspect($terminal);
+        $proof = app(ExplorationEventService::class)->inspect($terminal);
         $this->assertSame('no_available_move', $proof['rest_reason']);
-        $this->assertSame([], $proof['transitions']);
-        $this->assertSame([], $proof['branches']);
+        $this->assertNull($proof['witness']);
         $this->assertDatabaseCount('tragedies', 0);
     }
 

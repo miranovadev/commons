@@ -31,18 +31,6 @@ return new class extends Migration
             $table->unsignedBigInteger('observed_field_version');
             $table->timestampTz('occurred_at');
         });
-        Schema::create('horizon_failure_witnesses', function (Blueprint $table): void {
-            $table->foreignUlid('phase_id')->primary()->constrained()->restrictOnDelete();
-            $table->foreignUlid('context_horizon_id')->constrained()->restrictOnDelete();
-            $table->unsignedBigInteger('observed_field_version');
-            $table->timestampTz('recorded_at');
-        });
-        Schema::create('continuation_failures', function (Blueprint $table): void {
-            $table->foreignUlid('proposition_id')->primary()->constrained()->restrictOnDelete();
-            $table->foreignUlid('context_horizon_id')->constrained()->restrictOnDelete();
-            $table->foreignUlid('phase_id')->constrained()->restrictOnDelete();
-            $table->timestampTz('failed_at');
-        });
         Schema::table('cycles', fn (Blueprint $table) => $table->foreignUlid('recovery_proposition_id')->nullable()->constrained('propositions')->restrictOnDelete());
         // SQLite rebuilds the table when adding the foreign key. Restore its
         // existing causal immutability triggers; PostgreSQL retains its triggers.
@@ -62,8 +50,6 @@ return new class extends Migration
         if (Schema::hasColumn('tragedies', 'governing_committal_id') || DB::table('horizon_tragedies')->exists()) {
             throw new RuntimeException('Cannot discard Tragedy proof history. Restore a pre-rollout backup instead.');
         }
-        Schema::dropIfExists('horizon_failure_witnesses');
-        Schema::dropIfExists('continuation_failures');
         Schema::dropIfExists('horizon_tragedies');
         Schema::table('cycles', fn (Blueprint $table) => $table->dropConstrainedForeignId('recovery_proposition_id'));
         Schema::table('receipts', fn (Blueprint $table) => $table->dropConstrainedForeignId('phase_id'));

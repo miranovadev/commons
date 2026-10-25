@@ -86,11 +86,9 @@ final readonly class MediatedIncomingBiasService
             $horizons = $candidates->map(fn ($node) => $node->phase->cycle->context_horizon_id)
                 ->push($phase->cycle->context_horizon_id)->unique()->sort()->values();
             $exhausted = app(ExhaustedContinuationService::class)->idsForHorizons($horizons);
-            $spent = app(ExplorationEpochService::class)->currentFailuresForHorizons($horizons,
-                $candidates->pluck('id')->push($gate->id), $context);
 
-            return $spent->has($gate->id) || $exhausted->has($gate->id) ? collect()
-                : $candidates->reject(fn ($node) => $spent->has($node->id) || $exhausted->has($node->id))->values();
+            return $exhausted->has($gate->id) ? collect()
+                : $candidates->reject(fn ($node) => $exhausted->has($node->id))->values();
         });
     }
 

@@ -84,7 +84,7 @@ class DisperseInstrumentFallbackTest extends TestCase
     private function structuralSnapshot(): array
     {
         $snapshot = [];
-        foreach (['propositions', 'supersessions', 'phases', 'cycles', 'attestations', 'horizon_exploration_states',
+        foreach (['propositions', 'supersessions', 'phases', 'cycles', 'attestations', 'exploration_events',
             'phase_profile_observations', 'chirality_observations', 'chirality_population_observations', 'closure_births'] as $table) {
             $snapshot[$table] = DB::table($table)->get()->map(fn ($row) => (array) $row)->sortBy(fn ($row) => json_encode($row))->values()->all();
         }
