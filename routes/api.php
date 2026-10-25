@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\ParticipantConnectionController;
 use App\Http\Controllers\Api\ParticipantController;
 use App\Http\Controllers\Api\ParticipantPlanController;
 use App\Http\Controllers\Api\ParticipationController;
+use App\Http\Controllers\Api\PreparationHistoryController;
 use App\Http\Controllers\Api\PropositionController;
 use App\Http\Controllers\Api\RealtimeController;
 use App\Http\Controllers\Api\SessionController;
@@ -34,6 +35,8 @@ Route::middleware('web')->group(function (): void {
             Route::get('/substrates/{substrate}/graph-participants', [GraphObservationController::class, 'participants']);
             Route::get('/substrates/{substrate}/graph-metrics', [GraphObservationController::class, 'metrics']);
             Route::get('/substrates/{substrate}/propositions/{proposition}', [PropositionController::class, 'show']);
+            Route::get('/substrates/{substrate}/preparations', [PreparationHistoryController::class, 'index']);
+            Route::get('/substrates/{substrate}/preparations/{execution}', [PreparationHistoryController::class, 'show']);
 
             Route::middleware('guest')->post(
                 '/session',

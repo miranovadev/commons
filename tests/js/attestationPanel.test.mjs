@@ -51,7 +51,9 @@ test('main page submits a footer action once, retries failures and does not reop
     build.onResolve({ filter: /\/components\/ParticipantWorkspace$/ }, () => ({ path: 'workspace', namespace: 'fixture' }));
     build.onLoad({ filter: /.*/, namespace: 'fixture' }, ({ path }) => ({ contents: path === 'realtime' ? 'export const useParticipantRealtime = () => {};' : path === 'workspace'
       ? 'export function ParticipantWorkspace(props) { globalThis.attestationHarness.workspace = props; return null; }'
-      : `export const useGetParticipantsQuery = () => ({ data: [] });
+      : `export const useGetPreparationHistoryQuery = () => ({ currentData: { items: [], next_cursor: null } });
+export const useGetPreparationQuery = () => ({});
+      export const useGetParticipantsQuery = () => ({ data: [] });
          export const useGetSessionQuery = () => ({ data: null });
          export const useGetParticipantQuery = () => ({ data: { callsign: 'Viewer' } });
          export const useGetParticipationQuery = (...args) => useGetParticipantWorkspaceQuery(...args);

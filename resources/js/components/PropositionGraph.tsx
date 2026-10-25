@@ -3,7 +3,7 @@ import { useGetPropositionQuery } from '../services/commonsApi';
 import { Alert, Box, Group, Paper, Text, ThemeIcon, Title } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
 import { IconArrowsMove, IconSparkles } from '@tabler/icons-react';
-import { memo, useCallback, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
 import '../../css/substrate-graph.css';
 import { PropositionCard } from './PropositionCard';
 import type { GraphParticipant, Identifier, Proposition } from '../types';
@@ -42,6 +42,7 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
   const [animating, setAnimating] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [selectedId, setSelectedId] = useState(initialFocusId || null);
+  useEffect(() => { if (initialFocusId) setSelectedId(initialFocusId); }, [initialFocusId]);
   const [isolate, setIsolate] = useState(false);
   const [railState, dispatchRail] = useReducer(graphRailReducer, 'open');
   const [forwardPath, setForwardPath] = useState<Map<Identifier, Identifier>>(new Map());
@@ -240,7 +241,7 @@ function GraphInspector({ slug, propositionId, fallback }: {
   const proposition = data || fallback;
   return <Box aria-busy={isFetching}>
     {error && <Alert color="gray" m="md">Full details could not be refreshed. Showing available graph data.</Alert>}
-    <InspectorContent graph selection={proposition ? { kind: 'graph', proposition } : null} />
+    <InspectorContent graph substrateSlug={slug} selection={proposition ? { kind: 'graph', proposition } : null} />
   </Box>;
 }
 

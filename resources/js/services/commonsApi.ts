@@ -1,4 +1,4 @@
-import type { AutonomousParticipation, ParticipantContext, PreparationDelivery } from '../types';
+import type { AutonomousParticipation, ParticipantContext, PreparationDelivery, PreparationHistorySummary, PreparationHistoryRecord } from '../types';
 import type { GraphSubscriptions } from '../realtime/notifications';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { systemBootstrapRequired } from '../systemSlice';
@@ -107,6 +107,7 @@ export const commonsApi = createApi({
   baseQuery,
   tagTypes: [
     'PropositionHistory',
+    'PreparationHistory',
     'GraphParticipants',
     'GraphSubscriptions',
     'Session',
@@ -167,6 +168,21 @@ export const commonsApi = createApi({
       ],
     }),
     getParticipant: builder.query<Participant, ParticipantParameters>({ query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}`, transformResponse: data, providesTags: (_result, _error, { participantId }) => [{ type: 'Participant', id: participantId }] }),
+    getPreparationHistory: builder.query<{ items: PreparationHistorySummary[]; next_cursor: string | null }, { slug: string; participantId?: string; propositionId?: string; before?: string }>({
+      query: ({ slug, participantId, propositionId, before }) => ({ url: `/substrates/${slug}/preparations`, params: { participant_id: participantId, proposition_id: propositionId, before } }),
+      transformResponse: data,
+      providesTags: (_result, _error, { slug, participantId, propositionId }) => [
+        { type: 'PreparationHistory', id: slug },
+        ...(participantId ? [{ type: 'Participant' as const, id: participantId }] : []),
+        ...(propositionId ? [{ type: 'Proposition' as const, id: propositionId }] : []),
+      ],
+    }),
+    getPreparation: builder.query<PreparationHistoryRecord, { slug: string; executionId: string }>({
+      query: ({ slug, executionId }) => `/substrates/${slug}/preparations/${executionId}`,
+      transformResponse: data,
+      providesTags: (result, _error, { slug }) => [{ type: 'PreparationHistory', id: slug },
+        ...(result ? [{ type: 'Participant' as const, id: result.participant.id }, { type: 'Proposition' as const, id: result.originating_gate_id }] : [])],
+    }),
     getParticipantPlan: builder.query<ParticipantContext, ParticipantParameters>({ query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}/plan`, transformResponse: data, providesTags: (_result, _error, { participantId }) => [{ type: 'Participation', id: participantId }] }),
     getParticipantWorkspace: builder.query<Participation, ParticipantParameters>({
       query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}/workspace`,
@@ -186,7 +202,7 @@ export const commonsApi = createApi({
     acknowledgePreparation: builder.mutation<{ presented: boolean }, ParticipantParameters & { executionId: string; token: string }>({
       query: ({ slug, participantId, executionId, token }) => ({ url: `/substrates/${slug}/participants/${participantId}/preparations/${executionId}/presented`, method: 'POST', body: { presentation_token: token } }),
       transformResponse: data,
-      invalidatesTags: ['Participation'],
+      invalidatesTags: ['Participation', 'PreparationHistory'],
     }),
     contribute: builder.mutation<AutonomousParticipation, ParticipantParameters & { phaseId: Identifier; contribution: ContributionInput; expectedClosure?: string }>({
       query: ({ slug, participantId, phaseId, contribution, expectedClosure }) => ({
@@ -296,6 +312,8 @@ export const {
   useCreateSubstrateMutation,
   useContributeMutation,
   useReadPreparationMutation,
+  useGetPreparationHistoryQuery,
+  useGetPreparationQuery,
   useAcknowledgePreparationMutation,
   useDeleteConnectionMutation,
   useDeleteParticipantConnectionMutation,
