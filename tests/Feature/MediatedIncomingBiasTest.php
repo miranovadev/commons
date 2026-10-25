@@ -114,6 +114,9 @@ class MediatedIncomingBiasTest extends TestCase
         $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id], $result->parents()->pluck('propositions.id')->all());
         $this->assertSame(2, Supersession::where('target_proposition_id', $result->id)->where('type', 'reconcile')->count());
         $service = app(MediatedIncomingBiasService::class);
+        $batch = $service->populationsFor(collect([$this->bias]), new ParticipationContext($this->bias));
+        $this->assertSame($service->populationFor($this->bias)->pluck('id')->all(),
+            $batch['mediated-bias-structure:'.$this->bias->id]->pluck('id')->all());
         foreach ([null, new ParticipationContext($this->bias)] as $context) {
             $this->assertSame([$result->id], $service->forPhase($this->bias, $context)->pluck('id')->all());
             $this->assertFalse(app(HomologousBiasService::class)->forPhase($this->bias, $context)->contains('id', $result->id));

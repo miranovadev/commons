@@ -4,7 +4,7 @@ Stage B replaces shared continuation failures and Exploration Epochs on a **fres
 
 An immutable Exploration Event records one Participant's completed Rest encounter at an expressive continuation head. Its creating Phase establishes the Participant, Cycle, entry Committal and Context Horizon. The witness preserves arrival, judgment, evidence and the guarded absence of meaningful continuation. Events do not mutate Propositions, retire Regions, change another Participant's options, or assert global failure.
 
-Current status is derived. Follow the complete authorized forward frontier within the acting Cycle's Region and Horizon; stop at Committal boundaries. Hard-superseded inputs are history, not independent heads. Other Reconcile operands, homologous comparison members and foreign selected sources do not grant movement. An ancestor is explored only when every reachable active head has an applicable personal encounter and no newly lawful advancing move. A new Cycle or field version is not an exploration reset.
+Current status is derived. Follow the complete authorized forward frontier within the acting Cycle's Region and Horizon; stop at Committal boundaries. Hard-superseded inputs are history, not independent heads. Local Reconcile results retain their existing Attestation routes through either local operand. Foreign Reconcile operands, homologous comparison members and foreign selected sources do not grant movement. An ancestor is explored only when every reachable active head has an applicable personal encounter and no newly lawful advancing move. A new Cycle or field version is not an exploration reset. A retired input with no active authorized head does not require an invented encounter and does not independently block Variant.
 
 Base action lawfulness precedes personal selection. Ordinary Attestation reversals remain lawful. They do not alone renew exploration or prevent Variant forever. Existing traversal opportunities use personal exploration; concrete Revise, Reconcile, Reclassify and Commit opportunities retain their existing structural, measurement, evidence and lifecycle authority. Fresh Variant is excluded from its own prerequisite frontier and is considered only after existing relevant heads are explored.
 
@@ -27,3 +27,9 @@ Rest publication is atomic with its existing completion transaction and unique b
 ## Implementation and validation
 
 Implementation and test results are recorded with the PR. Historical epoch-based reports describe the previous system and are not current eligibility contracts. The active source-provenance resolver is `StructuralSourceService`; no epoch identity or global spent predicate remains.
+
+The returning Mediate probe uses the Participant’s recorded Disperse arrival anchor, not the new Cycle’s absent Disperse Phase or another actor’s journey. Forward active-head discovery and historical arrival provenance serve different purposes.
+
+Comparison boundaries are batched by canonical position within the acting entry/Horizon. Directed incoming Bias relationships and used Reconcile pairs are queried in batches. Context-local terminal results are shared by Horizon; snapshot relations are populated from the existing batch. No persistent exploration cache or new observation counter is introduced.
+
+See [validation and acceptance coverage](participant-relative-exploration-validation.md) for exact results and remaining limitations.

@@ -49,9 +49,11 @@ final readonly class PhaseGenerationService
         if ($action === 'preparation.start' && ! app(PreparationService::class)->eligible($phase, $context)) {
             return false;
         }
-        if (in_array($action, ['proposition.variant', 'proposition.revise'], true)
-            && DB::table('tragedies')->where('governing_committal_id', $phase->cycle->entry_committal_id)->exists()) {
-            return false;
+        if (in_array($action, ['proposition.variant', 'proposition.revise'], true)) {
+            $terminalRegion = fn () => DB::table('tragedies')->where('governing_committal_id', $phase->cycle->entry_committal_id)->exists();
+            if ($context === null ? $terminalRegion() : $context->remember('generation-terminal-region:'.$phase->cycle->entry_committal_id, $terminalRegion)) {
+                return false;
+            }
         }
         $exhausted = app(ExhaustedContinuationService::class)->ids($phase, $context);
         if ($exhausted->has($phase->gate_proposition_id) || ($position !== null && $exhausted->has($position->id))) {
@@ -181,6 +183,9 @@ final readonly class PhaseGenerationService
             return collect();
         }
         $sources = $this->writes->forPhase($phase, $context)->pluck('id');
+        if ($sources->isEmpty()) {
+            return collect();
+        }
 
         return $this->positions->scope(Proposition::query()->active(), $phase, PhaseKind::Order, 'committal')->whereHas('commitmentSnapshot')
             ->whereHas('phase', fn ($query) => $query->where('kind', PhaseKind::Order->value)

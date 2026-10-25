@@ -71,9 +71,11 @@ final readonly class MediationReadService
 
         $pool = $this->regions->atPhasePosition($phase, $gate, PhaseKind::Disperse, $context, includeSuperseded: true);
 
-        return Proposition::query()->active()->whereKey($pool->pluck('id'))
-            ->whereHas('parents', fn ($query) => $query->whereKey($reads->pluck('id')))
-            ->orderBy('id')->get()->concat($this->homology->poolFor($phase, $context)['gates'])
+        $readIds = $reads->pluck('id')->flip();
+
+        return $context->nodes($pool->pluck('id'))->filter(fn ($node) => $context->activeIds->has($node->id)
+            && $context->parents->get($node->id, collect())->contains(fn ($edge) => $readIds->has($edge->source_proposition_id)))
+            ->sortBy('id')->concat($this->homology->poolFor($phase, $context)['gates'])
             ->unique('id')->sortBy('id')->values();
     }
 }

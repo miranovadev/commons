@@ -50,7 +50,7 @@ final class PropositionOptionService
             // route through it. The snapshot supplies the completed judgment;
             // another Participant must not mutate that source just to pass it.
             $commits = $this->generation->committedWrites($phase, $context);
-            $sources = Supersession::query()->where('type', 'commit')
+            $sources = $commits->isEmpty() ? collect() : Supersession::query()->where('type', 'commit')
                 ->whereIn('target_proposition_id', $commits->pluck('id'))->pluck('source_proposition_id');
             // The committed descendant stays viable, but its historical source
             // cannot regain Traverse authority after a direct terminal encounter.
@@ -150,6 +150,15 @@ final class PropositionOptionService
         if ($phase->kind === PhaseKind::Bias) {
             return $this->writes->forPhase($phase, $context);
         }
+        if ($context !== null) {
+            $completed = $context->remember('completed-cycle-gates:'.$phase->cycle_id,
+                fn () => $phase->cycle->phases()->whereNotNull('completed_at')->pluck('gate_proposition_id')->filter()->flip());
+
+            return $context->nodes($this->descendantIds($phase, $context))->filter(fn ($node) => $context->activeIds->has($node->id)
+                && $node->register === $phase->write_register && $node->tier === 'expressive'
+                && ! $completed->has($node->id)
+                && $node->phase->cycle->participant->substrate_id === $phase->cycle->participant->substrate_id)->sortBy('id')->values();
+        }
 
         return $this->writeDescendants($phase, $context)->orderBy('id')->get();
     }
@@ -189,6 +198,22 @@ final class PropositionOptionService
             return collect();
         }
 
+        if ($context !== null) {
+            $parents = $context->remember('propositions-with-children', fn () => Supersession::whereIn('source_proposition_id', $context->propositions->keys())
+                ->distinct()->pluck('source_proposition_id')->flip());
+            $refuted = $context->effectiveAttestations($context->propositions->keys())
+                ->filter(fn ($attestation) => $attestation->direction === 'refute'
+                    && $attestation->phase->cycle->participant_id === $participant->id
+                    && $attestation->phase->cycle->sequence < $phase->cycle->sequence)->pluck('proposition_id')->flip();
+            $terminal = app(ExhaustedContinuationService::class)->ids($phase, $context);
+
+            return $context->nodes($this->descendantIds($phase, $context))->filter(fn ($node) => $context->activeIds->has($node->id)
+                && ! $parents->has($node->id) && ! $terminal->has($node->id) && $refuted->has($node->id)
+                && $node->id !== $phase->gate_proposition_id && $node->register === $phase->write_register
+                && $node->tier === 'expressive' && $node->phase->cycle->participant_id === $participant->id)
+                ->sortByDesc('created_at')->values();
+        }
+
         $query = Proposition::query()->active()->whereDoesntHave('children')
             ->whereKey($this->descendantIds($phase, $context))
             ->where('register', $phase->write_register)
@@ -198,20 +223,11 @@ final class PropositionOptionService
                 'phase.cycle',
                 fn (Builder $query) => $query->whereBelongsTo($participant),
             );
-        if ($context !== null) {
-            $refuted = $context->effectiveAttestations($context->propositions->keys())
-                ->filter(fn ($attestation) => $attestation->direction === 'refute'
-                    && $attestation->phase->cycle->participant_id === $participant->id
-                    && $attestation->phase->cycle->sequence < $phase->cycle->sequence)
-                ->pluck('proposition_id');
-            $query->whereKey($refuted);
-        } else {
-            $query->whereHas('effectiveAttestations', fn (Builder $query) => $query
-                ->where('direction', 'refute')
-                ->whereHas('phase.cycle', fn (Builder $query) => $query
-                    ->whereBelongsTo($participant)
-                    ->where('sequence', '<', $phase->cycle->sequence)));
-        }
+        $query->whereHas('effectiveAttestations', fn (Builder $query) => $query
+            ->where('direction', 'refute')
+            ->whereHas('phase.cycle', fn (Builder $query) => $query
+                ->whereBelongsTo($participant)
+                ->where('sequence', '<', $phase->cycle->sequence)));
 
         return $query->latest('created_at')
             ->get()->reject(fn (Proposition $node) => app(ExhaustedContinuationService::class)->ids($phase, $context)->has($node->id))->values();

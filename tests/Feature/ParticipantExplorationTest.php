@@ -10,6 +10,7 @@ use App\Services\ContributionDispatcher;
 use App\Services\CorrespondenceGateService;
 use App\Services\EvidenceExecutionService;
 use App\Services\ExplorationEventService;
+use App\Services\HomologousMediationService;
 use App\Services\HorizonReceiptService;
 use App\Services\MediationAnchorService;
 use App\Services\MediationReadService;
@@ -24,6 +25,8 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\ExplorationHistory;
 use Tests\Fixtures\ParticipantExplorationFixture;
 use Tests\TestCase;
 
@@ -205,6 +208,12 @@ class ParticipantExplorationTest extends TestCase
             'gates' => app(MediationReadService::class)->gatesFor($terminal->fresh())->pluck('id'),
         ]));
         $this->assertFalse(app(ParticipantExplorationService::class)->explored($head, $return), 'The returning Cycle has no Disperse Phase; use the recorded personal arrival');
+        $service = app(HomologousMediationService::class);
+        $cold = $service->structuralPoolFor($terminal->fresh());
+        $batch = $service->structuralPoolsFor(collect([$terminal->fresh()]), new ParticipationContext($terminal->fresh()));
+        foreach (['reads', 'gates', 'population'] as $key) {
+            $this->assertSame($cold[$key]->pluck('id')->all(), $batch['homologous-mediate-structure:'.$terminal->id][$key]->pluck('id')->all());
+        }
         $this->assertDatabaseCount('exploration_events', 1);
     }
 
@@ -341,5 +350,32 @@ class ParticipantExplorationTest extends TestCase
         $this->returnAfterRest($terminal);
         $this->expectException(QueryException::class);
         DB::table('exploration_events')->where('phase_id', $terminal->id)->update(['observed_field_version' => 0]);
+    }
+
+    #[Group('query')]
+    public function test_cold_frontier_queries_are_batched_as_personal_heads_grow(): void
+    {
+        [, , $constrain, $head, $terminal] = $this->personalJourney();
+        $return = $this->returnAfterRest($terminal);
+        $ids = collect([$head->id]);
+        $counts = [];
+        foreach ([2, 8] as $size) {
+            while ($ids->count() < $size) {
+                $node = $this->node($this->phase($constrain, PhaseKind::Disperse), $constrain);
+                ExplorationHistory::record($node, $return);
+                $ids->push($node->id);
+            }
+            $context = new ParticipationContext($return);
+            DB::enableQueryLog();
+            DB::flushQueryLog();
+            app(ParticipantExplorationService::class)->exploredIds($return, $ids, $context);
+            $queries = DB::getQueryLog();
+            DB::disableQueryLog();
+            $counts[] = count($queries);
+            foreach ($queries as $query) {
+                $this->assertDoesNotMatchRegularExpression('/insert |update |delete |for update/i', $query['query']);
+            }
+        }
+        $this->assertLessThanOrEqual($counts[0], $counts[1], json_encode($counts));
     }
 }

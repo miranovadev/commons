@@ -122,6 +122,12 @@ final class ParticipantExplorationService
             if (! in_array('proposition.revise', config('phases.'.$head->phase->kind->value.'.actions', []), true)) {
                 return false;
             }
+            if ($head->phase->cycle->participant_id !== $acting->cycle->participant_id
+                || ! $context->effectiveAttestations(collect([$head->id]))->contains(fn ($vote) => $vote->direction === 'refute'
+                    && $vote->phase->cycle->participant_id === $acting->cycle->participant_id
+                    && $vote->phase->cycle->sequence < $acting->cycle->sequence)) {
+                return false;
+            }
             $source = app(StructuralSourceService::class)->forProposition($head, $context);
             $gate = $context->propositions->get($source['structural_source_id'] ?? null);
             if ($gate === null) {
@@ -162,35 +168,39 @@ final class ParticipantExplorationService
     private function withProbeBoundaries(Phase $phase, ParticipationContext $context, Collection $ids): ParticipationContext
     {
         return $context->remember('exploration-boundaries:'.$phase->id, function () use ($phase, $context, $ids): ParticipationContext {
+            $heads = $context->nodes($ids)->filter(fn ($head) => $head->tier === 'expressive'
+                && $head->phase->kind !== PhaseKind::Order
+                && $head->phase->cycle->context_horizon_id === $phase->cycle->context_horizon_id
+                && ($context->seedIds()[$head->id] ?? null) === $phase->cycle->entry_committal_id
+                && $this->heads($head->id, $phase, $context)->keys()->all() === [$head->id]);
+            $probes = $heads->map(fn ($head) => $this->probe($head, $phase, $context));
+            $mediate = $probes->filter(fn ($probe) => $probe->kind === PhaseKind::Mediate
+                && app(CorrespondenceGateService::class)->evaluate($probe->gate, $context)['admissible']);
+            $pools = $mediate->isEmpty() ? [] : app(HomologousMediationService::class)->structuralPoolsFor($mediate, $context);
             $additional = collect();
-            $pools = [];
-            foreach ($context->nodes($ids) as $head) {
-                if ($head->tier !== 'expressive' || $head->phase->kind === PhaseKind::Order
-                    || $head->phase->cycle->context_horizon_id !== $phase->cycle->context_horizon_id
-                    || ($context->seedIds()[$head->id] ?? null) !== $phase->cycle->entry_committal_id) {
+            foreach ($pools as $pool) {
+                $additional = $additional->merge($pool['reads']->pluck('id'))->merge($pool['gates']->pluck('id'));
+            }
+            foreach ([PhaseKind::Bias->value => HomologousBiasService::class, PhaseKind::Order->value => HomologousOrderService::class] as $kind => $service) {
+                $group = $probes->filter(fn ($probe) => $probe->kind->value === $kind);
+                if ($group->isEmpty()) {
                     continue;
                 }
-                $probe = $this->probe($head, $phase, $context);
-                if ($probe->kind === PhaseKind::Mediate) {
-                    $pool = app(HomologousMediationService::class)->structuralPoolFor($probe, $context);
-                    $additional = $additional->merge($pool['reads']->pluck('id'))->merge($pool['gates']->pluck('id'));
-                    $pools['homologous-mediate-structure:'.$probe->id] = $pool;
-                } elseif ($probe->kind === PhaseKind::Bias) {
-                    foreach (['homologous' => HomologousBiasService::class, 'mediated' => MediatedIncomingBiasService::class] as $name => $service) {
-                        $pool = app($service)->populationFor($probe, $context);
-                        $additional = $additional->merge($pool->pluck('id'));
-                        $pools[$name.'-bias-structure:'.$probe->id] = $pool;
-                    }
-                } elseif ($probe->kind === PhaseKind::Order) {
-                    $pool = app(HomologousOrderService::class)->populationFor($probe, $context);
-                    $additional = $additional->merge($pool->pluck('id'));
-                    $pools['homologous-order-structure:'.$probe->id] = $pool;
+                // Same entry, Domain and producing position have one canonical population.
+                $pool = app($service)->populationFor($group->first(), $context);
+                $additional = $additional->merge($pool->pluck('id'));
+                foreach ($group as $probe) {
+                    $prefix = $probe->kind === PhaseKind::Bias ? 'homologous-bias-structure:' : 'homologous-order-structure:';
+                    $pools[$prefix.$probe->id] = $pool;
                 }
             }
-            if ($additional->diff($context->propositions->keys())->isEmpty()) {
-                return $context;
+            $bias = $probes->filter(fn ($probe) => $probe->kind === PhaseKind::Bias);
+            foreach (app(MediatedIncomingBiasService::class)->populationsFor($bias, $context) as $key => $pool) {
+                $additional = $additional->merge($pool->pluck('id'));
+                $pools[$key] = $pool;
             }
-            $evaluation = new ParticipationContext($phase, $additional->unique()->values());
+            $evaluation = $additional->diff($context->propositions->keys())->isEmpty()
+                ? $context : new ParticipationContext($phase, $additional->unique()->values());
             foreach ($pools as $key => $pool) {
                 $evaluation->remember($key, fn () => $pool);
             }
