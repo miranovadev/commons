@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /** A slot is Horizon + producing kind + actual structural source, never a Phase occurrence. */
-final class ExplorationPositionService
+final class StructuralSourceService
 {
     public function forPhase(Phase $phase): array
     {
@@ -31,7 +31,7 @@ final class ExplorationPositionService
     public function forIds(Collection $ids, ?ParticipationContext $context = null): Collection
     {
         if ($context !== null && $ids->every(fn ($id) => $context->propositions->has($id))) {
-            return $context->remember('exploration-positions', fn () => $this->resolve(
+            return $context->remember('structural-sources', fn () => $this->resolve(
                 $context->propositions->map(fn ($node) => (object) [
                     'id' => $node->id, 'tier' => $node->tier, 'kind' => $node->phase->kind->value,
                     'context_horizon_id' => $node->phase->cycle->context_horizon_id,
@@ -67,7 +67,7 @@ final class ExplorationPositionService
                 return $resolved[$id];
             }
             if (isset($visiting[$id])) {
-                throw new DomainException('Exploration provenance contains a revision cycle.');
+                throw new DomainException('Structural provenance contains a revision cycle.');
             }
             $node = $nodes->get($id);
             if ($node === null || $node->tier !== 'expressive') {
@@ -78,12 +78,12 @@ final class ExplorationPositionService
             $revisions = $inputs->where('type', 'revise');
             if ($revisions->isNotEmpty()) {
                 if ($inputs->count() !== 1) {
-                    throw new DomainException('A revision must preserve one exploration position.');
+                    throw new DomainException('A revision must preserve one structural position.');
                 }
                 $position = $resolve($revisions->sole()->source_proposition_id);
                 if ($position !== null && ($position['context_horizon_id'] !== $node->context_horizon_id
                     || $position['structural_position'] !== (int) $node->kind)) {
-                    throw new DomainException('A revision cannot change its exploration position.');
+                    throw new DomainException('A revision cannot change its structural position.');
                 }
             } else {
                 // Selected Reclassify sources come from their edge, not an incidental Phase Gate.

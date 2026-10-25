@@ -4,9 +4,9 @@ namespace App\Services;
 
 use App\Enums\PhaseKind;
 use App\Models\Phase;
-use App\Models\Supersession;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 final readonly class ReconciliationOptionService
 {
@@ -19,6 +19,11 @@ final readonly class ReconciliationOptionService
             return collect();
         }
         $context ??= new ParticipationContext($phase);
+        $coherence = app(CorrespondenceGateService::class);
+        $current = $coherence->evaluate($context->proposition($phase->gate), $context);
+        if (! $current['admissible']) {
+            return collect();
+        }
         $exhausted = app(ExhaustedContinuationService::class)->ids($phase, $context);
         $gates = $this->mediation->gatesFor($phase, $context)->map(fn ($node) => $context->proposition($node))
             ->filter(fn ($node) => $this->availability->mutable($node, $context)
@@ -26,11 +31,6 @@ final readonly class ReconciliationOptionService
 
         // Population dominance has already selected Reads and their existing Gates.
         // Apply transition policy afterwards, without changing that population.
-        $coherence = app(CorrespondenceGateService::class);
-        $current = $coherence->evaluate($context->proposition($phase->gate), $context);
-        if (! $current['admissible']) {
-            return collect();
-        }
         $gates = $gates->filter(function ($node) use ($coherence, $current, $context): bool {
             $candidate = $coherence->evaluate($node, $context);
 
@@ -47,12 +47,16 @@ final readonly class ReconciliationOptionService
         $gates = $gates->reject(fn ($node) => $foreignExhausted->has($node->id));
 
         // The Phase Gate records dominance; parent ordering is not direction.
-        $used = Supersession::query()->where('type', 'reconcile')
-            ->whereHas('phase', fn ($query) => $query->where('kind', PhaseKind::Mediate->value)
-                ->where('gate_proposition_id', $phase->gate_proposition_id))
-            ->whereHas('target.parents', fn ($query) => $query->whereKey($phase->gate_proposition_id)
-                ->where('supersessions.type', 'reconcile'))
-            ->pluck('source_proposition_id');
+        $pairs = $context->remember('used-directed-reconciliations', fn () => DB::table('supersessions as edge')
+            ->join('phases as producer', 'producer.id', '=', 'edge.phase_id')
+            ->join('supersessions as dominant', fn ($join) => $join
+                ->on('dominant.target_proposition_id', '=', 'edge.target_proposition_id')
+                ->on('dominant.source_proposition_id', '=', 'producer.gate_proposition_id'))
+            ->where('edge.type', 'reconcile')->where('dominant.type', 'reconcile')
+            ->where('producer.kind', PhaseKind::Mediate->value)
+            ->whereIn('producer.gate_proposition_id', $context->propositions->keys())
+            ->get(['producer.gate_proposition_id', 'edge.source_proposition_id'])->groupBy('gate_proposition_id'));
+        $used = $pairs->get($phase->gate_proposition_id, collect())->pluck('source_proposition_id');
 
         return $gates->contains('id', $phase->gate_proposition_id)
             ? $gates->where('id', '!=', $phase->gate_proposition_id)->whereNotIn('id', $used)->values()

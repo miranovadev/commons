@@ -12,8 +12,8 @@ use App\Models\Tragedy;
 use App\Services\ContributionDispatcher;
 use App\Services\ExhaustionAuditService;
 use App\Services\ExhaustionService;
-use App\Services\ExplorationEpochService;
 use App\Services\HorizonReceiptService;
+use App\Services\ParticipantExplorationService;
 use App\Services\PotentialChargeService;
 use App\Services\ProjectionService;
 use App\Services\TragedyService;
@@ -111,17 +111,18 @@ class ChargeBoundaryTragedyTest extends TestCase
         $this->assertSame($this->origin->id, $tragedy->governing_committal_id);
     }
 
-    public function test_zero_potential_allows_further_spent_evidenced_variants_with_positive_charge(): void
+    public function test_zero_potential_allows_further_personally_explored_evidenced_variants_with_positive_charge(): void
     {
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
         $this->resolveExpressiveFieldFixture(.8);
         $first = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'No demonstrated tension reduction']);
         $this->explore($first);
-        DB::table('continuation_failures')->insert(['proposition_id' => $first->id,
-            'context_horizon_id' => $phase->cycle->context_horizon_id, 'structural_position' => $phase->kind->value,
-            'exploration_epoch' => app(ExplorationEpochService::class)->forPhase($phase),
-            'phase_id' => $phase->id, 'failed_at' => now()]);
+        // The boundary calculation does not own exploration. Supply a completed
+        // personal frontier here; real encounter publication has dedicated coverage.
+        $exploration = \Mockery::mock(new ParticipantExplorationService);
+        $exploration->shouldReceive('exploredIds')->andReturn(collect([$first->id => 0]));
+        $this->instance(ParticipantExplorationService::class, $exploration);
         $this->publishPotentialFixture($this->substrate);
         $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($phase));
         $second = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,

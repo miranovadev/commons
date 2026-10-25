@@ -102,7 +102,7 @@ final class ParticipantCognitiveProjection
         }
         // This existing resolver uses the producing Phase's recorded Gate for
         // Reconcile and returns null when that Gate does not identify an input.
-        $position = app(ExplorationPositionService::class)->forProposition($target);
+        $position = app(StructuralSourceService::class)->forProposition($target);
 
         return ($position['structural_position'] ?? null) === PhaseKind::Mediate->value
             ? $position['structural_source_id'] : null;

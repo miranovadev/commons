@@ -33,7 +33,7 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
             ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
             ->where('proposition.id', $snapshot->proposition_id)->first(['cycle.entry_committal_id']);
         $this->assertSame($origin, $producingCycle->entry_committal_id);
-        $this->assertGreaterThan(0, DB::table('continuation_failures')->count());
+        $this->assertGreaterThan(0, DB::table('exploration_events')->count());
         $this->assertSame([3, 6], DB::table('receipt_consumptions')->join('phases', 'phases.id', '=', 'receipt_consumptions.phase_id')
             ->distinct()->orderBy('kind')->pluck('kind')->all());
     }
@@ -108,7 +108,7 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
     }
 
     #[Group('constitutional')]
-    public function test_rest_rejects_productive_search_generation_and_accepts_a_structurally_spent_phase(): void
+    public function test_rest_rejects_productive_search_generation_and_accepts_a_personally_actionless_phase(): void
     {
         $this->startSubstrate();
         $actor = $this->joinParticipant('rest-reader');

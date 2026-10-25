@@ -51,7 +51,7 @@ export function writePropositions(plan: ParticipantPlan): Proposition[] {
     'proposition.commit',
   ] as ActionName[]).flatMap((action) => [...actionTargetIds(plan, action)]));
   return [...new Map([...(plan.write_options ?? []),
-    ...actionPropositions(plan, 'proposition.traverse')].filter((item) => actionable.has(item.id) || item.spent === true)
+    ...actionPropositions(plan, 'proposition.traverse')].filter((item) => actionable.has(item.id) || item.explored === true)
     .map((item) => [item.id, item])).values()];
 }
 

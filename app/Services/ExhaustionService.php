@@ -71,16 +71,6 @@ final class ExhaustionService
             ->addSelect(['exhaustion.exhausted_at', 'exhaustion.governing_committal_id']);
     }
 
-    public function inspect(Phase $phase): array
-    {
-        return app(HorizonFailureService::class)->inspect($phase);
-    }
-
-    public function publish(Phase $phase, array $proof): void
-    {
-        app(HorizonFailureService::class)->publish($phase, $proof);
-    }
-
     /** Caller owns the Substrate lock; publication and recursion share its transaction. */
     public function evaluate(Proposition $seed, string $encounterId, ?string $descendant = null): bool
     {

@@ -23,7 +23,6 @@ use App\Services\ChiralityPopulationHistoryService;
 use App\Services\CommitRegionService;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
-use App\Services\ExplorationPositionService;
 use App\Services\GraphProjectionService;
 use App\Services\HomeostaticDirectionService;
 use App\Services\HomologousBiasService;
@@ -54,6 +53,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\AssertsLatePhaseContract;
 use Tests\Fixtures\CreatesHomologousPositions;
+use Tests\Fixtures\ExplorationHistory;
 use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
@@ -347,7 +347,7 @@ class HomologousBiasTest extends TestCase
     }
 
     #[DataProvider('directions')]
-    public function test_spent_additional_gates_require_their_own_current_epoch_to_reopen(bool $sameRegion): void
+    public function test_personal_encounters_do_not_change_homologous_source_authority_or_population_math(bool $sameRegion): void
     {
         $this->warrant();
         $candidate = $sameRegion ? $this->source($this->a) : $this->gateB;
@@ -356,25 +356,14 @@ class HomologousBiasTest extends TestCase
         }
         $this->assertContains($candidate->id, $this->biasOptionIds());
         $field = app(HomeostaticDirectionService::class)->forPosition($this->gateA, 'chirality');
-        $position = app(ExplorationPositionService::class)->forProposition($candidate);
-        DB::table('continuation_failures')->insert([
-            'proposition_id' => $candidate->id, 'context_horizon_id' => $position['context_horizon_id'],
-            'structural_position' => $position['structural_position'], 'exploration_epoch' => 0,
-            'phase_id' => $candidate->phase_id, 'failed_at' => now(),
-        ]);
-        $failures = DB::table('continuation_failures')->get()->toJson();
+        ExplorationHistory::record($candidate);
+        $history = DB::table('exploration_events')->get()->toJson();
         foreach ([null, new ParticipationContext($this->bias)] as $context) {
-            $this->assertNotContains($candidate->id, $this->biasOptionIds($context));
+            $this->assertContains($candidate->id, $this->biasOptionIds($context));
             $this->assertContains($this->gateA->id, $this->biasOptionIds($context));
         }
         $this->assertSame($field->values, app(HomeostaticDirectionService::class)->forPosition($this->gateA, 'chirality')->values);
-        $this->reject($candidate);
-        $unrelated = app(ExplorationPositionService::class)->forProposition($this->gateC);
-        DB::table('horizon_exploration_states')->insert([...$unrelated, 'epoch' => 1]);
-        $this->assertNotContains($candidate->id, $this->biasOptionIds());
-        DB::table('horizon_exploration_states')->insert([...$position, 'epoch' => 1]);
-        $this->assertContains($candidate->id, $this->biasOptionIds());
-        $this->assertSame($failures, DB::table('continuation_failures')->get()->toJson());
+        $this->assertSame($history, DB::table('exploration_events')->get()->toJson());
         $this->assertSame($this->gateA->id, $this->actor->fresh()->current_proposition_id);
     }
 

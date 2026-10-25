@@ -16,15 +16,14 @@ use App\Services\BiasGateService;
 use App\Services\CommitRegionService;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
-use App\Services\ExplorationPositionService;
 use App\Services\GraphProjectionService;
 use App\Services\HomologousBiasService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\MediatedIncomingBiasService;
-use App\Services\ParticipationService;
 use App\Services\Participation\ParticipationContext;
+use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
@@ -34,6 +33,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\CreatesHomologousPositions;
+use Tests\Fixtures\ExplorationHistory;
 use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
@@ -41,8 +41,8 @@ use Tests\TestCase;
 #[Group('component-contract')]
 class MediatedIncomingBiasTest extends TestCase
 {
-    use IsolatesClosureOutput;
     use CreatesHomologousPositions, RefreshDatabase;
+    use IsolatesClosureOutput;
 
     private Proposition $a;
 
@@ -114,6 +114,9 @@ class MediatedIncomingBiasTest extends TestCase
         $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id], $result->parents()->pluck('propositions.id')->all());
         $this->assertSame(2, Supersession::where('target_proposition_id', $result->id)->where('type', 'reconcile')->count());
         $service = app(MediatedIncomingBiasService::class);
+        $batch = $service->populationsFor(collect([$this->bias]), new ParticipationContext($this->bias));
+        $this->assertSame($service->populationFor($this->bias)->pluck('id')->all(),
+            $batch['mediated-bias-structure:'.$this->bias->id]->pluck('id')->all());
         foreach ([null, new ParticipationContext($this->bias)] as $context) {
             $this->assertSame([$result->id], $service->forPhase($this->bias, $context)->pluck('id')->all());
             $this->assertFalse(app(HomologousBiasService::class)->forPhase($this->bias, $context)->contains('id', $result->id));
@@ -182,17 +185,12 @@ class MediatedIncomingBiasTest extends TestCase
         $this->assertSame([$this->result->id], $this->biasOptions()->pluck('id')->all());
     }
 
-    public function test_spent_and_exhausted_sources_do_not_gain_a_doorway_allowance(): void
+    public function test_personal_exploration_preserves_a_lawful_source_but_exhaustion_still_excludes_it(): void
     {
         $this->attestResult();
         $this->loadedReceiptFixture($this->gateB);
-        $position = app(ExplorationPositionService::class)->forProposition($this->result);
-        DB::table('continuation_failures')->insert(['proposition_id' => $this->result->id,
-            'context_horizon_id' => $position['context_horizon_id'], 'structural_position' => $position['structural_position'],
-            'exploration_epoch' => 0, 'phase_id' => $this->result->phase_id, 'failed_at' => now()]);
-        $this->assertTrue($this->biasOptions()->isEmpty());
-        DB::table('horizon_exploration_states')->insert([...$position, 'epoch' => 1]);
-        $this->assertCount(1, $this->biasOptions());
+        ExplorationHistory::record($this->result);
+        $this->assertCount(1, $this->biasOptions(), 'Another Participant encounter encounter cannot suppress this source');
         $tragedy = $this->boundaryTragedyFixture($this->result);
         $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $tragedy->governing_committal_id]);
         $this->assertTrue($this->biasOptions()->isEmpty());

@@ -1,0 +1,59 @@
+{
+  "complete": true,
+  "discovered": 34,
+  "executed": 34,
+  "passed": 31,
+  "failed": 3,
+  "skipped": [],
+  "assertions": 7194,
+  "failures": [
+    {
+      "test": "Tests\\Feature\\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit#0",
+      "kind": "failure"
+    },
+    {
+      "test": "Tests\\Feature\\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit#1",
+      "kind": "failure"
+    },
+    {
+      "test": "Tests\\Feature\\NaturalChargeBoundaryLifecycleTest::test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor",
+      "kind": "failure"
+    }
+  ],
+  "runtimes": [
+    {
+      "suite": "integration",
+      "shard": 1,
+      "shards": 4,
+      "selected_tests": 2,
+      "php_wall_seconds": 201.24395569299998,
+      "exit_code": 1
+    },
+    {
+      "suite": "integration",
+      "shard": 2,
+      "shards": 4,
+      "selected_tests": 8,
+      "php_wall_seconds": 430.461217188,
+      "exit_code": 0
+    },
+    {
+      "suite": "integration",
+      "shard": 3,
+      "shards": 4,
+      "selected_tests": 16,
+      "php_wall_seconds": 257.33560649000003,
+      "exit_code": 1
+    },
+    {
+      "suite": "integration",
+      "shard": 4,
+      "shards": 4,
+      "selected_tests": 8,
+      "php_wall_seconds": 311.139924116,
+      "exit_code": 0
+    }
+  ],
+  "revision": "b6e701d2c70be8adfeeed3685f3df216435091e7",
+  "run_url": "https://github.com/miranovadev/commons/actions/runs/40176884036"
+}

@@ -197,6 +197,19 @@ final readonly class InputSchemaService
             $schema['$defs']['actions']['attestation.create']['anyOf'] = $choices;
         }
 
+        // Forward movement and reconsideration may coexist with a qualified exploration Rest.
+        $generationOrAcquisition = array_diff(array_keys($schema['$defs']['actions']), ['proposition.traverse', 'attestation.create', 'proposition.revise']);
+        if ($generationOrAcquisition === [] && $schema['$defs']['actions'] !== []) {
+            $ids = collect($attestationOptionIds ?? $writeOptionIds)->merge($revisionOptionIds)->merge($traversalOptionIds)->unique();
+            $explored = app(ParticipantExplorationService::class)->exploredIds($occurrence, $ids, $context);
+            if ($ids->diff($explored->keys())->isEmpty()
+                || app(ExplorationEventService::class)->completionWitness($occurrence, $context ?? new ParticipationContext($occurrence)) !== null) {
+                $rest = $this->forPhase($kind, ['participant.rest']);
+                $schema['$defs']['actions']['participant.rest'] = $rest['$defs']['actions']['participant.rest'];
+                $schema['oneOf'][] = ['$ref' => '#/$defs/actions/participant.rest'];
+            }
+        }
+
         if ($schema['$defs']['actions'] === []) {
             return $this->withReceiptOptions($this->forPhase($kind, ['participant.rest']), $occurrence, $context);
         }
@@ -206,6 +219,12 @@ final readonly class InputSchemaService
 
     private function withReceiptOptions(array $schema, Phase $phase, ?ParticipationContext $context): array
     {
+        if (isset($schema['$defs']['actions']['participant.rest'])
+            && app(ContinuationOpportunityService::class)->pendingEvidence($phase, $context)) {
+            unset($schema['$defs']['actions']['participant.rest']);
+            $schema['oneOf'] = array_values(array_filter($schema['oneOf'],
+                fn ($option) => ($option['$ref'] ?? null) !== '#/$defs/actions/participant.rest'));
+        }
         $ids = $this->receipts->loadOptions($phase, $context)->pluck('id')->sort()->values()->all();
         $unloadIds = $this->receipts->unloadOptions($phase)->all();
         if ($ids === [] && $unloadIds === []) {

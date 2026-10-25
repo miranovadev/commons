@@ -7,6 +7,7 @@ use App\Enums\RestReason;
 use App\Models\Receipt;
 use App\Models\Tragedy;
 use App\Services\ExhaustionService;
+use App\Services\ExplorationEventService;
 use App\Services\HorizonReceiptService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Fixtures\ExhaustionFixture;
@@ -31,7 +32,7 @@ class HorizonTragedyTest extends TestCase
         // A pre-existing sibling retains Resolution and the ancestral entry.
         $this->node($this->phase($commit, PhaseKind::Distinguish), $commit);
         $this->boundaryTragedyFixture($phase->gate);
-        $proof = app(ExhaustionService::class)->inspect($phase);
+        $proof = app(ExplorationEventService::class)->inspect($phase);
         $this->rest($phase);
         $tragedy = Tragedy::sole();
         $receipt = Receipt::findOrFail($tragedy->receipt_id);
@@ -43,7 +44,7 @@ class HorizonTragedyTest extends TestCase
         $this->assertSame($commit->id, $phase->cycle->participant->fresh()->current_proposition_id);
         $this->assertTrue(app(HorizonReceiptService::class)->catalogue($phase)->contains('id', $receipt->id));
         $this->assertNull($phase->cycle->fresh()->recovery_proposition_id, 'Tragedy cannot override lineage recovery.');
-        app(ExhaustionService::class)->publish($phase, $proof);
+        app(ExplorationEventService::class)->publish($phase, $proof);
         $this->assertSame(1, Tragedy::count());
         $this->assertSame(1, Receipt::where('type', 'tragedy')->count());
         $this->assertArrayNotHasKey('statement', $receipt->metadata);

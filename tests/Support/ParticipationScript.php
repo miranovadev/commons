@@ -14,7 +14,7 @@ final class ParticipationScript
         $result['plan'] = $pick($plan, ['phase', 'provenance_id', 'gate_id', 'rest_available', 'rest_reason']);
         foreach (['lineage', 'read_options', 'gate_options', 'write_options', 'exhausted_alternatives'] as $population) {
             $result['plan'][$population] = array_map(static fn (array $card): array => $pick($card, [
-                'id', 'spent', 'exploration_epoch', 'continuation_exhausted', 'parent_ids',
+                'id', 'explored', 'continuation_exhausted', 'parent_ids',
                 'attestation_summary', 'attestation',
             ]), $plan[$population] ?? []);
         }

@@ -41,7 +41,7 @@ final readonly class PhaseGenerationService
         return in_array($action, ['instrument.execute', 'preparation.start'], true) ? ! $available : $available;
     }
 
-    public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null, bool $prepared = false): bool
+    public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null, bool $prepared = false, bool $withoutReceipt = false): bool
     {
         if (! $prepared && ! $this->epistemicActionAvailable($phase, $action, $context)) {
             return false;
@@ -49,9 +49,11 @@ final readonly class PhaseGenerationService
         if ($action === 'preparation.start' && ! app(PreparationService::class)->eligible($phase, $context)) {
             return false;
         }
-        if (in_array($action, ['proposition.variant', 'proposition.revise'], true)
-            && DB::table('tragedies')->where('governing_committal_id', $phase->cycle->entry_committal_id)->exists()) {
-            return false;
+        if (in_array($action, ['proposition.variant', 'proposition.revise'], true)) {
+            $terminalRegion = fn () => DB::table('tragedies')->where('governing_committal_id', $phase->cycle->entry_committal_id)->exists();
+            if ($context === null ? $terminalRegion() : $context->remember('generation-terminal-region:'.$phase->cycle->entry_committal_id, $terminalRegion)) {
+                return false;
+            }
         }
         $exhausted = app(ExhaustedContinuationService::class)->ids($phase, $context);
         if ($exhausted->has($phase->gate_proposition_id) || ($position !== null && $exhausted->has($position->id))) {
@@ -68,7 +70,7 @@ final readonly class PhaseGenerationService
         }
         if ($action === 'proposition.reclassify' && $phase->kind === PhaseKind::Bias && $position === null) {
             return app(BiasGateService::class)->operationalFor($phase, $context)
-                ->contains(fn (Proposition $candidate) => $this->available($phase, $action, $context, $candidate));
+                ->contains(fn (Proposition $candidate) => $this->available($phase, $action, $context, $candidate, withoutReceipt: $withoutReceipt));
         }
         if (! in_array($action, ['proposition.variant', 'proposition.reclassify', 'proposition.commit'], true)) {
             // Mediate owns a directed relationship, rather than a personal quota.
@@ -106,9 +108,9 @@ final readonly class PhaseGenerationService
             $existing = $context !== null
                 ? $context->classifications->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->isNotEmpty()
                 : DB::table('reclassification_results')->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->exists();
-            if ($existing || ($phase->kind === PhaseKind::Bias
+            if ($existing || (! $withoutReceipt && ($phase->kind === PhaseKind::Bias
                 ? app(BiasReceiptAuthorityService::class)->receiptsFor($phase, $gate, $context)
-                : app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context))->isEmpty()
+                : app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context))->isEmpty())
                 || $this->state->attestations(collect([$gate]), $context)->isEmpty()) {
                 return false;
             }
@@ -137,13 +139,18 @@ final readonly class PhaseGenerationService
             if ($existing->isEmpty()) {
                 return true;
             }
+            $context ??= new ParticipationContext($phase);
+            $existing = $existing->filter(fn ($id) => app(ParticipantExplorationService::class)->heads($id, $phase, $context)->isNotEmpty());
+            if ($existing->isEmpty()) {
+                return true;
+            }
             if ($action !== 'proposition.variant') {
                 return false;
             }
-            $spent = app(ExplorationEpochService::class)->failuresFor($phase, $existing, $context)->keys();
-            if ($existing->diff($spent)->isNotEmpty()) {
-                // Evidence alone does not prove downstream failure. Keep using
-                // healthy continuations; do not assign Variant a priority.
+            $explored = app(ParticipantExplorationService::class)->exploredIds($phase, $existing, $context)->keys();
+            if ($existing->diff($explored)->isNotEmpty()) {
+                // Every existing reachable active head must be personally explored
+                // before considering fresh generation. Variant is not its own prerequisite.
                 return false;
             }
             if (in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)) {
@@ -176,6 +183,9 @@ final readonly class PhaseGenerationService
             return collect();
         }
         $sources = $this->writes->forPhase($phase, $context)->pluck('id');
+        if ($sources->isEmpty()) {
+            return collect();
+        }
 
         return $this->positions->scope(Proposition::query()->active(), $phase, PhaseKind::Order, 'committal')->whereHas('commitmentSnapshot')
             ->whereHas('phase', fn ($query) => $query->where('kind', PhaseKind::Order->value)

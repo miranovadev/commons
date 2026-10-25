@@ -11,12 +11,15 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Supersession;
 use App\Services\ClosureGateService;
+use App\Services\ContinuationOpportunityService;
 use App\Services\ContributionDispatcher;
+use App\Services\ExplorationEventService;
 use App\Services\HomologousOrderService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\Observables\CommittalLineageService;
 use App\Services\ParticipantContextSerializer;
+use App\Services\ParticipantExplorationService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
@@ -34,8 +37,8 @@ use Tests\TestCase;
 #[Group('component-contract')]
 class HomologousOrderTest extends TestCase
 {
-    use IsolatesClosureOutput;
     use CreatesHomologousPositions;
+    use IsolatesClosureOutput;
     use RefreshDatabase;
 
     private Proposition $origin;
@@ -181,6 +184,49 @@ class HomologousOrderTest extends TestCase
         $this->expectException(DomainException::class);
         app(ContributionDispatcher::class)->dispatch($this->actor, $this->order,
             ['action' => 'proposition.commit', 'proposition_id' => $this->gate->id]);
+    }
+
+    public function test_navigation_only_head_can_complete_exploration_without_losing_homologous_traverse(): void
+    {
+        // Authored component geometry with real arrival, qualified Rest and event publication.
+        // The natural Commit suites separately prove full unmocked history.
+        Phase::query()->update(['completed_at' => now()]);
+        Cycle::query()->update(['completed_at' => now()]);
+        $stance = $this->position($this->a, PhaseKind::Mediate);
+        $this->edge($this->a, $stance, 'variant');
+        $bias = $this->phase($this->a, $stance, PhaseKind::Bias);
+        $head = (new Proposition)->forceFill(['phase_id' => $bias->id, 'tier' => 'expressive',
+            'register' => $bias->write_register, 'statement' => 'A tested local head']);
+        $head->save();
+        app(LedgerService::class)->record($head);
+        $this->edge($stance, $head, 'reclassify');
+        $this->groundFixture($head);
+        $this->mock(ClosureGateService::class, function ($mock): void {
+            $mock->shouldReceive('preview')->andReturn((new ClosureValues(.5, -.5))->resolve());
+        });
+        $order = app(PhaseProgressionService::class)->advance($bias, $head);
+        $this->publishPotentialFixture($this->actor);
+        $plan = app(InputPlanService::class)->forPhase($this->actor->fresh(), $order);
+        $actions = $plan['schema']['$defs']['actions'];
+        $this->assertArrayNotHasKey('proposition.commit', $actions);
+        $this->assertSame([$this->negative->id], $actions['proposition.traverse']['properties']['proposition_id']['enum']);
+        $this->assertArrayHasKey('participant.rest', $actions);
+        $workspace = app(InputPlanService::class)->forPhase($this->actor->fresh(), $order, workspace: true);
+        $this->assertSame($plan['schema'], $workspace['schema'], 'Human and autonomous plans share the generation/movement distinction');
+        $this->assertFalse(app(ContinuationOpportunityService::class)->nonVariantGenerationAvailable($order));
+        $this->assertNotNull(app(ExplorationEventService::class)->inspect($order)['witness']);
+        $before = [Proposition::count(), Supersession::count(), DB::table('receipt_consumptions')->count()];
+        app(ParticipationService::class)->contribute($this->actor->fresh(), $order->id, ['action' => 'participant.rest']);
+        $this->assertDatabaseHas('exploration_events', ['phase_id' => $order->id, 'proposition_id' => $head->id]);
+        $history = DB::table('exploration_events')->get()->toJson();
+        foreach ([null, new ParticipationContext($order->fresh())] as $context) {
+            $this->assertContains($this->negative->id, app(PropositionOptionService::class)->traversalOptionsFor($order->fresh(), $context)->pluck('id'));
+            $this->assertTrue(app(ParticipantExplorationService::class)->explored($head, $order->fresh(), $context), 'Movement alone cannot reopen this head');
+        }
+        $this->assertSame($history, DB::table('exploration_events')->get()->toJson());
+        $this->assertSame($before, [Proposition::count(), Supersession::count(), DB::table('receipt_consumptions')->count()]);
+        $this->assertDatabaseCount('tragedies', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
     }
 
     public function test_homologous_traverse_completes_cycle_and_enters_selected_committal_without_edges(): void
