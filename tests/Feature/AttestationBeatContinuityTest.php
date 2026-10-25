@@ -489,7 +489,10 @@ class AttestationBeatContinuityTest extends TestCase
         $this->act($a);
         $last = $a;
         $counts = [];
+        $profile = [];
+        $hops = 0;
         foreach ([2, 20] as $length) {
+            $hops += $length;
             for ($i = 0; $i < $length; $i++) {
                 $last = $this->child($last, $origin, newCycle: false);
             }
@@ -497,10 +500,28 @@ class AttestationBeatContinuityTest extends TestCase
             DB::flushQueryLog();
             $selected = app(ActiveCadenceLineageService::class)->reference($last);
             $counts[] = count(DB::getQueryLog());
+            $profile[] = ['unattested_hops' => $hops,
+                'queries' => count(DB::getQueryLog()), 'sql_ms' => array_sum(array_column(DB::getQueryLog(), 'time'))];
             DB::disableQueryLog();
             $this->assertSame([0, 0], array_column($selected['reference'], 'interval'));
         }
         $this->assertSame([1, 1], $counts);
+        // Once the nearest active predecessor owns two intervals, SQL must stop
+        // there too; constant query count must not hide a full ancestry scan.
+        $this->act($last);
+        $this->act($last);
+        $child = $this->child($last, $origin, newCycle: false);
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $selected = app(ActiveCadenceLineageService::class)->reference($child);
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+        $this->assertCount(1, $queries);
+        $this->assertSame([$last->id, $last->id], array_column($selected['reference'], 'proposition_id'));
+        $this->assertCount(2, DB::select($queries[0]['query'], $queries[0]['bindings']));
+        $profile[] = ['nearest_predecessor_has_two_intervals' => true, 'queries' => 1,
+            'returned_positions' => 2, 'sql_ms' => $queries[0]['time']];
+        fwrite(STDERR, 'CADENCE_SELECTION_PERFORMANCE '.json_encode($profile, JSON_THROW_ON_ERROR).PHP_EOL);
     }
 
     public function test_cycle_completion_does_not_move_its_recorded_entry(): void

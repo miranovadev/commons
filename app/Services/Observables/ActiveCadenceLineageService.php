@@ -26,16 +26,24 @@ final readonly class ActiveCadenceLineageService
             throw new DomainException('Cadence birth reference requires the selected local source edge.');
         }
         $rows = collect(DB::select(<<<'SQL'
-            WITH RECURSIVE selected(id) AS (
-                SELECT id FROM propositions WHERE id = ?
+            WITH RECURSIVE selected(id, samples) AS (
+                SELECT id, 0 FROM propositions WHERE id = ?
                 UNION
-                SELECT edge.source_proposition_id
+                SELECT edge.source_proposition_id,
+                    selected.samples + CASE WHEN predecessor.tier = 'expressive'
+                        AND NOT EXISTS (SELECT 1 FROM supersessions replacement
+                            WHERE replacement.source_proposition_id = predecessor.id AND replacement.type <> 'variant')
+                        THEN CASE WHEN json_array_length(history.intervals) >= 2 THEN 2
+                            ELSE COALESCE(json_array_length(history.intervals), 0) END
+                        ELSE 0 END
                 FROM selected
                 JOIN propositions current ON current.id = selected.id
                 LEFT JOIN proposition_attestation_cursors cursor ON cursor.proposition_id = current.id
                 JOIN supersessions edge ON edge.id = COALESCE(cursor.source_supersession_id, CASE WHEN current.id = ? THEN ? ELSE NULL END)
                     AND edge.target_proposition_id = current.id
-                WHERE current.tier = 'expressive'
+                JOIN propositions predecessor ON predecessor.id = edge.source_proposition_id
+                LEFT JOIN local_chirality_states history ON history.proposition_id = predecessor.id
+                WHERE current.tier = 'expressive' AND selected.samples < 2
             )
             SELECT node.id, node.tier, edge.source_proposition_id AS predecessor_id,
                 cursor.beat_sequence, cursor.attestation_id, beat.proposition_id AS beat_owner_id,

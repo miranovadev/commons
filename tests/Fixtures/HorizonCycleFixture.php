@@ -9,6 +9,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\ReceiptConsumption;
 use App\Models\Substrate;
+use App\Models\Supersession;
 use App\Services\ChiralityGateService;
 use App\Services\Evidence\ArtifactStore;
 use App\Services\Evidence\HyperlinkIdentity;
@@ -22,7 +23,7 @@ use Carbon\CarbonImmutable;
 
 trait HorizonCycleFixture
 {
-    protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0, int $actionBudget = 100, ?string $expressiveDirection = null, ?callable $recordAction = null): Proposition
+    protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0, int $actionBudget = 100, ?string $expressiveDirection = null, ?callable $recordAction = null, ?string $mediateDirection = null): Proposition
     {
         // Preserve real immutable material for the activated reading workflow.
         $this->app->bind(HyperlinkVerifier::class, function ($app) {
@@ -62,11 +63,11 @@ trait HorizonCycleFixture
         }
 
         return $this->driveAuthorisedCycle($participants, $originId, $originDirection,
-            $observe, $additionalEntrants, $actionBudget, $expressiveDirection, $recordAction);
+            $observe, $additionalEntrants, $actionBudget, $expressiveDirection, $recordAction, $mediateDirection);
     }
 
     /** Continue actual active participation; never seed or request a Domain/depth. */
-    protected function driveAuthorisedCycle(array $participants, string $entryId, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0, int $actionBudget = 100, ?string $expressiveDirection = null, ?callable $recordAction = null): Proposition
+    protected function driveAuthorisedCycle(array $participants, string $entryId, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0, int $actionBudget = 100, ?string $expressiveDirection = null, ?callable $recordAction = null, ?string $mediateDirection = null): Proposition
     {
         $service = app(ParticipationService::class);
         $participantCount = count($participants);
@@ -86,13 +87,27 @@ trait HorizonCycleFixture
             }
             $needsEvidence = app(HorizonReceiptService::class)
                 ->ordinaryAvailable(Phase::findOrFail($plan['phase']['id']))->isEmpty();
-            $preferredJudgment = collect($actions['attestation.create']['anyOf'] ?? [])
-                ->contains(fn ($choice) => $choice['properties']['direction']['enum'][0] === ($expressiveDirection ?? $originDirection));
-            // Judge an existing Write before generating another reconciliation.
-            // At entry, reconsider an existing route when neither the preferred
-            // judgment nor fresh generation is available. New structure elsewhere
-            // no longer resets personal encounters through an Exploration Epoch.
-            // Acquisition no longer selects/advances through an unjudged Write.
+            $judgment = $plan['phase']['number'] === 5 && $mediateDirection !== null
+                ? $mediateDirection : ($expressiveDirection ?? $originDirection);
+            $choices = collect($actions['attestation.create']['anyOf'] ?? []);
+            $classifiedChoice = null;
+            $classifiedTarget = null;
+            if ($plan['phase']['number'] === 5 && $mediateDirection !== null) {
+                $targets = $choices->flatMap(fn ($choice) => $choice['properties']['proposition_id']['enum']);
+                $classified = Supersession::where('type', 'reclassify')->whereIn('source_proposition_id', $targets)
+                    ->pluck('source_proposition_id');
+                $classifiedChoice = $choices->first(fn ($choice) => $classified->intersect($choice['properties']['proposition_id']['enum'])->isNotEmpty());
+                if ($classifiedChoice !== null) {
+                    $classifiedTarget = collect($classifiedChoice['properties']['proposition_id']['enum'])->intersect($classified)->first();
+                }
+            }
+            $preferredJudgment = $classifiedChoice !== null || $choices
+                ->contains(fn ($choice) => $choice['properties']['direction']['enum'][0] === $judgment);
+            // This authored policy can Support a Mediate synthesis while retaining
+            // skeptical development elsewhere. Continuous Cadence no longer makes
+            // every new synthesis immature. Revisit an offered classification route
+            // before judging another Mediate branch; eligibility is unchanged.
+            // The original aligned driver retains its entry-only reconsideration.
             $action = collect(['preparation.start', 'instrument.execute', 'proposition.commit', 'proposition.reclassify', 'attestation.create',
                 'proposition.variant', 'proposition.reconcile', 'proposition.traverse', 'participant.rest'])
                 ->first(fn ($candidate) => isset($actions[$candidate])
@@ -120,9 +135,9 @@ trait HorizonCycleFixture
                 $input['instrument'] = ['kind' => 'hyperlink', 'reference' => 'https://example.test/evidence/'.$step];
             }
             if ($action === 'attestation.create') {
-                $choice = collect($definition['anyOf'])->first(fn ($choice) => $choice['properties']['direction']['enum'][0] === ($expressiveDirection ?? $originDirection))
+                $choice = $classifiedChoice ?? collect($definition['anyOf'])->first(fn ($choice) => $choice['properties']['direction']['enum'][0] === $judgment)
                     ?? $definition['anyOf'][0];
-                $input['proposition_id'] = $choice['properties']['proposition_id']['enum'][0];
+                $input['proposition_id'] = $classifiedTarget ?? $choice['properties']['proposition_id']['enum'][0];
                 $input['direction'] = $choice['properties']['direction']['enum'][0];
             }
             $trace[] = [$state['cycle']['sequence'], $plan['phase']['number'], $action, $input['direction'] ?? null, $plan['rest_reason'] ?? null];

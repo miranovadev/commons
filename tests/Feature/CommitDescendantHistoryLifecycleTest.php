@@ -32,13 +32,9 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
     public function test_real_commit_descendant_resets_evidence_and_searches_selected_history_without_authority(): void
     {
         $gates = [];
-        $otherOperand = null;
-        $commit = $this->driveHorizonCycle(realClosure: true, actionBudget: 101, expressiveDirection: 'refute',
-            recordAction: function ($participant, $state, $input, $result) use (&$gates, &$otherOperand): void {
+        $commit = $this->driveHorizonCycle(realClosure: true, actionBudget: 101, expressiveDirection: 'refute', mediateDirection: 'support',
+            recordAction: function ($participant, $state, $input, $result) use (&$gates): void {
                 $gates[$state['plan']['phase']['number']] = $state['plan']['gate_id'];
-                if ($input['action'] === 'proposition.reconcile') {
-                    $otherOperand = $input['other_proposition_id'];
-                }
             });
         $actor = Participant::sole();
         $source = $commit->commitSources()->sole();
@@ -85,7 +81,13 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
             ['kind' => 'proposition_search', 'limit' => 10]);
         $this->assertSame($expected, array_column($search->results, 'proposition_id'));
         $this->assertSame([2, 3, 4, 5, 6, 7], array_column($search->results, 'lineage_distance'));
-        $this->assertNotNull($otherOperand);
+        // The committed route can revisit an earlier synthesis. Its unselected
+        // operand is not necessarily the operand of the last Reconcile anywhere.
+        $operands = Supersession::where('type', 'reconcile')->where('target_proposition_id', $gates[6])
+            ->pluck('source_proposition_id');
+        $this->assertCount(2, $operands);
+        $this->assertContains($gates[5], $operands);
+        $otherOperand = $operands->reject(fn ($id) => $id === $gates[5])->sole();
         $this->assertNotContains($otherOperand, $expected, 'Reconcile does not import the other branch into selected history.');
         $this->assertNotContains($origin->id, array_column($search->results, 'proposition_id'));
         $this->assertSame('settlement', $search->domain);

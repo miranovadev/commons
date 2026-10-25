@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\CanonicalMeasurement;
+use App\Models\Receipt;
 use App\Services\AttestationEvidenceService;
 use App\Services\CommitRegionPolarityService;
 use App\Services\Observables\ObservableService;
@@ -13,7 +14,7 @@ use Tests\Fixtures\HorizonCycleFixture;
 use Tests\Support\RefreshEvidenceDatabase as RefreshDatabase;
 use Tests\TestCase;
 
-/** Independent skeptical-development transcript; the historical aligned transcript is unchanged. */
+/** Skeptical development with supportive synthesis; the historical aligned transcript is unchanged. */
 #[Group('integration')]
 class CommitSourceHistoryLifecycleTest extends TestCase
 {
@@ -24,7 +25,7 @@ class CommitSourceHistoryLifecycleTest extends TestCase
         $actions = [];
         $reconciles = 0;
         $commit = $this->driveHorizonCycle(realClosure: true, originDirection: 'support',
-            actionBudget: 101, expressiveDirection: 'refute',
+            actionBudget: 101, expressiveDirection: 'refute', mediateDirection: 'support',
             recordAction: function ($participant, $state, $input, $result) use (&$actions, &$reconciles): void {
                 $actions[] = ['cycle' => $state['cycle']['sequence'], 'phase' => $state['plan']['phase']['number'],
                     'gate_id' => $state['plan']['gate_id'], 'input' => $input,
@@ -69,7 +70,9 @@ class CommitSourceHistoryLifecycleTest extends TestCase
         }
         file_put_contents($directory.'/lawful-commit-history.json', json_encode([
             'origin_direction' => 'support', 'expressive_direction_preference' => 'refute',
+            'mediate_direction_preference' => 'support',
             'reconciles_verified' => $reconciles, 'actions' => $actions, 'source_id' => $source->id, 'commit_id' => $commit->id,
+            'receipts_in_creation_order' => Receipt::orderBy('id')->pluck('id')->all(),
             'source_closure' => $closure->stored($source),
             'snapshot' => $commit->commitmentSnapshot->getAttributes(),
         ], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION));
