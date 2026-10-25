@@ -56,4 +56,4 @@ This remains a fresh/prospective-state implementation. Existing historical subst
 
 The unchanged `LocalChiralityCalculator` remains the only formula authority. `LocalChiralityStateService` changes only its Cadence inputs. `AttestationBeatCursorService` retains selected provenance and applies the same active selection to inherited beats. No frontend field/type or public action schema changes are required.
 
-Validation and any consequential fixture/trajectory changes will be recorded with this PR.
+The [validation report](active-causal-attestation-cadence-validation.md) records the final tested revision, normative inputs, natural Commit/recovery repairs, additive migration, measured costs and exact remaining baseline failures.

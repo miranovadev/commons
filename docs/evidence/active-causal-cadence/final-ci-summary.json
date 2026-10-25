@@ -1,0 +1,525 @@
+{
+  "baseline": "231dbd8498d75cd8a280f17bd5edb0a4a39a5629",
+  "revision": "aecd7b1acccf081111f1547403700c9ff2f6884c",
+  "runs": [
+    {
+      "run": 40189512172,
+      "name": "Core",
+      "url": "https://github.com/miranovadev/commons/actions/runs/40189512172",
+      "jobs": [
+        {
+          "job": 121157373590,
+          "name": "Frontend build and contracts",
+          "result": "success",
+          "results": [
+            "ℹ tests 148"
+          ]
+        },
+        {
+          "job": 121157558108,
+          "name": "core (2) / PHP / PostgreSQL (2/5)",
+          "result": "success",
+          "results": [
+            "CADENCE_SELECTION_PERFORMANCE [{\"unattested_hops\":2,\"queries\":1,\"sql_ms\":2.48},{\"unattested_hops\":22,\"queries\":1,\"sql_ms\":3.41},{\"nearest_predecessor_has_two_intervals\":true,\"queries\":1,\"returned_positions\":2,\"sql_ms\":2.57}]",
+            "  Tests:    298 passed (2676 assertions)",
+            "  Duration: 376.46s"
+          ]
+        },
+        {
+          "job": 121157558133,
+          "name": "core (5) / PHP / PostgreSQL (5/5)",
+          "result": "success",
+          "results": [
+            "  Tests:    297 passed (3805 assertions)",
+            "  Duration: 377.55s"
+          ]
+        },
+        {
+          "job": 121157558163,
+          "name": "core (3) / PHP / PostgreSQL (3/5)",
+          "result": "failure",
+          "results": [
+            "   FAILED  Tests\\Feature\\ChargeBoundaryTragedyTest > ordinary unmocked obser…   ",
+            "  Tests:    1 failed, 314 passed (3010 assertions)",
+            "  Duration: 334.59s"
+          ]
+        },
+        {
+          "job": 121157558164,
+          "name": "core (1) / PHP / PostgreSQL (1/5)",
+          "result": "success",
+          "results": [
+            "  Tests:    14 passed (46 assertions)",
+            "  Duration: 5.30s",
+            "  Tests:    248 passed (2876 assertions)",
+            "  Duration: 488.98s"
+          ]
+        },
+        {
+          "job": 121157558291,
+          "name": "core (4) / PHP / PostgreSQL (4/5)",
+          "result": "success",
+          "results": [
+            "  Tests:    357 passed (3222 assertions)",
+            "  Duration: 328.29s"
+          ]
+        }
+      ]
+    },
+    {
+      "run": 40189513019,
+      "name": "Integration",
+      "url": "https://github.com/miranovadev/commons/actions/runs/40189513019",
+      "jobs": [
+        {
+          "job": 121157398760,
+          "name": "integration (3) / PHP / PostgreSQL (3/4)",
+          "result": "failure",
+          "results": [
+            "   FAILED  Tests\\Feature\\NaturalChargeBoundaryLifecycleTest > two participan…   ",
+            "  Tests:    1 failed, 15 passed (2859 assertions)",
+            "  Duration: 324.20s"
+          ]
+        },
+        {
+          "job": 121157398816,
+          "name": "integration (2) / PHP / PostgreSQL (2/4)",
+          "result": "success",
+          "results": [
+            "  Tests:    8 passed (2015 assertions)",
+            "  Duration: 352.41s"
+          ]
+        },
+        {
+          "job": 121157398867,
+          "name": "integration (4) / PHP / PostgreSQL (4/4)",
+          "result": "success",
+          "results": [
+            "  Tests:    8 passed (1878 assertions)",
+            "  Duration: 363.76s"
+          ]
+        },
+        {
+          "job": 121157398925,
+          "name": "integration (1) / PHP / PostgreSQL (1/4)",
+          "result": "failure",
+          "results": [
+            "   FAILED  Tests\\Feature\\FreshBootstrapTest > explicit…  AssertionFailedError   ",
+            "   FAILED  Tests\\Feature\\FreshBootstrapTest > explicit…  AssertionFailedError   ",
+            "  Tests:    2 failed (208 assertions)",
+            "  Duration: 152.06s"
+          ]
+        },
+        {
+          "job": 121158891215,
+          "name": "summary",
+          "result": "failure",
+          "results": []
+        }
+      ]
+    },
+    {
+      "run": 40189512189,
+      "name": "Phase Profile contracts",
+      "url": "https://github.com/miranovadev/commons/actions/runs/40189512189",
+      "jobs": [
+        {
+          "job": 121157309060,
+          "name": "focused (sqlite, contracts)",
+          "result": "success",
+          "results": [
+            "  Tests:    48 passed (300 assertions)",
+            "  Duration: 11.87s",
+            "  Tests:    15 passed (90 assertions)",
+            "  Duration: 2.61s",
+            "CADENCE_SELECTION_PERFORMANCE [{\"unattested_hops\":2,\"queries\":1,\"sql_ms\":0.19},{\"unattested_hops\":22,\"queries\":1,\"sql_ms\":0.3},{\"nearest_predecessor_has_two_intervals\":true,\"queries\":1,\"returned_positions\":2,\"sql_ms\":0.18}]",
+            "  Tests:    142 passed (2036 assertions)",
+            "  Duration: 29.00s"
+          ]
+        },
+        {
+          "job": 121157309133,
+          "name": "focused (pgsql, final-review)",
+          "result": "success",
+          "results": [
+            "  Tests:    50 passed (493 assertions)",
+            "  Duration: 199.92s"
+          ]
+        },
+        {
+          "job": 121157309159,
+          "name": "focused (pgsql, committed-history)",
+          "result": "success",
+          "results": [
+            "  Tests:    1 passed (113 assertions)",
+            "  Duration: 79.75s"
+          ]
+        },
+        {
+          "job": 121157309169,
+          "name": "focused (sqlite, final-review)",
+          "result": "success",
+          "results": [
+            "  Tests:    50 passed (493 assertions)",
+            "  Duration: 45.25s"
+          ]
+        },
+        {
+          "job": 121157309180,
+          "name": "focused (sqlite, lifecycle)",
+          "result": "success",
+          "results": [
+            "  Tests:    1 passed (96 assertions)",
+            "  Duration: 31.56s"
+          ]
+        },
+        {
+          "job": 121157309182,
+          "name": "focused (sqlite, committed-history)",
+          "result": "success",
+          "results": [
+            "  Tests:    1 passed (113 assertions)",
+            "  Duration: 30.76s"
+          ]
+        },
+        {
+          "job": 121157309191,
+          "name": "focused (sqlite, stage-four)",
+          "result": "success",
+          "results": [
+            "  Tests:    32 passed (132 assertions)",
+            "  Duration: 5.19s"
+          ]
+        },
+        {
+          "job": 121157309203,
+          "name": "focused (pgsql, fixtures)",
+          "result": "success",
+          "results": [
+            "  Tests:    175 passed (2065 assertions)",
+            "  Duration: 201.03s"
+          ]
+        },
+        {
+          "job": 121157309221,
+          "name": "focused (sqlite, fixtures)",
+          "result": "success",
+          "results": [
+            "  Tests:    2 skipped, 173 passed (2059 assertions)",
+            "  Duration: 38.26s"
+          ]
+        },
+        {
+          "job": 121157309248,
+          "name": "focused (pgsql, lifecycle)",
+          "result": "success",
+          "results": [
+            "  Tests:    1 passed (96 assertions)",
+            "  Duration: 96.24s"
+          ]
+        },
+        {
+          "job": 121157309251,
+          "name": "focused (pgsql, stage-four)",
+          "result": "success",
+          "results": [
+            "  Tests:    32 passed (132 assertions)",
+            "  Duration: 38.79s",
+            "  Tests:    2 passed (19 assertions)",
+            "  Duration: 4.52s"
+          ]
+        },
+        {
+          "job": 121157309311,
+          "name": "focused (pgsql, contracts)",
+          "result": "success",
+          "results": [
+            "  Tests:    48 passed (300 assertions)",
+            "  Duration: 45.29s",
+            "  Tests:    15 passed (90 assertions)",
+            "  Duration: 9.69s",
+            "CADENCE_SELECTION_PERFORMANCE [{\"unattested_hops\":2,\"queries\":1,\"sql_ms\":2.14},{\"unattested_hops\":22,\"queries\":1,\"sql_ms\":2.68},{\"nearest_predecessor_has_two_intervals\":true,\"queries\":1,\"returned_positions\":2,\"sql_ms\":2.21}]",
+            "  Tests:    142 passed (2036 assertions)",
+            "  Duration: 159.07s"
+          ]
+        }
+      ]
+    },
+    {
+      "run": 40189512998,
+      "name": "C3 context validation",
+      "url": "https://github.com/miranovadev/commons/actions/runs/40189512998",
+      "jobs": [
+        {
+          "job": 121157311689,
+          "name": "focused",
+          "result": "success",
+          "results": [
+            "  Tests:    107 passed (1027 assertions)",
+            "  Duration: 105.62s",
+            "  Tests:    1 passed (1390 assertions)",
+            "  Duration: 15.73s"
+          ]
+        }
+      ]
+    },
+    {
+      "run": 40189512177,
+      "name": "Query Regression",
+      "url": "https://github.com/miranovadev/commons/actions/runs/40189512177",
+      "jobs": [
+        {
+          "job": 121157535642,
+          "name": "query / PHP / PostgreSQL (1/1)",
+          "result": "failure",
+          "results": [
+            "   FAILED  Tests\\Feature\\ParticipantContextTest > dense evidence and commitm…   ",
+            "   FAILED  Tests\\Feature\\ParticipationPerformance…  ClosureHistoryUnavailable   ",
+            "   FAILED  Tests\\Feature\\ParticipationPerformance…  ClosureHistoryUnavailable   ",
+            "   FAILED  Tests\\Feature\\ParticipationPerformance…  ClosureHistoryUnavailable   ",
+            "   FAILED  Tests\\Feature\\ParticipationPerformance…  ClosureHistoryUnavailable   ",
+            "   FAILED  Tests\\Feature\\ParticipationPerformance…  ClosureHistoryUnavailable   ",
+            "   FAILED  Tests\\Feature\\ParticipationPerformance…  ClosureHistoryUnavailable   ",
+            "   FAILED  Tests\\Feature\\ParticipationPerformance…  ClosureHistoryUnavailable   ",
+            "   FAILED  Tests\\Feature\\ParticipationPerformance…  ClosureHistoryUnavailable   ",
+            "  Tests:    9 failed, 13 passed (953 assertions)",
+            "  Duration: 533.54s"
+          ]
+        }
+      ]
+    },
+    {
+      "run": 40189512160,
+      "name": "Load / Concurrency",
+      "url": "https://github.com/miranovadev/commons/actions/runs/40189512160",
+      "jobs": [
+        {
+          "job": 121157308932,
+          "name": "load / PHP / PostgreSQL (1/1)",
+          "result": "failure",
+          "results": [
+            "   FAILED  Tests\\Feature\\BiasReceiptConcurrencyTe…  ClosureHistoryUnavailable   ",
+            "   FAILED  Tests\\Feature\\HorizonProofConcurrencyTest > concurrent identical…    ",
+            "   FAILED  Tests\\Feature\\HorizonProofConcurrencyTest > basin completion reje…   ",
+            "   FAILED  Tests\\Feature\\TransactionLockOrderTest > graph and detail finish…    ",
+            "   FAILED  Tests\\Feature\\TransactionLockOrderTest…  ClosureHistoryUnavailable   ",
+            "   FAILED  Tests\\Feature\\TransactionLockOrderTest…  ClosureHistoryUnavailable   ",
+            "   FAILED  Tests\\Feature\\TransactionLockOrderTest…  ClosureHistoryUnavailable   ",
+            "   FAILED  Tests\\Feature\\TransactionLockOrderTest > concurrent fresh sibling…   ",
+            "  Tests:    8 failed, 18 passed (178 assertions)",
+            "  Duration: 59.99s"
+          ]
+        }
+      ]
+    },
+    {
+      "run": 40189510128,
+      "name": "Core (feature branch)",
+      "url": "https://github.com/miranovadev/commons/actions/runs/40189510128",
+      "jobs": [
+        {
+          "job": 121157364123,
+          "name": "Frontend build and contracts",
+          "result": "success",
+          "results": [
+            "ℹ tests 148"
+          ]
+        },
+        {
+          "job": 121157568636,
+          "name": "core (4) / PHP / PostgreSQL (4/5)",
+          "result": "success",
+          "results": [
+            "  Tests:    357 passed (3222 assertions)",
+            "  Duration: 265.25s"
+          ]
+        },
+        {
+          "job": 121157568668,
+          "name": "core (2) / PHP / PostgreSQL (2/5)",
+          "result": "success",
+          "results": [
+            "  Tests:    298 passed (2676 assertions)",
+            "  Duration: 418.69s"
+          ]
+        },
+        {
+          "job": 121157568673,
+          "name": "core (5) / PHP / PostgreSQL (5/5)",
+          "result": "success",
+          "results": [
+            "  Tests:    297 passed (3805 assertions)",
+            "  Duration: 472.67s"
+          ]
+        },
+        {
+          "job": 121157568674,
+          "name": "core (1) / PHP / PostgreSQL (1/5)",
+          "result": "success",
+          "results": [
+            "  Tests:    14 passed (46 assertions)",
+            "  Duration: 3.64s",
+            "  Tests:    248 passed (2876 assertions)",
+            "  Duration: 360.12s"
+          ]
+        },
+        {
+          "job": 121157568717,
+          "name": "core (3) / PHP / PostgreSQL (3/5)",
+          "result": "failure",
+          "results": [
+            "   FAILED  Tests\\Feature\\ChargeBoundaryTragedyTest > ordinary unmocked obser…   ",
+            "  Tests:    1 failed, 314 passed (3010 assertions)",
+            "  Duration: 579.84s"
+          ]
+        }
+      ]
+    }
+  ],
+  "frontend": {
+    "run": 40189510128,
+    "job": 121157364123,
+    "tests": 148,
+    "result": "success"
+  },
+  "local": {
+    "focused": {
+      "tests": 62,
+      "assertions": 386,
+      "failed": 0
+    },
+    "dependent_lifecycle": {
+      "tests": 2,
+      "assertions": 976,
+      "failed": 0
+    }
+  },
+  "integration": {
+    "complete": true,
+    "discovered": 34,
+    "executed": 34,
+    "passed": 31,
+    "failed": 3,
+    "skipped": [],
+    "assertions": 6960,
+    "failures": [
+      {
+        "test": "Tests\\Feature\\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit#0",
+        "kind": "failure"
+      },
+      {
+        "test": "Tests\\Feature\\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit#1",
+        "kind": "failure"
+      },
+      {
+        "test": "Tests\\Feature\\NaturalChargeBoundaryLifecycleTest::test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor",
+        "kind": "failure"
+      }
+    ],
+    "runtimes": [
+      {
+        "suite": "integration",
+        "shard": 1,
+        "shards": 4,
+        "selected_tests": 2,
+        "php_wall_seconds": 152.45933718799998,
+        "exit_code": 1
+      },
+      {
+        "suite": "integration",
+        "shard": 2,
+        "shards": 4,
+        "selected_tests": 8,
+        "php_wall_seconds": 352.895048288,
+        "exit_code": 0
+      },
+      {
+        "suite": "integration",
+        "shard": 3,
+        "shards": 4,
+        "selected_tests": 16,
+        "php_wall_seconds": 324.655001393,
+        "exit_code": 1
+      },
+      {
+        "suite": "integration",
+        "shard": 4,
+        "shards": 4,
+        "selected_tests": 8,
+        "php_wall_seconds": 364.343760658,
+        "exit_code": 0
+      }
+    ]
+  },
+  "c3_plans": [
+    {
+      "label": "Luna current Origin",
+      "queries": 73,
+      "milliseconds": 175.01324
+    },
+    {
+      "label": "Nova current first branch",
+      "queries": 77,
+      "milliseconds": 151.96278
+    },
+    {
+      "label": "Luna other branch",
+      "queries": 74,
+      "milliseconds": 138.428486
+    },
+    {
+      "label": "Luna before portfolio Disperse",
+      "queries": 73,
+      "milliseconds": 132.646697
+    },
+    {
+      "label": "Vela current committed entry",
+      "queries": 71,
+      "milliseconds": 127.437453
+    },
+    {
+      "label": "Greater-depth Committal",
+      "queries": 74,
+      "milliseconds": 551.046364
+    },
+    {
+      "label": "Larger recorded population 01m50kz8gy5jg8e36mbqykje79",
+      "queries": 74,
+      "milliseconds": 605.621818
+    },
+    {
+      "label": "Larger recorded population 01m50kznxd8y46rf7xhn1t954m",
+      "queries": 77,
+      "milliseconds": 737.246262
+    },
+    {
+      "label": "Larger recorded population 01m53kyyvav7ftb9q7fpjjrnwy",
+      "queries": 77,
+      "milliseconds": 693.713915
+    },
+    {
+      "label": "Larger recorded population 01m53kz9cs3mg8zzvkyvhdke3e",
+      "queries": 74,
+      "milliseconds": 555.607859
+    }
+  ],
+  "failure_comparison": {
+    "core": {
+      "baseline_job": 121141387972,
+      "final_job": 121157558163,
+      "headings_equal": true
+    },
+    "query": {
+      "checkpoint_job": 121149382933,
+      "final_job": 121157535642,
+      "headings_equal": true,
+      "dense_payload_bytes": 54511,
+      "unchanged_ceiling": 45000
+    },
+    "load": {
+      "checkpoint_job": 121149382946,
+      "final_job": 121157308932,
+      "headings_equal": true
+    }
+  }
+}
