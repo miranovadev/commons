@@ -66,4 +66,19 @@ test('Receipt panel is metadata-only except for active loaded evidence', async (
   assert.doesNotMatch(remembered, /MUST NOT BE EVIDENCE/);
   assert.doesNotMatch(module.exports.render({ receipts: [{ ...memory, loaded: false, memory_active: false }], schema }), /Committed failed path|Historical catastrophe endpoint/);
 
+  const failedPreparation = { id: 'failure-observation', type: 'preparation', reference: 'execution', status: 'loaded', loaded: true,
+    preparation_history: { purpose: 'Investigate the source', participant_id: 'actor', originating_gate_id: 'gate',
+      selections: [{ receipt_id: 'source', artifact_id: 'hash', read_type: 'text', parameters: { offset: 7, max_chars: 20000 } }],
+      deliveries: [], outcome: { type: 'failed' }, content_verified: false,
+      failure: { stage: 'read', classification: 'reader_failure', method: 'native', version: '2' },
+      failure_reason: '<script>untrusted diagnostic</script>' } };
+  const failedHtml = module.exports.render({ receipts: [failedPreparation], schema });
+  assert.match(failedHtml, /Outcome: failed/);
+  assert.match(failedHtml, /Operational failure/);
+  assert.match(failedHtml, /does not establish source support or refutation/);
+  assert.match(failedHtml, /Requested offset 7/);
+  assert.match(failedHtml, /Requested maximum 20000/);
+  assert.doesNotMatch(failedHtml, /Presented using|<script>/);
+  assert.match(failedHtml, /&lt;script&gt;/);
+
 });

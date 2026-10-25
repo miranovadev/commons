@@ -64,6 +64,25 @@ class PreparationConcurrencyTest extends TestCase
         $this->assertNotNull($execution->fresh()->resulting_proposition_id);
     }
 
+    public function test_concurrent_failure_reports_record_exactly_one_receipt(): void
+    {
+        if (DB::getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('Requires independent PostgreSQL row locks.');
+        }
+        Storage::fake('artifacts');
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        $service = app(PreparationService::class);
+        $execution = $service->start($f->viewer, $f->phase, $fixture->input());
+        $this->whileWorkerWaits($f->substrate, ['operation' => 'preparation-failure',
+            'participant_id' => $f->viewer->id, 'execution_id' => $execution->id],
+            fn () => $service->fail($f->viewer, $execution, 'reader', '1', 'read', 'First technical failure.'));
+        $this->assertSame(1, Receipt::where('evidence_execution_id', $execution->id)->count());
+        $this->assertSame('failed', $execution->fresh()->status);
+        $this->assertSame('failed', $execution->fresh()->outcome);
+        $this->assertSame('First technical failure.', $execution->fresh()->receipt->metadata['failure_reason']);
+    }
+
     private function whileWorkerWaits(Substrate $substrate, array $input, callable $competing): void
     {
         $process = new Process([PHP_BINARY, base_path('tests/Support/concurrent-commons-worker.php')], base_path(), null,

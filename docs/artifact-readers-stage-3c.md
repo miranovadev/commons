@@ -12,7 +12,8 @@ Now every supported textual representation accepts optional `offset` and `max_ch
 Omitting the maximum requests automatic allocation from one shared Preparation
 budget. This includes raw: the selected original UTF-8 bytes are unchanged, while
 the recorded boundaries explicitly distinguish a selection from the whole source.
-Explicit selections that cannot fit are rejected, never silently shortened to fit.
+The [Evidence Resilience contract](evidence-preparation-resilience.md) now treats
+explicit lengths as preferences, clamped to the unchanged safe delivery limits.
 
 The existing Source Type × Read Type → Representation → Delivery Method model
 remains authoritative. Acquisition through Hyperlink or Download does not choose a
@@ -79,10 +80,11 @@ than today's reader can inspect. Acquisition remains successful even if reading 
 unsupported or exceeds processing limits.
 
 For each unique request, construct its representation once, then measure Unicode
-characters after its requested offset. Reserve explicit selections first, using
-`min(max_chars, available characters)`. Reject explicit ranges that exceed per-selection
-or combined character/byte budgets. EOF is the only reason an explicit maximum can
-produce fewer characters. Its unused capacity becomes available to automatic requests.
+characters after its requested offset. Explicit selections receive proportional
+allocation first, bounded by available characters and all per-selection and shared
+character/byte ceilings. Short or capped representations release unused capacity
+to other explicit requests and then automatic requests. Requested maxima remain
+unchanged in history; actual delivery may be shorter because of EOF or budgets.
 
 Water filling gives one Unicode character per active automatic selection in submitted
 order. Finished, per-selection-capped or byte-constrained selections leave capacity
@@ -184,9 +186,11 @@ processing limit, delivery budget, timeout, failed reader/resource limit, and no
 extractable text. Image-only PDFs produce `no_extractable_text`, not an empty successful
 reading or a failed acquisition. The existing failed EvidenceExecution records
 Artifact, Read Type, identified Source Type, attempted method/version and concise
-reason. It creates **no successful Preparation Receipt**, contributed outcome or
-inferred deferment. Existing allowance, retry, stale-state and failure recovery
-semantics remain in force.
+reason. Under [Evidence Resilience](evidence-preparation-resilience.md), genuine
+attempted technical failures also create an ordinary failure Receipt without
+changing execution status to completed. Rejected parameters, stale requests and
+expiry without acknowledged presentation do not mint evidence. No failure implies
+contribution or deferment.
 
 ## Ownership and remaining coupling
 

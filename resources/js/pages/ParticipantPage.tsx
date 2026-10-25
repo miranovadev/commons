@@ -21,6 +21,8 @@ import { CycleEntryControl } from '../components/CycleEntryControl';
 import { ParticipantIdentity } from '../components/ParticipantIdentity';
 import { WorkspaceStatus } from '../components/WorkspaceStatus';
 import { participationNotices } from '../components/ParticipationNotices';
+import { useBackgroundParticipation } from '../useBackgroundParticipation';
+import { PreparationHistory } from '../components/PreparationHistory';
 
 export function ParticipantPage() {
   const { slug: routeSlug, participantId: routeParticipantId } = useParams();
@@ -33,18 +35,19 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
   const parameters = { slug, participantId };
   const [switcherOpened, setSwitcherOpened] = useState(false);
   const { data: participant, isLoading: participantLoading, error: participantError } = useGetParticipantQuery(parameters);
-  const { data: participation, isLoading: participationLoading, isFetching: participationFetching, error: participationError, refetch: refetchParticipation } = useGetParticipantWorkspaceQuery(parameters);
-  useParticipantRealtime(slug, participantId, Boolean(participation) && !participationError, participation?.context_horizon_id);
+  const { data: currentParticipation, isLoading: participationLoading, isFetching: participationFetching, error: participationError, refetch: refetchParticipation } = useGetParticipantWorkspaceQuery(parameters);
+  const { participation, synchronising } = useBackgroundParticipation(currentParticipation);
+  useParticipantRealtime(slug, participantId, Boolean(participation), participation?.context_horizon_id);
   useEffect(() => {
-    if (participationFetching || participation?.reason?.code !== 'potential_projection_pending') return;
+    if (participationFetching || !synchronising) return;
     const timer = setTimeout(() => { void refetchParticipation(); }, 2000);
     return () => clearTimeout(timer);
-  }, [participation, participationFetching, refetchParticipation]);
+  }, [synchronising, participationFetching, refetchParticipation]);
   const [contribute, contribution] = useContributeMutation();
   const submitting = useRef(false);
   const submittedPhase = useRef<string | null>(null);
   const [enterCycle, cycleEntry] = useEnterCycleMutation();
-  const [selectedAction, setSelectedAction] = useState<{ name: ActionName; initialValues: ContributionInitialValues } | null>(null);
+  const [selectedAction, setSelectedAction] = useState<{ name: ActionName; initialValues: ContributionInitialValues; plan: ParticipantPlan } | null>(null);
   const [originOpened, { open: openOrigin, close: closeOrigin }] = useDisclosure(false);
   const plan = participation?.plan;
   const awaitingPresentation = Boolean(plan?.preparation && plan.preparation.status !== 'presented');
@@ -66,7 +69,10 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
     [plan],
   );
 
-  function openAction(name: ActionName, initialValues: ContributionInitialValues = {}) { contribution.reset(); setSelectedAction({ name, initialValues }); }
+  function openAction(name: ActionName, initialValues: ContributionInitialValues = {}) {
+    if (!plan) return;
+    contribution.reset(); setSelectedAction({ name, initialValues, plan });
+  }
   function workspaceAction(name: ActionName, initialValues: ContributionInitialValues = {}) {
     if (previewKind || awaitingPresentation || !plan || submitting.current || submittedPhase.current === plan.phase.id) return;
     const input = quickContribution(plan, name, initialValues);
@@ -74,14 +80,16 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
     else openAction(name, initialValues);
   }
   async function submit(contributionInput: ContributionInput) {
-    if (previewKind || awaitingPresentation || !plan || submitting.current || submittedPhase.current === plan.phase.id) return false;
+    // Preserve the draft's Phase/Closure identity; the server decides if it is still lawful.
+    const submissionPlan = selectedAction?.plan ?? plan;
+    if ((!selectedAction && (previewKind || awaitingPresentation)) || !submissionPlan || submitting.current || submittedPhase.current === submissionPlan.phase.id) return false;
     submitting.current = true;
     try {
-      const result = await contribute({ slug, participantId, phaseId: plan.phase.id, contribution: contributionInput, expectedClosure: plan.schema?.$comment }).unwrap();
-      if (result.status === 'waiting' && !result.plan && result.completion?.phase_id === plan.phase.id) {
-        setCompletedWorkspace({ plan, phaseId: plan.phase.id });
+      const result = await contribute({ slug, participantId, phaseId: submissionPlan.phase.id, contribution: contributionInput, expectedClosure: submissionPlan.schema?.$comment }).unwrap();
+      if (result.status === 'waiting' && !result.plan && result.completion?.phase_id === submissionPlan.phase.id) {
+        setCompletedWorkspace({ plan: submissionPlan, phaseId: submissionPlan.phase.id });
       }
-      submittedPhase.current = result.plan?.phase.id === plan.phase.id ? null : plan.phase.id;
+      submittedPhase.current = result.plan?.phase.id === submissionPlan.phase.id || result.reason?.code === 'potential_projection_pending' ? null : submissionPlan.phase.id;
       setSelectedAction(null);
       return true;
     } catch { return false; /* mutation errors appear in the workspace or form */ }
@@ -103,6 +111,8 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
       {!displayPlan && <Breadcrumbs mb="lg"><Text component={Link} to="/" size="sm" c="dimmed">Substrates</Text><Text component={Link} to={`/substrates/${slug}`} size="sm" c="dimmed">{slug}</Text><Text size="sm">Participant</Text></Breadcrumbs>}
       {(participantLoading || participationLoading) && !error && <Stack align="center" py={100}><Loader color="indigo" /><Text c="dimmed">Finding your current position…</Text></Stack>}
       {error && <Alert color="red" variant="light" icon={<IconAlertCircle size={18} />} title="The Commons could not load this position">{messageFrom(error, 'This participation state could not be loaded.')}</Alert>}
+      {(synchronising || participationFetching) && displayPlan && <Text size="xs" c="dimmed" px="md" role="status">Refreshing available options in the background. You can keep working.</Text>}
+      {participant && <Box px="md" py="xs"><PreparationHistory slug={slug} participantId={participantId} /></Box>}
       {participant && !displayPlan && <ParticipantIdentity participant={participant} onSelect={() => setSwitcherOpened(true)} opened={switcherOpened} />}
       {participant && participation?.status === 'waiting' && !completed && (
         <Box p="xl"><Stack align="flex-start" maw={680} mx="auto"><ThemeIcon color="indigo" variant="light" size="xl" radius="xl"><IconSparkles size={22} /></ThemeIcon><Box><Title order={2}>{participation.reason?.code === 'potential_projection_pending' ? 'Updating your position' : participation.entry?.mode === 'origin' ? 'Every substrate begins somewhere' : 'Ready to enter the cycle'}</Title></Box>{cycleEntry.error && <Alert color="red" variant="light">{messageFrom(cycleEntry.error, 'The cycle could not be entered.')}</Alert>}<CycleEntryControl participation={participation} loading={cycleEntry.isLoading} onEnter={enterFromPotential} onOrigin={() => { cycleEntry.reset(); openOrigin(); }} /></Stack></Box>
@@ -125,9 +135,11 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
               completion={completed && participation ? <CycleCompletion slug={slug} participation={participation} loading={cycleEntry.isLoading} error={cycleEntry.error} onEnter={enterFromPotential} onOrigin={openOrigin} /> : undefined}
               status={previewKind || completed ? undefined : <WorkspaceStatus notices={notices} closeDetails={selectedAction !== null || switcherOpened} />} />
           </Box>
-          {plan && <ContributionForm action={selectedAction?.name} plan={plan} opened={selectedAction !== null} loading={contribution.isLoading} error={contribution.error} initialValues={selectedAction?.initialValues} onClose={() => setSelectedAction(null)} onSubmit={submit} />}
         </Box>
       )}
+      {selectedAction && <ContributionForm action={selectedAction.name} plan={plan?.phase.id === selectedAction.plan.phase.id ? plan : selectedAction.plan}
+        fallbackSchema={selectedAction.plan.schema?.$defs?.actions?.[selectedAction.name]} allowStaleSubmission
+        opened loading={contribution.isLoading} error={contribution.error} initialValues={selectedAction.initialValues} onClose={() => setSelectedAction(null)} onSubmit={submit} />}
       {participant && <ParticipantSwitcher slug={slug} participant={participant} opened={switcherOpened} onClose={() => setSwitcherOpened(false)} />}
       <OriginCycleForm opened={originOpened} loading={cycleEntry.isLoading} error={cycleEntry.error} onClose={closeOrigin} onSubmit={establishOrigin} />
     </Container>

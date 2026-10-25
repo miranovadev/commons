@@ -5,12 +5,14 @@ import { ActionIcon, Badge, Box, Drawer, Group, Paper, Stack, Tabs, Text, Toolti
 import { structuralDeltaSummary } from './MeasurementRails';
 import { PropositionContent } from './PropositionContent';
 import { AttestationPanel } from './AttestationPanel';
+import { PreparationHistory } from './PreparationHistory';
 import { attestationDirections, writePropositions } from '../participationOptions';
 import type { ContributionInput, Observables, ParticipantPlan, PropositionSelection } from '../types';
 
 interface PropositionInspectorProps {
   selection: PropositionSelection | null;
   graph?: boolean;
+  substrateSlug?: string;
   committalObservables?: Observables;
   onClose: () => void;
   plan?: ParticipantPlan;
@@ -35,7 +37,7 @@ export function PropositionInspector({ selection, committalObservables, onClose,
   );
 }
 
-export function InspectorContent({ selection, committalObservables, graph = false }: Omit<PropositionInspectorProps, 'onClose'>) {
+export function InspectorContent({ selection, committalObservables, graph = false, substrateSlug }: Omit<PropositionInspectorProps, 'onClose'>) {
   const [tab, setTab] = useState<string | null>('proposition');
   if (!selection) {
     return (
@@ -74,6 +76,7 @@ export function InspectorContent({ selection, committalObservables, graph = fals
 
       {!projected && (
         <Box className="inspector-section">
+          {substrateSlug && <PreparationHistory key={proposition.id} slug={substrateSlug} propositionId={proposition.id} />}
           <Text fw={750} size="sm" mb="sm">Instruments & receipts</Text>
           <Stack gap={6}>
             {proposition.instruments === undefined

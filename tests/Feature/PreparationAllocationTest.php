@@ -23,6 +23,10 @@ class PreparationAllocationTest extends TestCase
     public static function allocations(): array
     {
         return [
+            'oversized single' => [[30000], [['offset' => 100, 'max_chars' => 20000]], 8000, [8000]],
+            'oversized proportional' => [[30000, 30000], [['max_chars' => 20000], ['max_chars' => 10000]], 9000, [6000, 3000]],
+            'explicit redistribution' => [[2, 100], [['max_chars' => 20000], ['max_chars' => 10000]], 10, [2, 8]],
+            'explicit remainder' => [[100, 100, 100], [['max_chars' => 20000], ['max_chars' => 20000], ['max_chars' => 20000]], 10, [4, 3, 3]],
             'equal large' => [[15000, 15000, 15000], [], 12000, [4000, 4000, 4000]],
             'water filling' => [[500, 3000, 15000], [], 12000, [500, 3000, 8500]],
             'all fit' => [[500, 3000, 1500], [], 12000, [500, 3000, 1500]],
@@ -80,19 +84,31 @@ class PreparationAllocationTest extends TestCase
     public static function invalidBudgets(): array
     {
         return [
-            'explicit total characters' => [['abcdefgh', 'abcdefgh'], [['max_chars' => 8], ['max_chars' => 8]], 10, []],
-            'explicit per-selection bytes' => [['💚💚'], [['max_chars' => 2]], 10, ['preparation.selection_bytes' => 7]],
-            'explicit combined bytes' => [['💚', 'é'], [['max_chars' => 1], ['max_chars' => 1]], 10, ['preparation.delivery_bytes' => 5]],
+            'negative offset' => [['abc'], [['offset' => -1]], 10, []],
             'offset beyond EOF' => [['abc'], [['offset' => 4]], 10, []],
         ];
     }
 
     #[DataProvider('invalidBudgets')]
-    public function test_invalid_explicit_ranges_are_rejected_without_silent_shortening(array $contents, array $parameters, int $budget, array $limits): void
+    public function test_invalid_offsets_are_still_rejected(array $contents, array $parameters, int $budget, array $limits): void
     {
         config($limits);
         $this->expectException(ArtifactReadingException::class);
         $this->allocate($contents, $parameters, $budget);
+    }
+
+    public function test_explicit_requests_respect_utf8_bytes_and_redistribute_unused_capacity(): void
+    {
+        config(['preparation.selection_bytes' => 7, 'preparation.delivery_bytes' => 13]);
+        $result = $this->allocate([str_repeat('💚', 20), str_repeat('x', 20), str_repeat('é', 20)],
+            [['max_chars' => 20000], ['max_chars' => 10000], ['max_chars' => 10000]], 100);
+        $this->assertSame(['💚', 'xxx', 'ééé'], array_column($result, 'content'));
+        $this->assertSame(13, array_sum(array_column($result, 'payload_bytes')));
+        foreach ($result as $item) {
+            $this->assertTrue(mb_check_encoding($item['content'], 'UTF-8'));
+            $this->assertLessThanOrEqual(7, $item['payload_bytes']);
+            $this->assertTrue($item['boundaries']['has_more']);
+        }
     }
 
     public function test_documented_example_satisfies_the_real_input_and_presentation_contracts(): void

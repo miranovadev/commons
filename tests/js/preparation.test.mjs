@@ -107,8 +107,8 @@ test('optional ranges remain automatic until a maximum is entered, and clearing 
   let item = { receipt_id: 'receipt', artifact_id: 'hash', read_type: 'text' };
   item = changeReading(item, 'Character offset', 4);
   assert.deepEqual(item.parameters, { offset: 4 });
-  item = changeReading(item, 'Maximum characters (optional)', 6000);
-  assert.deepEqual(item.parameters, { offset: 4, max_chars: 6000 });
+  item = changeReading(item, 'Maximum characters (optional)', 20000);
+  assert.deepEqual(item.parameters, { offset: 4, max_chars: 20000 });
   item = changeReading(item, 'Maximum characters (optional)', '');
   assert.deepEqual(item.parameters, { offset: 4 });
   item = changeReading(item, 'Read Type', 'tables');

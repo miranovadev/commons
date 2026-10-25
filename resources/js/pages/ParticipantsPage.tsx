@@ -6,6 +6,7 @@ import { IconAlertCircle, IconArrowRight, IconPlugConnected, IconPlus, IconRoute
 import { useNavigate, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
 import { ConnectionsPanel } from '../components/ConnectionsPanel';
+import { PreparationHistory } from '../components/PreparationHistory';
 import { useDeleteParticipantConnectionMutation, useGetConnectionsQuery, useGetParticipantConnectionsQuery, useGetParticipantsQuery, useGetSubstrateQuery, useJoinParticipantMutation, useUpdateParticipantConnectionMutation } from '../services/commonsApi';
 import type { Connection, ConnectionTrigger, JoinParticipantInput, Participant, User } from '../types';
 
@@ -145,6 +146,7 @@ function ParticipantCard({ participant, slug, onEnter, onConnections }: Particip
       </Box>
 
       <ParticipantConnectionSummary slug={slug} participant={participant} onManage={onConnections} />
+      <Box mt="sm"><PreparationHistory slug={slug} participantId={participant.id} /></Box>
 
       <Button mt="lg" fullWidth rightSection={<IconArrowRight size={15} />} onClick={onEnter}>
         {position ? 'Continue Cycle' : 'Enter Cycle'}

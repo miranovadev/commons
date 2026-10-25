@@ -144,7 +144,7 @@ final class PropositionStateService
 
         return Receipt::query()->with('evidenceExecution')
             ->where('type', '!=', 'tragedy')
-            ->whereHas('evidenceExecution', fn ($query) => $query->where('status', 'completed'))
+            ->whereHas('evidenceExecution', fn ($query) => $query->recordedObservation())
             ->where(function ($query) use ($ids, $attestations, $linked): void {
                 $query->whereIn('id', $linked)->orWhere(function ($query) use ($ids, $attestations): void {
                     $query->where(fn ($query) => $query

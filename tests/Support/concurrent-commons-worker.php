@@ -66,6 +66,8 @@ try {
         'receipt-desired' => DB::transaction(fn () => app(ReceiptContextService::class)->desired(
             Participant::findOrFail($input['participant_id']), Phase::findOrFail($input['phase_id']), $input['receipt_options'],
         )),
+        'preparation-failure' => app(PreparationService::class)->fail(Participant::findOrFail($input['participant_id']),
+            EvidenceExecution::findOrFail($input['execution_id']), 'reader', '1', 'read', 'Concurrent technical failure.'),
         'preparation-start-conflict', 'preparation-defer-conflict' => (function () use ($input): void {
             try {
                 $service = app(PreparationService::class);

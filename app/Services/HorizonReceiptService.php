@@ -53,7 +53,7 @@ final class HorizonReceiptService
 
         return Receipt::whereNotIn('type', Receipt::SPECIAL_RECEIPT_TYPES)
             ->where('context_horizon_id', $phase->cycle->context_horizon_id)
-            ->whereHas('evidenceExecution', fn ($execution) => $execution->where('status', 'completed')->whereIn('proposition_id', $subjects));
+            ->whereHas('evidenceExecution', fn ($execution) => $execution->recordedObservation()->whereIn('proposition_id', $subjects));
     }
 
     /** Presentation union only. Operational evidence callers must use this ordinary subset. */

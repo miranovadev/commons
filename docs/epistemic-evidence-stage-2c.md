@@ -1,5 +1,7 @@
 # Epistemic evidence Stage 2C
 
+> The [Evidence Resilience contract](evidence-preparation-resilience.md) supersedes the historical no-Receipt failure rule: genuinely attempted technical failures now produce ordinary failure Receipts while execution status remains failed. Invalid and stale requests do not mint evidence. Explicit reading lengths are preferences within unchanged budgets.
+
 > Stage 2D supersedes the dormant activation and reader-interface details below.
 > Claire explicitly corrected consumed-source selection: attached and unattached
 > ordinary Receipts within the same lawful Region/Horizon both grant Artifact

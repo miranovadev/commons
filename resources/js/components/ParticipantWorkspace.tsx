@@ -53,7 +53,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
         {!preview && plan.preparation_failures?.map(failure => <Box key={failure.execution_id} p="sm">
           <Text size="sm">Preparation failed · {failure.purpose}</Text>
           <Text size="xs">{failure.diagnostic.failure?.stage}: {failure.diagnostic.failure_reason}</Text>
-          <Text size="xs" c="dimmed">No successful Preparation Receipt was created. Other lawful actions remain available; a later Cycle restores the allowance.</Text>
+          <Text size="xs" c="dimmed">{failure.receipt_id ? 'An ordinary Receipt records this operational failure; it does not verify source content.' : 'No Receipt was created for this rejected or cancelled Preparation.'} The Preparation allowance remains spent for this Cycle.</Text>
         </Box>)}
         <Box className="operational-regions">
           {lanes.map((lane, index) => {
