@@ -129,7 +129,7 @@ class PropositionLocalChiralityTest extends TestCase
         }
         $this->act($grandchild, 'refute');
         $this->assertSame($before, $this->state($parent));
-        $this->assertSame([2], json_decode($this->state($grandchild)['intervals'], true));
+        $this->assertSame([], json_decode($this->state($grandchild)['intervals'], true), 'The only ancestral beat belongs to the hard-replaced parent');
         $this->assertSame([], json_decode($this->state($child)['intervals'], true));
     }
 

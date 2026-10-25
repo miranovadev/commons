@@ -30,17 +30,20 @@ final readonly class AttestationBeatCursorService
             // evidence later cannot replace that event-born branch state.
             return;
         }
-        $source = in_array($edge->type, ['reclassify', 'revise'], true)
-            ? app(ActiveCadenceLineageService::class)->predecessor($edge->target)
-            : $edge->source;
-        $cursor = $source === null ? null : $this->for($source);
-        if ($cursor === null && $source !== null && $source->tier === 'expressive' && Attestation::where('proposition_id', $source->id)->whereHas('ledgerEntry')->exists()) {
-            throw new DomainException('Historical expressive proposition '.$source->id.' has no event-born beat cursor; live vNext rhythm is unavailable at the prospective migration boundary.');
+        if ($target->tier === 'committal') {
+            // Canonical Commit retains cursor transport; it never owns intervals.
+            $cursor = $this->for($edge->source);
+            if ($cursor === null && Attestation::where('proposition_id', $edge->source_proposition_id)->whereHas('ledgerEntry')->exists()) {
+                throw new DomainException('Historical expressive source has no event-born beat cursor.');
+            }
+            $selected = ['beat_sequence' => $cursor?->beat_sequence, 'attestation_id' => $cursor?->attestation_id];
+        } else {
+            $selected = app(ActiveCadenceLineageService::class)->reference($target, $edge);
         }
         DB::table('proposition_attestation_cursors')->insert([
             'proposition_id' => $target->id,
-            'beat_sequence' => $cursor?->beat_sequence,
-            'attestation_id' => $cursor?->attestation_id,
+            'beat_sequence' => $selected['beat_sequence'],
+            'attestation_id' => $selected['attestation_id'],
             'source_supersession_id' => $edge->id,
         ]);
     }
@@ -48,7 +51,11 @@ final readonly class AttestationBeatCursorService
     /** Count only the ending proposition's represented entries between genuine acts. */
     public function interval(Proposition $proposition, int $endingSequence): ?int
     {
-        $from = $this->for($proposition)?->beat_sequence;
+        return $this->intervalFrom($proposition, $endingSequence, $this->for($proposition)?->beat_sequence);
+    }
+
+    public function intervalFrom(Proposition $proposition, int $endingSequence, ?int $from): ?int
+    {
         if ($from === null) {
             return null;
         }
@@ -68,11 +75,12 @@ final readonly class AttestationBeatCursorService
             ->where('chirality_entry_after_sequence', '<', $endingSequence)->count();
     }
 
+    /** Own beats advance; the selected birth edge remains immutable provenance. */
     public function attest(Attestation $attestation, int $sequence): void
     {
         DB::table('proposition_attestation_cursors')->upsert([
             ['proposition_id' => $attestation->proposition_id, 'beat_sequence' => $sequence,
                 'attestation_id' => $attestation->id, 'source_supersession_id' => null],
-        ], ['proposition_id'], ['beat_sequence', 'attestation_id', 'source_supersession_id']);
+        ], ['proposition_id'], ['beat_sequence', 'attestation_id']);
     }
 }

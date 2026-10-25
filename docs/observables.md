@@ -226,8 +226,9 @@ participation contexts batch-load births and reuse selected profiles.
 
 > The following Domain-relative v2 description is retained to explain
 > the previous implementation. Current Chirality vNext is proposition-local
-> and Attestation-triggered, with beat-cursor continuity, fresh expressive
-> resets and Commit preservation. See
+> and Attestation-triggered, with active selected-lineage Cadence context, fresh
+> local Orientation and Commit preservation. The current correction is specified
+> in [Active causal Attestation Cadence](active-causal-attestation-cadence.md). See
 > [Stages 1](chirality-stage-1.md),
 > [2](chirality-stage-2.md),
 > [3](chirality-stage-3.md) and

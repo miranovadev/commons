@@ -18,6 +18,7 @@ return new class extends Migration
             $table->foreignUlid('proposition_id')->primary()->constrained('propositions')->cascadeOnDelete();
             $table->unsignedBigInteger('beat_sequence')->nullable();
             $table->foreignUlid('attestation_id')->nullable()->constrained('attestations')->nullOnDelete();
+            // Selected birth provenance persists when own Attestations advance the beat.
             $table->foreignUlid('source_supersession_id')->nullable()->constrained('supersessions')->nullOnDelete();
         });
     }

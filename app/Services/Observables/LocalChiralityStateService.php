@@ -86,23 +86,30 @@ final readonly class LocalChiralityStateService
         $position = $proposition->phase->cycle->entry_committal_id === null ? 0 : Cycle::where('context_horizon_id', $comparison->current->horizon->id)
             ->where('entry_committal_id', $proposition->phase->cycle->entry_committal_id)->count();
         $intervals = json_decode($state->intervals, true, flags: JSON_THROW_ON_ERROR);
-        if ($state->act_count > 0 && $this->beats->for($proposition)?->beat_sequence === null) {
-            throw new DomainException('Historical local Chirality has no event-born beat cursor; live vNext rhythm is unavailable at the prospective migration boundary.');
+        if ((int) $state->act_count === 0) {
+            // Select the beat and two-interval reference together at the first
+            // own event. Structural writes alone never measure this Proposition.
+            $selected = $this->activeCadence->reference($proposition);
+            $reference = $selected['reference'];
+            $from = $selected['beat_sequence'];
+        } else {
+            $from = $this->beats->for($proposition)?->beat_sequence;
+            if ($from === null || $state->cadence_reference === null) {
+                throw new DomainException('Historical local Chirality has no event-born rhythm reference; live vNext rhythm is unavailable at the prospective boundary.');
+            }
+            $reference = json_decode($state->cadence_reference, true, flags: JSON_THROW_ON_ERROR);
         }
-        $interval = $this->beats->interval($proposition, $sequence);
+        $interval = $this->beats->intervalFrom($proposition, $sequence, $from);
         if ($interval !== null) {
             $intervals[] = $interval;
         }
-        $reference = $state->cadence_reference_intervals === null
-            ? $this->activeCadence->intervals($proposition)
-            : json_decode($state->cadence_reference_intervals, true, flags: JSON_THROW_ON_ERROR);
-        $cadence = $this->calculator->cadence(array_merge($reference, $intervals))['value'];
+        $cadence = $this->calculator->cadence([...array_column($reference, 'interval'), ...$intervals])['value'];
         $values = new ChiralityValues($orientation, $cadence);
         DB::table('local_chirality_states')->where('proposition_id', $proposition->id)->update([
             'orientation' => $orientation, 'attestation_cadence' => $cadence, 'chirality' => $values->average(),
             ...$values->resolveDirections(ObservableDirection::from($state->orientation_direction), ObservableDirection::from($state->attestation_cadence_direction)),
             'intervals' => json_encode($intervals, JSON_THROW_ON_ERROR),
-            'cadence_reference_intervals' => json_encode($reference, JSON_THROW_ON_ERROR), 'last_position' => $position,
+            'cadence_reference' => json_encode($reference, JSON_THROW_ON_ERROR), 'last_position' => $position,
             'last_attestation_id' => $attestation->id, 'act_count' => $state->act_count + 1,
         ]);
     }
@@ -116,6 +123,6 @@ final readonly class LocalChiralityStateService
             // Preserve the diagnostic entry-frame hysteresis; no parent local values.
             'orientation_direction' => $snapshot?->orientation_direction ?? 'negative',
             'attestation_cadence_direction' => $snapshot?->attestation_cadence_direction ?? 'positive',
-            'intervals' => '[]', 'cadence_reference_intervals' => null, 'last_position' => null, 'last_attestation_id' => null, 'act_count' => 0];
+            'intervals' => '[]', 'cadence_reference' => null, 'last_position' => null, 'last_attestation_id' => null, 'act_count' => 0];
     }
 }
