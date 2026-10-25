@@ -288,6 +288,35 @@ class AttestationBeatContinuityTest extends TestCase
         $this->assertSame(0, $committal->attestations()->count());
     }
 
+
+    public function test_hard_reclassification_uses_active_grandparent_rhythm_without_rewriting_history(): void
+    {
+        [$origin, $a] = $this->start();
+        $this->act($a);
+        $this->entries($origin, 2);
+        $this->act($a);
+        $this->entries($origin, 3);
+        $this->act($a);
+        $this->entries($origin, 2);
+        $this->act($a);
+        $this->assertSame([2, 3, 2], $this->intervals($a));
+
+        $b = $this->child($a, $origin);
+        $this->entries($origin, 2);
+        $this->act($b);
+        $this->assertSame([3, 2], json_decode(DB::table('local_chirality_states')
+            ->where('proposition_id', $b->id)->value('cadence_reference_intervals'), true));
+        $before = DB::table('local_chirality_states')->where('proposition_id', $b->id)->first();
+
+        $c = $this->child($b, $origin, type: 'reclassify');
+        $this->assertSame($this->cursor($a), $this->cursor($c));
+        $this->entries($origin, 3);
+        $this->act($c);
+        $this->assertSame([3, 2], json_decode(DB::table('local_chirality_states')
+            ->where('proposition_id', $c->id)->value('cadence_reference_intervals'), true));
+        $this->assertEquals($before, DB::table('local_chirality_states')->where('proposition_id', $b->id)->first());
+    }
+
     public function test_cycle_completion_does_not_move_its_recorded_entry(): void
     {
         [, $parent] = $this->start();
