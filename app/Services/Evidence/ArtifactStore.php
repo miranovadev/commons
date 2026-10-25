@@ -23,7 +23,7 @@ class ArtifactStore
         try {
             $name = config('artifacts.disk');
             $config = config('filesystems.disks.'.$name, []);
-            if (($config['visibility'] ?? null) !== 'private' || ($config['serve'] ?? false)
+            if (! $this->privateDiskConfiguration($config) || ($config['serve'] ?? false)
                 || ! empty($config['url']) || ! in_array($config['driver'] ?? null, ['local', 's3'], true)) {
                 throw new ArtifactStorageException('Artifacts require a private, non-serving local or S3 disk.');
             }
@@ -68,7 +68,7 @@ class ArtifactStore
         }
         $name = config('artifacts.disk');
         $config = config('filesystems.disks.'.$name, []);
-        if (($config['visibility'] ?? null) !== 'private' || ($config['serve'] ?? false)
+        if (! $this->privateDiskConfiguration($config) || ($config['serve'] ?? false)
             || ! empty($config['url']) || ! in_array($config['driver'] ?? null, ['local', 's3'], true)) {
             throw new ArtifactStorageException('Artifact reading requires its private configured store.');
         }
@@ -94,6 +94,21 @@ class ArtifactStore
         } finally {
             fclose($stream);
         }
+    }
+
+    /**
+     * S3-compatible private object stores commonly omit a visibility key.
+     * Missing S3 visibility uses the provider's private default; explicitly
+     * public visibility is always rejected. Bucket access policy remains the
+     * storage provider's responsibility. Local storage must declare private.
+     */
+    private function privateDiskConfiguration(array $config): bool
+    {
+        return match ($config['driver'] ?? null) {
+            'local' => ($config['visibility'] ?? null) === 'private',
+            's3' => in_array($config['visibility'] ?? null, [null, 'private'], true),
+            default => false,
+        };
     }
 
     private function publishLocal(FilesystemAdapter $disk, string $path, string $body): void
