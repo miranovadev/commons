@@ -122,7 +122,7 @@ class ArtifactStoreTest extends TestCase
 
     public static function s3Races(): array
     {
-        return [['created'], ['existing'], ['race-409'], ['race-412'], ['corrupt'], ['missing-after-write'], ['failed-write']];
+        return [['created'], ['cloud-private'], ['existing'], ['race-409'], ['race-412'], ['corrupt'], ['missing-after-write'], ['failed-write']];
     }
 
     #[DataProvider('s3Races')]
@@ -153,6 +153,10 @@ class ArtifactStoreTest extends TestCase
             }]);
         $adapter = new S3Adapter($client, 'private-bucket', 'shared-root');
         $config = ['driver' => 's3', 'visibility' => 'private', 'serve' => false, 'bucket' => 'private-bucket', 'root' => 'shared-root', 'throw' => true];
+        if ($mode === 'cloud-private') {
+            unset($config['visibility']); // Laravel Cloud private Object Storage omits this key.
+            $config['throw'] = false;
+        }
         config(['artifacts.disk' => 'test-s3', 'filesystems.disks.test-s3' => $config]);
         Storage::set('test-s3', new AwsS3V3Adapter(new Filesystem($adapter), $adapter, $config, $client));
         try {
