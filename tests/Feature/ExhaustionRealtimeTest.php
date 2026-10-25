@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Events\GraphParticipantChanged;
 use App\Events\RealtimeInvalidation;
 use App\Services\ExhaustionService;
+use App\Services\ExplorationEventService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
@@ -88,7 +89,7 @@ class ExhaustionRealtimeTest extends TestCase
     public function test_rolled_back_proof_cannot_escape_into_the_realtime_stream(): void
     {
         [, $phase] = $this->exhaustedBranch();
-        $proof = app(ExhaustionService::class)->inspect($phase);
+        $proof = app(ExplorationEventService::class)->inspect($phase);
         $events = [];
         Event::listen(RealtimeInvalidation::class, function ($event) use (&$events): void {
             $events[] = $event;
@@ -97,7 +98,7 @@ class ExhaustionRealtimeTest extends TestCase
         $this->boundaryTragedyFixture($phase->gate);
         $phase->forceFill(['completed_at' => now()])->save();
         $phase->cycle->forceFill(['rested_at' => now(), 'rest_reason' => 'no_remaining_potential'])->save();
-        app(ExhaustionService::class)->publish($phase, $proof);
+        app(ExplorationEventService::class)->publish($phase, $proof);
         $phase->cycle->forceFill(['completed_at' => now()])->save();
         $this->assertDatabaseCount('tragedies', 1);
         DB::rollBack();

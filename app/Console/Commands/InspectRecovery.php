@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Participant;
 use App\Services\ExhaustionService;
+use App\Services\ExplorationEventService;
 use App\Services\ParticipantExplorationService;
 use App\Services\ParticipantHistoricalContext;
 use App\Services\PotentialChargeService;
@@ -35,7 +36,7 @@ class InspectRecovery extends Command
             ...array_diff_key($selection, ['proposition' => true]),
         ];
         $phase = $participant->cycles()->latest('sequence')->first()?->phases()->orderByDesc('kind')->first();
-        $exhaustion = $phase === null ? null : app(ExhaustionService::class)->inspect($phase);
+        $exploration = $phase === null ? null : app(ExplorationEventService::class)->inspect($phase);
         $this->line(json_encode([
             'participant_id' => $participant->id,
             'position_id' => $participant->current_proposition_id,
@@ -48,7 +49,7 @@ class InspectRecovery extends Command
             'origin_lineages' => DB::table('origin_branch_memberships')->where('proposition_id', $participant->current_proposition_id)->pluck('root_proposition_id')->all(),
             'would_tragedy' => false, // Rest and inspection never publish terminal encounters.
             ...$inspection,
-            'horizon_failure' => $exhaustion,
+            'personal_exploration' => $exploration,
 
         ], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
 

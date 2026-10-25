@@ -376,6 +376,7 @@ class ParticipantExplorationTest extends TestCase
                 $this->assertDoesNotMatchRegularExpression('/insert |update |delete |for update/i', $query['query']);
             }
         }
+        fwrite(STDERR, "\nPERSONAL_FRONTIER queries (2 -> 8 heads): ".$counts[0].' -> '.$counts[1]."\n");
         $this->assertLessThanOrEqual($counts[0], $counts[1], json_encode($counts));
     }
 }

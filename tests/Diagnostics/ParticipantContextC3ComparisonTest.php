@@ -42,6 +42,7 @@ class ParticipantContextC3ComparisonTest extends TestCase
         foreach (['continuation_failures', 'horizon_exploration_states', 'horizon_failure_witnesses'] as $retired) {
             unset($fixture['tables'][$retired]);
         }
+        $fixture['tables']['exploration_events'] = [];
         // Restore a captured graph, not a new lifecycle. Replica mode handles
         // circular foreign keys during this isolated import only.
         DB::statement("SET LOCAL session_replication_role = 'replica'");
