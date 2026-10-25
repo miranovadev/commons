@@ -197,12 +197,13 @@ final readonly class InputSchemaService
             $schema['$defs']['actions']['attestation.create']['anyOf'] = $choices;
         }
 
-        // Repeat judgments remain lawful, but are not renewed exploration by themselves.
-        $meaningful = array_diff(array_keys($schema['$defs']['actions']), ['attestation.create']);
-        if ($meaningful === [] && isset($schema['$defs']['actions']['attestation.create'])) {
-            $ids = collect($attestationOptionIds ?? $writeOptionIds);
+        // Reconsideration remains lawful alongside a qualified completed exploration Rest.
+        $meaningful = array_diff(array_keys($schema['$defs']['actions']), ['attestation.create', 'proposition.revise']);
+        if ($meaningful === [] && $schema['$defs']['actions'] !== []) {
+            $ids = collect($attestationOptionIds ?? $writeOptionIds)->merge($revisionOptionIds)->unique();
             $explored = app(ParticipantExplorationService::class)->exploredIds($occurrence, $ids, $context);
-            if ($ids->diff($explored->keys())->isEmpty()) {
+            if ($ids->diff($explored->keys())->isEmpty()
+                || app(ExplorationEventService::class)->completionWitness($occurrence, $context ?? new ParticipationContext($occurrence)) !== null) {
                 $rest = $this->forPhase($kind, ['participant.rest']);
                 $schema['$defs']['actions']['participant.rest'] = $rest['$defs']['actions']['participant.rest'];
                 $schema['oneOf'][] = ['$ref' => '#/$defs/actions/participant.rest'];
@@ -218,6 +219,12 @@ final readonly class InputSchemaService
 
     private function withReceiptOptions(array $schema, Phase $phase, ?ParticipationContext $context): array
     {
+        if (isset($schema['$defs']['actions']['participant.rest'])
+            && app(ContinuationOpportunityService::class)->pendingEvidence($phase, $context)) {
+            unset($schema['$defs']['actions']['participant.rest']);
+            $schema['oneOf'] = array_values(array_filter($schema['oneOf'],
+                fn ($option) => ($option['$ref'] ?? null) !== '#/$defs/actions/participant.rest'));
+        }
         $ids = $this->receipts->loadOptions($phase, $context)->pluck('id')->sort()->values()->all();
         $unloadIds = $this->receipts->unloadOptions($phase)->all();
         if ($ids === [] && $unloadIds === []) {

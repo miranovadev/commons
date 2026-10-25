@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
+use App\Models\EvidenceExecution;
 use App\Models\Phase;
 use App\Services\Participation\ParticipationContext;
 
@@ -29,6 +30,31 @@ final class ContinuationOpportunityService
         return false;
     }
 
+    public function pendingEvidence(Phase $phase, ?ParticipationContext $context = null): bool
+    {
+        $query = fn () => EvidenceExecution::where('cycle_id', $phase->cycle_id)
+            ->whereIn('status', ['pending', 'presented'])->exists();
+
+        return $context === null ? $query() : $context->remember('pending-evidence:'.$phase->cycle_id, $query);
+    }
+
+    /** Acquisition is not forward progress, but an unfinished test cannot publish an encounter. */
+    public function unfinishedEvidence(Phase $phase, ParticipationContext $context): bool
+    {
+        if ($this->pendingEvidence($phase, $context)) {
+            return true;
+        }
+        foreach (array_intersect(config('phases.'.$phase->kind->value.'.actions', []), ['instrument.execute', 'preparation.start']) as $action) {
+            if (app(PhaseGenerationService::class)->available($phase, $action, $context)
+                && ($action === 'preparation.start' || app(PropositionOptionService::class)->instrumentOptionsFor($phase, $context)->isNotEmpty())) {
+                return true;
+            }
+        }
+
+        return $this->awaitingEvidence($phase, $context);
+    }
+
+    /** Forward creation or access to an existing forward continuation; never reconsideration. */
     public function advancing(Phase $phase, ?ParticipationContext $context = null): bool
     {
         $context ??= new ParticipationContext($phase);
@@ -36,18 +62,15 @@ final class ContinuationOpportunityService
         $options = app(PropositionOptionService::class);
         $actions = config('phases.'.$phase->kind->value.'.actions', []);
         foreach ($actions as $action) {
-            if (in_array($action, ['proposition.variant', 'attestation.create'], true)
+            if (in_array($action, ['proposition.variant', 'attestation.create', 'proposition.revise', 'instrument.execute', 'preparation.start'], true)
                 || ! $generation->available($phase, $action, $context)) {
                 continue;
             }
             $available = match ($action) {
                 'proposition.reclassify' => $phase->kind !== PhaseKind::Bias || $options->gateOptionsFor($phase, $context)->isNotEmpty(),
                 'proposition.reconcile' => app(ReconciliationOptionService::class)->forPhase($phase, $context)->isNotEmpty(),
-                'proposition.revise' => $options->revisionOptionsFor($phase, $phase->cycle->participant, $context)->isNotEmpty(),
                 'proposition.traverse' => $options->traversalOptionsFor($phase, $context, base: true)->isNotEmpty(),
                 'proposition.commit' => app(ClosureOptionService::class)->committableFor($phase, $context)->isNotEmpty(),
-                'instrument.execute' => $options->instrumentOptionsFor($phase, $context)->isNotEmpty(),
-                'preparation.start' => true,
                 default => false,
             };
             if ($available) {

@@ -330,6 +330,9 @@ final readonly class ParticipationService
                 throw new ConflictHttpException('A Preparation started while this contribution was pending.');
             }
             if ($input['action'] === 'participant.rest') {
+                if (app(ContinuationOpportunityService::class)->pendingEvidence($phase)) {
+                    throw new ConflictHttpException('Resolve the pending evidence execution before Rest.');
+                }
                 // The Rest witness describes the guarded pre-completion field.
                 // A stale proof is discarded and can be retried after this Rest.
                 $validProof = $explorationWitness !== null && $explorationWitness['stable']

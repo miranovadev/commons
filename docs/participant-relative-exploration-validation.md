@@ -1,5 +1,7 @@
 # Stage B validation and acceptance coverage
 
+The initial results below are the pre-correction checkpoint. Claire subsequently clarified that Revise is reconsideration, not forward progress. The continuation section records validation of that correction.
+
 Base: `eeee6a6d81c4a32f605624f4804775f46af17bf4`. PR: [#280](https://github.com/miranovadev/commons/pull/280). Fresh databases only. No merge or deployment is part of this change. Cadence, observable calculations, canonical snapshots, evidence allowances, Commit and terminal lifecycle mathematics are unchanged.
 
 ## Coverage map

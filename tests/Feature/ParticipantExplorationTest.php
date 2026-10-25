@@ -12,6 +12,7 @@ use App\Services\EvidenceExecutionService;
 use App\Services\ExplorationEventService;
 use App\Services\HomologousMediationService;
 use App\Services\HorizonReceiptService;
+use App\Services\InputPlanService;
 use App\Services\MediationAnchorService;
 use App\Services\MediationReadService;
 use App\Services\ParticipantExplorationService;
@@ -53,6 +54,41 @@ class ParticipantExplorationTest extends TestCase
         $this->assertSame($nova->id, $return->cycle->participant_id);
         $this->assertSame(0, Tragedy::count());
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
+    }
+
+    public function test_prior_cycle_refute_keeps_revision_selectable_without_reopening_or_blocking_variant(): void
+    {
+        [$signal, $persist, $constrain, $head, $terminal] = $this->personalJourney('refute');
+        $return = $this->returnAfterRest($terminal);
+        $exploration = app(ParticipantExplorationService::class);
+        self::assertTrue($exploration->explored($head, $return));
+        self::assertTrue($exploration->explored($signal, $return));
+        self::assertTrue(app(PhaseGenerationService::class)->available($return, 'proposition.variant'));
+        $phase = $return;
+        foreach ([$signal, $persist, $constrain] as $node) {
+            $phase = app(PhaseProgressionService::class)->advance($phase, $node);
+        }
+        $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);
+        self::assertContains($head->id, $plan['schema']['$defs']['actions']['proposition.revise']['properties']['proposition_id']['enum']);
+        self::assertArrayHasKey('attestation.create', $plan['schema']['$defs']['actions']);
+        self::assertArrayHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
+        $history = DB::table('exploration_events')->get()->toJson();
+        $revision = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+            ['action' => 'proposition.revise', 'proposition_id' => $head->id, 'statement' => 'Reconsidered at the same position']);
+        $this->measure($revision, 0);
+        self::assertTrue($exploration->explored($signal, $phase));
+        self::assertSame($history, DB::table('exploration_events')->get()->toJson());
+    }
+
+    public function test_pending_evidence_cannot_qualify_an_exploration_completion(): void
+    {
+        [, , , $head, $terminal] = $this->personalJourney();
+        self::assertNotNull(app(ExplorationEventService::class)->inspect($terminal)['witness']);
+        app(EvidenceExecutionService::class)->start($terminal, $head, 'citation', $this->origin->id);
+        self::assertNull(app(ExplorationEventService::class)->inspect($terminal)['witness']);
+        self::assertDatabaseCount('exploration_events', 0);
+        $plan = app(InputPlanService::class)->forPhase($terminal->cycle->participant, $terminal);
+        self::assertFalse($plan['rest_available']);
     }
 
     public function test_personal_variant_follows_complete_frontier_and_does_not_reset_history(): void
@@ -260,7 +296,7 @@ class ParticipantExplorationTest extends TestCase
         $this->assertSame($history, DB::table('exploration_events')->get()->toJson());
     }
 
-    public function test_hard_revision_replaces_the_head_and_reopens_only_its_forward_lineage(): void
+    public function test_hard_revision_preserves_the_encounter_until_forward_progress_becomes_available(): void
     {
         [$signal, , $constrain, $head, $terminal] = $this->personalJourney();
         $return = $this->returnAfterRest($terminal);
@@ -269,7 +305,11 @@ class ParticipantExplorationTest extends TestCase
         $context = new ParticipationContext($return);
         $exploration = app(ParticipantExplorationService::class);
         $this->assertSame([$revision->id], $exploration->heads($signal->id, $return, $context)->keys()->all());
-        $this->assertFalse($exploration->explored($signal, $return, $context));
+        self::assertTrue($exploration->explored($signal, $return, $context));
+        self::assertTrue($exploration->explored($revision, $return));
+        $forward = $this->node($this->phase($revision, PhaseKind::Mediate), $revision);
+        self::assertFalse($exploration->explored($signal, $return));
+        self::assertFalse($exploration->explored($forward, $return));
         $this->assertDatabaseHas('exploration_events', ['proposition_id' => $head->id]);
     }
 

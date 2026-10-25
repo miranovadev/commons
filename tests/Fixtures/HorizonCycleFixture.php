@@ -89,12 +89,16 @@ trait HorizonCycleFixture
             $preferredJudgment = collect($actions['attestation.create']['anyOf'] ?? [])
                 ->contains(fn ($choice) => $choice['properties']['direction']['enum'][0] === ($expressiveDirection ?? $originDirection));
             // Judge an existing Write before generating another reconciliation.
+            // At entry, reconsider an existing route when neither the preferred
+            // judgment nor fresh generation is available. New structure elsewhere
+            // no longer resets personal encounters through an Exploration Epoch.
             // Acquisition no longer selects/advances through an unjudged Write.
             $action = collect(['preparation.start', 'instrument.execute', 'proposition.commit', 'proposition.reclassify', 'attestation.create',
                 'proposition.variant', 'proposition.reconcile', 'proposition.traverse', 'participant.rest'])
                 ->first(fn ($candidate) => isset($actions[$candidate])
                     && ($candidate !== 'instrument.execute' || $needsEvidence || count($actions) === 1)
-                    && ($candidate !== 'attestation.create' || $preferredJudgment))
+                    && ($candidate !== 'attestation.create' || $preferredJudgment
+                        || ($plan['phase']['number'] === 1 && ! isset($actions['proposition.variant']))))
                 ?? 'attestation.create';
             $definition = $actions[$action];
             $input = ['action' => $action];

@@ -17,15 +17,27 @@ final class ExplorationEventService
         $version = app(PotentialProjectionService::class)->assertCurrent($substrateId);
         $context = new ParticipationContext($phase);
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);
+        $witness = isset($plan['schema']['$defs']['actions']['participant.rest'])
+            ? $this->completionWitness($phase, $context) : null;
+
+        return ['phase_id' => $phase->id, 'participant_id' => $phase->cycle->participant_id,
+            'position_id' => $phase->gate_proposition_id, 'field_version' => $version,
+            'rest_reason' => $plan['rest_reason'] ?? 'no_available_move', 'witness' => $witness,
+            'stable' => $version === (int) Substrate::whereKey($substrateId)->value('field_version')];
+    }
+
+    /** Base encounter proof shared with Rest planning; never calls InputPlan. */
+    public function completionWitness(Phase $phase, ParticipationContext $context): ?array
+    {
         $witness = null;
         $gate = $context->propositions->get($phase->gate_proposition_id);
         $arrival = $phase->cycle->phases()->where('kind', $phase->kind->value - 1)->whereNotNull('completed_at')->first();
-        if (isset($plan['schema']['$defs']['actions']['participant.rest']) && $gate?->tier === 'expressive'
+        if ($gate?->tier === 'expressive'
             && $phase->kind->value >= PhaseKind::Mediate->value
             && $gate->phase->kind->value === $phase->kind->value - 1 && $arrival !== null
             && app(ParticipantExplorationService::class)->heads($gate->id, $phase, $context)->keys()->all() === [$gate->id]
             && ! app(ContinuationOpportunityService::class)->advancing($phase, $context)
-            && ! app(ContinuationOpportunityService::class)->awaitingEvidence($phase, $context)) {
+            && ! app(ContinuationOpportunityService::class)->unfinishedEvidence($phase, $context)) {
             $state = app(PropositionStateService::class);
             $judgment = $state->attestations(collect([$gate]), $context)->first();
             $receipt = $state->evidenceReceipts($gate, $context)
@@ -38,10 +50,7 @@ final class ExplorationEventService
             }
         }
 
-        return ['phase_id' => $phase->id, 'participant_id' => $phase->cycle->participant_id,
-            'position_id' => $phase->gate_proposition_id, 'field_version' => $version,
-            'rest_reason' => $plan['rest_reason'] ?? 'no_available_move', 'witness' => $witness,
-            'stable' => $version === (int) Substrate::whereKey($substrateId)->value('field_version')];
+        return $witness;
     }
 
     /** Called inside the same Substrate/Participant/Cycle/Phase locks as Rest completion. */

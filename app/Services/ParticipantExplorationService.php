@@ -36,8 +36,8 @@ final class ParticipantExplorationService
             return $context->remember('explored:'.$phase->id.':'.$id, function () use ($id, $phase, $context, $events, $evaluation): bool {
                 $heads = $this->heads($id, $phase, $context);
 
-                return $heads->isNotEmpty() && $heads->every(function ($head) use ($phase, $events, $evaluation): bool {
-                    $encounters = $events->get($head->id, collect());
+                return $heads->isNotEmpty() && $heads->every(function ($head) use ($phase, $context, $events, $evaluation): bool {
+                    $encounters = $this->encounters($head, $phase, $context, $events);
                     if (! $encounters->contains(fn ($event) => $event->context_horizon_id === $phase->cycle->context_horizon_id
                         && $event->entry_committal_id === $phase->cycle->entry_committal_id)) {
                         return false;
@@ -114,30 +114,33 @@ final class ParticipantExplorationService
                 return false;
             }
             $phase = $this->probe($head, $acting, $context);
-            if (app(ContinuationOpportunityService::class)->advancing($phase, $context)) {
-                return true;
-            }
-            // Revise advances this head from its producing position, not from
-            // the next Phase. Ownership and prior-Cycle Refute stay authoritative.
-            if (! in_array('proposition.revise', config('phases.'.$head->phase->kind->value.'.actions', []), true)) {
-                return false;
-            }
-            if ($head->phase->cycle->participant_id !== $acting->cycle->participant_id
-                || ! $context->effectiveAttestations(collect([$head->id]))->contains(fn ($vote) => $vote->direction === 'refute'
-                    && $vote->phase->cycle->participant_id === $acting->cycle->participant_id
-                    && $vote->phase->cycle->sequence < $acting->cycle->sequence)) {
-                return false;
-            }
-            $source = app(StructuralSourceService::class)->forProposition($head, $context);
-            $gate = $context->propositions->get($source['structural_source_id'] ?? null);
-            if ($gate === null) {
-                return false;
-            }
-            $revision = $this->probe($gate, $acting, $context);
 
-            return app(PropositionOptionService::class)->revisionOptionsFor($revision, $acting->cycle->participant, $context)
-                ->contains('id', $head->id);
+            return app(ContinuationOpportunityService::class)->advancing($phase, $context);
         });
+    }
+
+    /** Revision changes the same position; it does not erase a personal encounter there. */
+    private function encounters(Proposition $head, Phase $phase, ParticipationContext $context, Collection $events): Collection
+    {
+        $ids = collect();
+        $pending = [$head->id];
+        while ($pending !== []) {
+            $id = array_pop($pending);
+            if ($ids->has($id)) {
+                continue;
+            }
+            $ids->put($id, true);
+            foreach ($context->parents->get($id, collect())->where('type', 'revise') as $edge) {
+                $source = $context->propositions->get($edge->source_proposition_id);
+                if ($source !== null && $source->phase->kind === $head->phase->kind && $source->register === $head->register
+                    && $source->phase->cycle->context_horizon_id === $phase->cycle->context_horizon_id
+                    && ($context->seedIds()[$source->id] ?? null) === $phase->cycle->entry_committal_id) {
+                    $pending[] = $source->id;
+                }
+            }
+        }
+
+        return $ids->keys()->flatMap(fn ($id) => $events->get($id, collect()));
     }
 
     private function probe(Proposition $head, Phase $acting, ParticipationContext $context): Phase
@@ -155,7 +158,7 @@ final class ParticipantExplorationService
                 ->where('cycle.participant_id', $acting->cycle->participant_id)
                 ->whereIn('event.proposition_id', $context->propositions->keys())
                 ->get(['event.*', 'cycle.entry_committal_id', 'cycle.context_horizon_id'])->groupBy('proposition_id'));
-            $encounter = $events->get($head->id, collect())->first(fn ($event) => $event->entry_committal_id === $acting->cycle->entry_committal_id
+            $encounter = $this->encounters($head, $acting, $context, $events)->first(fn ($event) => $event->entry_committal_id === $acting->cycle->entry_committal_id
                 && $event->context_horizon_id === $acting->cycle->context_horizon_id);
             $witness = $encounter === null ? [] : json_decode($encounter->witness, true, flags: JSON_THROW_ON_ERROR);
             $phase->setRelation('arrivalAnchor', $context->propositions->get($witness['arrival_source_id'] ?? null));
@@ -168,7 +171,7 @@ final class ParticipantExplorationService
     private function withProbeBoundaries(Phase $phase, ParticipationContext $context, Collection $ids): ParticipationContext
     {
         return $context->remember('exploration-boundaries:'.$phase->id, function () use ($phase, $context, $ids): ParticipationContext {
-            $heads = $context->nodes($ids)->filter(fn ($head) => $head->tier === 'expressive'
+            $heads = $ids->flatMap(fn ($id) => $this->heads($id, $phase, $context)->values())->unique('id')->filter(fn ($head) => $head->tier === 'expressive'
                 && $head->phase->kind !== PhaseKind::Order
                 && $head->phase->cycle->context_horizon_id === $phase->cycle->context_horizon_id
                 && ($context->seedIds()[$head->id] ?? null) === $phase->cycle->entry_committal_id
