@@ -1,0 +1,267 @@
+{
+  "revision": "0172cf92abfe9b66534345c0bb40abbafb1e5661",
+  "driver": "SQLite",
+  "tests": 37,
+  "assertions": 269,
+  "cases": [
+    {
+      "class": "Tests\\Feature\\HomologousOrderTest",
+      "name": "test_tie_uses_default_or_explicit_history_and_ignores_unresolved_members",
+      "assertions": 16,
+      "seconds": 2.653192,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\HomologousOrderTest",
+      "name": "test_homologous_frozen_selection_never_previews_new_closure",
+      "assertions": 5,
+      "seconds": 0.823421,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\HomologousOrderTest",
+      "name": "test_frozen_component_directions_control_matching_even_when_numeric_closure_is_zero",
+      "assertions": 5,
+      "seconds": 1.110914,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\HomologousOrderTest",
+      "name": "test_wrong_coordinates_and_broken_committed_history_cannot_supply_traverse",
+      "assertions": 8,
+      "seconds": 1.804625,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\HomologousOrderTest",
+      "name": "test_missing_ancestor_read_data_fails_closed_without_rewriting_immutable_storage",
+      "assertions": 3,
+      "seconds": 0.661555,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\HomologousOrderTest",
+      "name": "test_inadmissible_local_gate_keeps_homologous_traverse_without_gaining_commit_or_evidence",
+      "assertions": 12,
+      "seconds": 1.337054,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\HomologousOrderTest",
+      "name": "test_navigation_only_head_can_complete_exploration_without_losing_homologous_traverse",
+      "assertions": 16,
+      "seconds": 2.439851,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\HomologousOrderTest",
+      "name": "test_homologous_traverse_completes_cycle_and_enters_selected_committal_without_edges",
+      "assertions": 9,
+      "seconds": 1.264124,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\HomologousOrderTest",
+      "name": "test_component_plan_keeps_local_commit_option_despite_opposite_population",
+      "assertions": 4,
+      "seconds": 1.676008,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\HomologousOrderTest",
+      "name": "test_direct_local_committal_remains_traversable_when_it_is_not_dominant",
+      "assertions": 3,
+      "seconds": 1.560963,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\HomologousOrderTest",
+      "name": "test_other_phases_and_direct_progression_do_not_bypass_authorization",
+      "assertions": 3,
+      "seconds": 1.178346,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\HomologousOrderTest",
+      "name": "test_boundary_traverse_enters_the_selected_committals_opened_horizon",
+      "assertions": 5,
+      "seconds": 2.129988,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\HomologousOrderTest",
+      "name": "test_same_horizon_homologues_are_distinct_and_included_once",
+      "assertions": 4,
+      "seconds": 1.117184,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\HomologousOrderTest",
+      "name": "test_order_population_discovery_and_selection_are_batched",
+      "assertions": 3,
+      "seconds": 2.6485,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\HomologousOrderTest",
+      "name": "test_operational_homologous_continuation_rejects_rest_without_publishing_failure",
+      "assertions": 2,
+      "seconds": 1.217097,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\HomologousOrderTest",
+      "name": "test_structural_population_without_resolved_continuation_allows_legitimate_rest",
+      "assertions": 7,
+      "seconds": 2.555818,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_completed_rest_records_one_personal_head_and_preserves_other_participants_actions",
+      "assertions": 13,
+      "seconds": 2.088912,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_prior_cycle_refute_keeps_revision_selectable_without_reopening_or_blocking_variant",
+      "assertions": 8,
+      "seconds": 2.420303,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_rest_coexists_with_lawful_reconsideration_of_an_explored_write",
+      "assertions": 6,
+      "seconds": 2.814256,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_pending_evidence_cannot_qualify_an_exploration_completion",
+      "assertions": 4,
+      "seconds": 1.109072,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_personal_variant_follows_complete_frontier_and_does_not_reset_history",
+      "assertions": 8,
+      "seconds": 2.219228,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_branching_ancestor_requires_all_active_heads_and_a_new_head_reopens_it",
+      "assertions": 11,
+      "seconds": 2.99649,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_reversal_and_unrelated_updates_do_not_reopen_and_cold_hydrated_plans_agree",
+      "assertions": 6,
+      "seconds": 1.671955,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_stale_uncompleted_and_rolled_back_rest_cannot_publish_events",
+      "assertions": 5,
+      "seconds": 1.690852,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_unrecorded_arrival_or_untested_head_is_not_an_exploration_encounter",
+      "assertions": 2,
+      "seconds": 2.404218,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_a_lawful_attestation_reversal_reopens_only_when_it_enables_bias_generation",
+      "assertions": 9,
+      "seconds": 2.700776,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_new_reconciliation_opportunity_uses_the_personal_arrival_during_recovery",
+      "assertions": 7,
+      "seconds": 2.01614,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_historical_head_is_rechecked_when_reconsideration_completes_commit_grounding",
+      "assertions": 5,
+      "seconds": 1.33637,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_new_receipt_alone_does_not_reopen_a_head_without_generating_opportunities",
+      "assertions": 2,
+      "seconds": 1.658876,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_a_new_receipt_reopens_only_after_it_completes_a_lawful_generating_opportunity",
+      "assertions": 8,
+      "seconds": 3.110583,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_hard_revision_preserves_the_encounter_until_forward_progress_becomes_available",
+      "assertions": 6,
+      "seconds": 1.874566,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_a_reconcile_counterpart_edge_does_not_authorize_the_other_operands_route",
+      "assertions": 10,
+      "seconds": 1.852372,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_local_reconciliation_preserves_the_other_operands_existing_attestation_route",
+      "assertions": 2,
+      "seconds": 1.011348,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_event_publication_checks_frozen_arrival_identity_and_retries_are_idempotent",
+      "assertions": 4,
+      "seconds": 0.640191,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_hydrated_evaluation_memoizes_the_full_frontier_without_per_ancestor_queries",
+      "assertions": 3,
+      "seconds": 1.058605,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_personal_events_are_append_only",
+      "assertions": 1,
+      "seconds": 0.878145,
+      "outcome": "passed"
+    },
+    {
+      "class": "Tests\\Feature\\ParticipantExplorationTest",
+      "name": "test_cold_frontier_queries_are_batched_as_personal_heads_grow",
+      "assertions": 44,
+      "seconds": 3.166607,
+      "outcome": "passed"
+    }
+  ]
+}

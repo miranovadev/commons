@@ -1,79 +1,79 @@
-# Stage B: forward exploration validation
+# Stage B: forward generation vs traversal validation
 
-PR [#280](https://github.com/miranovadev/commons/pull/280). Base/current main: `eeee6a6d81c4a32f605624f4804775f46af17bf4`. Final functional/test revision: `b6e701d2c70be8adfeeed3685f3df216435091e7`. A later documentation-only commit records the results. Fresh database only; no production cook, deployment or merge.
+PR [#280](https://github.com/miranovadev/commons/pull/280). Tested correction: `0172cf92abfe9b66534345c0bb40abbafb1e5661`. Starting PR checkpoint: `80316ea7a24ceb510263dba1cba35d24894d50ee` (application/tests previously validated at `b6e701d2c70be8adfeeed3685f3df216435091e7`). Current main was rechecked and remains `eeee6a6d81c4a32f605624f4804775f46af17bf4`.
 
-This report supersedes the [initial Stage B checkpoint](evidence/participant-exploration-forward/initial-stage-b-validation.md). In particular, that checkpoint's interpretation of Revise as an advancing opportunity was incorrect under Claire's approved continuation handoff.
+This report supersedes the [reconsideration correction checkpoint](evidence/participant-exploration-generation/reconsideration-checkpoint.md). That checkpoint restored natural Commit/recovery journeys but still counted Traverse in the shared head-opportunity predicate. A later documentation-only commit records these final results. Fresh database only; no production cook, deployment or merge.
 
-## Correction and preserved authority
+## Final correction
 
-- Forward development is Variant, Reconcile, Reclassify and Commit. Fresh Variant stays outside its own prerequisite frontier. Traverse accesses existing authorized forward structure.
-- Attestation and Revise remain ordinary lawful actions. Neither availability nor execution alone reopens exploration. Applicability follows an exact same-position revision chain; the resulting active head is re-evaluated for forward opportunities.
-- All relevant reachable active heads must be explored. Hard-superseded inputs do not become independent heads; local/foreign Reconcile, Horizon, Region and arrival restrictions remain authoritative.
-- Rest can coexist with reconsideration. Its shared non-recursive completion witness distinguishes a tested encounter from ordinary actionless Rest. Pending evidence executions block Rest, with an authoritative locked recheck. Acquisition and missing evidence remain completion safeguards, not automatic reopening events.
-- No observable calculator, Cadence, Receipt authority or allowance, Commit threshold, canonical snapshot rule, terminal lifecycle authority, or movement permission changed.
-
-## Natural lifecycle correction
-
-The original natural driver was rerun after correcting production behavior. It no longer stalled on Revise but still depended on an unrelated Variant resetting old exploration. The first changed target is action 24, Cycle 7 Distinguish: the old transcript traverses its first route, while the personal model correctly retains that encounter and selects the newer route. At action 25 the resulting Persist decision differs.
-
-The corrected driver permits ordinary entry Attestation reconsideration when its preferred judgment and fresh Variant are unavailable. No action is forced through validation. It reaches a real Commit in 77 recorded operations with ordinary Preparation, Reconcile, both Receipt consumption boundaries, real calculators and preserved source/snapshot assertions. The [recorded journey and fixture notes](evidence/participant-exploration-forward/README.md) explain the fixed HTTP replay, observer path and consequential Tragedy golden values. No synthetic Exploration Events are used in these natural journeys.
-
-The three formerly failing HTTP lifecycle/recovery/source-equivalence journeys and Commit-descendant history passed locally together: **6 tests, 3,617 assertions**. The dependent Tragedy HTTP journey passed **898 assertions** after updating its recorded node alias, Cycle population and exact mathematical expectations for the new chronology. Its independent margin equation, attenuation/canonical checks, closed-boundary behavior and absence of Tragedy/exhaustion remain asserted.
-
-## Final CI results
-
-**All newly introduced lifecycle failures are resolved. The PR is ready for Claire's review, with established baseline failures still visible. It is not merged.**
-
-| Check | Final result | Evidence |
+| Category | Operations | Current contract |
 | --- | --- | --- |
-| Core / PostgreSQL | **1,502 passed; 1 baseline failure**, 15,491 assertions | [Run](https://github.com/miranovadev/commons/actions/runs/40176879959) |
-| SQLite migrations | 14 passed, 46 assertions | Core shard 1 |
-| Integration | **31 passed; 3 baseline failures**, all 34 discovered cases executed, no skips, 7,194 assertions | [Run](https://github.com/miranovadev/commons/actions/runs/40176884036), [complete inventory](evidence/participant-exploration-forward/integration-summary.json) |
-| Phase Profile | **All 12 jobs passed**, including both real Commit-history journeys on SQLite and PostgreSQL | [Run](https://github.com/miranovadev/commons/actions/runs/40176879982) |
-| C3 | 107 focused tests / 1,027 assertions and recorded comparison / 1,390 assertions passed | [Run](https://github.com/miranovadev/commons/actions/runs/40176883961) |
-| Frontend | TypeScript/Vite build and all 148 UI tests passed | Core frontend job |
-| Inspector | Browser review passed | [Run](https://github.com/miranovadev/commons/actions/runs/40176884065) |
-| Query | **13 passed; 9 baseline failures**, 953 assertions | [Run](https://github.com/miranovadev/commons/actions/runs/40176049575) |
-| Load / PostgreSQL concurrency | **18 passed; 8 baseline failures**, 178 assertions | [Run](https://github.com/miranovadev/commons/actions/runs/40176049508) |
+| Forward generation | Variant, Reconcile, Reclassify, Commit | New authorized active structure or newly lawful generation reopens the relevant head |
+| Forward movement | Traverse | Navigation remains lawful; availability alone never reopens exploration |
+| Reconsideration | Attestation, Revise | Remains independently lawful; resulting generating eligibility is re-evaluated |
 
-All nine specifically requested natural Commit/recovery test classes pass in Integration: CommitSourceHistoryLifecycle, CommitDescendantHistoryLifecycle, ParticipationLifecycleRegression, ParticipationRecovery, ParticipationSourceEquivalence, HorizonProofCycle, OperationalClosurePath, ParticipationHttpHarness and FullEvidenceFlow. The repaired ParticipationTragedyLifecycle test also passes.
+`ContinuationOpportunityService::nonVariantGenerationAvailable` explicitly checks base Reconcile, Reclassify and Commit opportunities. It replaces the ambiguous `advancing` predicate. Fresh Variant stays outside its own prerequisites; existing reachable Variants remain part of active-head discovery. `ParticipantExplorationService::canGenerateFromHead` and the qualified-Rest witness share this predicate without recursive planning.
 
-Query and Load ran at `978606750fbe621c153187d9c239310c18f350b6`. All application code is identical at the final revision; subsequent changes add regression proofs, repair authored fixture expectations and document baseline evidence.
+Rest planning now permits forward movement alongside a qualified completed encounter. Traversal destinations participate in the existing-target check: an unexplored reachable head still prevents an ancestor from claiming completion. A lawful homologous Order Traverse can coexist with a tested local dead end without turning foreign navigation into local causal ancestry. Unrecorded arrival, missing judgment/evidence, pending execution, stale/rolled-back actions and voluntary Rest still cannot manufacture Exploration Events.
 
-## Baseline failures
+No traversal authority, personal destination filter, arrival path, Region/Horizon boundary, Commit traversal rule, observable calculator, Cadence, Receipt authority, Instrument/Preparation allowance, Commit threshold or terminal lifecycle rule changed. Historical events remain immutable. No epoch, quota or shared spentness was introduced.
 
-The unchanged base was checked independently; its files and fixtures were not modified:
+## Validation against the checkpoint
 
-- Core: `ChargeBoundaryTragedyTest::test_ordinary_unmocked_observables_can_reach_the_boundary` expects Settlement but reaches Emergence at `NaturalBoundaryHistory.php:63`. [Base Core run](https://github.com/miranovadev/commons/actions/runs/40166689571).
-- Integration: both data sets of `FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit` exhaust the existing driver budget without Commit. `NaturalChargeBoundaryLifecycleTest::test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor` fails the same Settlement/Emergence fixture assertion. A fresh base run executed 10 selected cases: **7 passed, 3 failed, 2,218 assertions**; [case inventory](evidence/participant-exploration-forward/baseline-comparison.json).
-- Query: the dense Order payload is 54,511 bytes versus the unchanged 45,000-byte ceiling (base 55,062); eight performance fixtures lack authorized prospective Closure. [Base Query run](https://github.com/miranovadev/commons/actions/runs/40166689511).
-- Load: the same eight previously verified concurrency failures remain: missing Closure fixtures, duplicate identical-transition receipt state, a worker that does not reach its intended lock, and a graph/detail direction expectation. [Base Load run](https://github.com/miranovadev/commons/actions/runs/40166689535).
+**No new regressions remain. Natural Commit and recovery retain the passing checkpoint, and all remaining failures match established main failures. The correction is ready for Claire’s review; it is not merged.** The [CI inventory](evidence/participant-exploration-generation/ci-summary.json) records exact jobs, counts and runtimes.
 
-Mathematical assertions and workflow/query ceilings were not weakened to hide these failures.
+| Check | Current correction | Previous checkpoint | Evidence |
+| --- | --- | --- | --- |
+| Personal exploration / homologous navigation | **37 passed, 269 assertions** | New navigation/Rest regression and stronger destination/branch assertions | [Case inventory](evidence/participant-exploration-generation/focused-summary.json) |
+| Core / PostgreSQL | **1,503 passed; 1 baseline failure; 15,511 assertions** | 1,502 passed; 1 baseline failure; 15,491 assertions | [Run](https://github.com/miranovadev/commons/actions/runs/40179542937) |
+| SQLite migrations | **14 passed, 46 assertions** | 14 passed, 46 assertions | Core shard 1 |
+| Integration | **31 passed; 3 baseline failures; all 34 cases executed, no skips; 7,194 assertions** | 31 passed; 3 baseline failures; 34 cases; 7,194 assertions | [Run](https://github.com/miranovadev/commons/actions/runs/40179547734), [inventory](evidence/participant-exploration-generation/integration-summary.json) |
+| Phase Profile | **All 12 jobs passed** | All 12 jobs passed | [Run](https://github.com/miranovadev/commons/actions/runs/40179542901) |
+| C3 Context | **107 tests / 1,027 assertions and recorded comparison / 1,390 assertions passed** | 107 tests / 1,027 assertions; recorded comparison / 1,390 assertions | [Run](https://github.com/miranovadev/commons/actions/runs/40179547671) |
+| Frontend | **TypeScript/Vite and all 148 UI tests passed** | TypeScript/Vite and 148 UI tests passed | Core frontend job |
+| Inspector | Passed | Passed | [Run](https://github.com/miranovadev/commons/actions/runs/40179547712) |
+| Query | **13 passed; 9 baseline failures; 953 assertions** | 13 passed; 9 baseline failures; 953 assertions | [Run](https://github.com/miranovadev/commons/actions/runs/40179545369) |
+| Load / PostgreSQL concurrency | **18 passed; 8 baseline failures; 178 assertions** | 18 passed; 8 baseline failures; 178 assertions | [Run](https://github.com/miranovadev/commons/actions/runs/40179545378) |
 
-## Regression coverage and fixture boundaries
+All nine requested natural Commit/recovery classes pass: `CommitSourceHistoryLifecycleTest`, `CommitDescendantHistoryLifecycleTest`, `ParticipationLifecycleRegressionTest`, `ParticipationRecoveryTest`, `ParticipationSourceEquivalenceTest`, `HorizonProofCycleTest`, `OperationalClosurePathTest`, `ParticipationHttpHarnessTest` and `FullEvidenceFlowTest`. `ParticipationTragedyLifecycleTest` also passes. Integration's complete inventory, failure identities and assertion count exactly match the checkpoint.
 
-| Continuation handoff cases | Coverage |
+The 77-operation natural Commit driver, fixed HTTP transcript, causal observer route and exact Tragedy assertions are unchanged by this final correction. No synthetic Exploration Events were inserted into lifecycle journeys. The [previous lifecycle evidence](evidence/participant-exploration-forward/README.md) remains applicable. Query and Load were rerun at the same correction SHA as all application validation; no ceiling or assertion was relaxed.
+
+## Established main failures
+
+Main's SHA is unchanged from the independent baseline verification. The complete prior evidence and counts are preserved in the checkpoint report.
+
+- **Core:** `ChargeBoundaryTragedyTest::test_ordinary_unmocked_observables_can_reach_the_boundary` expects Settlement but reaches Emergence at `NaturalBoundaryHistory.php:63`. [Main run](https://github.com/miranovadev/commons/actions/runs/40166689571).
+- **Integration:** both data sets of `FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit` exhaust the unchanged aligned-driver budget; `NaturalChargeBoundaryLifecycleTest::test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor` has the same Settlement/Emergence assertion. The independent main selection ran 10 cases: 7 passed, 3 failed, 2,218 assertions. [Inventory](evidence/participant-exploration-forward/baseline-comparison.json).
+- **Query:** one dense Order payload exceeds the unchanged 45,000-byte ceiling; eight performance fixtures lack authorized prospective Closure. [Main run](https://github.com/miranovadev/commons/actions/runs/40166689511).
+- **Load:** missing Closure fixtures, duplicate identical-transition Receipt state, a worker failing to reach its intended lock, and a graph/detail direction expectation account for the existing eight failures. [Main run](https://github.com/miranovadev/commons/actions/runs/40166689535).
+
+The current Query and Load failure headings match both the previous checkpoint and the independent main runs. The dense Order payload remains **54,511 bytes**, identical to the checkpoint (main: 55,062), above the unchanged 45,000-byte ceiling. Integration's three exact case identities and Core's Charge-boundary assertion are unchanged. See the [baseline comparisons](evidence/participant-exploration-generation/comparison.json). The additional validation-branch Core run has the same sole baseline failure; its duplicate Phase Profile run also passes all jobs.
+
+## Focused acceptance coverage
+
+| Final handoff cases | Evidence |
 | --- | --- |
-| 1, 3, 11: Revise availability, selection and Variant | Prior-Cycle self-Refute test asserts explored status, independently selectable Revise/Attestation, lawful fresh Variant, actual Revision, and immutable history |
-| 2, 4, 5, 10: reversal and unrelated updates | Existing personal reversal/independent-update test; no reset from Cycle or field version |
-| 6: newly lawful Reclassify | Actual Attestation dispatch changes Bias eligibility; cold and hydrated exploration both reopen the relevant ancestry |
-| 7: newly lawful Reconcile | Controlled Correspondence change exposes an ordinary counterpart through the personal recorded Mediate arrival |
-| 8: newly lawful Commit | Isolated historical input plus actual Attestation completes Commit grounding; ordinary Closure selection and ancestor reopening are asserted |
-| 9, 14, 15: new heads, independent actors, hard revision and full ancestry | Multi-head/display-limit tests, real personal HTTP journeys, same-position revision applicability and new forward child, local/foreign Reconcile |
-| 12–13: Rest with reconsideration, no false history | Schema retains Attestation alongside lawful Rest for explored Writes; Rest cannot invent another event at a non-head; pending execution, untested arrival, evidence shortage, rollback, stale, frozen arrival, idempotence and append-only proofs |
-| 16–18: shared plans and independent authority | Full fixed HTTP/provider action-schema equivalence, Prepared contributions, natural Commit/Receipt histories, Phase Profile, C3, terminal contracts and cold/warm query checks |
+| 1: Traverse-only explored head | New `HomologousOrderTest::test_navigation_only_head_can_complete_exploration_without_losing_homologous_traverse`: actual recorded Bias arrival, real qualified Rest/event publication, still-lawful homologous Traverse, explored status in cold and hydrated evaluation |
+| 2: Traverse back to explored destination | Personal completed-Rest test proves base Traverse remains lawful while personal traversal excludes the explored destination and the history remains applicable |
+| 3–4: unexplored branches and new active descendants | Branch test proves lawful Traverse reaches an unexplored sibling, Rest/fresh Variant remain unavailable until that frontier is explored, and the original head stays explored; full frontier precedes display limits |
+| 5–6: reconsideration without generation | Existing reversal/unrelated-update and actual Revise tests preserve explored status, independent action selection and immutable history |
+| 7: reconsideration enables generation | Actual Attestation enables Bias Reclassify; controlled Correspondence enables Reconcile through recorded personal arrival; isolated historical input plus actual Attestation enables Commit grounding |
+| 8: qualified Rest and safeguards | New navigation/Rest test plus unproven-arrival, untested, evidence-shortage, pending-execution, stale, rollback, frozen-arrival, idempotence and immutable-event tests |
+| 9–10: noncircular Variant and independent histories | Personal Variant test evaluates all existing heads before fresh generation, preserves old events, blocks another Variant after a new head, and retains the second Participant's independent opportunities |
+| 11: movement, Receipt and structural authority | Navigation/Rest test asserts unchanged Proposition, Supersession and Receipt-consumption counts; existing homologous rejection tests and natural Commit/Receipt/source/terminal suites remain intact |
+| 12: human/autonomous agreement | New navigation/Rest schema is identical in workspace and autonomous plans; fixed HTTP/provider schema equivalence and prepared contribution contracts remain intact |
 
-`ExplorationHistory` remains explicitly synthetic input for isolated selection tests; it is not proof of event publication. The real service/HTTP encounters establish their history through completed Rest. Controlled observable fixtures isolate reopening selection; the natural Commit journeys use the real calculators. Four old cognition assertions that acquisition alone reopens exploration were corrected; all twelve Phase/Domain cases still assert visibility, exact producing position, unavailable actions and compact-context representation.
+The new homologous test explicitly uses authored component geometry and isolated Closure output, then real arrival and Rest operations. It is not a natural Commit proof. Existing isolated `ExplorationHistory` inputs and controlled observable fixtures remain labelled; natural lifecycle validation uses real operations and calculators.
 
-Additional local selections passed: 127 exploration/Rest/Preparation cases with 1,274 assertions (three PostgreSQL-only concurrency cases were skipped on SQLite); 20 personal exploration cases with 154 assertions; the additional Rest/reconsideration proof with 6 assertions; 17 cognition cases with 191 assertions. Selections overlap and are not summed as unique coverage. Changed PHP passed Pint; whitespace checks passed.
+## Performance and limits
 
-## Performance implications and limits
+The local focused frontier check remains **21 queries at 2 and 8 heads after context hydration**, then **zero** extra queries on a warm repeat. No persistent cache or epoch was introduced. These checks do not establish a worst-case bound for large personal histories across distinct foreign scopes.
 
-With an already hydrated `ParticipationContext`, initial personal frontier evaluation remains **21 queries at both 2 and 8 heads**, with **zero** additional queries on repeat evaluation in the same context. This count excludes hydration. Same-position revision history traversal uses batched in-memory edges; no persisted exploration cache or epoch was introduced.
+C3's ten recorded operational plans use **71–77 queries**, compared with **71–76** at the checkpoint. Eight cases add one query and two are unchanged; the [per-case comparison](evidence/participant-exploration-generation/comparison.json) records this explicitly. Those recorded snapshots contain no reconstructed personal history and are cognitive projections, not lifecycle replays. Navigation can now reach the qualified-Rest check rather than excluding Rest immediately.
 
-C3's ten recorded operational plans use **71–76 queries** (the prior checkpoint used 70–76). The pending-execution safeguard adds a bounded check where Rest is offered. Those recorded cases intentionally have no reconstructed personal history. They are cognitive projections, not lifecycle replays.
+The slowest current Core PHP shard took **445.72 seconds (7m26s)**, versus 568.06 seconds at the checkpoint; it still exceeds the five-minute target. The longest Integration shard reports **429.73 seconds** including its runner wrapper. Query took **615.48 seconds** versus 538.38 seconds previously, and Load took **83.22 seconds**. These are observed CI execution times, not controlled performance benchmarks or proof of a speed improvement/regression.
 
-These measurements do not establish a worst-case bound for large personal histories across distinct foreign Bias/Order scopes. The existing broader Query failures and dense payload overrun remain limitations. No limit was raised or comparison population truncated.
+The existing broad Query failures and dense payload overrun remain performance limitations. No comparison population was truncated, query/payload ceiling raised, or workflow timeout increased.
 
-The slowest final Core PHP shard took **568.06 seconds (9m28s)**, above the five-minute target. The longest Integration PHP shard took **430.46 seconds**, and Query took **538.38 seconds**. These are observed suite execution times, not isolated performance benchmarks or whole-workflow timings. CI configuration, targets and ceilings were not increased. Core runtime and the broader baseline performance failures remain follow-up limitations; the corrected functional lifecycle has no remaining new failures.
+Changed PHP passes Pint; whitespace checks pass. All natural assertions, workflow limits, mathematical calculators and query/payload ceilings are retained.
