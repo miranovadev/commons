@@ -20,6 +20,7 @@ final readonly class LocalChiralityStateService
         private ChiralityCalculator $evidence,
         private LocalChiralityCalculator $calculator,
         private AttestationBeatCursorService $beats,
+        private ActiveCadenceLineageService $activeCadence,
     ) {}
 
     public function initialize(Proposition $proposition): void
@@ -92,12 +93,16 @@ final readonly class LocalChiralityStateService
         if ($interval !== null) {
             $intervals[] = $interval;
         }
-        $cadence = $this->calculator->cadence($intervals)['value'];
+        $reference = $state->cadence_reference_intervals === null
+            ? $this->activeCadence->intervals($proposition)
+            : json_decode($state->cadence_reference_intervals, true, flags: JSON_THROW_ON_ERROR);
+        $cadence = $this->calculator->cadence(array_merge($reference, $intervals))['value'];
         $values = new ChiralityValues($orientation, $cadence);
         DB::table('local_chirality_states')->where('proposition_id', $proposition->id)->update([
             'orientation' => $orientation, 'attestation_cadence' => $cadence, 'chirality' => $values->average(),
             ...$values->resolveDirections(ObservableDirection::from($state->orientation_direction), ObservableDirection::from($state->attestation_cadence_direction)),
-            'intervals' => json_encode($intervals, JSON_THROW_ON_ERROR), 'last_position' => $position,
+            'intervals' => json_encode($intervals, JSON_THROW_ON_ERROR),
+            'cadence_reference_intervals' => json_encode($reference, JSON_THROW_ON_ERROR), 'last_position' => $position,
             'last_attestation_id' => $attestation->id, 'act_count' => $state->act_count + 1,
         ]);
     }
@@ -111,6 +116,6 @@ final readonly class LocalChiralityStateService
             // Preserve the diagnostic entry-frame hysteresis; no parent local values.
             'orientation_direction' => $snapshot?->orientation_direction ?? 'negative',
             'attestation_cadence_direction' => $snapshot?->attestation_cadence_direction ?? 'positive',
-            'intervals' => '[]', 'last_position' => null, 'last_attestation_id' => null, 'act_count' => 0];
+            'intervals' => '[]', 'cadence_reference_intervals' => null, 'last_position' => null, 'last_attestation_id' => null, 'act_count' => 0];
     }
 }
