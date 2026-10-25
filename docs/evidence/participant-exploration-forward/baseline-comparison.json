@@ -2,7 +2,7 @@
   "revision": "eeee6a6d81c4a32f605624f4804775f46af17bf4",
   "database": "SQLite :memory:",
   "php": "8.5.8",
-  "command": "php -d memory_limit=1G vendor/bin/phpunit --filter FreshBootstrapTest|NaturalChargeBoundaryLifecycleTest|ParticipationTragedyLifecycleTest|ParticipationHttpHarnessTest",
+  "command": "php -d memory_limit=1G vendor/bin/phpunit --filter 'FreshBootstrapTest|NaturalChargeBoundaryLifecycleTest|ParticipationTragedyLifecycleTest|ParticipationHttpHarnessTest'",
   "executed": 10,
   "passed": 7,
   "failed": 3,
