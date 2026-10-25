@@ -197,10 +197,10 @@ final readonly class InputSchemaService
             $schema['$defs']['actions']['attestation.create']['anyOf'] = $choices;
         }
 
-        // Reconsideration remains lawful alongside a qualified completed exploration Rest.
-        $meaningful = array_diff(array_keys($schema['$defs']['actions']), ['attestation.create', 'proposition.revise']);
-        if ($meaningful === [] && $schema['$defs']['actions'] !== []) {
-            $ids = collect($attestationOptionIds ?? $writeOptionIds)->merge($revisionOptionIds)->unique();
+        // Forward movement and reconsideration may coexist with a qualified exploration Rest.
+        $generationOrAcquisition = array_diff(array_keys($schema['$defs']['actions']), ['proposition.traverse', 'attestation.create', 'proposition.revise']);
+        if ($generationOrAcquisition === [] && $schema['$defs']['actions'] !== []) {
+            $ids = collect($attestationOptionIds ?? $writeOptionIds)->merge($revisionOptionIds)->merge($traversalOptionIds)->unique();
             $explored = app(ParticipantExplorationService::class)->exploredIds($occurrence, $ids, $context);
             if ($ids->diff($explored->keys())->isEmpty()
                 || app(ExplorationEventService::class)->completionWitness($occurrence, $context ?? new ParticipationContext($occurrence)) !== null) {

@@ -38,7 +38,7 @@ final class ContinuationOpportunityService
         return $context === null ? $query() : $context->remember('pending-evidence:'.$phase->cycle_id, $query);
     }
 
-    /** Acquisition is not forward progress, but an unfinished test cannot publish an encounter. */
+    /** Acquisition is not forward generation, but an unfinished test cannot publish an encounter. */
     public function unfinishedEvidence(Phase $phase, ParticipationContext $context): bool
     {
         if ($this->pendingEvidence($phase, $context)) {
@@ -54,22 +54,23 @@ final class ContinuationOpportunityService
         return $this->awaitingEvidence($phase, $context);
     }
 
-    /** Forward creation or access to an existing forward continuation; never reconsideration. */
-    public function advancing(Phase $phase, ?ParticipationContext $context = null): bool
+    /**
+     * Base forward generation only: never movement, reconsideration or acquisition.
+     * Fresh Variant is deliberately excluded: it cannot satisfy its own frontier prerequisite.
+     */
+    public function nonVariantGenerationAvailable(Phase $phase, ?ParticipationContext $context = null): bool
     {
         $context ??= new ParticipationContext($phase);
         $generation = app(PhaseGenerationService::class);
         $options = app(PropositionOptionService::class);
         $actions = config('phases.'.$phase->kind->value.'.actions', []);
-        foreach ($actions as $action) {
-            if (in_array($action, ['proposition.variant', 'attestation.create', 'proposition.revise', 'instrument.execute', 'preparation.start'], true)
-                || ! $generation->available($phase, $action, $context)) {
+        foreach (array_intersect($actions, ['proposition.reconcile', 'proposition.reclassify', 'proposition.commit']) as $action) {
+            if (! $generation->available($phase, $action, $context)) {
                 continue;
             }
             $available = match ($action) {
                 'proposition.reclassify' => $phase->kind !== PhaseKind::Bias || $options->gateOptionsFor($phase, $context)->isNotEmpty(),
                 'proposition.reconcile' => app(ReconciliationOptionService::class)->forPhase($phase, $context)->isNotEmpty(),
-                'proposition.traverse' => $options->traversalOptionsFor($phase, $context, base: true)->isNotEmpty(),
                 'proposition.commit' => app(ClosureOptionService::class)->committableFor($phase, $context)->isNotEmpty(),
                 default => false,
             };

@@ -51,7 +51,9 @@ class ParticipantExplorationTest extends TestCase
         $options = app(PropositionOptionService::class);
         $this->assertContains($signal->id, $options->attestationOptionsFor($luna)->pluck('id'));
         $this->assertContains($signal->id, $options->attestationOptionsFor($return)->pluck('id'), 'Repeat judgment remains lawful');
+        $this->assertContains($signal->id, $options->traversalOptionsFor($return, base: true)->pluck('id'), 'Base navigation remains lawful');
         $this->assertNotContains($signal->id, $options->traversalOptionsFor($return)->pluck('id'));
+        $this->assertTrue($exploration->explored($signal, $return), 'Base Traverse cannot reopen the explored destination');
         $this->assertSame($nova->id, $return->cycle->participant_id);
         $this->assertSame(0, Tragedy::count());
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
@@ -141,6 +143,8 @@ class ParticipantExplorationTest extends TestCase
         app(PropositionMeasurementService::class)->project($sibling, .8, .8, .8,
             correspondenceComponents: new CorrespondenceValues(.8, -.8));
         $this->assertFalse($exploration->explored($signal, $return));
+        $this->assertContains($signal->id, app(PropositionOptionService::class)->traversalOptionsFor($return)->pluck('id'), 'Navigation reaches the remaining unexplored head');
+        $this->assertFalse(app(InputPlanService::class)->forPhase($return->cycle->participant, $return)['rest_available']);
         $this->assertCount(2, $exploration->heads($signal->id, $return, new ParticipationContext($return)), 'Evaluate the complete frontier before display limits');
         $this->assertTrue($exploration->explored($head, $return));
         $this->assertFalse(app(PhaseGenerationService::class)->available($return, 'proposition.variant'));
@@ -216,7 +220,7 @@ class ParticipantExplorationTest extends TestCase
         $this->assertDatabaseCount('exploration_events', 0);
     }
 
-    public function test_a_lawful_attestation_reversal_reopens_only_when_it_enables_bias_progression(): void
+    public function test_a_lawful_attestation_reversal_reopens_only_when_it_enables_bias_generation(): void
     {
         [$signal, $persist, $constrain, $activity, $mediate] = $this->personalJourney();
         $stance = $this->node($mediate, $activity);
@@ -295,7 +299,7 @@ class ParticipantExplorationTest extends TestCase
         self::assertSame($history, DB::table('exploration_events')->get()->toJson());
     }
 
-    public function test_new_receipt_alone_does_not_reopen_a_head_without_advancing_opportunities(): void
+    public function test_new_receipt_alone_does_not_reopen_a_head_without_generating_opportunities(): void
     {
         [$signal, , , $head, $terminal] = $this->personalJourney();
         $return = $this->returnAfterRest($terminal);
@@ -306,7 +310,7 @@ class ParticipantExplorationTest extends TestCase
         $this->assertDatabaseCount('exploration_events', 1);
     }
 
-    public function test_a_new_receipt_reopens_only_after_it_completes_a_lawful_advancing_move(): void
+    public function test_a_new_receipt_reopens_only_after_it_completes_a_lawful_generating_opportunity(): void
     {
         [$signal, $persist, $constrain, $activity, $mediate] = $this->personalJourney();
         $stance = $this->node($mediate, $activity);

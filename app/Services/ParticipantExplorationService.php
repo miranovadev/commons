@@ -43,7 +43,7 @@ final class ParticipantExplorationService
                         return false;
                     }
 
-                    return ! $this->canProgress($head, $phase, $evaluation);
+                    return ! $this->canGenerateFromHead($head, $phase, $evaluation);
                 });
             });
         })->flip();
@@ -107,15 +107,15 @@ final class ParticipantExplorationService
     }
 
     /** Pure look-ahead: never creates a Cycle/Phase or recursively asks InputPlan. */
-    public function canProgress(Proposition $head, Phase $acting, ParticipationContext $context): bool
+    public function canGenerateFromHead(Proposition $head, Phase $acting, ParticipationContext $context): bool
     {
-        return $context->remember('head-progression:'.$acting->id.':'.$head->id, function () use ($head, $acting, $context): bool {
+        return $context->remember('head-generation:'.$acting->id.':'.$head->id, function () use ($head, $acting, $context): bool {
             if ($head->tier !== 'expressive' || $head->phase->kind === PhaseKind::Order) {
                 return false;
             }
             $phase = $this->probe($head, $acting, $context);
 
-            return app(ContinuationOpportunityService::class)->advancing($phase, $context);
+            return app(ContinuationOpportunityService::class)->nonVariantGenerationAvailable($phase, $context);
         });
     }
 

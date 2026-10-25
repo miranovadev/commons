@@ -36,7 +36,7 @@ final class ExplorationEventService
             && $phase->kind->value >= PhaseKind::Mediate->value
             && $gate->phase->kind->value === $phase->kind->value - 1 && $arrival !== null
             && app(ParticipantExplorationService::class)->heads($gate->id, $phase, $context)->keys()->all() === [$gate->id]
-            && ! app(ContinuationOpportunityService::class)->advancing($phase, $context)
+            && ! app(ContinuationOpportunityService::class)->nonVariantGenerationAvailable($phase, $context)
             && ! app(ContinuationOpportunityService::class)->unfinishedEvidence($phase, $context)) {
             $state = app(PropositionStateService::class);
             $judgment = $state->attestations(collect([$gate]), $context)->first();
