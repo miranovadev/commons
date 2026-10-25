@@ -9,6 +9,7 @@ on:
       - 'app/Services/Observables/*Chirality*.php'
       - 'app/Services/Observables/AttestationBeatCursorService.php'
       - 'database/migrations/*chirality*'
+      - 'database/migrations/*cadence*'
       - 'app/Services/PreparationService.php'
       - 'app/Services/PropositionOptionService.php'
       - 'config/phases.php'

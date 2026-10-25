@@ -36,7 +36,7 @@ A Committal remains a hard measurement boundary. Its existing genuine beat curso
 
 Only an own Attestation computes local Cadence. Cycle advancement, structural progression, read projections, hard supersession and unrelated activity do not remeasure existing local state. The existing substrate transaction/lock serializes beat selection, interval recording and publication. Re-recording one ledger act is idempotent; rollback removes the attempted new context and measurement together.
 
-This remains a fresh/prospective-state implementation. Existing historical substrates are not backfilled or reconstructed. An already-attested state missing its event-born reference/cursor is explicitly unavailable for live continuation; historical snapshots are not rewritten. The migration defines the new compact field for fresh databases.
+This remains a fresh/prospective-state implementation. Existing historical substrates are not backfilled or reconstructed. An already-attested state missing its event-born reference/cursor is explicitly unavailable for live continuation; historical snapshots are not rewritten. An additive nullable-column migration extends existing and fresh databases without rewriting rows. Existing historical measurements remain readable, and new prospective expressions can coexist with them. Previously attested rows lacking an event-time reference are not retroactively made eligible for live remeasurement.
 
 ## Resolved boundary register
 

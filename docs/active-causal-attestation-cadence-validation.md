@@ -6,7 +6,7 @@ Baseline: merged main `231dbd8498d75cd8a280f17bd5edb0a4a39a5629`, including PR #
 
 The discrepancy was an empty Cadence reference at every new expression, despite a transported preceding beat. The correction selects the latest two own intervals and preceding qualifying beat on the recorded active local lineage. Hard-superseded sources are traversed only for provenance; Reconcile's foreign operand never contributes rhythm. A compact source/index/value reference is frozen at the first own Attestation and combined with local intervals on subsequent own events. See the [implementation contract](active-causal-attestation-cadence.md).
 
-Changed services: `ActiveCadenceLineageService`, `AttestationBeatCursorService`, and `LocalChiralityStateService`. Persistence: nullable `local_chirality_states.cadence_reference`; existing cursor `source_supersession_id` now remains after own Attestations. The mathematical calculator and every exploration, evidence, Bias, Closure and Commit eligibility authority are unchanged.
+Changed services: `ActiveCadenceLineageService`, `AttestationBeatCursorService`, and `LocalChiralityStateService`. Persistence: an additive migration introduces nullable `local_chirality_states.cadence_reference` without historical backfill; existing cursor `source_supersession_id` now remains after own Attestations. The mathematical calculator and every exploration, evidence, Bias, Closure and Commit eligibility authority are unchanged.
 
 ## Normative and invariant coverage
 
@@ -20,6 +20,7 @@ Changed services: `ActiveCadenceLineageService`, `AttestationBeatCursorService`,
 | Off-route hard replacement / siblings | `test_replacement_off_the_selected_route_is_excluded_without_following_its_new_branch` |
 | Reconcile selected Gate, order independence | `test_reconciliation_reference_follows_only_active_ancestry_of_the_acting_gate`, both insertion orders; existing foreign-beat/no-fallback tests |
 | Event-time selection and retained context | `test_first_event_selects_current_active_context_then_retains_that_reference` |
+| Existing database upgrade | `test_additive_reference_migration_preserves_historical_measurements_without_backfill`; old scalars/events remain unchanged, new expressions work, missing old references cannot be fabricated |
 | Bootstrap, missing history, real zeros, CV | Local calculator tests; first-child, single-participant zero, mixed-zero, all-zero historical-reference tests |
 | Orientation and hysteresis | `PropositionLocalChiralityTest`; all-zero historical-reference test independently asserts local Refute Orientation and ordinary Bias disagreement |
 | Immutability and atomicity | Ancestor state equality in normative/structural tests; unrelated events/Cycles, rollback and duplicate-ledger contracts |
