@@ -77,6 +77,21 @@ class ReceiptSummaryTest extends TestCase
         $this->assertLessThanOrEqual(ReceiptSummary::JSON_LIMIT, strlen(json_encode($summary)));
     }
 
+    public function test_fallback_excludes_storage_locations_even_under_innocuous_keys(): void
+    {
+        foreach (['/mnt/artifacts/private.txt', 'Read /opt/app/source.txt', 'C:/private/source.txt',
+            'C:\\private\\source.txt', '\\\\server\\private\\source.txt', 'file:///mnt/private.txt',
+            's3://private-bucket/source.txt', 'gs://private-bucket/source.txt',
+            'abfss://private-container/source.txt'] as $location) {
+            $this->assertSame(['label' => 'Recorded observation'], $this->summary('future_type', [
+                'detail' => $location, 'label' => 'Recorded observation',
+            ]));
+        }
+        $this->assertSame(['detail' => 'https://example.test/source'], $this->summary('future_type', [
+            'detail' => 'https://example.test/source',
+        ]));
+    }
+
     private function summary(string $type, array $metadata): array
     {
         return (new ReceiptSummary)->forReceipt((new Receipt)->forceFill([

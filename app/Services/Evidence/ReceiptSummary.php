@@ -115,7 +115,7 @@ final class ReceiptSummary
     private function text(string $value): string
     {
         // Do not turn a compatibility summary into a credential/path channel.
-        if (preg_match('~(?:^|\s)(?:/(?:home|root|tmp|var|workspace|private)/|[A-Za-z]:\\\\)|-----BEGIN |\b(?:Bearer|Basic)\s+\S+|(?:password|secret|token|api[_-]?key)\s*[=:]~i', $value)) {
+        if (preg_match('~(?:^|\s)(?:/\S|[A-Za-z]:[\\\\/]|\\\\\\\\|(?:file|s3|gs|az|abfs|abfss)://)|-----BEGIN |\b(?:Bearer|Basic)\s+\S+|(?:password|secret|token|api[_-]?key)\s*[=:]~i', $value)) {
             return '';
         }
         if (preg_match('~^https?://~i', $value)) {
