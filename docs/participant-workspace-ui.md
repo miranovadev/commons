@@ -187,6 +187,13 @@ interaction. Manual scroll position is preserved while the view stays open.
 
 ## Preparation reading (Stage 2D)
 
+The Receipt panel now uses `plan.receipt_cognition`, projected through the same
+C3 selector and normalizer as autonomous inference. It shows summaries, Gate and
+consumption provenance, ID references and one copy of each included observation.
+“Loaded” reports personal state; “Read context” reports transient inclusion due to
+direct consumption by a selected Read. The existing plan's operational Receipt
+options still govern controls. See [Stage 1](gate-causal-receipt-cognition.md).
+
 [Stage 2D](epistemic-evidence-stage-2d.md) adds explicit bounded reading of preserved
 Artifacts. Reading access follows ordinary Region/Horizon provenance independently
 of Receipt consumption or loading. Prepared content is transient; normal C3/loading

@@ -291,6 +291,24 @@ class ParticipantCognitiveProjectionTest extends TestCase
         $this->assertSame('What else is possible here?', $empty['write']['question']);
     }
 
+    public function test_gate_absent_from_options_is_recovered_only_from_the_recorded_phase(): void
+    {
+        $f = new ParticipantContextFixture(1, 0, false);
+        $plan = $this->plan($f->gate, 'order');
+        $plan['phase']['id'] = $f->phase->id;
+        $plan['gate_options'] = [];
+        $before = $plan;
+        $registers = app(ParticipantCognitiveProjection::class)->registers($plan);
+        $this->assertSame([$f->gate->id], array_column($registers['gate']['propositions'], 'id'));
+        $this->assertSame([], $registers['write']['propositions']);
+        $this->assertSame($before, $plan);
+
+        $plan['gate_id'] = $f->seed->id;
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessage('Cognitive context requires the recorded acting Gate.');
+        app(ParticipantCognitiveProjection::class)->registers($plan);
+    }
+
     private function plan(Proposition $gate, string $kind): array
     {
         return ['phase' => ['kind' => $kind], 'gate_id' => $gate->id,

@@ -64,6 +64,7 @@ class HorizonWorkspaceTest extends TestCase
                 ->assertJsonPath('data.plan.workspace.provenance.id', $provenance->id)
                 ->assertJsonPath('data.plan.workspace.provenance.register', $provenance->register);
             $plan = $response->json('data.plan');
+            $this->assertContains($gate->id, array_column($plan['receipt_cognition']['gate']['propositions'], 'id'));
             $this->assertSame([$provenance->id], array_column($plan['lineage'], 'id'));
             $this->assertSame($provenance->register, $plan['lineage'][0]['register']);
             foreach ($plan['workspace']['registers'] as $register => $cards) {

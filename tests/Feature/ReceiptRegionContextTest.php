@@ -144,7 +144,8 @@ class ReceiptRegionContextTest extends TestCase
             $this->assertSame(1, substr_count($prompt['evidence'].$prompt['user'], 'BODY-role-'.$index));
         }
         foreach (json_decode($prompt['user'], true)['receipts'] as $ref) {
-            $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded', ...(isset($ref['loaded_inline_content']) ? ['loaded_inline_content'] : [])], array_keys($ref));
+            $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded', 'summary', 'originating_gate_id',
+                ...(isset($ref['loaded_inline_content']) ? ['loaded_inline_content', 'load_mode', 'read_context'] : [])], array_keys($ref));
             $this->assertTrue($ref['loaded']);
         }
         $this->assertSame(4, ParticipantReceiptContext::active()->count());

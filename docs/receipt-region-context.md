@@ -1,5 +1,11 @@
 # Receipt regions, participant memory and active evidence
 
+> **Current cognition:** [Gate-causal Receipt cognition](gate-causal-receipt-cognition.md)
+> separates the causal cognitive catalogue from the available operational catalogue
+> described here. Consumption does not hide observations. Summaries are always
+> visible, and direct Read consumption can expose an observation transiently
+> without changing personal loads, Reinforcement or any operational eligibility.
+
 > **C2 update:** [Participant Context C2](participant-context-c2-implementation.md)
 > supersedes the inference Receipt layout and loading timing described below.
 > New readable Instrument Receipts auto-load for their performer; eligible local Write

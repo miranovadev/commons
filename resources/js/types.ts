@@ -354,6 +354,28 @@ export interface ReceiptContext {
   evidence?: { tragedy_id?: Identifier; terminal_proposition_id?: Identifier; opening_proposition_id?: Identifier; exhausted_committals?: Array<{ id: Identifier; statement: string; statement_truncated: boolean; register: RegisterName; phase_number: number; exhausted_horizon_id: Identifier; exhausted_at: string; actionable: false }>; query?: string; executed_at?: string; results?: Array<{ title: string; url: string; excerpt: string; excerpt_truncated: boolean; source: string; rank: number; relevance: number | null; published_at: string | null }>; proposition_id?: Identifier; statement?: string; direction?: string; rationale?: string | null; resource?: string; title?: string | null; links?: Array<{ url: string; text: string }>; links_count?: number | null; links_truncated?: boolean; links_error?: string; fingerprint?: string; observed_at?: string; content_excerpt?: string | null; excerpt_truncated?: boolean };
 }
 
+export type ReceiptObservation = string | number | boolean | null | ReceiptObservation[] | { [key: string]: ReceiptObservation };
+
+export interface CognitiveReceipt {
+  id: Identifier;
+  type: string;
+  reference: string;
+  summary: Record<string, ReceiptObservation>;
+  loaded: boolean;
+  originating_gate_id?: Identifier;
+  consumed_by_proposition_id?: Identifier;
+  load_mode?: 'participant' | 'read_context';
+  read_context?: boolean;
+  loaded_inline_content?: ReceiptObservation;
+}
+
+export interface ReceiptCognition {
+  receipts: CognitiveReceipt[];
+  read: { propositions: Array<{ id: Identifier; receipts: Identifier[] }> };
+  gate: { propositions: Array<{ id: Identifier; receipts: Identifier[] }> };
+  write: { propositions: Array<{ id: Identifier; receipts: Identifier[] }> };
+}
+
 export interface ExhaustedAlternative {
   id: Identifier;
   role: 'read' | 'gate' | 'write';
@@ -376,6 +398,7 @@ interface GateAdmissibility {
 }
 
 export interface ParticipantPlan {
+  receipt_cognition?: ReceiptCognition;
   preparation?: { execution_id: string; status: string; purpose: string; selections: PreparationSelection[] } | null;
   preparation_options?: PreparationOption[];
   preparation_failures?: Array<{ execution_id: string; receipt_id?: string | null; purpose: string; diagnostic: { failure_reason?: string; failure?: { stage: string; method: string; classification?: string } } }>;
