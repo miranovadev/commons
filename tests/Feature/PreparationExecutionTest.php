@@ -91,6 +91,15 @@ class PreparationExecutionTest extends TestCase
         $catalogue = app(ParticipantReceiptProjection::class)->normalize($registers, ['participant' => $other->cycle->participant->only(['id']),
             'plan' => ['phase' => ['id' => $other->id, 'kind' => 'disperse'], 'gate_id' => $f->gate->id]]);
         $this->assertContains($receipt->id, array_column($catalogue, 'id'));
+        $entry = collect($catalogue)->firstWhere('id', $receipt->id);
+        $this->assertSame($f->gate->id, $entry['originating_gate_id']);
+        $this->assertSame('deferred', $entry['summary']['outcome']);
+        $this->assertSame($fixture->input()['artifacts'][0]['artifact_id'], $entry['summary']['deliveries'][0]['artifact_id']);
+        $this->assertSame('raw', $entry['summary']['deliveries'][0]['read_type']);
+        $this->assertSame(0, $entry['summary']['deliveries'][0]['offset']);
+        $this->assertSame(strlen('preserved artifact body'), $entry['summary']['deliveries'][0]['length']);
+        $this->assertFalse($entry['loaded']);
+        $this->assertArrayNotHasKey('loaded_inline_content', $entry);
         $this->assertStringNotContainsString('preserved artifact body', json_encode($catalogue));
         $this->assertSame([$f->gate->id], array_column($registers['gate']['propositions'], 'id'));
         $this->expectException(DomainException::class);

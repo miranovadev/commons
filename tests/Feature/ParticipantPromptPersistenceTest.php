@@ -127,7 +127,11 @@ class ParticipantPromptPersistenceTest extends TestCase
         $this->assertSame(1, substr_count($prompt['user'], 'PRIVATE-ATTACHED-OBSERVATION')); // Gate admits content even when also attached to Write.
         $entry = collect(json_decode($prompt['user'], true)['receipts'])->firstWhere('id', $receipt->id);
         $this->assertTrue($entry['loaded']);
-        $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded', 'loaded_inline_content'], array_keys($entry));
+        $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded', 'summary', 'originating_gate_id',
+            'consumed_by_proposition_id', 'load_mode', 'read_context', 'loaded_inline_content'], array_keys($entry));
+        $this->assertSame($write->id, $entry['consumed_by_proposition_id']);
+        $this->assertSame('participant', $entry['load_mode']);
+        $this->assertFalse($entry['read_context']);
         $this->assertSame($fixture->phase->id, $loaded['plan']['phase']['id']);
     }
 
@@ -161,7 +165,8 @@ class ParticipantPromptPersistenceTest extends TestCase
         $references = json_decode($new['user'], true)['receipts'];
         $this->assertSame(array_column($receipts, 'id'), array_column($references, 'id'));
         foreach ($references as $reference) {
-            $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded', ...($reference['loaded'] ? ['loaded_inline_content'] : [])], array_keys($reference));
+            $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded', 'summary', 'originating_gate_id',
+                ...($reference['loaded'] ? ['loaded_inline_content', 'load_mode', 'read_context'] : [])], array_keys($reference));
         }
         $this->assertStringContainsString('Observed evidence', $new['user']);
         $this->assertSame('', $new['evidence'].$new['support']);

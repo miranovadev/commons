@@ -81,4 +81,29 @@ test('Receipt panel is metadata-only except for active loaded evidence', async (
   assert.doesNotMatch(failedHtml, /Presented using|<script>/);
   assert.match(failedHtml, /&lt;script&gt;/);
 
+  const cognitive = { receipts: [{ id: 'observed', type: 'hyperlink', reference: 'https://example.test',
+    summary: { url: 'https://example.test', title: 'Recognisable observation', description: '<script>safe text</script>' },
+    loaded: false, originating_gate_id: 'original-gate', consumed_by_proposition_id: 'consumer' }],
+    read: { propositions: [{ id: 'consumer', receipts: ['observed'] }] },
+    gate: { propositions: [] }, write: { propositions: [] } };
+  const cognitiveHtml = module.exports.render({ schema, receipts, receipt_cognition: cognitive });
+  assert.match(cognitiveHtml, /Recognisable observation/);
+  assert.match(cognitiveHtml, /original-gate/);
+  assert.match(cognitiveHtml, /Referenced by read: consumer/);
+  assert.match(cognitiveHtml, /Consumed/);
+  assert.doesNotMatch(cognitiveHtml, />Loaded<|Preloaded evidence body|<script>/);
+  assert.match(cognitiveHtml, /&lt;script&gt;/);
+  const contextual = { ...cognitive, receipts: cognitive.receipts.map(item => ({ ...item,
+    load_mode: 'read_context', read_context: true, loaded_inline_content: { content_excerpt: 'Directly consumed observation' } })) };
+  const contextualHtml = module.exports.render({ schema, receipt_cognition: contextual });
+  assert.equal([...contextualHtml.matchAll(/Directly consumed observation/g)].length, 1);
+  assert.match(contextualHtml, />Read context</);
+  assert.doesNotMatch(contextualHtml, />Loaded</);
+  assert.doesNotMatch(module.exports.render({ schema, receipt_cognition: cognitive }), /Directly consumed observation/);
+  const personal = { ...contextual, receipts: contextual.receipts.map(item => ({ ...item, loaded: true, load_mode: 'participant' })) };
+  const personalHtml = module.exports.render({ schema, receipt_cognition: personal });
+  assert.match(personalHtml, />Loaded</);
+  assert.match(personalHtml, />Read context</);
+  assert.equal([...personalHtml.matchAll(/Directly consumed observation/g)].length, 1);
+
 });

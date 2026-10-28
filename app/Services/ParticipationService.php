@@ -147,6 +147,13 @@ final readonly class ParticipationService
             && ! isset($plan['schema']['$defs']['actions']['proposition.traverse'])
             && ! $plan['rest_available'];
 
+        if ($workspace) {
+            $plan['receipt_cognition'] = $this->contextSerializer->receiptCognition([
+                'participant' => $participant->only(['id']),
+                'plan' => $this->contextSerializer->plan($plan),
+            ]);
+        }
+
         return [
             'status' => 'ready',
             'cycle' => $this->cycle($cycle),

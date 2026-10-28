@@ -1,5 +1,11 @@
 # Autonomous participant context
 
+> **Current cognition:** [Gate-causal Receipt cognition](gate-causal-receipt-cognition.md)
+> supersedes the older Receipt presentation rules below. Causally visible Receipts
+> have bounded summaries; loaded observations and observations directly consumed
+> by selected Reads appear once in the catalogue. Human Receipt context uses the
+> same projection. Operational options remain a separate authority contract.
+
 > **C2 update:** [Participant Context C2](participant-context-c2-implementation.md)
 > supersedes the inference Receipt layout and loading timing described below.
 > New readable Instrument Receipts auto-load for their performer; eligible local Write

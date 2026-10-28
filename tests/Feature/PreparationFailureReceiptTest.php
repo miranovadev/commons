@@ -117,6 +117,11 @@ class PreparationFailureReceiptTest extends TestCase
             'participant' => ['id' => $f->viewer->id], 'plan' => ['phase' => ['id' => $f->phase->id, 'kind' => 'disperse'], 'gate_id' => $f->gate->id],
         ]);
         $loaded = collect($catalogue)->firstWhere('id', $receipt->id)['loaded_inline_content'];
+        $summary = collect($catalogue)->firstWhere('id', $receipt->id)['summary'];
+        $this->assertSame('failed', $summary['outcome']);
+        $this->assertFalse($summary['content_verified']);
+        $this->assertSame($fixture->input()['artifacts'][0]['artifact_id'], $summary['selections'][0]['artifact_id']);
+        $this->assertSame('read', $summary['failure']['stage']);
         $this->assertSame('failed', $loaded['outcome']['type']);
         $this->assertSame([], $loaded['deliveries']);
         $this->assertStringContainsString('Operational failure only', $loaded['interpretation']);

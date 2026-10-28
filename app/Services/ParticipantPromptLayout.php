@@ -7,7 +7,7 @@ final class ParticipantPromptLayout
 {
     public const VERSION = 'commons-context-c3';
 
-    public const FORMAT_INSTRUCTION = 'Proposition receipts are IDs in the Receipts catalogue. loaded_inline_content contains loaded evidence or scoped memory. Visibility grants no permission; use only the Actions schema to select targets and parameters.';
+    public const FORMAT_INSTRUCTION = 'Proposition receipts are IDs in the Receipts catalogue. Every Receipt has a bounded summary. loaded records personal loading; loaded_inline_content contains a recorded observation or scoped memory. load_mode read_context includes the observation because its actual consuming Proposition is Read, without changing personal memory. Consumed observations remain historical evidence. Visibility and contextual inclusion grant no permission; use only the Actions schema to select targets and parameters.';
 
     /** @return array{evidence: string, user: string, support: string, loaded_receipt_count: int} */
     public function make(array $packet): array

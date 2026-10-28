@@ -14,6 +14,11 @@ on:
       - 'app/Services/PropositionOptionService.php'
       - 'config/phases.php'
       - 'app/Services/ParticipantReceiptProjection.php'
+      - 'app/Services/Evidence/ReceiptSummary.php'
+      - 'app/Services/ParticipantContextSerializer.php'
+      - 'app/Services/ParticipationService.php'
+      - 'tests/Feature/GateCausalReceiptCognitionTest.php'
+      - 'tests/Unit/ReceiptSummaryTest.php'
       - 'app/Services/ParticipantPrompt*.php'
       - 'tests/**/Participant*C3*'
       - 'tests/Feature/CognitiveEvidenceHorizonTest.php'
@@ -66,7 +71,7 @@ jobs:
       - run: composer install --prefer-dist --no-interaction --no-progress
       - run: mkdir -p test-results && cp .env.example .env
       - name: Focused cognition, evidence, authority and provider packet contracts
-        run: php artisan test --filter='CognitiveEvidenceHorizonTest|ParticipantReceiptC[23]Test|ParticipantReceiptProjectionTest|ParticipantCognitiveProjectionTest|ParticipantPromptConstitutionTest|ParticipantPromptCacheTest|ParticipantRegisterQuestionsTest|ReceiptRegionContextTest|RevisionAdmissibilityTest' --log-junit test-results/c3-focused.xml
+        run: php artisan test --filter='GateCausalReceiptCognitionTest|ReceiptSummaryTest|CognitiveEvidenceHorizonTest|ParticipantReceiptC[23]Test|ParticipantReceiptProjectionTest|ParticipantCognitiveProjectionTest|ParticipantPromptConstitutionTest|ParticipantPromptCacheTest|ParticipantRegisterQuestionsTest|ReceiptRegionContextTest|RevisionAdmissibilityTest' --log-junit test-results/c3-focused.xml
       - name: Recorded PHP/PostgreSQL C2 versus C3 comparison
         if: ${{ !cancelled() }}
         env:
@@ -78,3 +83,14 @@ jobs:
           name: c3-validation
           path: test-results/
           retention-days: 14
+
+  query-comparison:
+    strategy:
+      fail-fast: false
+      matrix:
+        revision: [main, proposed]
+    uses: ./.github/workflows/php-tests.yml
+    with:
+      suite: query
+      checkout_ref: ${{ matrix.revision == 'main' && github.event.pull_request.base.sha || github.event.pull_request.head.sha }}
+      artifact_suffix: -${{ matrix.revision }}
