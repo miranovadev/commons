@@ -97,6 +97,10 @@ Its reduced register objects contain only Proposition IDs and Receipt IDs. The
 Receipt panel renders that catalogue, while the operational plan remains the
 source of action options. Legacy workspace fixtures retain their old rendering
 fallback. The protected operational `/plan` response is not a cognitive catalogue.
+An Order Gate absent from the option lists is hydrated only after checking it
+against the Phase's recorded Gate. This preserves context without inserting an
+action option. The shared system instruction remains within its unchanged
+750-byte ceiling (743 bytes).
 
 ## Validation
 
@@ -105,14 +109,24 @@ Baseline: merged main `5c3569c3f4ee2763f9f8ae7ae198368484ee3da4`.
 - PHP 8.5.12 / SQLite focused evidence, C3, consumption, Preparation, serialization
   and summary tests: 118 passed, 1,385 assertions before the additional query test.
 - Existing baseline focused set: 51 passed, 878 assertions.
+- Final targeted prompt/cache, Gate cognition, citation and download boundary
+  checks: 48 passed, 618 assertions. Additional cognitive projection and HTTP
+  workspace checks: 15 passed, 224 assertions.
 - TypeScript, production Vite build and all 148 frontend tests pass. Receipt-panel
   assertions cover unloaded summaries, contextual content, explicit loading,
   escaping and absence of duplicate observations.
 - Overlap regression: 1 to 21 unique Receipts across 21 overlapping joins keeps
   projection SQL at **26 queries**. Catalogue payload grows from **608 to 13,174
   bytes**, once per distinct observation, with one shared observation copy.
-- Full Core, Integration, PostgreSQL C3 and pinned main/proposed Query comparisons
-  are recorded in the PR checks and the final validation update.
+- PostgreSQL recorded C2/C3 comparison: 1 passed, 1,480 assertions across ten
+  historical populations; action schemas/registers and database snapshots stay
+  unchanged, with no duplicate catalogue entries. This diagnostic is a recorded
+  projection comparison, not a natural lifecycle replay.
+- Pinned main/proposed Query comparison: main 13 passed / 9 failed (953
+  assertions); proposed 14 passed / the same 9 failed (1,013 assertions). The
+  added overlapping-ancestry regression passes on PostgreSQL as well as SQLite.
+- Full PostgreSQL Core, Integration, C3 and frontend checks execute on the PR.
+  Their final run links and counts are maintained in [PR #285](https://github.com/miranovadev/commons/pull/285).
 
 The three older catalogue-shape expectations now name the added summary,
 provenance and loading-mode fields explicitly. The former prospective-Reconcile
@@ -124,7 +138,22 @@ The independent main Core run already fails
 `ChargeBoundaryTragedyTest::test_ordinary_unmocked_observables_can_reach_the_boundary`
 in the historical Settlement/Emergence fixture; see
 [main Core](https://github.com/miranovadev/commons/actions/runs/40198055889).
-Broader failures are compared by identity, not assumed to be regressions or waived.
+Integration has the same three failures as the merged tree: the two
+`FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit`
+data sets exhaust their driver, and `NaturalChargeBoundaryLifecycleTest` retains
+the Settlement/Emergence mismatch. The [baseline Integration run](https://github.com/miranovadev/commons/actions/runs/40197886507)
+uses the exact same tree as merged main (`6a174c02bdfd3b13068e3b05a4077b1deca6cbb7`).
+
+The [pinned Query comparison](https://github.com/miranovadev/commons/actions/runs/40681944094)
+reproduces the identical 54,511-byte dense-plan failure against the unchanged
+45,000-byte limit, plus eight legacy fixtures missing authorised prospective
+Closure. No thresholds or authority assertions were relaxed.
+
+The first full CI pass also exposed two implementation regressions, both corrected:
+the expanded prompt exceeded its byte budget, and a valid Order workspace without
+its Gate in the option lists could not produce cognition. The targeted reruns
+above cover both corrections. The initial failed runs remain visible; baseline
+failures are neither hidden nor converted to passing checks.
 
 Graph fixtures establish cognitive selection and immutability, not a complete
 natural lifecycle cook. No inference-provider calls or new evidence obligations

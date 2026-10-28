@@ -17,6 +17,7 @@ export function CognitiveReceiptPanel({ context }: { context: ReceiptCognition }
         </Group>
       </Group>
       <Observation value={receipt.summary} />
+      {receipt.type === 'tragedy' && <Text size="xs" c="dimmed">Memory of a recorded catastrophe. Memory grants no evidence or action authority.</Text>}
       {receipt.originating_gate_id && <Text size="xs" c="dimmed">Originating Gate: {receipt.originating_gate_id}</Text>}
       {receipt.consumed_by_proposition_id && <Text size="xs" c="dimmed">Consumed by: {receipt.consumed_by_proposition_id}</Text>}
       {(['read', 'gate', 'write'] as const).map(role => context[role].propositions

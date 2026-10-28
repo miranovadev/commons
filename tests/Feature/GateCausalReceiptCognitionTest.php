@@ -15,6 +15,7 @@ use App\Services\LedgerService;
 use App\Services\Observables\ProspectiveClosureService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantReceiptProjection;
+use App\Services\ParticipationService;
 use App\Services\ReceiptContextService;
 use Carbon\CarbonImmutable;
 use DomainException;
@@ -164,6 +165,25 @@ class GateCausalReceiptCognitionTest extends TestCase
         $this->assertSame($before, $this->snapshot());
     }
 
+    public function test_read_context_citation_resolves_the_canonical_subject_without_expanding_its_lineage(): void
+    {
+        $f = new ParticipantContextFixture(1, 0, false);
+        $service = app(EvidenceExecutionService::class);
+        $receipt = $service->complete($service->start($f->phase, $f->gate, 'citation', $f->seed->id), $f->gate,
+            metadata: ['statement' => 'Caller-supplied text is not the citation subject']);
+        $target = $f->node($f->gate, 'canon', 'reclassify', position: PhaseKind::Constrain);
+        DB::transaction(fn () => app(HorizonReceiptService::class)->consume($target->phase, $f->gate, $target, $receipt->id));
+        app(ReceiptContextService::class)->clear($f->viewer, $f->phase, $receipt->id);
+        [$catalogue, $registers] = $this->project($f, $target, [$target]);
+        $entry = collect($catalogue)->firstWhere('id', $receipt->id);
+        $this->assertFalse($entry['loaded']);
+        $this->assertSame('read_context', $entry['load_mode']);
+        $this->assertSame($f->seed->id, $entry['loaded_inline_content']['proposition_id']);
+        $this->assertSame($f->seed->statement, $entry['loaded_inline_content']['statement']);
+        $this->assertSame([$target->id], array_column($registers['read']['propositions'], 'id'));
+        $this->assertStringNotContainsString('Caller-supplied', json_encode($catalogue));
+    }
+
     public function test_human_and_inference_catalogues_match_without_changing_action_authority(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
@@ -182,6 +202,10 @@ class GateCausalReceiptCognitionTest extends TestCase
         }
         $this->assertSame($before, $this->snapshot());
         $this->assertSame($plan['schema'], app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema']);
+        $participation = app(ParticipationService::class);
+        $workspace = $participation->workspaceFor($f->viewer);
+        $autonomous = $serializer->inference($participation->stateFor($f->viewer));
+        $this->assertSame($autonomous['receipts'], $workspace['plan']['receipt_cognition']['receipts']);
     }
 
     #[Group('query')]

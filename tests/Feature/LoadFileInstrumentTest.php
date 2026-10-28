@@ -18,6 +18,7 @@ use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantContextSerializer;
+use App\Services\ParticipantReceiptProjection;
 use App\Services\ParticipationService;
 use App\Services\PreparationService;
 use App\Services\ReceiptContextService;
@@ -160,7 +161,19 @@ class LoadFileInstrumentTest extends TestCase
         Http::fake(['*' => Http::response('Downloaded preparation body sentinel', 200, ['Content-Type' => 'text/plain'])]);
         // Historical acquisition component; the operational Persist boundary is covered above.
         $receipt = $this->observationFixture($f->gate->phase, $f->gate, $this->input());
-        $fixture->consume($receipt);
+        $consumer = $fixture->consume($receipt);
+        $registers = ['read' => ['propositions' => [['id' => $consumer->id]]],
+            'gate' => ['propositions' => [['id' => $f->gate->id]]], 'write' => ['propositions' => []]];
+        $catalogue = app(ParticipantReceiptProjection::class)->normalize($registers, [
+            'participant' => ['id' => $f->viewer->id],
+            'plan' => ['gate_id' => $f->gate->id, 'phase' => ['id' => $f->phase->id, 'kind' => 'disperse']],
+        ]);
+        $item = collect($catalogue)->firstWhere('id', $receipt->id);
+        $this->assertSame('download', $item['summary']['method']);
+        $this->assertSame($consumer->id, $item['consumed_by_proposition_id']);
+        $this->assertArrayNotHasKey('loaded_inline_content', $item);
+        $this->assertArrayNotHasKey('load_mode', $item);
+        $this->assertStringNotContainsString('Downloaded preparation body sentinel', json_encode($catalogue));
         $service = app(PreparationService::class);
         $execution = $service->start($f->viewer, $f->phase, $fixture->input([$receipt]));
         $delivery = $service->delivery($f->viewer, $execution, 'inline-text');
