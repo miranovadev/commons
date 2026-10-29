@@ -88,6 +88,7 @@ class ParticipantExplorationTest extends TestCase
         [, , , $activity, $mediate] = $this->personalJourney();
         $stance = $this->node($mediate, $activity);
         $this->measure($stance, 0);
+        $this->personalVote($mediate, $stance);
         // Historical selector input only: this Rest must not invent another encounter.
         ExplorationHistory::record($stance, $mediate);
         $this->publishPotentialFixture($this->substrate);
@@ -281,6 +282,7 @@ class ParticipantExplorationTest extends TestCase
         // Isolated history applicability, not an event-publication or natural Commit proof.
         [$signal, , , $activity, $mediate] = $this->personalJourney();
         $stance = $this->node($mediate, $activity);
+        $this->personalVote($mediate, $stance);
         $bias = app(PhaseProgressionService::class)->advance($mediate, $stance);
         $head = $this->node($bias, $stance);
         $this->measure($head, .8);
@@ -289,7 +291,7 @@ class ParticipantExplorationTest extends TestCase
         ExplorationHistory::record($head, $bias);
         $history = DB::table('exploration_events')->get()->toJson();
         $exploration = app(ParticipantExplorationService::class);
-        self::assertTrue($exploration->explored($head, $bias));
+        self::assertFalse($exploration->explored($head, $bias), 'Historical encounter cannot waive a lawful first personal judgment');
         $changed = app(ContributionDispatcher::class)->dispatch($bias->cycle->participant, $bias,
             ['action' => 'attestation.create', 'proposition_id' => $head->id, 'direction' => 'support']);
         $order = app(PhaseProgressionService::class)->advance($bias, $changed);
@@ -321,7 +323,7 @@ class ParticipantExplorationTest extends TestCase
         $return = $this->returnAfterRest($bias);
         $history = DB::table('exploration_events')->get()->toJson();
         $receipts = app(HorizonReceiptService::class);
-        $receipt = $receipts->ordinaryAvailable($return)->sole();
+        $available = $receipts->ordinaryAvailable($return);
         $phase = $return;
         foreach ([$signal, $persist, $constrain, $activity] as $node) {
             $phase = app(PhaseProgressionService::class)->advance($phase, $node);
@@ -329,7 +331,9 @@ class ParticipantExplorationTest extends TestCase
         $changed = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
         $bias = app(PhaseProgressionService::class)->advance($phase, $changed);
-        DB::transaction(fn () => $receipts->consume($constrain->phase, $persist, $constrain, $receipt->id));
+        foreach ($available as $receipt) {
+            DB::transaction(fn () => $receipts->consume($constrain->phase, $persist, $constrain, $receipt->id));
+        }
         $this->assertFalse(app(PhaseGenerationService::class)->available($bias, 'proposition.reclassify'));
         $this->assertTrue(app(ParticipantExplorationService::class)->explored($stance, $bias));
         $this->publishPotentialFixture($this->substrate);
@@ -376,6 +380,7 @@ class ParticipantExplorationTest extends TestCase
         $this->assertSame([$result->id], $exploration->heads($other->id, $otherMediate, $foreignContext)->keys()->all());
         $this->assertFalse($exploration->heads($head->id, $terminal, $context)->has($head->id), 'Hard-superseded inputs are not heads');
         $entry = $this->phase($this->origin, PhaseKind::Distinguish);
+        $this->instrumentGateFixture($entry);
         $this->assertEmpty($exploration->heads($signal->id, $entry, new ParticipationContext($entry)));
         $this->assertFalse($exploration->explored($signal, $entry), 'Retired history does not invent a personal encounter');
         $this->assertTrue(app(PhaseGenerationService::class)->available($entry, 'proposition.variant'), 'No active authorized continuation remains to explore');
@@ -445,16 +450,22 @@ class ParticipantExplorationTest extends TestCase
         $return = $this->returnAfterRest($terminal);
         $ids = collect([$head->id]);
         $counts = [];
+        $runtime = [];
         foreach ([2, 8] as $size) {
             while ($ids->count() < $size) {
                 $node = $this->node($this->phase($constrain, PhaseKind::Disperse), $constrain);
+                $this->personalVote($head->phase, $node);
+                $this->measure($node, 0);
                 ExplorationHistory::record($node, $return);
                 $ids->push($node->id);
             }
             $context = new ParticipationContext($return);
             DB::enableQueryLog();
             DB::flushQueryLog();
-            app(ParticipantExplorationService::class)->exploredIds($return, $ids, $context);
+            $started = hrtime(true);
+            $explored = app(ParticipantExplorationService::class)->exploredIds($return, $ids, $context);
+            $runtime[] = round((hrtime(true) - $started) / 1e6, 2);
+            self::assertCount($size, $explored);
             $queries = DB::getQueryLog();
             DB::disableQueryLog();
             $counts[] = count($queries);
@@ -462,7 +473,7 @@ class ParticipantExplorationTest extends TestCase
                 $this->assertDoesNotMatchRegularExpression('/insert |update |delete |for update/i', $query['query']);
             }
         }
-        fwrite(STDERR, "\nPERSONAL_FRONTIER queries (2 -> 8 heads): ".$counts[0].' -> '.$counts[1]."\n");
+        fwrite(STDERR, "\nPERSONAL_FRONTIER queries (2 -> 8 heads): ".$counts[0].' -> '.$counts[1].'; runtime ms: '.json_encode($runtime)."\n");
         $this->assertLessThanOrEqual($counts[0], $counts[1], json_encode($counts));
     }
 }

@@ -227,6 +227,7 @@ class ParticipationApiTest extends TestCase
         $this->resolveExpressiveFieldFixture(.8);
         [$substrate, $participant] = $this->participant();
         [$phase, $origin] = $this->activePhase($participant);
+        $this->instrumentGateFixture($phase);
         $endpoint = $this->endpoint($substrate, $participant);
         $payload = [
             'phase_id' => $phase->getKey(),

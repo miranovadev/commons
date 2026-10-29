@@ -129,6 +129,7 @@ class ChiralityPopulationHistoryTest extends TestCase
         $cycle = $this->actor->cycles()->latest('sequence')->firstOrFail();
         $phase = $cycle->phases()->whereNull('completed_at')->sole();
         $dispatcher = app(ContributionDispatcher::class);
+        $this->instrumentGateFixture($phase);
         $node = $dispatcher->dispatch($this->actor, $phase, ['action' => 'proposition.variant', 'statement' => 'Observed source']);
         $history = app(ChiralityPopulationHistoryService::class);
         $key = $history->key($node);

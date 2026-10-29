@@ -45,9 +45,11 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertFalse($boundary['closure_boundary']);
         $this->assertEqualsWithDelta(0, $boundary['depth'], 0.0000001);
         $this->assertEqualsWithDelta(0, $boundary['cadence'], 0.0000001);
-        // The still-open entrant counts alongside completed participation.
-        $this->assertSame(15, (int) DB::table('commitment_snapshots')
+        // The still-open entrant counts alongside completed participation,
+        // including Stage 3's additional lawful reconsideration Cycle.
+        $this->assertSame(16, (int) DB::table('commitment_snapshots')
             ->where('proposition_id', $boundary['proposition_id'])->value('cadence_interval'));
+        $this->discoverGate($actor);
         $observing = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Develop the completed region']);
         $observed = $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $observing['plan']['gate_id'],
             'instrument' => ['kind' => 'citation', 'reference' => $boundary['proposition_id']]]);
@@ -59,17 +61,19 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $seed = Proposition::findOrFail($boundary['proposition_id']);
         $entries = DB::table('cycles')->where('entry_committal_id', $origin)
             ->where('context_horizon_id', $seed->phase->cycle->context_horizon_id);
-        $this->assertSame(15, $entries->count());
+        $this->assertSame(16, $entries->count());
         $this->assertTrue($entries->whereNull('completed_at')->exists());
         $diagnostic = app(CrossoverMarginService::class)->inspect($cycle);
         $this->assertReceiptNeutralChiralityChain($participant->position);
         $this->assertSame($boundary['tension_after'], $seed->commitmentSnapshot->tension);
         $this->assertSame($seed->id, $diagnostic['governing_committal_id']);
         $this->assertSame('settlement', $diagnostic['domain']);
-        foreach (['correspondence' => -0.2793287, 'chirality' => 0.077151,
+        // Completing the previously missed route judgments changes the actual
+        // Attestation history. Keep exact values and the independent projection below.
+        foreach (['correspondence' => -0.2793287, 'chirality' => -0.1788649,
             'prospective_depth' => 0, 'prospective_committed_cardinal_position' => 0, 'admissible_cadence_bound' => 0,
-            'tension_bound' => -0.0673926,
-            'crossover_margin' => -0.0673926] as $name => $value) {
+            'tension_bound' => -0.1527312,
+            'crossover_margin' => -0.1527312] as $name => $value) {
             $this->assertEqualsWithDelta($value, $diagnostic[$name], 1e-7, $name.' '.json_encode($diagnostic));
         }
         // Settlement's negative retained Cardinal direction admits a zero

@@ -8,12 +8,16 @@ use App\Models\Proposition;
 use App\Models\User;
 use App\Services\ContextHorizonProjector;
 use App\Services\InputPlanService;
+use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantExplorationService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
+use App\Services\PersonalAcquisitionService;
+use App\Services\PropositionOptionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\Fixtures\ExplorationHistory;
 use Tests\Fixtures\HorizonProofFixture;
 use Tests\TestCase;
@@ -41,7 +45,7 @@ class ExhaustedParticipantContextTest extends TestCase
     }
 
     #[DataProvider('writePositions')]
-    public function test_historical_encounters_preserve_visibility_and_new_opportunities_in_both_domains(ContextDomain $domain, PhaseKind $kind): void
+    public function test_historical_encounters_without_personal_judgment_preserve_structural_visibility_in_both_domains(ContextDomain $domain, PhaseKind $kind): void
     {
         if ($domain === ContextDomain::Settlement) {
             $snapshot = $this->origin->commitmentSnapshot;
@@ -66,10 +70,12 @@ class ExhaustedParticipantContextTest extends TestCase
             $this->assertNotContains($right->id, array_column($plan[$key], 'id'));
         }
         $this->assertSame([], $plan['exhausted_alternatives'], 'Explored is not Horizon Exhaustion');
-        $this->assertTrue(app(ParticipantExplorationService::class)->explored($right, $phase),
-            'Acquisition alone is not a forward continuation; historical encounters remain applicable');
+        $this->assertFalse(app(ParticipantExplorationService::class)->explored($right, $phase),
+            'An historical encounter without personal judgment does not establish participatory completion');
         $compact = array_column(app(ParticipantContextSerializer::class)->plan($plan)['write_options'], 'id');
-        $this->assertContains($right->id, $compact);
+        $this->assertNotContains($right->id, $compact,
+            'The operational serializer does not promote an unavailable, unevaluated Write through a historical event');
+        $this->assertDatabaseCount('exploration_events', 2);
     }
 
     public function test_a_healthy_sibling_remains_actionable_alongside_visible_explored_evidence(): void
@@ -81,7 +87,7 @@ class ExhaustedParticipantContextTest extends TestCase
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
         $plan = app(InputPlanService::class)->forParticipant($phase->cycle->participant);
         $this->assertEqualsCanonicalizing([$explored->id, $healthy->id], array_column($plan['write_options'], 'id'));
-        $this->assertSame([], array_column($plan['instrument_options'], 'id'), 'Distinguish has no Instrument action');
+        $this->assertSame([$phase->gate_proposition_id], array_column($plan['instrument_options'], 'id'), 'Existing structure does not waive personal discovery');
         $this->assertArrayNotHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
     }
 
@@ -141,6 +147,21 @@ class ExhaustedParticipantContextTest extends TestCase
         $this->assertFalse($historical['actionable']);
         $this->assertSame('What should persist?', $packet['write']['question']);
         $this->assertStringNotContainsString($commit->id, json_encode($packet['actions']));
+    }
+
+    public function test_outstanding_discovery_does_not_reopen_an_exhausted_committal(): void
+    {
+        [$commit, , $tragedy] = $this->firstFailure();
+        [$terminal] = $this->exercise($commit, $tragedy);
+        $this->rest($terminal);
+        $phase = $this->phase($commit, PhaseKind::Distinguish);
+        $this->assertSame('required', app(PersonalAcquisitionService::class)->state($phase)['status']);
+        foreach ([null, new ParticipationContext($phase)] as $context) {
+            $this->assertEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($phase, $context));
+        }
+        $this->expectException(ConflictHttpException::class);
+        app(OperationalInstrumentService::class)->execute($phase, $commit,
+            ['kind' => 'proposition_search', 'limit' => 1]);
     }
 
     public function test_first_tragedy_keeps_explored_evidence_in_live_participant_context_and_graph(): void

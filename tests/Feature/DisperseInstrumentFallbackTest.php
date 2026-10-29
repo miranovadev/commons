@@ -22,6 +22,7 @@ use App\Services\LedgerService;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
+use App\Services\PersonalAcquisitionService;
 use App\Services\PhaseGenerationService;
 use App\Services\PotentialProjectionService;
 use App\Services\PreparationService;
@@ -134,14 +135,15 @@ class DisperseInstrumentFallbackTest extends TestCase
     }
 
     #[DataProvider('spentPhases')]
-    public function test_consumed_completed_observation_spends_shared_cycle_allowance_even_after_failed_verification(PhaseKind $kind): void
+    public function test_consumed_completed_observation_satisfies_only_its_role_even_after_failed_verification(PhaseKind $kind): void
     {
         $f = $this->fixture();
         $phase = $f->phase;
         if ($kind === PhaseKind::Persist) {
             $gate = DB::transaction(fn () => $f->node($f->seed, 'activity', position: PhaseKind::Distinguish));
-            $phase = $f->phase->replicate();
             $phase->forceFill(['kind' => $kind, 'gate_proposition_id' => $gate->id, 'write_register' => 'frontier'])->save();
+            $phase = $phase->fresh();
+            $f->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
         }
         Http::fake(['*' => Http::response('', 404)]);
         // Failed verification is still a completed ordinary observation under the existing contract.
@@ -150,34 +152,46 @@ class DisperseInstrumentFallbackTest extends TestCase
         $receipt = app(OperationalInstrumentService::class)->execute($phase, $phase->gate,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/missing']);
         $this->assertSame('completed', $receipt->evidenceExecution->status);
+        if ($kind === PhaseKind::Persist) {
+            // Position the separate role only after the real Persist attempt completed.
+            $phase->forceFill(['completed_at' => now()])->save();
+            $next = $phase->replicate();
+            $next->forceFill(['kind' => PhaseKind::Disperse, 'gate_proposition_id' => $f->gate->id, 'write_register' => 'activity', 'completed_at' => null])->save();
+            $f->phase = $next->fresh();
+            $f->viewer->forceFill(['current_proposition_id' => $f->gate->id])->save();
+        }
         $this->assertTrue(app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->contains('id', $receipt->id));
         $this->consume($f, $receipt);
         $this->assertEmpty(app(HorizonReceiptService::class)->ordinaryAvailable($f->phase));
         $actions = $this->actions($f);
-        $this->assertArrayNotHasKey('instrument.execute', $actions);
         $this->assertArrayNotHasKey('proposition.variant', $actions);
-        $this->assertArrayHasKey('participant.rest', $actions);
-        $this->expectException(ConflictHttpException::class);
-        app(OperationalInstrumentService::class)->execute($f->phase, $f->gate, $this->input($f)['instrument']);
+        if ($kind === PhaseKind::Persist) {
+            $this->assertArrayHasKey('instrument.execute', $actions);
+            $this->assertSame('required', app(PersonalAcquisitionService::class)->state($f->phase)['status']);
+        } else {
+            $this->assertArrayNotHasKey('instrument.execute', $actions);
+            $this->assertArrayHasKey('participant.rest', $actions);
+            $this->expectException(ConflictHttpException::class);
+            app(OperationalInstrumentService::class)->execute($f->phase, $f->gate, $this->input($f)['instrument']);
+        }
     }
 
-    public function test_readable_artifact_keeps_priority_even_after_preparation_allowance_is_spent(): void
+    public function test_readable_artifact_offers_choice_and_unattempted_expiry_keeps_acquisition_outstanding(): void
     {
         Storage::fake('artifacts');
         $fixture = new PreparationFixture;
         $f = $fixture->context;
         $this->assertArrayHasKey('preparation.start', $this->actions($f));
-        $this->assertArrayNotHasKey('instrument.execute', $this->actions($f));
+        $this->assertArrayHasKey('instrument.execute', $this->actions($f));
         $service = app(PreparationService::class);
         $execution = $service->start($f->viewer, $f->phase, $fixture->input());
         $service->fail($f->viewer, $execution, 'test-reader', '1', 'expired', 'Unattempted Preparation expired.');
-        $this->assertTrue($service->hasReadableArtifacts($f->phase));
-        $this->assertFalse($service->eligible($f->phase));
-        $this->assertArrayNotHasKey('preparation.start', $this->actions($f));
-        $this->assertArrayNotHasKey('instrument.execute', $this->actions($f));
-        $this->assertArrayHasKey('participant.rest', $this->actions($f));
-        $this->expectException(ConflictHttpException::class);
+        $this->assertNull($execution->fresh()->receipt);
+        $this->assertTrue($service->eligible($f->phase));
+        $this->assertArrayHasKey('preparation.start', $this->actions($f));
+        $this->assertArrayHasKey('instrument.execute', $this->actions($f));
         app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase, $this->input($f));
+        $this->assertFalse($service->eligible($f->phase));
     }
 
     private function historicalReceipt(ParticipantContextFixture $f, ?string $body = null): Receipt
@@ -221,7 +235,7 @@ class DisperseInstrumentFallbackTest extends TestCase
     }
 
     #[DataProvider('newlyAvailable')]
-    public function test_locked_dispatch_rejects_stale_acquisition_when_evidence_arrives(bool $consume, bool $probe): void
+    public function test_locked_dispatch_preserves_personal_acquisition_when_shared_evidence_arrives(bool $consume, bool $probe): void
     {
         Storage::fake('artifacts');
         $f = $this->fixture();
@@ -237,13 +251,9 @@ class DisperseInstrumentFallbackTest extends TestCase
         }
         $this->mock(ArtifactStore::class, fn ($mock) => $mock->shouldNotReceive('read'));
         $before = Receipt::count();
-        try {
-            $dispatcher->dispatch($f->viewer, $f->phase, $input, $observed);
-            $this->fail('Stale fallback accepted.');
-        } catch (ConflictHttpException) {
-            $this->assertSame($before, Receipt::count());
-            $this->assertSame(0, EvidenceExecution::where('cycle_id', $f->phase->cycle_id)->count());
-        }
+        $dispatcher->dispatch($f->viewer, $f->phase, $input, $observed);
+        $this->assertSame($before + 1, Receipt::count());
+        $this->assertSame(1, EvidenceExecution::where('cycle_id', $f->phase->cycle_id)->count());
     }
 
     public static function sharedAllowanceStates(): array
@@ -270,8 +280,8 @@ class DisperseInstrumentFallbackTest extends TestCase
         $input['instrument']['reference'] = $f->gate->id;
         app(ContributionDispatcher::class)->dispatch($other, $phase->fresh(), $input);
         $this->assertSame($used ? 1 : 0, EvidenceExecution::where('cycle_id', $f->phase->cycle_id)->count());
-        $this->assertArrayHasKey('proposition.variant', $this->actions($f));
-        $this->assertArrayNotHasKey('instrument.execute', $this->actions($f));
+        $this->assertSame($used, isset($this->actions($f)['proposition.variant']));
+        $this->assertSame(! $used, isset($this->actions($f)['instrument.execute']));
         $this->assertArrayNotHasKey('preparation.start', $this->actions($f));
     }
 

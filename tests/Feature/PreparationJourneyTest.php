@@ -13,7 +13,6 @@ use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\User;
 use App\Services\ContributionDispatcher;
-use App\Services\ContributionService;
 use App\Services\Evidence\ArtifactStore;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
@@ -57,8 +56,9 @@ class PreparationJourneyTest extends TestCase
         $fixture = new PreparationFixture(available: true);
         $f = $fixture->context;
         $plan = fn () => app(InputPlanService::class)->forPhase($f->viewer, $f->phase);
-        $this->assertArrayHasKey('proposition.variant', $plan()['schema']['$defs']['actions']);
-        $this->assertArrayNotHasKey('preparation.start', $plan()['schema']['$defs']['actions']);
+        $this->assertArrayNotHasKey('proposition.variant', $plan()['schema']['$defs']['actions']);
+        $this->assertArrayHasKey('preparation.start', $plan()['schema']['$defs']['actions']);
+        $this->assertArrayHasKey('instrument.execute', $plan()['schema']['$defs']['actions']);
         $fixture->consume($fixture->source);
         $this->assertArrayHasKey('preparation.start', $plan()['schema']['$defs']['actions']);
         $this->assertArrayNotHasKey('proposition.variant', $plan()['schema']['$defs']['actions']);
@@ -146,7 +146,7 @@ class PreparationJourneyTest extends TestCase
         $f = $fixture->context;
         $plan = app(InputPlanService::class)->forPhase($f->viewer, $f->phase);
         $input = ['action' => 'proposition.variant', 'statement' => 'Stale generation.'];
-        app(ContributionService::class)->validateSchema($plan['schema'], $input);
+        $this->assertArrayNotHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
         $fixture->consume($fixture->source);
         try {
             app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase, $input);
@@ -172,7 +172,7 @@ class PreparationJourneyTest extends TestCase
         $this->assertNull($execution->fresh()->receipt);
         $this->assertNull($execution->fresh()->outcome);
         $this->assertNull($service->active($f->phase));
-        $this->assertArrayHasKey('participant.rest', app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema']['$defs']['actions']);
+        $this->assertArrayHasKey('preparation.start', app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema']['$defs']['actions']);
     }
 
     public function test_combined_oversized_requests_share_budget_and_complete_successfully(): void
@@ -261,7 +261,7 @@ class PreparationJourneyTest extends TestCase
         $this->assertArrayHasKey('proposition.variant', $resolved->json('data.plan.schema.$defs.actions'));
         $this->assertSame($resolution['reason'], EvidenceExecution::findOrFail($id)->receipt->metadata['outcome']['reason']);
         $this->getJson($url.'/preparations/'.$id.'/reading')->assertConflict();
-        $this->postJson($url.'/participate', ['phase_id' => $f->phase->id, 'contribution' => $resolution])->assertConflict();
+        $this->postJson($url.'/participate', ['phase_id' => $f->phase->id, 'contribution' => $resolution])->assertOk();
         $this->assertSame(1, Receipt::where('type', 'preparation')->count());
     }
 

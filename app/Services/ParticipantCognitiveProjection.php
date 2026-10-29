@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
+use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Supersession;
 use App\Services\Observables\CommittalLineageService;
@@ -23,7 +24,13 @@ final class ParticipantCognitiveProjection
             $gate = collect($plan['exhausted_alternatives'] ?? [])->firstWhere('id', $gateId);
         }
         if ($gate === null) {
-            throw new DomainException('Cognitive context requires the recorded acting Gate.');
+            // Order may have no selectable option for its acting Gate. Recover
+            // only that recorded context, never an arbitrary caller-supplied ID.
+            $phase = isset($plan['phase']['id']) ? Phase::find($plan['phase']['id']) : null;
+            if ($phase?->gate_proposition_id !== $gateId) {
+                throw new DomainException('Cognitive context requires the recorded acting Gate.');
+            }
+            $gate = $this->nodes(collect([$gateId]), $pool)->first();
         }
 
         $kind = $plan['phase']['kind'];

@@ -95,18 +95,18 @@ class ReceiptGovernedGenerationTest extends TestCase
             }
         }
         $policy = app(PhaseGenerationService::class);
-        $this->assertSame($available, $policy->epistemicActionAvailable($f->phase, 'proposition.variant'));
-        $this->assertSame($available, $policy->epistemicActionAvailable($f->phase, 'proposition.revise'));
-        $this->assertSame(! $available && ! $used, app(PropositionOptionService::class)->instrumentOptionsFor($f->phase)->isNotEmpty());
+        $this->assertSame($available && $used, $policy->epistemicActionAvailable($f->phase, 'proposition.variant'));
+        $this->assertSame($available && $used, $policy->epistemicActionAvailable($f->phase, 'proposition.revise'));
+        $this->assertSame(! $used, app(PropositionOptionService::class)->instrumentOptionsFor($f->phase)->isNotEmpty());
         $this->assertSame($available, app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->isNotEmpty());
         app(PotentialProjectionService::class)->refresh($f->substrate->id);
         $state = app(ParticipationService::class)->stateFor($f->viewer);
         $actions = $state['plan']['schema']['$defs']['actions'];
         // A consumed Receipt's structural source may remain a viable route.
-        $this->assertSame($available, isset($actions['proposition.variant']));
-        $this->assertSame(! $available && ! $used, isset($actions['instrument.execute']));
+        $this->assertSame($available && $used, isset($actions['proposition.variant']));
+        $this->assertSame(! $used, isset($actions['instrument.execute']));
         $this->assertSame($state['plan']['schema'], app(ParticipantPromptFactory::class)->make(new Connection, $state)['schema']);
-        if ($available) {
+        if ($used) {
             $suppliedTargets = app(InputSchemaService::class)->forParticipant($f->viewer, [], [$f->gate->id],
                 instrumentOptionIds: [$f->gate->id]);
             $this->assertArrayNotHasKey('instrument.execute', $suppliedTargets['$defs']['actions']);
@@ -119,7 +119,7 @@ class ReceiptGovernedGenerationTest extends TestCase
     }
 
     #[DataProvider('ordinaryKinds')]
-    public function test_shared_receipt_enables_generation_without_loading_or_consumption(string $kind): void
+    public function test_shared_receipt_requires_personal_acquisition_before_generation_without_consumption(string $kind): void
     {
         $f = $this->fixture();
         $observer = $this->observer($f);
@@ -130,6 +130,8 @@ class ReceiptGovernedGenerationTest extends TestCase
         $this->assertSame($otherGate->id, $receipt->evidenceExecution->proposition_id);
         $this->assertNotSame($f->gate->id, $receipt->evidenceExecution->proposition_id);
         $this->assertDatabaseMissing('participant_receipt_contexts', ['participant_id' => $f->viewer->id, 'receipt_id' => $receipt->id]);
+        $this->assertFalse(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant'));
+        $this->observe($f, $f->phase);
         $this->assertTrue(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant'));
         DB::table('participant_receipt_contexts')->where('receipt_id', $receipt->id)->update(['cleared_at' => now()]);
         $this->assertTrue(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant'));
@@ -145,15 +147,15 @@ class ReceiptGovernedGenerationTest extends TestCase
     }
 
     #[DataProvider('ordinaryKinds')]
-    public function test_consumption_invalidates_stale_generation_and_reopens_acquisition(string $kind): void
+    public function test_consumption_invalidates_stale_generation_without_resetting_acquisition(string $kind): void
     {
         $f = $this->fixture();
-        $receipt = $this->observe($f, $this->observer($f), $kind);
+        $receipt = $this->observe($f, $f->phase, $kind);
         $schema = app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema'];
         $this->assertArrayHasKey('proposition.variant', $schema['$defs']['actions']);
         $this->consume($f, $receipt);
         $this->assertEmpty(app(HorizonReceiptService::class)->ordinaryAvailable($f->phase));
-        $this->assertNotEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($f->phase));
+        $this->assertEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($f->phase));
         $before = Proposition::count();
         $input = ['action' => 'proposition.variant', 'statement' => 'Stale proposal'];
         try {
@@ -196,9 +198,11 @@ class ReceiptGovernedGenerationTest extends TestCase
         $observer = $this->observer($f);
         app(OperationalInstrumentService::class)->execute($observer, $f->gate, ['kind' => 'proposition_search']);
         $this->assertFalse(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant'));
-        $this->assertSame([$head->id], app(PropositionOptionService::class)->revisionOptionsFor($f->phase, $f->viewer)->modelKeys());
+        $this->assertEmpty(app(PropositionOptionService::class)->revisionOptionsFor($f->phase, $f->viewer));
         $other = $this->observer($f);
         $this->assertEmpty(app(PropositionOptionService::class)->revisionOptionsFor($other, $other->cycle->participant));
+        $this->observe($f, $f->phase);
+        $this->assertSame([$head->id], app(PropositionOptionService::class)->revisionOptionsFor($f->phase, $f->viewer)->modelKeys());
         $count = Receipt::count();
         $revised = app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase,
             ['action' => 'proposition.revise', 'proposition_id' => $head->id, 'statement' => 'Revise after shared observation']);
@@ -238,12 +242,12 @@ class ReceiptGovernedGenerationTest extends TestCase
         $this->assertSame([], $receipt->metadata['proposition_collection']['results']);
         $this->assertSame([$receipt->id], app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->modelKeys());
         $other = $this->observer($f);
-        $this->assertTrue(app(PhaseGenerationService::class)->available($other, 'proposition.variant'));
+        $this->assertFalse(app(PhaseGenerationService::class)->available($other, 'proposition.variant'));
         $context = app(ReceiptContextService::class);
         $context->clear($f->viewer, $f->phase, $receipt->id);
         $this->assertTrue(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant'));
         $context->read($other->cycle->participant, $other, $receipt->id);
-        $this->assertTrue(app(PhaseGenerationService::class)->available($other, 'proposition.variant'));
+        $this->assertFalse(app(PhaseGenerationService::class)->available($other, 'proposition.variant'));
 
         $this->assertTrue(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant'));
         $this->assertEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($f->phase));
@@ -260,12 +264,12 @@ class ReceiptGovernedGenerationTest extends TestCase
         foreach (PhaseKind::cases() as $kind) {
             $f->phase->kind = $kind;
             foreach (['proposition.variant', 'proposition.revise'] as $action) {
-                $this->assertSame(! in_array($kind, [PhaseKind::Persist, PhaseKind::Disperse], true), app(PhaseGenerationService::class)->epistemicActionAvailable($f->phase, $action));
+                $this->assertSame(! in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Disperse], true), app(PhaseGenerationService::class)->epistemicActionAvailable($f->phase, $action));
             }
             foreach (['attestation.create', 'proposition.traverse', 'proposition.reclassify', 'participant.rest'] as $action) {
                 $this->assertTrue(app(PhaseGenerationService::class)->epistemicActionAvailable($f->phase, $action));
             }
-            $this->assertSame($kind === PhaseKind::Disperse, in_array('preparation.start', config("phases.{$kind->value}.actions"), true));
+            $this->assertSame(in_array($kind, [PhaseKind::Persist, PhaseKind::Disperse], true), in_array('preparation.start', config("phases.{$kind->value}.actions"), true));
         }
     }
 

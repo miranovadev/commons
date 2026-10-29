@@ -87,7 +87,7 @@ class EpistemicInstrumentationTest extends TestCase
             $f->phase->kind = $kind;
             $ids = app(PropositionOptionService::class)->instrumentOptionsFor($f->phase)->pluck('id')->all();
             $this->assertSame(in_array($kind, [PhaseKind::Persist, PhaseKind::Disperse], true) ? [$f->gate->id] : [], $ids);
-            $this->assertSame(in_array($kind, [PhaseKind::Persist, PhaseKind::Disperse], true), in_array('instrument.execute', config("phases.{$kind->value}.actions"), true));
+            $this->assertSame(in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Disperse], true), in_array('instrument.execute', config("phases.{$kind->value}.actions"), true));
         }
     }
 
@@ -132,7 +132,7 @@ class EpistemicInstrumentationTest extends TestCase
         $this->assertArrayNotHasKey('instrument.execute', $state['plan']['schema']['$defs']['actions']);
     }
 
-    public function test_allowance_is_cycle_owned_and_independent_of_other_participants_and_loading(): void
+    public function test_completion_is_personal_gate_owned_across_cycles_and_independent_of_loading(): void
     {
         $f = $this->fixture();
         app(ParticipationService::class)->contribute($f->viewer, $f->phase->id, $this->input($f));
@@ -147,8 +147,8 @@ class EpistemicInstrumentationTest extends TestCase
         $phase = $f->phase->replicate();
         $phase->cycle_id = $cycle->id;
         $phase->save();
-        $this->assertCount(0, app(PropositionOptionService::class)->instrumentOptionsFor($phase->fresh()));
-        $this->assertTrue(app(PhaseGenerationService::class)->available($phase->fresh(), 'proposition.variant'));
+        $this->assertCount(1, app(PropositionOptionService::class)->instrumentOptionsFor($phase->fresh()));
+        $this->assertFalse(app(PhaseGenerationService::class)->available($phase->fresh(), 'proposition.variant'));
         $f->phase->cycle->forceFill(['completed_at' => now()])->save();
         $next = $f->phase->cycle->replicate();
         $next->forceFill(['completed_at' => null, 'sequence' => $next->sequence + 1])->save();
@@ -156,7 +156,7 @@ class EpistemicInstrumentationTest extends TestCase
         $nextPhase->cycle_id = $next->id;
         $nextPhase->save();
         $this->assertCount(0, app(PropositionOptionService::class)->instrumentOptionsFor($nextPhase->fresh()));
-        // An unused allowance does not override the shared evidence supply.
+        // A new Cycle does not reset durable personal completion.
         $this->assertFalse(EvidenceExecution::whereHas('phase', fn ($q) => $q->where('cycle_id', $next->id))->exists());
     }
 

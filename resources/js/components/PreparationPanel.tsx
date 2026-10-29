@@ -37,7 +37,7 @@ export function PreparationPanel({ slug, participantId, preparation, onDefer }: 
       <Text size="xs">Requested offset {item.boundaries.requested_offset} · {item.boundaries.requested_max_chars == null ? 'Automatic allocation' : `Maximum ${item.boundaries.requested_max_chars} characters`}</Text>
       <Box component="pre" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', maxHeight: 400, overflow: 'auto' }}>{item.content || '(Empty Artifact representation)'}</Box>
     </Box>)}
-    {presented && <Text size="sm">Use an available Variant or Revise below, or explicitly defer.</Text>}
-    <Button variant="light" disabled={!presented} onClick={onDefer}>Defer with a reason</Button>
+    {presented && <Text size="sm">Resolve this reading with a reason to continue. In Disperse, an available Variant or Revise can also resolve it.</Text>}
+    <Button variant="light" disabled={!presented} onClick={onDefer}>Resolve without contribution</Button>
   </Stack>;
 }

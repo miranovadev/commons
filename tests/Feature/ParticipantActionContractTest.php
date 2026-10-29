@@ -44,14 +44,20 @@ class ParticipantActionContractTest extends TestCase
 
     public static function executionPhases(): array
     {
-        return [...self::phases(), 'Persist foreign Gate' => [PhaseKind::Persist, true]];
+        return [...self::phases(), 'Persist foreign Gate' => [PhaseKind::Persist, true],
+            'Persist after acquisition' => [PhaseKind::Persist, false, true],
+            'Disperse after acquisition' => [PhaseKind::Disperse, false, true],
+            'Persist foreign Gate after acquisition' => [PhaseKind::Persist, true, true]];
     }
 
     #[Group('integration')]
     #[DataProvider('executionPhases')]
-    public function test_every_advertised_action_round_trips_through_inference_validation_and_execution(PhaseKind $kind, bool $foreignGate = false): void
+    public function test_every_advertised_action_round_trips_through_inference_validation_and_execution(PhaseKind $kind, bool $foreignGate = false, bool $acquired = false): void
     {
         [$participant, $phase, $seed] = $this->fixture($kind, foreignGate: $foreignGate);
+        if ($acquired) {
+            $this->instrumentGateFixture($phase);
+        }
         $state = app(ParticipationService::class)->stateFor($participant);
         $schema = $state['plan']['schema'];
         // Coverage must not silently shrink when an action disappears from a fixture.
@@ -61,11 +67,14 @@ class ParticipantActionContractTest extends TestCase
         // FullEvidenceFlowTest and SharedReclassificationTest.
         $spent = match ($kind) {
             PhaseKind::Distinguish => ['proposition.variant'],
-            PhaseKind::Disperse => ['proposition.variant', 'preparation.start', 'instrument.execute'],
-            PhaseKind::Persist => ['proposition.variant', 'proposition.reclassify', 'instrument.execute'],
+            PhaseKind::Disperse => ['proposition.variant', 'preparation.start'],
+            PhaseKind::Persist => ['proposition.variant', 'proposition.reclassify', 'preparation.start'],
             PhaseKind::Constrain, PhaseKind::Bias => [],
             default => [],
         };
+        if (in_array($kind, [PhaseKind::Persist, PhaseKind::Disperse], true)) {
+            $spent[] = $acquired ? 'instrument.execute' : 'proposition.revise';
+        }
         $expected = array_values(array_diff($expected, $spent));
         $this->assertEqualsCanonicalizing($expected, array_keys($schema['$defs']['actions']), json_encode($state['plan']));
         // A valid action in another phase/state must also be rejected here when

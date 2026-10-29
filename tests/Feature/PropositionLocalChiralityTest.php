@@ -262,6 +262,7 @@ class PropositionLocalChiralityTest extends TestCase
         $cycle = $this->actor->cycles()->latest('sequence')->firstOrFail();
         $phase = $cycle->phases()->whereNull('completed_at')->sole();
         $dispatch = app(ContributionDispatcher::class);
+        $this->instrumentGateFixture($phase);
         $node = $dispatch->dispatch($this->actor, $phase, ['action' => 'proposition.variant', 'statement' => 'Local source']);
         $persist = $phase->replicate();
         $persist->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $node->id, 'write_register' => $phase->cycle->contextHorizon->domain->registerFor(PhaseKind::Persist)])->save();

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\EvidenceExecution;
 use App\Models\Receipt;
 use App\Models\Substrate;
+use App\Services\OperationalInstrumentService;
 use App\Services\PreparationService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
@@ -28,7 +29,7 @@ class PreparationConcurrencyTest extends TestCase
         });
     }
 
-    public function test_competing_starts_reserve_only_one_cycle_allowance(): void
+    public function test_competing_starts_reserve_only_one_personal_gate_role(): void
     {
         if (DB::getDriverName() !== 'pgsql') {
             $this->markTestSkipped('Requires independent PostgreSQL row locks.');
@@ -42,6 +43,42 @@ class PreparationConcurrencyTest extends TestCase
             fn () => app(PreparationService::class)->start($f->viewer, $f->phase, $fixture->input()));
         $this->assertSame(1, EvidenceExecution::where('type', 'prepare')->count());
         $this->assertSame(0, Receipt::where('type', 'preparation')->count());
+    }
+
+    public function test_instrument_winner_prevents_a_waiting_preparation_reservation(): void
+    {
+        if (DB::getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('Requires independent PostgreSQL row locks.');
+        }
+        Storage::fake('artifacts');
+        $fixture = new PreparationFixture(true);
+        $f = $fixture->context;
+        $this->whileWorkerWaits($f->substrate, ['operation' => 'preparation-start-conflict',
+            'participant_id' => $f->viewer->id, 'phase_id' => $f->phase->id, 'preparation' => $fixture->input()],
+            fn () => app(OperationalInstrumentService::class)->execute($f->phase, $f->gate,
+                ['kind' => 'citation', 'reference' => $f->seed->id]));
+        $this->assertSame(1, EvidenceExecution::where('phase_id', $f->phase->id)->count());
+        $this->assertSame(0, EvidenceExecution::where('type', 'prepare')->count());
+    }
+
+    public function test_preparation_reservation_prevents_a_waiting_instrument(): void
+    {
+        if (DB::getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('Requires independent PostgreSQL row locks.');
+        }
+        Storage::fake('artifacts');
+        $fixture = new PreparationFixture(true);
+        $f = $fixture->context;
+        app(PreparationService::class)->options($f->phase);
+        $this->whileWorkerWaits($f->substrate, ['operation' => 'instrument-conflict',
+            'participant_id' => $f->viewer->id, 'phase_id' => $f->phase->id,
+            'contribution' => ['action' => 'instrument.execute', 'proposition_id' => $f->gate->id,
+                'instrument' => ['kind' => 'citation', 'reference' => $f->seed->id]]],
+            fn () => app(PreparationService::class)->start($f->viewer, $f->phase, $fixture->input()));
+        $execution = EvidenceExecution::where('phase_id', $f->phase->id)->sole();
+        $this->assertSame('prepare', $execution->type);
+        $this->assertSame('pending', $execution->status);
+        $this->assertNull($execution->receipt);
     }
 
     public function test_competing_contributed_and_deferred_outcomes_cannot_both_complete(): void

@@ -20,6 +20,7 @@ class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
         $foreign = $this->joinParticipant('foreign');
         $state = $this->enterParticipant($foreign, true);
         $foreignOrigin = $state['current_proposition_id'];
+        $state = $this->discoverGate($foreign);
         $state = $this->contribute($foreign, ['action' => 'proposition.variant', 'statement' => 'Foreign branch content.'], $state);
         $foreignChild = $state['current_proposition_id'];
         $this->observePersistGate($foreign, $state);
@@ -32,6 +33,7 @@ class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
         $origin = $state['current_proposition_id'];
         $observer = $this->joinParticipant('local-observer');
         $this->enterParticipant($observer);
+        $state = $this->discoverGate($author);
         $state = $this->contribute($author, ['action' => 'proposition.variant', 'statement' => 'Visible local distinction.'], $state);
         $signal = $state['current_proposition_id'];
         $state = $this->observePersistGate($author, $state);
@@ -44,8 +46,9 @@ class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
         $this->assertSame(0, $signalCard['attestation_summary']['positive']);
         $this->assertSame([$origin], $signalCard['parent_ids']);
         $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $origin, 'target_proposition_id' => $signal]);
-        $localReceipt = DB::table('receipts')->whereNotIn('id', $foreignReceipts)->sole()->id;
-        $this->assertSame([], $originCard['receipts'] ?? []);
+        $localReceipt = DB::table('receipts')->where('receiptable_id', $signal)->sole()->id;
+        $this->assertCount(1, $originCard['receipts']);
+        $this->assertDatabaseHas('receipts', ['id' => $originCard['receipts'][0]['id'], 'receiptable_id' => $origin]);
         $this->assertContains($localReceipt, array_column($signalCard['receipts'], 'id'));
         $json = json_encode($state);
         foreach ([$foreignOrigin, $foreignChild, $distant, ...$foreignReceipts, ...$foreignAttestations, ...$foreignEdges,

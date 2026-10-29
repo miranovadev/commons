@@ -21,6 +21,7 @@ abstract class ParticipationHttpTestCase extends TestCase
         $this->startSubstrate();
         $actor = $this->joinParticipant($name);
         $initial = $this->enterParticipant($actor, true);
+        $this->discoverGate($actor);
         $first = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'First distinction']);
         $observed = $this->contribute($actor, ['action' => 'instrument.execute',
             'proposition_id' => $first['plan']['gate_id'],
@@ -31,6 +32,15 @@ abstract class ParticipationHttpTestCase extends TestCase
         $this->assertSame('constrain', $state['plan']['phase']['kind']);
 
         return compact('actor', 'initial', 'first', 'observed', 'state');
+    }
+
+    /** Phase-neutral personal discovery, through the same HTTP contribution endpoint. */
+    protected function discoverGate(string $actor): array
+    {
+        $state = $this->readParticipation($actor);
+
+        return $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+            'instrument' => ['kind' => 'proposition_search', 'query' => 'Personal discovery '.$actor, 'limit' => 1]]);
     }
 
     use RefreshDatabase;
@@ -246,7 +256,7 @@ abstract class ParticipationHttpTestCase extends TestCase
         $this->fail('No advertised action. '.$this->traceMessage($state));
     }
 
-    protected function driveUntil(string $participant, callable $reached, int $maxActions = 100): array
+    protected function driveUntil(string $participant, callable $reached, int $maxActions = 100, ?string $preferredReceipt = null): array
     {
         $lastCommitment = null;
         for ($step = 0; $step <= $maxActions; $step++) {
@@ -257,7 +267,12 @@ abstract class ParticipationHttpTestCase extends TestCase
             }
             $this->assertSame('ready', $state['status'], $this->traceMessage($state));
             if ($step < $maxActions) {
-                $this->contribute($participant, $this->chooseContribution($state), $state);
+                $input = $this->chooseContribution($state);
+                if ($preferredReceipt !== null && $input['action'] === 'proposition.reclassify') {
+                    $this->assertContains($preferredReceipt, $this->actionDefinitions($state)['proposition.reclassify']['properties']['receipt_id']['enum']);
+                    $input['receipt_id'] = $preferredReceipt;
+                }
+                $this->contribute($participant, $input, $state);
             }
         }
         $this->fail('HTTP action budget exhausted. Last Commit eligibility: '.json_encode($lastCommitment)

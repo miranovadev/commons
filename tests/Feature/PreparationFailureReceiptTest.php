@@ -8,6 +8,7 @@ use App\Services\Evidence\ReceiptEvidenceService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\ParticipantReceiptProjection;
+use App\Services\PotentialProjectionService;
 use App\Services\PreparationService;
 use App\Services\PropositionStateService;
 use App\Services\ReceiptContextService;
@@ -46,6 +47,9 @@ class PreparationFailureReceiptTest extends TestCase
         $input = $fixture->input();
         $input['artifacts'][0]['parameters'] = ['offset' => 2, 'max_chars' => 20000];
         $execution = $service->start($f->viewer, $f->phase, $input);
+        // This isolated fixture leaves earlier structural impacts dirty. Publish
+        // those before attributing any subsequent changes to the failed reading.
+        app(PotentialProjectionService::class)->refresh($f->substrate->id);
         $before = $this->structure();
         Storage::disk('artifacts')->delete($fixture->source->metadata['artifacts'][0]['path']);
         try {
@@ -117,6 +121,11 @@ class PreparationFailureReceiptTest extends TestCase
             'participant' => ['id' => $f->viewer->id], 'plan' => ['phase' => ['id' => $f->phase->id, 'kind' => 'disperse'], 'gate_id' => $f->gate->id],
         ]);
         $loaded = collect($catalogue)->firstWhere('id', $receipt->id)['loaded_inline_content'];
+        $summary = collect($catalogue)->firstWhere('id', $receipt->id)['summary'];
+        $this->assertSame('failed', $summary['outcome']);
+        $this->assertFalse($summary['content_verified']);
+        $this->assertSame($fixture->input()['artifacts'][0]['artifact_id'], $summary['selections'][0]['artifact_id']);
+        $this->assertSame('read', $summary['failure']['stage']);
         $this->assertSame('failed', $loaded['outcome']['type']);
         $this->assertSame([], $loaded['deliveries']);
         $this->assertStringContainsString('Operational failure only', $loaded['interpretation']);

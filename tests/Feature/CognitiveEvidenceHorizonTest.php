@@ -59,15 +59,19 @@ class CognitiveEvidenceHorizonTest extends TestCase
         $this->assertContains($e2->id, $this->ids($e2));
     }
 
-    public function test_reconcile_operands_are_direct_leaves_until_encountered_as_local_ancestry(): void
+    public function test_reconcile_unions_local_operand_ancestry_without_expanding_foreign_history_or_operand_descendants(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
         $a = $f->node($f->seed, 'activity');
         $b0 = $f->node($f->seed, 'activity');
         $b = $f->node($b0, 'activity');
+        $unrelated = $f->node($b0, 'frontier');
+        $otherContinuation = $f->node($b, 'frontier');
         $join = $f->node($a, 'frontier', 'reconcile', additionalParent: $b);
         $this->assertContains($b->id, $this->ids($a));
-        $this->assertNotContains($b0->id, $this->ids($a));
+        $this->assertContains($b0->id, $this->ids($a));
+        $this->assertNotContains($unrelated->id, $this->ids($a));
+        $this->assertNotContains($otherContinuation->id, $this->ids($a));
         $this->assertContains($a->id, $this->ids($b), 'Both approach directions expose direct operands.');
         $this->assertContains($b0->id, $this->ids($join), 'Completed same-basin ancestry follows both recorded parents.');
 

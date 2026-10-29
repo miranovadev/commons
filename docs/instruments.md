@@ -2,27 +2,22 @@
 
 > See [Stage 3C readers and adaptive Preparation](artifact-readers-stage-3c.md) for PDF text, CSV/HTML tables, HTML lists and shared reading budgets. Instrument acquisition and allowances remain unchanged.
 
-## Phase-neutral Instrumentation and Disperse fallback
+## Personal acquisition at an exact Gate
 
-One completed Instrument execution per Participant Cycle is permitted in Persist,
-or as a Disperse fallback when no eligible unattached ordinary Receipt and no
-accessible supported Artifact exist, against the exact current Gate. It leaves Phase, Cycle and position unchanged and
-returns fresh cognition. Readable Receipts automatically load for their creator;
-Load File Receipts remain non-loadable. Completed unsuccessful observations spend the allowance; infrastructure
-failures without an execution/Receipt do not. Receipt consumption or unloading
-does not restore it. See [the Stage 2A contract](epistemic-evidence-stage-2a.md).
+[Personal Gate Acquisition](personal-gate-acquisition.md) defines durable completion
+per Participant, exact Gate and Phase-specific role. Distinguish requires Instrument;
+Persist requires Preparation when readable Artifacts are accessible and Instrument
+otherwise; Disperse offers either lawful mechanism. Completing either Disperse choice
+closes that role. A new Cycle, Receipt consumption or exploration reopening never
+renews a completed role. Shared evidence does not complete another Participant's role.
 
-Stage 2B adds the shared catalogue prerequisite: Persist offers Instrument only
-when no eligible unattached ordinary Receipt is available. If one exists, lawful
-Variant/Revise replace acquisition. Neither loading nor authorship controls this
-choice, and generation does not consume the Receipt. An exhausted allowance does
-not suppress independently lawful Attestation or Traverse. Stage 2D activates the equivalent Disperse policy with Preparation and transient
-Artifact reading. Preparation reads accessible ordinary Receipt Artifacts even after
-consumption; this does not restore evidence availability.
-Preparation retains priority whenever readable Artifacts exist, even if its allowance
-is exhausted. The fallback shares the Instrument allowance with Persist.
-See [Disperse fallback](disperse-instrument-fallback.md) and
-[the Stage 2B contract](epistemic-evidence-stage-2b.md).
+Instrumentation leaves Phase, Cycle and position unchanged. Readable results load
+under the existing personal memory rules; Load File preserves an Artifact without
+loading source bytes. Completed unsuccessful observations count without fabricating
+verified evidence. Invalid invocations and failures without a recorded observation
+do not count. Preparation contributed, deferred and genuine recorded failure outcomes
+count; abandoned reservations do not. Generation still checks its independent
+structural and ordinary Receipt prerequisites. Acquisition never consumes a Receipt.
 
 ## Hyperlink Artifact preservation (Stage 1)
 

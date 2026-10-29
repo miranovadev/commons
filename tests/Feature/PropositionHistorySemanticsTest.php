@@ -145,6 +145,8 @@ class PropositionHistorySemanticsTest extends TestCase
             'gate_proposition_id' => $gate->id, 'started_at' => now(),
         ])->save();
 
+        $this->instrumentGateFixture($phase);
+
         // Isolate history from Mediate/Bias candidate mathematics, covered separately.
         foreach ($sources as $item) {
             // This history-isolation fixture explicitly supplies Mediate's new
@@ -164,7 +166,7 @@ class PropositionHistorySemanticsTest extends TestCase
         foreach ($sources as $item) {
             $this->assertGreaterThanOrEqual(2, $touches[$item->id]);
             $this->assertCount(1, $state->attestations(collect([$item])));
-            $this->assertCount(2, $state->receipts($item));
+            $this->assertCount(2 + (int) (in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Disperse], true) && $item->id === $gate->id), $state->receipts($item));
         }
         $counts = [Attestation::count(), Receipt::count(), EvidenceExecution::count(), Phase::count()];
         $attestationTargets = Attestation::pluck('proposition_id', 'id')->all();
@@ -205,7 +207,7 @@ class PropositionHistorySemanticsTest extends TestCase
         foreach ($sources as $item) {
             $this->assertSame($touches[$item->id], $state->touchCount($item));
             $this->assertCount(1, $state->attestations(collect([$item])));
-            $this->assertCount(2, $state->receipts($item));
+            $this->assertCount(2 + (int) (in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Disperse], true) && $item->id === $gate->id), $state->receipts($item));
         }
     }
 

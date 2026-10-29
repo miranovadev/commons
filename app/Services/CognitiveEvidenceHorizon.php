@@ -75,18 +75,38 @@ final class CognitiveEvidenceHorizon
             }
         }
 
-        // An encountered genuine Reconcile supplies its two direct operands.
-        // Do this AFTER traversal: a prospective operand is a leaf, not a new
-        // backward/forward seed. Foreign ancestry must never enter through it.
-        foreach ($selected->keys() as $id) {
+        // An encountered genuine Reconcile unions both operands' qualifying
+        // ancestry. This worklist only walks BACKWARD: an operand must never
+        // become a continuation seed into its siblings or other descendants.
+        // Direct foreign operands remain leaves at the existing Region/Horizon
+        // boundary. Reconciliations encountered in ancestry obey the same rule.
+        $queue = $selected->keys()->map(fn ($id) => [$id, false])->all();
+        $seen = [];
+        for ($i = 0; $i < count($queue); $i++) {
+            [$id, $ancestry] = $queue[$i];
+            if (isset($seen[$id]) && ($seen[$id] || ! $ancestry)) {
+                continue;
+            }
+            $seen[$id] = $ancestry;
             $incoming = $parents->get($id, collect());
             $node = $nodes->get($id);
-            if ($incoming->count() === 2
+            if ($local($id) && $incoming->count() === 2
                 && $incoming->pluck('source_proposition_id')->unique()->count() === 2
                 && $incoming->every(fn ($edge) => $edge->type === 'reconcile' && $edge->phase_id === $node->phase_id)
                 && $incoming->contains('source_proposition_id', $node->gate_proposition_id)) {
                 foreach ($incoming as $edge) {
                     $selected->put($edge->source_proposition_id, true);
+                    if ($local($edge->source_proposition_id)) {
+                        $queue[] = [$edge->source_proposition_id, true];
+                    }
+                }
+            }
+            if ($ancestry && $local($id)) {
+                foreach ($incoming as $edge) {
+                    if ($local($edge->source_proposition_id)) {
+                        $selected->put($edge->source_proposition_id, true);
+                        $queue[] = [$edge->source_proposition_id, true];
+                    }
                 }
             }
         }

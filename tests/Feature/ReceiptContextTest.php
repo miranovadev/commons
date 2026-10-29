@@ -257,6 +257,7 @@ class ReceiptContextTest extends TestCase
         $horizon = $this->laterHorizonFixture($phase->cycle->contextHorizon);
         $next = $this->newPhase($fixture->viewer, $horizon->opened_by_proposition_id, $horizon);
         $next->forceFill(['kind' => PhaseKind::Distinguish, 'write_register' => $horizon->domain->registerFor(PhaseKind::Distinguish)])->save();
+        $this->instrumentGateFixture($next);
         $newSubject = app(ContributionDispatcher::class)->dispatch($fixture->viewer, $next,
             ['action' => 'proposition.variant', 'statement' => 'A new lineage']);
         $duplicate = $this->observationFixture($next, $newSubject,

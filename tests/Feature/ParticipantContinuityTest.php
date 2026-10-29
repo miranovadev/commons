@@ -26,6 +26,7 @@ use App\Services\PotentialProjectionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Fixtures\PropositionBirth;
 use Tests\TestCase;
 
 class ParticipantContinuityTest extends TestCase
@@ -84,11 +85,13 @@ class ParticipantContinuityTest extends TestCase
         $this->assertSame($cycle->context_horizon_id, $otherCycle->fresh()->context_horizon_id);
 
         // The continuation uses the owning Domain's full register sequence.
+        $this->instrumentGateFixture(Phase::findOrFail($next['plan']['phase']['id']));
         $first = $service->contribute($participant, $next['plan']['phase']['id'],
             ['action' => 'proposition.variant', 'statement' => 'Continue locally']);
         $this->assertSame($value > 0 ? 'frontier' : 'stance', $first['plan']['phase']['write_register']);
         $this->classificationEvidenceFixture(Proposition::findOrFail($first['plan']['gate_id']));
         app(PotentialProjectionService::class)->refresh($participant->substrate_id);
+        $this->instrumentGateFixture(Phase::findOrFail($first['plan']['phase']['id']));
         $second = $service->contribute($participant, $first['plan']['phase']['id'],
             ['action' => 'proposition.variant', 'statement' => 'Develop the current structural position']);
         $this->assertSame($value > 0 ? 'canon' : 'concord', $second['plan']['phase']['write_register']);
@@ -137,7 +140,7 @@ class ParticipantContinuityTest extends TestCase
             'target_proposition_id' => $head->id, 'type' => 'variant']);
         $edge->save();
         app(LedgerService::class)->record($edge);
-        \Tests\Fixtures\PropositionBirth::complete($head);
+        PropositionBirth::complete($head);
         $this->classificationEvidenceFixture($head);
         $phase->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'canon', 'gate_proposition_id' => $head->id])->save();
         $participant->forceFill(['current_proposition_id' => $head->id])->save();
@@ -205,7 +208,7 @@ class ParticipantContinuityTest extends TestCase
         $opportunityEdge->forceFill(['phase_id' => $opportunityPhase->id, 'source_proposition_id' => $origin->id,
             'target_proposition_id' => $opportunity->id, 'type' => 'variant'])->save();
         app(LedgerService::class)->record($opportunityEdge);
-        \Tests\Fixtures\PropositionBirth::complete($opportunity);
+        PropositionBirth::complete($opportunity);
         $phase = $cycle->currentPhase;
         $phase->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'concord'])->save();
         $candidate = new Proposition;
@@ -215,7 +218,7 @@ class ParticipantContinuityTest extends TestCase
         $edge->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $origin->id,
             'target_proposition_id' => $candidate->id, 'type' => 'variant'])->save();
         app(LedgerService::class)->record($edge);
-        \Tests\Fixtures\PropositionBirth::complete($candidate);
+        PropositionBirth::complete($candidate);
         $this->groundFixture($candidate);
         $phase->forceFill(['gate_proposition_id' => $candidate->id])->save();
         $participant->forceFill(['current_proposition_id' => $candidate->id])->save();

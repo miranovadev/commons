@@ -6,13 +6,14 @@ use App\Services\Observables\LineageMeasurementService;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\EvidenceLifecycleAudit;
 use Tests\Fixtures\PersistCommitHttpFixture;
 use Tests\Support\ScriptedParticipationTestCase;
 
 #[Group('http-participation')]
 class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
 {
-    use PersistCommitHttpFixture;
+    use EvidenceLifecycleAudit, PersistCommitHttpFixture;
 
     #[Group('integration')]
     public function test_real_http_actions_reach_an_operational_commit(): void
@@ -21,6 +22,15 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
         $origin = $initial['current_proposition_id'];
         foreach (array_keys($this->persistJourneySteps) as $index) {
             $state = $this->executePersistJourneyStep($actor, $index);
+            $packet = $this->auditEvidencePacket($state);
+            if ($this->persistJourneySteps[$index]['result'] === 'p15'
+                && $this->persistJourneySteps[$index]['input']['action'] === 'proposition.reconcile') {
+                foreach (['r0', 'r1', 'r3', 'r4', 'r5'] as $reference) {
+                    $this->assertContains($this->persistJourneyIds[$reference], array_column($packet['receipts'], 'id'));
+                }
+                $this->assertNotContains($this->persistJourneyIds['rp8'], array_column($packet['receipts'], 'id'),
+                    'Unattached sibling examination is excluded; r4 qualifies through its actual consumption by p13');
+            }
         }
         $this->assertNotSame($origin, $state['last_commitment']['proposition_id']);
         $this->assertSame('distinguish', $state['plan']['phase']['kind']);
@@ -47,6 +57,7 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
             ->assertUnprocessable();
         $this->assertDatabaseCount('propositions', 1);
         $this->assertSame($before['plan']['phase']['id'], $this->readParticipation($actor)['plan']['phase']['id']);
+        $this->discoverGate($actor);
         $input = ['action' => 'proposition.variant', 'statement' => 'One legitimate distinction.'];
         $after = $this->contribute($actor, $input);
         $this->assertSame('persist', $after['plan']['phase']['kind']);
@@ -64,7 +75,7 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
             $this->assertActionUnavailable($before, $action);
             $this->postContribution($actor, $before['plan']['phase']['id'], ['action' => $action, 'receipt_id' => (string) str()->ulid()])->assertUnprocessable();
         }
-        $this->assertDatabaseCount('participant_receipt_contexts', 1);
+        $this->assertDatabaseCount('participant_receipt_contexts', 2);
         $rested = $this->contribute($actor, ['action' => 'participant.rest']);
         $this->assertGreaterThan($before['cycle']['sequence'], $rested['cycle']['sequence']);
     }
@@ -74,6 +85,7 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
         $this->startSubstrate();
         $actor = $this->joinParticipant('rest-reader');
         $this->enterParticipant($actor, true);
+        $this->discoverGate($actor);
         $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Searchable distinction']);
         $this->assertActionAvailable($state, 'instrument.execute');
         $target = $state['plan']['gate_id'];
@@ -85,14 +97,14 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
                 'instrument' => ['kind' => 'proposition_search', 'limit' => $limit],
             ])->assertUnprocessable();
         }
-        $this->assertSame(0, DB::table('evidence_executions')->where('kind', 'proposition_search')->count());
+        $this->assertSame(0, DB::table('evidence_executions')->where('kind', 'proposition_search')->where('phase_id', $state['plan']['phase']['id'])->count());
 
         $this->postContribution($actor, $state['plan']['phase']['id'], [
             'action' => 'instrument.execute',
             'proposition_id' => $target,
             'instrument' => ['kind' => 'proposition_search', 'limit' => 10],
         ])->assertOk();
-        $this->assertSame(1, DB::table('evidence_executions')->where('kind', 'proposition_search')->count());
+        $this->assertSame(1, DB::table('evidence_executions')->where('kind', 'proposition_search')->where('phase_id', $state['plan']['phase']['id'])->count());
     }
 
     public function test_harness_rejects_direct_fixture_writes_before_they_execute(): void
@@ -117,6 +129,7 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
         $this->postContribution($actor, $initial['plan']['phase']['id'], ['action' => 'participant.rest'])
             ->assertUnprocessable();
         $this->assertSame($initial['plan']['phase']['id'], $this->readParticipation($actor)['plan']['phase']['id']);
+        $this->discoverGate($actor);
         $persist = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'An informational encounter']);
         $before = $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $persist['plan']['gate_id'],
             'instrument' => ['kind' => 'proposition_search', 'limit' => 3]]);

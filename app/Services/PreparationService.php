@@ -52,11 +52,8 @@ final class PreparationService
 
         return DB::transaction(function () use ($participant, $phase, $input): EvidenceExecution {
             $phase = $this->lockPhase($participant, $phase->id, $phase->gate_proposition_id);
-            if (EvidenceExecution::where('cycle_id', $phase->cycle_id)->where('type', 'prepare')->exists()) {
-                throw new ConflictHttpException('The Preparation allowance for this Cycle is already reserved.');
-            }
-            if (app(HorizonReceiptService::class)->ordinaryAvailable($phase)->isNotEmpty()) {
-                throw new ConflictHttpException('Available ordinary evidence enables generation instead of Preparation.');
+            if (! app(PersonalAcquisitionService::class)->allows($phase, 'preparation.start')) {
+                throw new ConflictHttpException('Personal acquisition at this Gate is already resolved, reserved or unavailable.');
             }
             $catalogue = app(HorizonReceiptService::class)->accessibleOrdinary($phase)->keyBy('id');
             foreach ($input->artifacts as $selection) {
@@ -124,6 +121,10 @@ final class PreparationService
         }
 
         return DB::transaction(function () use ($participant, $execution, $input): Receipt {
+            $hash = $this->resolutionHash($execution, $input);
+            if ($receipt = $this->resolvedRetry($participant, $execution, $hash)) {
+                return $receipt;
+            }
             [$phase, $execution] = $this->lockExecution($participant, $execution);
             $this->assertPresented($execution);
             // Reuse the ordinary schema, structural authority, birth and epoch paths.
@@ -131,7 +132,7 @@ final class PreparationService
             $input['execution_id'] ??= $execution->id;
             app(ContributionService::class)->validateSchema($schema, $input);
             $result = app(ContributionDispatcher::class)->dispatch($participant, $phase, $input, preparation: $execution);
-            $receipt = $this->executions->completePreparation($execution, $result, null);
+            $receipt = $this->executions->completePreparation($execution, $result, null, $hash);
             app(PhaseProgressionService::class)->advance($phase, $result);
 
             return $receipt;
@@ -145,10 +146,14 @@ final class PreparationService
         }
 
         return DB::transaction(function () use ($participant, $execution, $reason): Receipt {
+            $hash = $this->resolutionHash($execution, ['action' => 'preparation.defer', 'reason' => $reason]);
+            if ($receipt = $this->resolvedRetry($participant, $execution, $hash)) {
+                return $receipt;
+            }
             [, $execution] = $this->lockExecution($participant, $execution);
             $this->assertPresented($execution);
 
-            return $this->executions->completePreparation($execution, null, $reason);
+            return $this->executions->completePreparation($execution, null, $reason, $hash);
         });
     }
 
@@ -192,6 +197,10 @@ final class PreparationService
                 $this->executions->fail($stored, $reason, $diagnostic);
             } else {
                 $this->executions->recordPreparationFailure($stored, $reason, $diagnostic);
+                // Failure can resolve outside ParticipationService (reader or Wake).
+                // Its Receipt changes the field just like a successful resolution.
+                // Publish only after commit, outside the evidence write locks.
+                DB::afterCommit(fn () => app(PotentialProjectionService::class)->refresh($participant->substrate_id));
             }
         });
     }
@@ -204,9 +213,9 @@ final class PreparationService
 
     public function eligible(Phase $phase, ?ParticipationContext $context = null): bool
     {
-        return $phase->kind === PhaseKind::Disperse && $phase->completed_at === null && $phase->cycle->completed_at === null
-            && ! EvidenceExecution::where('cycle_id', $phase->cycle_id)->where('type', 'prepare')->exists()
-            && app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isEmpty()
+        return in_array($phase->kind, [PhaseKind::Persist, PhaseKind::Disperse], true)
+            && $phase->completed_at === null && $phase->cycle->completed_at === null
+            && app(PersonalAcquisitionService::class)->allows($phase, 'preparation.start', $context)
             && $this->options($phase, $context) !== [];
     }
 
@@ -243,7 +252,7 @@ final class PreparationService
 
     private function accessibleArtifacts(Phase $phase, ?ParticipationContext $context): iterable
     {
-        if ($phase->kind !== PhaseKind::Disperse) {
+        if (! in_array($phase->kind, [PhaseKind::Persist, PhaseKind::Disperse], true)) {
             return;
         }
         foreach (app(HorizonReceiptService::class)->accessibleOrdinary($phase, $context) as $receipt) {
@@ -289,7 +298,7 @@ final class PreparationService
     {
         $revisions = app(PropositionOptionService::class)->revisionOptionsFor($phase, $participant, prepared: true)->pluck('id')->all();
         $actions = ['preparation.defer'];
-        foreach (['proposition.variant', 'proposition.revise'] as $action) {
+        foreach ($phase->kind === PhaseKind::Disperse ? ['proposition.variant', 'proposition.revise'] : [] as $action) {
             if (app(PhaseGenerationService::class)->available($phase, $action, prepared: true)
                 && ($action !== 'proposition.revise' || $revisions !== [])) {
                 $actions[] = $action;
@@ -407,6 +416,33 @@ final class PreparationService
         }
     }
 
+    private function resolutionHash(EvidenceExecution $execution, array $input): string
+    {
+        $input['execution_id'] = $execution->id;
+        ksort($input);
+
+        return hash('sha256', json_encode($input, JSON_THROW_ON_ERROR));
+    }
+
+    /** Exact terminal retries return the original Receipt without advancing again. */
+    private function resolvedRetry(Participant $participant, EvidenceExecution $execution, string $hash): ?Receipt
+    {
+        Substrate::lockForUpdate()->findOrFail($participant->substrate_id);
+        Participant::lockForUpdate()->findOrFail($participant->id);
+        $stored = EvidenceExecution::with('phase.cycle', 'receipt')->findOrFail($execution->id);
+        if ($stored->type !== 'prepare' || $stored->phase->cycle->participant_id !== $participant->id) {
+            throw new ConflictHttpException('This Preparation belongs to another Participant.');
+        }
+        if ($stored->status !== 'completed') {
+            return null;
+        }
+        if (($stored->receipt?->metadata['resolution_hash'] ?? null) !== $hash) {
+            throw new ConflictHttpException('This Preparation already has a different recorded resolution.');
+        }
+
+        return $stored->receipt;
+    }
+
     private function assertPresented(EvidenceExecution $execution): void
     {
         if ($execution->status !== 'presented') {
@@ -440,15 +476,15 @@ final class PreparationService
         $participant = Participant::lockForUpdate()->findOrFail($participant->id);
         $cycle = Cycle::where('participant_id', $participant->id)->whereNull('completed_at')->latest('sequence')->lockForUpdate()->first();
         $phase = $cycle === null ? null : Phase::where('cycle_id', $cycle->id)->whereNull('completed_at')->latest('kind')->lockForUpdate()->first();
-        if ($phase === null || $phase->id !== $phaseId || $phase->kind !== PhaseKind::Disperse
+        if ($phase === null || $phase->id !== $phaseId || ! in_array($phase->kind, [PhaseKind::Persist, PhaseKind::Disperse], true)
             || $phase->gate_proposition_id !== $gateId || $participant->current_proposition_id !== $gateId) {
-            throw new ConflictHttpException('Preparation requires the Participant’s active Disperse Phase and current Gate.');
+            throw new ConflictHttpException('Preparation requires the Participant’s active Persist or Disperse Phase and current Gate.');
         }
         app(CausalContextService::class)->assertPhase($phase);
         if (! app(PhasePositionService::class)->acceptsGate($phase, $phase->gate)
             || app(ExhaustionService::class)->unavailable($phase->gate)
             || app(ExhaustedContinuationService::class)->ids($phase)->has($phase->gate_proposition_id)) {
-            throw new ConflictHttpException('Preparation requires a lawful Disperse Gate on an available branch.');
+            throw new ConflictHttpException('Preparation requires a lawful acquisition Gate on an available branch.');
         }
 
         return $phase;

@@ -1,5 +1,10 @@
 # Participant Context C3: causal evidence and perspective
 
+The 28 October 2026 [Gate-causal Receipt cognition contract](gate-causal-receipt-cognition.md)
+extends this projection with always-visible summaries, backward-only unions of
+qualifying Reconciliation operand ancestry, actual consumption provenance and
+transient inclusion of observations directly consumed by selected Reads.
+
 Stage 3A extends loaded Hyperlink evidence with a bounded outgoing reference list.
 The same personal load state, causal associations, Region/Horizon boundaries and
 single catalogue projection below govern its visibility. Unloaded Receipts expose
@@ -19,7 +24,7 @@ candidates where the handoff explicitly corrects terminal and Write visibility.
 | Phases 2–7 | Current governor plus recorded local expressive ancestors and prospective descendants of the acting Gate. Never descend from every ancestor. | Handoff 3.3–3.4; sibling tests |
 | Terminal continuation | Select the boundary node and its associations, then stop forward expansion. Backward history is not erased. Only TerminalContinuationService supplies closure. | Corrected handoff 4.1–4.3; terminal tests |
 | Commit | Resolve sanctioned source associations through PropositionStateService. Do not collect the previous basin wholesale. A prospective Committal stops discovery; directly displayed Committals still qualify. | Handoff 4.4 and final diagnostic Commit fixture |
-| Reconcile | A genuine encountered two-parent join exposes both direct operands. Same-basin encountered ancestry can continue backward; foreign operands and operands of prospective joins are leaf sources. Legitimate displayed counterparts are direct sources. | Handoff 4.5; final diagnostic two-operand and foreign-history tests |
+| Reconcile | A genuine encountered two-parent join exposes both operands and their qualifying local ancestry, including prospective joins selected by the existing horizon. Only backward expansion is permitted from operands; foreign Region/Horizon operands remain leaves. Legitimate displayed counterparts are direct sources. | Gate-causal Stage 1 handoff; operand ancestry and foreign-history tests |
 | Loaded evidence | All selected ordinary Receipts expose available inline bodies when personally loaded, including Write and extended history. Deduplicate by immutable ID. | Corrected handoff 5.2 |
 | Special memory | Tragedy retains its special memory scope. Proposition Search is ordinary evidence under Stage 2B; bounded result visibility grants no structural authority. | Handoff 5.3 |
 | Perspective | `Your designation describes your perspective on the subject, not a fact about the subject itself.` appears in the provider-visible system instruction. | Handoff 6; actual request tests |
@@ -35,8 +40,9 @@ resolved by the handoff's independent direct-visibility route.
 projection. It does not supply operational plans, measurement ancestry, movement,
 recovery, Receipt loading/consumption or canonical persistence. Canonical records,
 individual Attestations, authorship, the seven questions, action schemas and the
-six top-level properties retain their existing contracts. No persisted memory
-index, cap, ranking, summary, unloading or provider attachment is introduced.
+six top-level properties retain their existing contracts. Stage 1 adds derived
+summaries and contextual observation inclusion without a persisted memory index,
+ranking or provider attachment. Personal loading and unloading retain their rules.
 
 ## Validation evidence
 

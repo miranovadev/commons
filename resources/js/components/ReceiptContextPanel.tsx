@@ -2,9 +2,11 @@ import { Anchor, Badge, Box, Group, Stack, Text } from '@mantine/core';
 import { IconAnchor } from '@tabler/icons-react';
 import { propositionReceiptReferences } from '../participationOptions';
 import type { ParticipantPlan } from '../types';
+import { CognitiveReceiptPanel } from './CognitiveReceiptPanel';
 
 /** Metadata and active Read evidence; memory changes accompany the forward contribution. */
 export function ReceiptContextPanel({ plan }: { plan: ParticipantPlan }) {
+  if (plan.receipt_cognition) return <CognitiveReceiptPanel context={plan.receipt_cognition} />;
   const receipts = (plan.receipts ?? []);
   const references = propositionReceiptReferences(plan).filter(ref => !receipts.some(receipt => receipt.id === ref.id));
   if (!receipts.length && !references.length) return null;

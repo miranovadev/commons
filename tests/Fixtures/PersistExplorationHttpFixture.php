@@ -5,14 +5,14 @@ namespace Tests\Fixtures;
 /** Explicit Persist-only HTTP actions; no fixture writes or inferred failure rows. */
 trait PersistExplorationHttpFixture
 {
-    private function personalExplorationJourney(): array
+    private function personalExplorationJourney(bool $observerInstrument = false): array
     {
-        // Authored HTTP journey: observation is an extra Persist action, not
-        // an obsolete Distinguish/Disperse progression operation.
+        // Authored HTTP journey with personal discovery and Persist examination.
         $this->startSubstrate();
         $actor = $this->joinParticipant('staggered-explorer');
         $initial = $this->enterParticipant($actor, true);
         $origin = $initial['current_proposition_id'];
+        $this->discoverGate($actor);
         $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Distinguish opportunity A']);
         $a = $state['current_proposition_id'];
         $originObserver = $this->joinParticipant('distinguish-observer');
@@ -37,9 +37,15 @@ trait PersistExplorationHttpFixture
         // its source Instrument Receipt remains consumed.
         $observer = $this->joinParticipant('disperse-observer');
         $this->enterParticipant($observer);
+        $this->discoverGate($observer);
         $this->judge($observer, $a);
+        $this->resolvePersonalReading($observer);
         $this->judge($observer, $persist);
-        $parked = $this->judge($observer, $constrain);
+        $this->judge($observer, $constrain);
+        $parked = $observerInstrument
+            ? $this->contribute($observer, ['action' => 'instrument.execute', 'proposition_id' => $constrain,
+                'instrument' => ['kind' => 'citation', 'reference' => $a]])
+            : $this->resolvePersonalReading($observer);
         $witness = $this->joinParticipant('disperse-witness');
         $this->enterParticipant($witness);
         $this->judge($witness, $a);
@@ -51,7 +57,23 @@ trait PersistExplorationHttpFixture
         $state = $this->contribute($actor, ['action' => 'participant.rest']);
         $this->assertDatabaseMissing('evidence_executions', ['proposition_id' => $b]);
 
-        return compact('actor', 'originObserver', 'observer', 'witness', 'origin', 'a', 'b', 'slot', 'parked', 'witnessState', 'state');
+        return compact('actor', 'originObserver', 'observer', 'witness', 'origin', 'a', 'persist', 'constrain', 'b', 'slot', 'parked', 'witnessState', 'state');
+    }
+
+    private function resolvePersonalReading(string $participant): array
+    {
+        $state = $this->readParticipation($participant);
+        $this->assertActionAvailable($state, 'preparation.start');
+        $source = $state['plan']['preparation_options'][0];
+        $started = $this->contribute($participant, ['action' => 'preparation.start',
+            'proposition_id' => $state['plan']['gate_id'], 'purpose' => 'Personally examine this route.',
+            'artifacts' => [['receipt_id' => $source['receipt_id'], 'artifact_id' => $source['artifact_id'],
+                'read_type' => 'text', 'parameters' => ['max_chars' => 4000]]]], $state);
+        $id = $started['plan']['preparation']['execution_id'];
+        $this->readAndAcknowledgePreparation($participant, $id);
+
+        return $this->contribute($participant, ['action' => 'preparation.defer', 'execution_id' => $id,
+            'reason' => 'Observation complete; continue through existing structure.']);
     }
 
     private function judge(string $participant, string $proposition): array

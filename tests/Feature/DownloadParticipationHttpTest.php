@@ -18,6 +18,7 @@ class DownloadParticipationHttpTest extends ParticipationHttpTestCase
         $this->startSubstrate();
         $actor = $this->joinParticipant('File investigator');
         $this->enterParticipant($actor, true);
+        $this->discoverGate($actor);
         $persist = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'A distinction to investigate.']);
         $instrument = ['kind' => 'load_file', 'method' => 'download', 'reference' => 'https://evidence.example.test/file.txt?edition=2'];
         $action = ['action' => 'instrument.execute', 'proposition_id' => $persist['plan']['gate_id'], 'instrument' => $instrument];
@@ -52,12 +53,13 @@ class DownloadParticipationHttpTest extends ParticipationHttpTestCase
         $this->startSubstrate();
         $actor = $this->joinParticipant('CSV reader');
         $this->enterParticipant($actor, true);
+        $this->discoverGate($actor);
         $persist = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Investigate the dataset.']);
         $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $persist['plan']['gate_id'],
             'instrument' => ['kind' => 'load_file', 'method' => 'download', 'reference' => 'https://evidence.example.test/data.csv']]);
         $source = Receipt::where('type', 'load_file')->sole();
         $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Develop the observed dataset.']);
-        $disperse = $this->driveUntil($actor, fn ($state) => $state['plan']['phase']['kind'] === 'disperse', 5);
+        $disperse = $this->driveUntil($actor, fn ($state) => $state['plan']['phase']['kind'] === 'disperse', 5, $source->id);
         $this->assertNotNull($source->fresh()->consumption);
         $option = collect($disperse['plan']['preparation_options'])->firstWhere('receipt_id', $source->id);
         $this->assertSame(['raw', 'text', 'tables'], array_column($option['capabilities'], 'read_type'));

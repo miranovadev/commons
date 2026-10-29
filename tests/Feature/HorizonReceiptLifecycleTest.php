@@ -36,7 +36,7 @@ class HorizonReceiptLifecycleTest extends TestCase
         return [$source, $receipt, $execution];
     }
 
-    public function test_instrument_generates_one_shared_horizon_receipt_and_cannot_complete_twice(): void
+    public function test_instrument_generates_one_shared_horizon_receipt_and_completion_retries_are_idempotent(): void
     {
         [$source, $receipt, $execution] = $this->observation();
         $other = $this->phase($this->origin, PhaseKind::Distinguish);
@@ -44,8 +44,8 @@ class HorizonReceiptLifecycleTest extends TestCase
         $this->assertSame($other->cycle->context_horizon_id, $receipt->context_horizon_id);
         $this->assertSame([$receipt->id], app(HorizonReceiptService::class)->ordinaryAvailable($other)->modelKeys());
         $this->assertSame(1, Receipt::where('evidence_execution_id', $execution->id)->count());
-        $this->expectException(DomainException::class);
-        app(EvidenceExecutionService::class)->complete($execution, $source);
+        $this->assertSame($receipt->id, app(EvidenceExecutionService::class)->complete($execution, $source)->id);
+        $this->assertSame(1, $execution->receipt()->count());
     }
 
     public function test_receipt_evidence_remains_free_and_shared_when_its_producer_is_spent(): void

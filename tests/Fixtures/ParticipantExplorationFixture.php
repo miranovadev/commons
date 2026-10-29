@@ -16,20 +16,23 @@ trait ParticipantExplorationFixture
     use ExhaustionFixture;
 
     /** One actor's actual Phase arrivals through a tested expressive excursion. */
-    private function personalJourney(string $headDirection = 'support'): array
+    private function personalJourney(string $headDirection = 'support', ?int $omitJudgment = null, ?int $omitAcquisition = null): array
     {
         $this->resolveExpressiveFieldFixture(.8);
         $this->initializeExhaustionFixture();
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
         $nodes = [];
         for ($kind = 1; $kind <= 4; $kind++) {
+            if (in_array($kind, [1, 4], true) && $kind !== $omitAcquisition) {
+                $this->instrumentGateFixture($phase);
+            }
             $node = $this->node($phase, $phase->gate);
             $nodes[] = $node;
-            if (in_array($kind, [1, 4], true)) {
+            if ($kind !== $omitJudgment) {
                 $this->personalVote($phase, $node, $kind === 4 ? $headDirection : 'support');
             }
             $phase = app(PhaseProgressionService::class)->advance($phase, $node);
-            if ($kind === 1) {
+            if ($kind === 1 && $omitAcquisition !== 2) {
                 $instruments = app(EvidenceExecutionService::class);
                 $instruments->complete($instruments->start($phase, $node, 'citation', $this->origin->id), $node);
             }

@@ -417,7 +417,11 @@ class WriteOnceTest extends TestCase
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register,
             'gate_proposition_id' => $gate?->id, 'started_at' => now()])->save();
 
-        // These cases isolate structural generation from shared evidence availability.
+        // These cases isolate structural rules after a real personal acquisition.
+        if ($gate !== null && ($kind === PhaseKind::Distinguish || $gate->tier === 'expressive')) {
+            $this->instrumentGateFixture($phase);
+        }
+
         if (in_array($kind, [PhaseKind::Persist, PhaseKind::Disperse], true) && $gate !== null) {
             $this->receiptFixture($gate);
         }
