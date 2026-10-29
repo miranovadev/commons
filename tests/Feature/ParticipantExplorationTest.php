@@ -450,17 +450,22 @@ class ParticipantExplorationTest extends TestCase
         $return = $this->returnAfterRest($terminal);
         $ids = collect([$head->id]);
         $counts = [];
+        $runtime = [];
         foreach ([2, 8] as $size) {
             while ($ids->count() < $size) {
                 $node = $this->node($this->phase($constrain, PhaseKind::Disperse), $constrain);
-                $this->personalVote($return, $node);
+                $this->personalVote($head->phase, $node);
+                $this->measure($node, 0);
                 ExplorationHistory::record($node, $return);
                 $ids->push($node->id);
             }
             $context = new ParticipationContext($return);
             DB::enableQueryLog();
             DB::flushQueryLog();
-            app(ParticipantExplorationService::class)->exploredIds($return, $ids, $context);
+            $started = hrtime(true);
+            $explored = app(ParticipantExplorationService::class)->exploredIds($return, $ids, $context);
+            $runtime[] = round((hrtime(true) - $started) / 1e6, 2);
+            self::assertCount($size, $explored);
             $queries = DB::getQueryLog();
             DB::disableQueryLog();
             $counts[] = count($queries);
@@ -468,7 +473,7 @@ class ParticipantExplorationTest extends TestCase
                 $this->assertDoesNotMatchRegularExpression('/insert |update |delete |for update/i', $query['query']);
             }
         }
-        fwrite(STDERR, "\nPERSONAL_FRONTIER queries (2 -> 8 heads): ".$counts[0].' -> '.$counts[1]."\n");
+        fwrite(STDERR, "\nPERSONAL_FRONTIER queries (2 -> 8 heads): ".$counts[0].' -> '.$counts[1].'; runtime ms: '.json_encode($runtime)."\n");
         $this->assertLessThanOrEqual($counts[0], $counts[1], json_encode($counts));
     }
 }

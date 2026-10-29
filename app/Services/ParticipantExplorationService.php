@@ -38,10 +38,6 @@ final class ParticipantExplorationService
 
                 return $heads->isNotEmpty() && $heads->every(function ($head) use ($id, $phase, $context, $events, $evaluation): bool {
                     $encounters = $this->encounters($head, $phase, $context, $events);
-                    if (! $encounters->contains(fn ($event) => $event->context_horizon_id === $phase->cycle->context_horizon_id
-                        && $event->entry_committal_id === $phase->cycle->entry_committal_id)) {
-                        return false;
-                    }
 
                     return $encounters->contains(fn ($event) => $event->context_horizon_id === $phase->cycle->context_horizon_id
                         && $event->entry_committal_id === $phase->cycle->entry_committal_id
@@ -65,7 +61,8 @@ final class ParticipantExplorationService
             $terminal = app(ExhaustedContinuationService::class)->ids($phase, $context);
             $seeds = $context->seedIds();
             $pending = [$id];
-            $paths = [$id => [$id]];
+            $discovered = [$id => true];
+            $routeParents = [];
             $seen = [];
             $heads = collect();
             while ($pending !== []) {
@@ -101,8 +98,9 @@ final class ParticipantExplorationService
                 if ($next->isNotEmpty()) {
                     foreach ($next->sortBy('target_proposition_id') as $edge) {
                         $target = $edge->target_proposition_id;
-                        if (! isset($paths[$target])) {
-                            $paths[$target] = [...$paths[$current], $target];
+                        $routeParents[$target][$current] = true;
+                        if (! isset($discovered[$target])) {
+                            $discovered[$target] = true;
                             $pending[] = $target;
                         }
                     }
@@ -112,7 +110,7 @@ final class ParticipantExplorationService
                 }
             }
 
-            $context->remember('exploration-paths:'.$phase->id.':'.$id, fn () => $paths);
+            $context->remember('exploration-route-parents:'.$phase->id.':'.$id, fn () => $routeParents);
 
             return $heads->sortKeys();
         });
@@ -125,11 +123,10 @@ final class ParticipantExplorationService
             $overrides = [];
             if ($via !== null) {
                 $this->heads($via, $phase, $context);
-                $paths = $context->remember('exploration-paths:'.$phase->id.':'.$via, fn () => []);
-                $path = $paths[$head->id] ?? [];
-                foreach (array_slice($path, 1) as $i => $target) {
-                    $overrides[$target] = $path[$i];
+                if (! $this->heads($via, $phase, $context)->has($head->id)) {
+                    return false;
                 }
+                $overrides = $context->remember('exploration-route-parents:'.$phase->id.':'.$via, fn () => []);
             }
             // An actual arrival wins over a multi-parent producer's acting Gate.
             $arrivals = $context->remember('exploration-arrivals', function () use ($phase, $context): Collection {
@@ -156,14 +153,22 @@ final class ParticipantExplorationService
             $shared = app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
             $terminal = app(ExhaustedContinuationService::class)->ids($phase, $context);
             $seen = [];
-            $node = $head;
-            while ($node !== null && ! isset($seen[$node->id])) {
-                $seen[$node->id] = true;
+            $pending = [$head->id];
+            while ($pending !== []) {
+                $id = array_pop($pending);
+                if (isset($seen[$id])) {
+                    continue;
+                }
+                $node = $context->propositions->get($id);
+                if ($node === null) {
+                    return false;
+                }
+                $seen[$id] = true;
                 if ($node->id !== $phase->cycle->entry_committal_id
                     && ($node->tier === 'committal'
                         || $node->phase->cycle->context_horizon_id !== $phase->cycle->context_horizon_id
                         || ($context->seedIds()[$node->id] ?? null) !== $phase->cycle->entry_committal_id)) {
-                    break;
+                    continue;
                 }
                 $active = $context->activeIds->has($node->id) && ! $terminal->has($node->id)
                     && $context->children->get($node->id, collect())->where('type', '!=', 'variant')->isEmpty();
@@ -183,15 +188,22 @@ final class ParticipantExplorationService
                     }
                 }
                 if ($node->tier === 'committal') {
-                    break;
+                    continue;
+                }
+                if (isset($overrides[$node->id])) {
+                    array_push($pending, ...array_keys($overrides[$node->id]));
+
+                    continue;
                 }
                 $parents = $context->parents->get($node->id, collect())->pluck('source_proposition_id')->unique()->values()->all();
-                $selected = $overrides[$node->id] ?? $arrivals->get($node->id) ?? $node->phase->gate_proposition_id;
+                $selected = $arrivals->get($node->id) ?? $node->phase->gate_proposition_id;
                 if (count($parents) > 1 && ! in_array($selected, $parents, true)) {
                     return false; // Incomplete arrival provenance cannot prove a personal route.
                 }
                 $parent = count($parents) === 1 ? $parents[0] : $selected;
-                $node = $context->propositions->get($parent);
+                if ($parent !== null) {
+                    $pending[] = $parent;
+                }
             }
 
             return true;

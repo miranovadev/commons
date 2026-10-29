@@ -1,5 +1,7 @@
 # Participant-relative exploration
 
+> Personal route completion and witness provenance are refined by [Participatory Exploration Completion — Stage 3](participatory-exploration-completion.md). Its requirements supersede the earlier head-only encounter predicate below.
+
 Stage B replaces shared continuation failures and Exploration Epochs on a **fresh database**. Authority: Claire's approved 25 October 2026 handoff, “Exploration Events, Active Heads and Recovery”, the subsequent forward-generation correction, and the ten Core Invariants. The separate rolling Attestation Cadence correction is outside this change.
 
 An immutable Exploration Event records one Participant's completed Rest encounter at an expressive continuation head. Its creating Phase establishes the Participant, Cycle, entry Committal and Context Horizon. The witness preserves arrival, judgment, evidence and the guarded absence of forward-generating opportunities. Events do not mutate Propositions, retire Regions, change another Participant's options, or assert global failure.

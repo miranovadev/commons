@@ -145,4 +145,23 @@ class ParticipatoryCompletionTest extends TestCase
         $events->publish($terminal, $proof);
         self::assertDatabaseCount('exploration_events', 1);
     }
+
+    public function test_converging_authorised_branches_do_not_hide_the_unfinished_route(): void
+    {
+        [$a, $b, , $head, $mediate] = $this->personalJourney();
+        $rightB = $this->node($this->phase($a, PhaseKind::Persist), $a);
+        $rightC = $this->node($this->phase($rightB, PhaseKind::Constrain), $rightB);
+        $rightHead = $this->node($this->phase($rightC, PhaseKind::Disperse), $rightC);
+        $result = $this->node($mediate, $head);
+        DB::table('supersessions')->where('target_proposition_id', $result->id)->update(['type' => 'reconcile']);
+        (new Supersession)->forceFill(['phase_id' => $mediate->id, 'source_proposition_id' => $rightHead->id,
+            'target_proposition_id' => $result->id, 'type' => 'reconcile'])->save();
+        $this->personalVote($mediate, $result);
+        $bias = app(PhaseProgressionService::class)->advance($mediate, $result);
+        $service = app(ParticipantExplorationService::class);
+        $context = new ParticipationContext($bias);
+        self::assertTrue($service->participationComplete($result, $bias, $context, $b->id));
+        self::assertFalse($service->participationComplete($result, $bias, $context, $a->id),
+            'The shared ancestor includes both authorised routes to the same head');
+    }
 }

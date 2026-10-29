@@ -158,6 +158,8 @@ class PersonalGateAcquisitionTest extends TestCase
         $this->assertFalse($service->eligible($f->phase));
         $service->fail($f->viewer, $execution, 'reader', '1', $stage, 'Recorded failure', ['classification' => $classification]);
         $this->assertSame($counts ? 'completed' : 'required', app(PersonalAcquisitionService::class)->state($f->phase)['status']);
+        $this->assertSame($counts, app(PersonalAcquisitionService::class)->completedInContext($f->phase, new ParticipationContext($f->phase))->has('4:'.$f->gate->id),
+            'Exploration uses the same failure completion contract');
         $this->assertSame($counts, $execution->fresh()->receipt !== null);
         if ($counts) {
             $this->assertFalse($execution->fresh()->receipt->metadata['content_verified']);
