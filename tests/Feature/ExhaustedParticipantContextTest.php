@@ -45,7 +45,7 @@ class ExhaustedParticipantContextTest extends TestCase
     }
 
     #[DataProvider('writePositions')]
-    public function test_historical_encounters_preserve_visibility_and_new_opportunities_in_both_domains(ContextDomain $domain, PhaseKind $kind): void
+    public function test_historical_encounters_without_personal_judgment_preserve_structural_visibility_in_both_domains(ContextDomain $domain, PhaseKind $kind): void
     {
         if ($domain === ContextDomain::Settlement) {
             $snapshot = $this->origin->commitmentSnapshot;
@@ -70,10 +70,12 @@ class ExhaustedParticipantContextTest extends TestCase
             $this->assertNotContains($right->id, array_column($plan[$key], 'id'));
         }
         $this->assertSame([], $plan['exhausted_alternatives'], 'Explored is not Horizon Exhaustion');
-        $this->assertTrue(app(ParticipantExplorationService::class)->explored($right, $phase),
-            'Acquisition alone is not a forward continuation; historical encounters remain applicable');
+        $this->assertFalse(app(ParticipantExplorationService::class)->explored($right, $phase),
+            'An historical encounter without personal judgment does not establish participatory completion');
         $compact = array_column(app(ParticipantContextSerializer::class)->plan($plan)['write_options'], 'id');
-        $this->assertContains($right->id, $compact);
+        $this->assertNotContains($right->id, $compact,
+            'The operational serializer does not promote an unavailable, unevaluated Write through a historical event');
+        $this->assertDatabaseCount('exploration_events', 2);
     }
 
     public function test_a_healthy_sibling_remains_actionable_alongside_visible_explored_evidence(): void
