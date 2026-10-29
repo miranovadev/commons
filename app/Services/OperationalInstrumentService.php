@@ -59,6 +59,17 @@ final readonly class OperationalInstrumentService
             $origin = $bootstrap && $proposition->tier === 'committal'
                 && $proposition->ledgerEntry?->sequence === 1 && ! $proposition->parents()->exists()
                 && ! CommitmentSnapshot::where('substrate_id', $substrateId)->exists();
+            if (! $origin) {
+                $phase = $phase->fresh(['cycle.participant']);
+                try {
+                    $current = app(PhaseService::class)->currentFor($phase->cycle->participant);
+                } catch (DomainException $exception) {
+                    throw new ConflictHttpException('The acquisition Phase is no longer active.', $exception);
+                }
+                if ($current->id !== $phase->id) {
+                    throw new ConflictHttpException('The acquisition Phase is no longer active.');
+                }
+            }
             if (! $origin && $phase->kind !== PhaseKind::Distinguish && ! $this->availability->mutable($proposition)) {
                 throw new DomainException('Committed sources and Committal results cannot receive instruments. Develop a Variant from the Committal instead.');
             }

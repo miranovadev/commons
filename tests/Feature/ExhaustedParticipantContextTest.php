@@ -8,12 +8,16 @@ use App\Models\Proposition;
 use App\Models\User;
 use App\Services\ContextHorizonProjector;
 use App\Services\InputPlanService;
+use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantExplorationService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
+use App\Services\PersonalAcquisitionService;
+use App\Services\PropositionOptionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\Fixtures\ExplorationHistory;
 use Tests\Fixtures\HorizonProofFixture;
 use Tests\TestCase;
@@ -141,6 +145,21 @@ class ExhaustedParticipantContextTest extends TestCase
         $this->assertFalse($historical['actionable']);
         $this->assertSame('What should persist?', $packet['write']['question']);
         $this->assertStringNotContainsString($commit->id, json_encode($packet['actions']));
+    }
+
+    public function test_outstanding_discovery_does_not_reopen_an_exhausted_committal(): void
+    {
+        [$commit, , $tragedy] = $this->firstFailure();
+        [$terminal] = $this->exercise($commit, $tragedy);
+        $this->rest($terminal);
+        $phase = $this->phase($commit, PhaseKind::Distinguish);
+        $this->assertSame('required', app(PersonalAcquisitionService::class)->state($phase)['status']);
+        foreach ([null, new ParticipationContext($phase)] as $context) {
+            $this->assertEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($phase, $context));
+        }
+        $this->expectException(ConflictHttpException::class);
+        app(OperationalInstrumentService::class)->execute($phase, $commit,
+            ['kind' => 'proposition_search', 'limit' => 1]);
     }
 
     public function test_first_tragedy_keeps_explored_evidence_in_live_participant_context_and_graph(): void

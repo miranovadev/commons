@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\Fixtures\PreparationFixture;
@@ -219,6 +220,26 @@ class PersonalGateAcquisitionTest extends TestCase
         $this->assertSame($state['plan']['schema'], $human['plan']['schema']);
     }
 
+    public function test_superseded_open_phase_cannot_acquire_while_a_later_visit_is_reserved(): void
+    {
+        $fixture = new PreparationFixture(true);
+        $f = $fixture->context;
+        $old = $f->phase;
+        $current = $this->visit($old, $f->viewer);
+        $preparation = app(PreparationService::class)->start($f->viewer, $current, $fixture->input());
+        $this->assertSame('pending', app(PersonalAcquisitionService::class)->state($current)['status']);
+        $this->assertSame('required', app(PersonalAcquisitionService::class)->state($old)['status']);
+        try {
+            $this->instrument($old);
+            $this->fail('An obsolete open Phase must not bypass the current reservation.');
+        } catch (ConflictHttpException $exception) {
+            $this->assertStringContainsString('no longer active', $exception->getMessage());
+        }
+        $this->assertSame('pending', $preparation->fresh()->status);
+        $this->assertSame(1, EvidenceExecution::whereIn('phase_id', [$old->id, $current->id])->count());
+    }
+
+    #[Group('query')]
     public function test_abandoned_history_lookup_is_bounded_and_downgrade_preserves_it(): void
     {
         $fixture = new PreparationFixture;

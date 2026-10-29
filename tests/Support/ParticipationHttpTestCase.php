@@ -40,7 +40,7 @@ abstract class ParticipationHttpTestCase extends TestCase
         $state = $this->readParticipation($actor);
 
         return $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
-            'instrument' => ['kind' => 'proposition_search', 'limit' => 1]]);
+            'instrument' => ['kind' => 'proposition_search', 'query' => 'Personal discovery '.$actor, 'limit' => 1]]);
     }
 
     use RefreshDatabase;
@@ -256,7 +256,7 @@ abstract class ParticipationHttpTestCase extends TestCase
         $this->fail('No advertised action. '.$this->traceMessage($state));
     }
 
-    protected function driveUntil(string $participant, callable $reached, int $maxActions = 100): array
+    protected function driveUntil(string $participant, callable $reached, int $maxActions = 100, ?string $preferredReceipt = null): array
     {
         $lastCommitment = null;
         for ($step = 0; $step <= $maxActions; $step++) {
@@ -267,7 +267,12 @@ abstract class ParticipationHttpTestCase extends TestCase
             }
             $this->assertSame('ready', $state['status'], $this->traceMessage($state));
             if ($step < $maxActions) {
-                $this->contribute($participant, $this->chooseContribution($state), $state);
+                $input = $this->chooseContribution($state);
+                if ($preferredReceipt !== null && $input['action'] === 'proposition.reclassify') {
+                    $this->assertContains($preferredReceipt, $this->actionDefinitions($state)['proposition.reclassify']['properties']['receipt_id']['enum']);
+                    $input['receipt_id'] = $preferredReceipt;
+                }
+                $this->contribute($participant, $input, $state);
             }
         }
         $this->fail('HTTP action budget exhausted. Last Commit eligibility: '.json_encode($lastCommitment)

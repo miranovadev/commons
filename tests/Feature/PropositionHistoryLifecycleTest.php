@@ -48,7 +48,7 @@ class PropositionHistoryLifecycleTest extends TestCase
                 ['action' => 'instrument.execute', 'proposition_id' => $source->id,
                     'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/fresh-history']]);
             // A second Participant lawfully attests the grounded distinction,
-            // then develops it in Persist; no Instrument in Distinguish is needed.
+            // then develops it in Persist after its own acquisition; traversing the existing Distinction requires none.
             $actor = (new Participant)->forceFill(['substrate_id' => $fixture->actor->substrate_id, 'callsign' => 'developer']);
             $actor->save();
             app(PotentialProjectionService::class)->refresh($actor->substrate_id);
@@ -57,6 +57,7 @@ class PropositionHistoryLifecycleTest extends TestCase
             $dispatcher->dispatch($actor, $phase,
                 ['action' => 'attestation.create', 'proposition_id' => $source->id, 'direction' => 'support']);
             $phase = $progression->advance($phase, $source);
+            $this->instrumentGateFixture($phase);
             $fixture->actor = $actor;
         }
         $state = app(PropositionStateService::class);
@@ -64,8 +65,8 @@ class PropositionHistoryLifecycleTest extends TestCase
         $votes = $state->attestations(collect([$source]))->pluck('id')->all();
         $receipts = $state->receipts($source)->pluck('id')->all();
         $this->assertCount(1, $votes);
-        $this->assertCount($operation === 'variant' ? 1 : 0, $receipts);
-        $availableReceipt = app(HorizonReceiptService::class)->ordinaryAvailable($phase)->sole();
+        $this->assertCount($operation === 'variant' ? 2 : 0, $receipts);
+        $availableReceipt = app(HorizonReceiptService::class)->ordinaryAvailable($phase)->firstOrFail();
         $this->assertGreaterThan(0, $sourceTouches);
         $before = [Attestation::count(), Receipt::count(), EvidenceExecution::count()];
         $closure = app(ProspectiveClosureService::class)->stored($source);

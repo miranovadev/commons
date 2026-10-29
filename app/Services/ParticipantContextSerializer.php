@@ -51,7 +51,7 @@ final class ParticipantContextSerializer
         return [
             'phase' => Arr::only($plan['phase'], ['id', 'number', 'kind', 'write_register']),
             'provenance_id' => $plan['provenance_id'] ?? null,
-            'acquisition' => $plan['acquisition'] ?? null,
+            ...(isset($plan['acquisition']) ? ['acquisition' => $plan['acquisition']] : []),
             'preparation' => $plan['preparation'] ?? null,
             'preparation_options' => $plan['preparation_options'] ?? [],
             'exhausted_alternatives' => array_map($this->historical(...), $plan['exhausted_alternatives'] ?? []),

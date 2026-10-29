@@ -93,19 +93,22 @@ Reader and combined-budget failures record explicit unsuccessful executions.
 
 ## Eligibility and resolution
 
-| Disperse state | Generative options | Preparation |
+| Personal role state | Persist | Disperse |
 | --- | --- | --- |
-| Available ordinary unattached Receipt | Structurally lawful Variant/Revise | Withheld |
-| None; allowance unused; accessible readable Artifact | Withheld | Offered |
-| None; allowance spent or no readable Artifact | Withheld | Withheld |
-| Preparation pending/presented | Exact execution's resolution only | No second start |
+| Required, readable Artifact accessible | Preparation required | Preparation or lawful Instrument |
+| Required, no readable Artifact | Instrument fallback | Lawful Instrument |
+| Pending/presented | Resolve exact execution | Resolve exact execution |
+| Completed | Ordinary generation prerequisites | Ordinary generation prerequisites |
 
-Attestation, Traverse and Rest keep their independent rules. Persist's Instrument
-policy remains unchanged. Distinguish bootstrap remains exempt. Prepared resolution
-is explicitly tied to a validated presented execution; it bypasses only the fresh
-Receipt prerequisite, never structural generation restrictions. Revision ownership,
-effective earlier self-Refute, viable continuations, epoch spentness, Tragedy and
-terminal constraints still apply.
+Shared Receipt availability never waives personal acquisition. Completion persists
+across Cycles. Attestation, Traverse and Rest keep their independent rules.
+Distinguish requires its own Instrument role at the governing Committal.
+Prepared structural contribution is available only in Disperse and remains tied to a
+validated presented execution; it bypasses only the acquisition and fresh Receipt
+prerequisites, never structural generation restrictions. Persist resolves the reading
+with deferment and then offers separately authorized generation. Revision ownership,
+effective earlier self-Refute, viable continuations, Tragedy and terminal constraints
+still apply.
 
 Contributed resolution creates the actual Variant/Revise, its ordinary unattached
 Preparation Receipt, and normal Phase progression atomically. Outcome proposition ID
@@ -142,24 +145,25 @@ methods and outcomes remain available; deferment reasons are Participant stateme
 ## Failure, retry and concurrency
 
 Substrate → Participant → Cycle → Phase → execution lock order is preserved.
-Preparation starts reserve one allowance with the existing partial unique index.
-Fresh scope, current Gate and lack of available evidence are checked under the root
-lock. Structural contributions recheck Receipt eligibility, and ordinary dispatch
-cannot bypass an unfinished Preparation. Reader work and HTTP inference occur outside
-write transactions. Competing resolutions produce at most one Proposition/Receipt.
+Preparation starts recheck personal completion, current Gate, role and accessible
+Artifact scope under the root lock. The obsolete unique-per-Cycle index is removed;
+different Gate roles may legitimately prepare in one Cycle. Ordinary dispatch cannot
+bypass an unfinished Preparation. Reader work and HTTP inference occur outside write
+transactions. Competing resolutions produce at most one Proposition/Receipt. Identical
+completed retries return the original observation; changed resolutions conflict.
 
 Successful extraction without acknowledgement leaves `pending`. A retry can deliver
 the same immutable representation and acknowledge it once. Acknowledged deliveries
-are immutable. Reader errors identify Artifact, Read Type, method/version, stage and
-classification (`missing_capability`, `invalid_source`, `payload_limit`, etc.). Failed
-inference records its diagnostic without an outcome. Both leave the allowance spent.
-They do not permanently label the Artifact unreadable for future versions/Cycles.
+are immutable. Genuine reader/delivery failures create non-verifying failure Receipts
+and satisfy personal acquisition. Stale reservations, invalid parameters and expiry
+before delivery do not count. Expiry after acknowledged presentation retains the
+existing failed observation contract. Failed inference without resolution remains
+unfinished until recovery applies the existing classification.
 
 Unresolved executions whose Phase/Gate changed, or whose age exceeds the configured
-30-minute recovery interval, fail explicitly on the next state refresh. This releases
-the operational block without restoring the allowance or inventing a completion.
-Normal lawful options and later-Cycle attempts remain available. A stale or duplicate
-resolution returns the existing validation/conflict response.
+30-minute recovery interval, fail explicitly on the next state refresh. A qualifying
+recorded observation remains complete; an abandoned reservation permits another
+attempt. Neither outcome rewrites historical evidence or grants structural authority.
 
 ## Ownership and consequential corrections
 

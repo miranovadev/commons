@@ -56,6 +56,9 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
         $before = $service->contribute($actor, $before['plan']['phase']['id'],
             ['action' => 'instrument.execute', 'proposition_id' => $commit->id,
                 'instrument' => ['kind' => 'proposition_search', 'limit' => 1]]);
+        $discovery = Receipt::whereHas('evidenceExecution', fn ($q) => $q->where('phase_id', $before['plan']['phase']['id']))->sole();
+        $this->assertSame($commit->id, $discovery->evidenceExecution->proposition_id);
+        $receiptsAfterDiscovery = [...$receipts, $discovery->id];
         $next = $service->contribute($actor, $before['plan']['phase']['id'],
             ['action' => 'proposition.variant', 'statement' => 'A fresh post-Commit question.']);
         $head = $actor->fresh()->position;
@@ -100,7 +103,7 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
         app(ContributionDispatcher::class)->dispatch($actor, $phase,
             ['action' => 'instrument.execute', 'proposition_id' => $head->id,
                 'instrument' => ['kind' => 'proposition_search', 'limit' => 10]]);
-        $memory = Receipt::where('type', 'proposition_search')->sole();
+        $memory = Receipt::where('type', 'proposition_search')->whereHas('evidenceExecution', fn ($q) => $q->where('phase_id', $phase->id))->sole();
         $this->assertSame($expected, array_column($memory->metadata['proposition_collection']['results'], 'proposition_id'));
         $this->assertSame([2, 3, 4, 5, 6, 7], array_column($memory->metadata['proposition_collection']['results'], 'lineage_distance'));
         $this->assertSame($head->id, $memory->evidenceExecution->proposition_id);
@@ -115,7 +118,7 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
         $this->assertSame($edges, Supersession::count());
         $this->assertSame($head->id, $actor->fresh()->current_proposition_id);
         $this->assertSame($votes, $state->attestations(collect([$commit]))->pluck('id')->all());
-        $this->assertSame($receipts, $state->receipts($commit)->pluck('id')->all());
+        $this->assertEqualsCanonicalizing($receiptsAfterDiscovery, $state->receipts($commit)->pluck('id')->all());
         $this->assertSame($frozen, $closure->stored($commit->fresh()));
         $this->assertSame($snapshot, $commit->fresh()->commitmentSnapshot->getAttributes());
     }

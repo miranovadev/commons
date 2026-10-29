@@ -15,6 +15,7 @@ class DisperseFallbackHttpTest extends ParticipationHttpTestCase
         $this->startSubstrate();
         $observer = $this->joinParticipant('Evidence observer');
         $initial = $this->enterParticipant($observer, true);
+        $this->discoverGate($observer);
         $persist = $this->contribute($observer, ['action' => 'proposition.variant', 'statement' => 'Investigate a shared distinction.']);
         $this->contribute($observer, ['action' => 'instrument.execute', 'proposition_id' => $persist['plan']['gate_id'],
             'instrument' => ['kind' => 'citation', 'reference' => $initial['current_proposition_id']]]);
@@ -22,12 +23,15 @@ class DisperseFallbackHttpTest extends ParticipationHttpTestCase
 
         $actor = $this->joinParticipant('Shared evidence developer');
         $this->enterParticipant($actor);
+        $this->discoverGate($actor);
         $sharedPersist = $this->contribute($actor, ['action' => 'attestation.create',
             'proposition_id' => $persist['plan']['gate_id'], 'direction' => 'support']);
         $this->assertSame('persist', $sharedPersist['plan']['phase']['kind']);
-        $this->assertActionUnavailable($sharedPersist, 'instrument.execute');
+        $this->assertActionAvailable($sharedPersist, 'instrument.execute');
+        $this->assertActionUnavailable($sharedPersist, 'proposition.variant');
+        $this->discoverGate($actor);
         $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Develop the shared observation.']);
-        $disperse = $this->driveUntil($actor, fn ($state) => $state['plan']['phase']['kind'] === 'disperse', 5);
+        $disperse = $this->driveUntil($actor, fn ($state) => $state['plan']['phase']['kind'] === 'disperse', 5, $source->id);
         $this->assertNotNull($source->fresh()->consumption);
         $this->assertSame([], $disperse['plan']['preparation_options']);
         $this->assertActionAvailable($disperse, 'instrument.execute');
@@ -38,7 +42,7 @@ class DisperseFallbackHttpTest extends ParticipationHttpTestCase
         $this->assertSame($disperse['plan']['phase'], $acquired['plan']['phase']);
         $this->assertSame($disperse['cycle'], $acquired['cycle']);
         $this->assertSame($disperse['plan']['gate_id'], $acquired['plan']['gate_id']);
-        $execution = EvidenceExecution::where('cycle_id', $disperse['cycle']['id'])->sole();
+        $execution = EvidenceExecution::where('phase_id', $disperse['plan']['phase']['id'])->sole();
         $this->assertSame('instrument', $execution->type);
         $this->assertNull($execution->receipt->consumption);
         $this->assertActionAvailable($acquired, 'proposition.variant');

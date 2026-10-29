@@ -13,7 +13,8 @@
                 },
                 "instrument": {
                     "kind": "proposition_search",
-                    "limit": 1
+                    "limit": 1,
+                    "query": "Origin discovery"
                 }
             },
             "result": "origin"

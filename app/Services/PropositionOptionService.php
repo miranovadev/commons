@@ -111,6 +111,7 @@ final class PropositionOptionService
 
         return $gate !== null && ($phase->kind === PhaseKind::Distinguish
             ? app(PhasePositionService::class)->acceptsGate($phase, $gate)
+                && ($context !== null ? $context->activeIds->has($gate->id) : ! app(ExhaustionService::class)->unavailable($gate))
             : $this->availability->mutable($gate, $context))
             ? collect([$gate]) : collect();
     }
