@@ -39,12 +39,14 @@ final class ExplorationEventService
             && ! app(ContinuationOpportunityService::class)->nonVariantGenerationAvailable($phase, $context)
             && ! app(ContinuationOpportunityService::class)->unfinishedEvidence($phase, $context)) {
             $state = app(PropositionStateService::class);
-            $judgment = $state->attestations(collect([$gate]), $context)->first();
+            $judgment = $state->attestations(collect([$gate]), $context)
+                ->first(fn ($a) => $a->phase->cycle->participant_id === $phase->cycle->participant_id);
             $receipt = $state->evidenceReceipts($gate, $context)
                 ->concat(app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context))
                 ->first(fn ($receipt) => $receipt->evidenceExecution?->status === 'completed');
-            if ($judgment !== null && $receipt !== null) {
-                $witness = ['contract' => 1, 'head_id' => $gate->id, 'arrival_phase_id' => $arrival->id,
+            if ($judgment !== null && $receipt !== null
+                && app(ParticipantExplorationService::class)->participationComplete($gate, $phase, $context)) {
+                $witness = ['contract' => 2, 'participant_id' => $phase->cycle->participant_id, 'personal_route_complete' => true, 'head_id' => $gate->id, 'arrival_phase_id' => $arrival->id,
                     'arrival_source_id' => $arrival->gate_proposition_id, 'attestation_id' => $judgment->id,
                     'receipt_id' => $receipt->id, 'meaningful_continuation' => false];
             }
@@ -72,6 +74,9 @@ final class ExplorationEventService
                 || $arrival->gate_proposition_id !== ($proof['witness']['arrival_source_id'] ?? null)
                 || ($proof['witness']['head_id'] ?? null) !== $rest->gate_proposition_id
                 || ($proof['witness']['meaningful_continuation'] ?? true) !== false) {
+                return;
+            }
+            if ($this->completionWitness($rest, new ParticipationContext($rest)) !== $proof['witness']) {
                 return;
             }
             if (DB::table('exploration_events')->insertOrIgnore([

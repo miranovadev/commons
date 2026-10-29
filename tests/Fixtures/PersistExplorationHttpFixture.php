@@ -37,9 +37,12 @@ trait PersistExplorationHttpFixture
         // its source Instrument Receipt remains consumed.
         $observer = $this->joinParticipant('disperse-observer');
         $this->enterParticipant($observer);
+        $this->discoverGate($observer);
         $this->judge($observer, $a);
+        $this->resolvePersonalReading($observer);
         $this->judge($observer, $persist);
-        $parked = $this->judge($observer, $constrain);
+        $this->judge($observer, $constrain);
+        $parked = $this->resolvePersonalReading($observer);
         $witness = $this->joinParticipant('disperse-witness');
         $this->enterParticipant($witness);
         $this->judge($witness, $a);
@@ -52,6 +55,22 @@ trait PersistExplorationHttpFixture
         $this->assertDatabaseMissing('evidence_executions', ['proposition_id' => $b]);
 
         return compact('actor', 'originObserver', 'observer', 'witness', 'origin', 'a', 'b', 'slot', 'parked', 'witnessState', 'state');
+    }
+
+    private function resolvePersonalReading(string $participant): array
+    {
+        $state = $this->readParticipation($participant);
+        $this->assertActionAvailable($state, 'preparation.start');
+        $source = $state['plan']['preparation_options'][0];
+        $started = $this->contribute($participant, ['action' => 'preparation.start',
+            'proposition_id' => $state['plan']['gate_id'], 'purpose' => 'Personally examine this route.',
+            'artifacts' => [['receipt_id' => $source['receipt_id'], 'artifact_id' => $source['artifact_id'],
+                'read_type' => 'text', 'parameters' => ['max_chars' => 4000]]]], $state);
+        $id = $started['plan']['preparation']['execution_id'];
+        $this->readAndAcknowledgePreparation($participant, $id);
+
+        return $this->contribute($participant, ['action' => 'preparation.defer', 'execution_id' => $id,
+            'reason' => 'Observation complete; continue through existing structure.']);
     }
 
     private function judge(string $participant, string $proposition): array

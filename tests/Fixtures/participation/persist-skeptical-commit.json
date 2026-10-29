@@ -1,5 +1,5 @@
 {
-  "description": "Fixed lawful HTTP journey with personal Gate discovery, Persist examination and Disperse acquisition; no renewed allowance on later Cycles.",
+  "description": "Fixed lawful HTTP journey with durable personal Gate acquisition, first judgments on both authorised Reconciliation routes, and an additional reconsideration Cycle before Bias and Commit; no renewed acquisition.",
   "steps": [
     {
       "cycle": 2,
@@ -725,39 +725,41 @@
       "input": {
         "action": "proposition.traverse",
         "proposition_id": {
-          "ref": "p5"
+          "ref": "p12"
         }
       },
-      "result": "p5"
+      "result": "p12"
     },
     {
       "cycle": 12,
       "phase": 3,
-      "gate": "p5",
+      "gate": "p12",
       "input": {
-        "action": "proposition.traverse",
+        "action": "attestation.create",
         "proposition_id": {
-          "ref": "p6"
-        }
+          "ref": "p13"
+        },
+        "direction": "refute"
       },
-      "result": "p6"
+      "result": "p13"
     },
     {
       "cycle": 12,
       "phase": 4,
-      "gate": "p6",
+      "gate": "p13",
       "input": {
-        "action": "proposition.traverse",
+        "action": "attestation.create",
         "proposition_id": {
-          "ref": "p7"
-        }
+          "ref": "p14"
+        },
+        "direction": "refute"
       },
-      "result": "p7"
+      "result": "p14"
     },
     {
       "cycle": 12,
       "phase": 5,
-      "gate": "p7",
+      "gate": "p14",
       "input": {
         "action": "attestation.create",
         "proposition_id": {
@@ -909,21 +911,6 @@
       "phase": 6,
       "gate": "p19",
       "input": {
-        "action": "proposition.reclassify",
-        "proposition_id": {
-          "ref": "p15"
-        },
-        "receipt_id": {
-          "ref": "r6"
-        }
-      },
-      "result": "p20"
-    },
-    {
-      "cycle": 14,
-      "phase": 7,
-      "gate": "p20",
-      "input": {
         "action": "participant.rest"
       },
       "result": "origin"
@@ -994,6 +981,91 @@
       "phase": 6,
       "gate": "p15",
       "input": {
+        "action": "proposition.reclassify",
+        "proposition_id": {
+          "ref": "p15"
+        },
+        "receipt_id": {
+          "ref": "r6"
+        }
+      },
+      "result": "p20"
+    },
+    {
+      "cycle": 15,
+      "phase": 7,
+      "gate": "p20",
+      "input": {
+        "action": "participant.rest"
+      },
+      "result": "origin"
+    },
+    {
+      "cycle": 16,
+      "phase": 1,
+      "gate": "origin",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "p1"
+        }
+      },
+      "result": "p1"
+    },
+    {
+      "cycle": 16,
+      "phase": 2,
+      "gate": "p1",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "p5"
+        }
+      },
+      "result": "p5"
+    },
+    {
+      "cycle": 16,
+      "phase": 3,
+      "gate": "p5",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "p6"
+        }
+      },
+      "result": "p6"
+    },
+    {
+      "cycle": 16,
+      "phase": 4,
+      "gate": "p6",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "p7"
+        }
+      },
+      "result": "p7"
+    },
+    {
+      "cycle": 16,
+      "phase": 5,
+      "gate": "p7",
+      "input": {
+        "action": "attestation.create",
+        "proposition_id": {
+          "ref": "p15"
+        },
+        "direction": "support"
+      },
+      "result": "p15"
+    },
+    {
+      "cycle": 16,
+      "phase": 6,
+      "gate": "p15",
+      "input": {
         "action": "attestation.create",
         "proposition_id": {
           "ref": "p20"
@@ -1003,7 +1075,7 @@
       "result": "p20"
     },
     {
-      "cycle": 15,
+      "cycle": 16,
       "phase": 7,
       "gate": "p20",
       "input": {

@@ -6,6 +6,7 @@ use App\Enums\PhaseKind;
 use App\Models\EvidenceExecution;
 use App\Models\Phase;
 use App\Services\Participation\ParticipationContext;
+use Illuminate\Support\Collection;
 
 /** Durable participation at an exact Gate; never Receipt consumption or exploration authority. */
 final class PersonalAcquisitionService
@@ -44,6 +45,21 @@ final class PersonalAcquisitionService
         };
 
         return $context === null ? $read() : $context->remember('personal-acquisition:'.$phase->id.':'.$phase->gate_proposition_id, $read);
+    }
+
+    /** Same durable completion predicate, batched for exploration's selected routes. */
+    public function completedInContext(Phase $phase, ParticipationContext $context): Collection
+    {
+        return $context->remember('personal-acquisition-completions:'.$phase->cycle->participant_id, fn () => EvidenceExecution::query()
+            ->whereIn('proposition_id', $context->propositions->keys())
+            ->whereHas('cycle', fn ($q) => $q->where('participant_id', $phase->cycle->participant_id))
+            ->whereHas('phase', fn ($q) => $q->whereIn('kind', [1, 2, 4]))
+            ->where(fn ($q) => $q->where('type', 'instrument')->orWhere(fn ($q) => $q->where('type', 'prepare')
+                ->whereHas('phase', fn ($q) => $q->whereIn('kind', [2, 4]))))
+            ->recordedObservation()->whereHas('receipt')
+            ->join('phases as acquisition_phase', 'acquisition_phase.id', '=', 'evidence_executions.phase_id')
+            ->select(['evidence_executions.proposition_id', 'acquisition_phase.kind'])->distinct()->toBase()->get()
+            ->keyBy(fn ($execution) => $execution->kind.':'.$execution->proposition_id));
     }
 
     public function allows(Phase $phase, string $action, ?ParticipationContext $context = null): bool
