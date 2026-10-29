@@ -141,8 +141,9 @@ class DisperseInstrumentFallbackTest extends TestCase
         $phase = $f->phase;
         if ($kind === PhaseKind::Persist) {
             $gate = DB::transaction(fn () => $f->node($f->seed, 'activity', position: PhaseKind::Distinguish));
-            $phase = $f->phase->replicate();
             $phase->forceFill(['kind' => $kind, 'gate_proposition_id' => $gate->id, 'write_register' => 'frontier'])->save();
+            $phase = $phase->fresh();
+            $f->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
         }
         Http::fake(['*' => Http::response('', 404)]);
         // Failed verification is still a completed ordinary observation under the existing contract.
@@ -151,6 +152,14 @@ class DisperseInstrumentFallbackTest extends TestCase
         $receipt = app(OperationalInstrumentService::class)->execute($phase, $phase->gate,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/missing']);
         $this->assertSame('completed', $receipt->evidenceExecution->status);
+        if ($kind === PhaseKind::Persist) {
+            // Position the separate role only after the real Persist attempt completed.
+            $phase->forceFill(['completed_at' => now()])->save();
+            $next = $phase->replicate();
+            $next->forceFill(['kind' => PhaseKind::Disperse, 'gate_proposition_id' => $f->gate->id, 'write_register' => 'activity', 'completed_at' => null])->save();
+            $f->phase = $next->fresh();
+            $f->viewer->forceFill(['current_proposition_id' => $f->gate->id])->save();
+        }
         $this->assertTrue(app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->contains('id', $receipt->id));
         $this->consume($f, $receipt);
         $this->assertEmpty(app(HorizonReceiptService::class)->ordinaryAvailable($f->phase));

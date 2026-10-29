@@ -21,7 +21,7 @@ The Instrument lifecycle already distinguishes recorded retrieval/provider failu
 
 ## Authority and resolution
 
-Fresh Variant/Revise in Phases 1, 2 and 4 require personal completion. Persist and Disperse retain their separate unconsumed ordinary Receipt prerequisite and all existing structural restrictions. Acquisition does not automatically create or consume a Proposition, choose a later consuming Receipt, grant traversal or complete exploration. Attestation and Traverse through existing structure retain their independent rules.
+Fresh Variant/Revise in Phases 1, 2 and 4 require personal completion. Persist and Disperse retain their separate unconsumed ordinary Receipt prerequisite and all existing structural restrictions. Acquisition does not automatically generate a Proposition, consume or select a Receipt, grant traversal or complete exploration. Attestation and Traverse through existing structure retain their independent rules.
 
 Persist Preparation offers `preparation.defer` after acknowledged delivery. This resolves a real reading and creates the ordinary deferred Preparation Receipt. It leaves the Phase open; the Participant then chooses a separately authorized Persist generating action. It cannot execute a Disperse Variant or advance through Disperse. Disperse retains its existing atomic contributed Variant/Revise workflow and the option to defer.
 
