@@ -23,6 +23,9 @@ trait ParticipantExplorationFixture
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
         $nodes = [];
         for ($kind = 1; $kind <= 4; $kind++) {
+            if (in_array($kind, [1, 4], true)) {
+                $this->instrumentGateFixture($phase);
+            }
             $node = $this->node($phase, $phase->gate);
             $nodes[] = $node;
             if (in_array($kind, [1, 4], true)) {

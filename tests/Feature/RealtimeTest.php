@@ -6,6 +6,7 @@ use App\Events\RealtimeInvalidation;
 use App\Models\ContextHorizon;
 use App\Models\Participant;
 use App\Models\Permission;
+use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Role;
 use App\Models\Substrate;
@@ -88,6 +89,7 @@ class RealtimeTest extends TestCase
         app(CycleEntryService::class)->enter($participant, $this->origin());
         $service = app(ParticipationService::class);
         $state = $service->stateFor($participant);
+        $this->instrumentGateFixture(Phase::findOrFail($state['plan']['phase']['id']));
         $this->notifications = [];
         $service->contribute($participant, $state['plan']['phase']['id'], [
             'action' => 'proposition.variant', 'statement' => 'A live branch.',

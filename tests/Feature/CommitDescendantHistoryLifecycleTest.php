@@ -53,6 +53,9 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
             app(HomologousPositionService::class)->committedCoordinatesFor($commit, collect([$origin, $commit])));
         $service = app(ParticipationService::class);
         $before = $service->stateFor($actor);
+        $before = $service->contribute($actor, $before['plan']['phase']['id'],
+            ['action' => 'instrument.execute', 'proposition_id' => $commit->id,
+                'instrument' => ['kind' => 'proposition_search', 'limit' => 1]]);
         $next = $service->contribute($actor, $before['plan']['phase']['id'],
             ['action' => 'proposition.variant', 'statement' => 'A fresh post-Commit question.']);
         $head = $actor->fresh()->position;

@@ -1,5 +1,7 @@
 # Disperse Instrument fallback
 
+Historical implementation record: acquisition availability and per-Cycle allowances below are superseded by [Personal Gate Acquisition](personal-gate-acquisition.md). Other evidence and structural contracts remain applicable.
+
 Disperse previously withheld generation without an available ordinary Receipt,
 and could only acquire evidence by preparing a readable Artifact. With neither,
 an unused Instrument allowance could not help. An isolated fixture reproduces

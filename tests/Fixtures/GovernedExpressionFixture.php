@@ -34,6 +34,9 @@ final class GovernedExpressionFixture
         $this->origin = $this->actor->fresh()->position;
         $cycle = $this->actor->cycles()->whereNull('completed_at')->sole();
         $this->phase = $cycle->phases()->where('kind', PhaseKind::Distinguish->value)->sole();
+        app(ContributionDispatcher::class)->dispatch($this->actor, $this->phase,
+            ['action' => 'instrument.execute', 'proposition_id' => $this->origin->id,
+                'instrument' => ['kind' => 'citation', 'reference' => $this->origin->id]]);
         $this->expression = app(ContributionDispatcher::class)->dispatch($this->actor, $this->phase,
             ['action' => 'proposition.variant', 'statement' => 'An independently authored first distinction.']);
     }

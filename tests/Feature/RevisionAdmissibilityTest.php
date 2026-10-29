@@ -315,6 +315,7 @@ class RevisionAdmissibilityTest extends TestCase
         $f->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
         // Isolate revision ownership/stance against an available regional observation.
         $this->receiptFixture($gate);
+        $this->instrumentGateFixture($f->phase);
 
         return [$f->viewer, $f->phase, $gate];
     }

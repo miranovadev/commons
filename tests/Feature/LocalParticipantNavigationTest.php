@@ -242,6 +242,7 @@ class LocalParticipantNavigationTest extends TestCase
         app(CycleEntryService::class)->enter($participant);
         $state = $this->state($participant);
         $this->assertSame($committed->id, $state['plan']['gate_id']);
+        $this->instrumentGateFixture(Phase::findOrFail($state['plan']['phase']['id']));
         $next = app(ParticipationService::class)->contribute(
             $participant, $state['plan']['phase']['id'],
             ['action' => 'proposition.variant', 'statement' => 'A new expressive tier one.'],
@@ -266,6 +267,8 @@ class LocalParticipantNavigationTest extends TestCase
         $position = $this->node('Current', 0.0);
         $participant = $this->participant('writer', $position);
         app(CycleEntryService::class)->enter($participant);
+        $state = $this->state($participant);
+        $this->instrumentGateFixture(Phase::findOrFail($state['plan']['phase']['id']));
         $state = $this->state($participant);
         $this->assertArrayHasKey('proposition.variant', $state['plan']['schema']['$defs']['actions']);
         $next = app(ParticipationService::class)->contribute(

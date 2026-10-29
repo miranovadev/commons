@@ -110,6 +110,7 @@ class TransactionLockOrderTest extends TestCase
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'second'])->save();
         app(CycleEntryService::class)->enter($second);
         $secondPhase = $this->activePhase($second);
+        $this->instrumentGateFixture($secondPhase);
         $this->whileWorkerWaits($substrate, [
             'operation' => 'contribute', 'participant_id' => $first->id, 'phase_id' => $firstPhase->id,
         ], function () use ($second, $secondPhase): void {
@@ -380,6 +381,7 @@ class TransactionLockOrderTest extends TestCase
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'between-actions'])->save();
         app(CycleEntryService::class)->enter($second);
         $secondPhase = $this->activePhase($second);
+        $this->instrumentGateFixture($secondPhase);
         $connection = new Connection;
         $connection->forceFill(['provider' => 'openai', 'name' => 'Wake concurrency',
             'configuration' => ['model' => 'test'], 'credentials' => ['api_key' => 'test']])->save();
@@ -458,6 +460,7 @@ class TransactionLockOrderTest extends TestCase
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'during-observation'])->save();
         app(CycleEntryService::class)->enter($second);
         $secondPhase = $this->activePhase($second);
+        $this->instrumentGateFixture($secondPhase);
         // Concurrency component: two active Persist acquisition contexts share
         // a Gate. Full entry/Attestation histories are covered by lifecycle tests.
         $secondPhase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => $initial->write_register,
@@ -629,6 +632,7 @@ class TransactionLockOrderTest extends TestCase
         $this->initializeExhaustionFixture();
         [, $terminal, , $commit] = $this->exhaustedBranch();
         $generation = $this->phase($commit, PhaseKind::Distinguish);
+        $this->instrumentGateFixture($generation);
         $newId = null;
         $this->whileWorkerWaits($this->substrate, ['operation' => 'rest',
             'participant_id' => $terminal->cycle->participant_id, 'phase_id' => $terminal->id], function () use ($generation, &$newId): void {
@@ -752,6 +756,8 @@ class TransactionLockOrderTest extends TestCase
             'statement' => 'A grounded origin', 'attestation' => ['direction' => 'support'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/lock-order'],
         ]);
+
+        $this->instrumentGateFixture($this->activePhase($participant));
 
         return [$substrate, $participant, $this->activePhase($participant)];
     }

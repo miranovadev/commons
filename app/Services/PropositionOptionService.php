@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
-use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -110,8 +109,9 @@ final class PropositionOptionService
         }
         $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->first();
 
-        return $gate !== null && app(PhasePositionService::class)->acceptsGate($phase, $gate)
-            && ($phase->kind === PhaseKind::Distinguish || $this->availability->mutable($gate, $context))
+        return $gate !== null && ($phase->kind === PhaseKind::Distinguish
+            ? app(PhasePositionService::class)->acceptsGate($phase, $gate)
+            : $this->availability->mutable($gate, $context))
             ? collect([$gate]) : collect();
     }
 

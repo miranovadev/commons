@@ -81,7 +81,7 @@ class ExhaustedParticipantContextTest extends TestCase
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
         $plan = app(InputPlanService::class)->forParticipant($phase->cycle->participant);
         $this->assertEqualsCanonicalizing([$explored->id, $healthy->id], array_column($plan['write_options'], 'id'));
-        $this->assertSame([], array_column($plan['instrument_options'], 'id'), 'Distinguish has no Instrument action');
+        $this->assertSame([$phase->gate_proposition_id], array_column($plan['instrument_options'], 'id'), 'Existing structure does not waive personal discovery');
         $this->assertArrayNotHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
     }
 

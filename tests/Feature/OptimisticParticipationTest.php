@@ -60,6 +60,7 @@ class OptimisticParticipationTest extends TestCase
     public function test_contribution_serializes_the_response_only_after_its_write_transaction(): void
     {
         [$participant, $phase] = $this->fixture();
+        $this->instrumentGateFixture($phase);
         $outerLevel = DB::transactionLevel();
         $contexts = [];
         $transactionStart = null;

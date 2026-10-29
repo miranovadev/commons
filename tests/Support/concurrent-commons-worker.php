@@ -78,7 +78,7 @@ try {
                     $service->defer($participant, EvidenceExecution::findOrFail($input['execution_id']), 'Concurrent deferment loses.');
                 }
             } catch (ConflictHttpException $exception) {
-                if (str_contains($exception->getMessage(), 'already resolved') || str_contains($exception->getMessage(), 'active Persist or Disperse')) {
+                if (str_contains($exception->getMessage(), 'different recorded resolution') || str_contains($exception->getMessage(), 'acquisition') || str_contains($exception->getMessage(), 'active Persist or Disperse')) {
                     return;
                 }
                 throw $exception;
@@ -97,7 +97,7 @@ try {
                     ) : null,
                 );
             } catch (ConflictHttpException $exception) {
-                if (str_contains($exception->getMessage(), 'acquisition')) {
+                if (str_contains($exception->getMessage(), 'acquisition') || str_contains($exception->getMessage(), 'Resolve the unfinished Preparation')) {
                     return;
                 }
                 throw $exception;
@@ -130,7 +130,7 @@ try {
                 }
             } catch (ConflictHttpException $exception) {
                 if (str_contains($exception->getMessage(), 'field changed') || str_contains($exception->getMessage(), 'options changed')
-                    || str_contains($exception->getMessage(), 'Shared Receipt availability changed')) {
+                    || str_contains($exception->getMessage(), 'Personal acquisition or ordinary evidence prerequisites')) {
                     return;
                 }
                 throw $exception;

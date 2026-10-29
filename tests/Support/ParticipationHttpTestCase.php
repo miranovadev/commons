@@ -21,6 +21,7 @@ abstract class ParticipationHttpTestCase extends TestCase
         $this->startSubstrate();
         $actor = $this->joinParticipant($name);
         $initial = $this->enterParticipant($actor, true);
+        $this->discoverGate($actor);
         $first = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'First distinction']);
         $observed = $this->contribute($actor, ['action' => 'instrument.execute',
             'proposition_id' => $first['plan']['gate_id'],
@@ -31,6 +32,15 @@ abstract class ParticipationHttpTestCase extends TestCase
         $this->assertSame('constrain', $state['plan']['phase']['kind']);
 
         return compact('actor', 'initial', 'first', 'observed', 'state');
+    }
+
+    /** Phase-neutral personal discovery, through the same HTTP contribution endpoint. */
+    protected function discoverGate(string $actor): array
+    {
+        $state = $this->readParticipation($actor);
+
+        return $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+            'instrument' => ['kind' => 'proposition_search', 'limit' => 1]]);
     }
 
     use RefreshDatabase;

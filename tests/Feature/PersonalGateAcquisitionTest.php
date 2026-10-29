@@ -8,13 +8,12 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
-use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
-use App\Services\EvidenceExecutionService;
 use App\Services\Evidence\HyperlinkVerifier;
 use App\Services\Evidence\PublicResourceAddress;
+use App\Services\EvidenceExecutionService;
 use App\Services\OperationalInstrumentService;
-use App\Services\ParticipantContextSerializer;
+use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PersonalAcquisitionService;
 use App\Services\PhaseGenerationService;
@@ -22,8 +21,9 @@ use App\Services\PreparationService;
 use App\Services\PropositionOptionService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -40,7 +40,9 @@ class PersonalGateAcquisitionTest extends TestCase
         $this->beforeRefreshingDatabase();
         $this->refreshTestDatabase();
         $this->afterRefreshingDatabase();
-        $this->beforeApplicationDestroyed(static function (): void { RefreshDatabaseState::$migrated = false; });
+        $this->beforeApplicationDestroyed(static function (): void {
+            RefreshDatabaseState::$migrated = false;
+        });
     }
 
     protected function setUp(): void
@@ -166,7 +168,7 @@ class PersonalGateAcquisitionTest extends TestCase
 
     public function test_failed_instrument_is_resolved_non_verifying_and_completion_is_idempotent(): void
     {
-        Http::swap(new \Illuminate\Http\Client\Factory);
+        Http::swap(new Factory);
         Http::fake(['*' => Http::response('Unavailable', 503)]);
         $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
         $phase = $this->at($f, PhaseKind::Persist, DB::transaction(fn () => $f->node($f->seed, 'activity', position: PhaseKind::Distinguish)));
@@ -217,11 +219,56 @@ class PersonalGateAcquisitionTest extends TestCase
         $this->assertSame($state['plan']['schema'], $human['plan']['schema']);
     }
 
+    public function test_abandoned_history_lookup_is_bounded_and_downgrade_preserves_it(): void
+    {
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        $phase = $f->phase->load('cycle');
+        $preparation = app(PreparationService::class);
+        $acquisition = app(PersonalAcquisitionService::class);
+        $counts = [];
+        for ($i = 0; $i < 12; $i++) {
+            $execution = $preparation->start($f->viewer, $phase, $fixture->input());
+            $preparation->fail($f->viewer, $execution, 'reader', '1', 'stale', 'Reservation abandoned', ['classification' => 'stale']);
+            if (in_array($i, [0, 11], true)) {
+                DB::flushQueryLog();
+                DB::enableQueryLog();
+                $this->assertSame('required', $acquisition->state($phase)['status']);
+                $queries = DB::getQueryLog();
+                DB::disableQueryLog();
+                $counts[] = count($queries);
+                foreach ($queries as $query) {
+                    $this->assertStringContainsString('limit 1', strtolower($query['query']));
+                }
+            }
+        }
+        $this->assertSame([2, 2], $counts);
+        $context = new ParticipationContext($phase);
+        $acquisition->state($phase, $context);
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->assertSame('required', $acquisition->state($phase, $context)['status']);
+        $this->assertCount(0, DB::getQueryLog());
+        DB::disableQueryLog();
+        $this->assertSame(12, EvidenceExecution::where('type', 'prepare')->count());
+        $migration = require database_path('migrations/2026_10_29_000000_scope_acquisition_to_personal_gates.php');
+        try {
+            $migration->down();
+            $this->fail('Downgrade must not discard acquisition history.');
+        } catch (\RuntimeException $exception) {
+            $this->assertStringContainsString('without losing acquisition history', $exception->getMessage());
+        }
+        $this->assertSame(12, EvidenceExecution::where('type', 'prepare')->count());
+        $this->assertSame('pending', $preparation->start($f->viewer, $phase, $fixture->input())->status);
+        fwrite(STDERR, "\nACQUISITION history queries (1 -> 12 abandoned attempts): 2 -> 2; memoized: 0\n");
+    }
+
     private function at(ParticipantContextFixture $f, PhaseKind $kind, Proposition $gate): Phase
     {
         $f->phase->forceFill(['kind' => $kind, 'gate_proposition_id' => $gate->id,
             'write_register' => $f->phase->cycle->contextHorizon->domain->registerFor($kind)])->save();
         $f->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
+
         return $f->phase->fresh();
     }
 
@@ -233,6 +280,7 @@ class PersonalGateAcquisitionTest extends TestCase
         $next->cycle_id = $cycle->id;
         $next->save();
         $actor->forceFill(['current_proposition_id' => $next->gate_proposition_id])->save();
+
         return $next->fresh();
     }
 

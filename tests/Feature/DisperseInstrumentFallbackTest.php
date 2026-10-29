@@ -22,6 +22,7 @@ use App\Services\LedgerService;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
+use App\Services\PersonalAcquisitionService;
 use App\Services\PhaseGenerationService;
 use App\Services\PotentialProjectionService;
 use App\Services\PreparationService;
@@ -157,7 +158,7 @@ class DisperseInstrumentFallbackTest extends TestCase
         $this->assertArrayNotHasKey('proposition.variant', $actions);
         if ($kind === PhaseKind::Persist) {
             $this->assertArrayHasKey('instrument.execute', $actions);
-            $this->assertSame('required', app(\App\Services\PersonalAcquisitionService::class)->state($f->phase)['status']);
+            $this->assertSame('required', app(PersonalAcquisitionService::class)->state($f->phase)['status']);
         } else {
             $this->assertArrayNotHasKey('instrument.execute', $actions);
             $this->assertArrayHasKey('participant.rest', $actions);

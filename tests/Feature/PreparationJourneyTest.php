@@ -13,7 +13,6 @@ use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\User;
 use App\Services\ContributionDispatcher;
-use App\Services\ContributionService;
 use App\Services\Evidence\ArtifactStore;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;

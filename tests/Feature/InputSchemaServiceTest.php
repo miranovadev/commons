@@ -113,12 +113,14 @@ class InputSchemaServiceTest extends TestCase
     {
         $expected = [
             PhaseKind::Distinguish->value => [
+                'instrument.execute',
                 'proposition.variant',
                 'attestation.create',
                 'proposition.traverse',
             ],
             PhaseKind::Persist->value => [
                 'instrument.execute',
+                'preparation.start',
                 'proposition.variant',
                 'proposition.revise',
                 'attestation.create',

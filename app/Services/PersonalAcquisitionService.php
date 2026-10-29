@@ -31,9 +31,11 @@ final class PersonalAcquisitionService
                 ->whereHas('cycle', fn ($q) => $q->where('participant_id', $phase->cycle->participant_id))
                 ->whereHas('phase', fn ($q) => $q->where('kind', $phase->kind->value))
                 ->whereIn('type', $phase->kind === PhaseKind::Distinguish ? ['instrument'] : ['instrument', 'prepare'])
-                ->withExists('receipt')->orderBy('id')->get(['id', 'type', 'status', 'outcome', 'phase_id']);
-            $completed = $history->first(fn ($e) => $e->receipt_exists && $e->observationRecorded());
-            $pending = $history->first(fn ($e) => $e->phase_id === $phase->id && in_array($e->status, ['pending', 'presented'], true));
+                ->orderBy('id');
+            // At most two rows are hydrated, regardless of abandoned attempts or later Cycles.
+            $completed = (clone $history)->recordedObservation()->whereHas('receipt')->first(['id', 'outcome']);
+            $pending = $completed === null ? $history->where('phase_id', $phase->id)
+                ->whereIn('status', ['pending', 'presented'])->first(['id']) : null;
 
             return ['role' => $role, 'gate_id' => $phase->gate_proposition_id,
                 'status' => $completed ? 'completed' : ($pending ? 'pending' : 'required'),
@@ -49,6 +51,7 @@ final class PersonalAcquisitionService
         if ($this->state($phase, $context)['status'] !== 'required') {
             return false;
         }
+
         return match ($action) {
             'instrument.execute' => $phase->kind !== PhaseKind::Persist
                 || ! app(PreparationService::class)->hasReadableArtifacts($phase, $context),

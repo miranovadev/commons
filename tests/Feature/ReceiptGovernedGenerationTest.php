@@ -198,10 +198,11 @@ class ReceiptGovernedGenerationTest extends TestCase
         $observer = $this->observer($f);
         app(OperationalInstrumentService::class)->execute($observer, $f->gate, ['kind' => 'proposition_search']);
         $this->assertFalse(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant'));
-        $this->assertSame([$head->id], app(PropositionOptionService::class)->revisionOptionsFor($f->phase, $f->viewer)->modelKeys());
+        $this->assertEmpty(app(PropositionOptionService::class)->revisionOptionsFor($f->phase, $f->viewer));
         $other = $this->observer($f);
         $this->assertEmpty(app(PropositionOptionService::class)->revisionOptionsFor($other, $other->cycle->participant));
         $this->observe($f, $f->phase);
+        $this->assertSame([$head->id], app(PropositionOptionService::class)->revisionOptionsFor($f->phase, $f->viewer)->modelKeys());
         $count = Receipt::count();
         $revised = app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase,
             ['action' => 'proposition.revise', 'proposition_id' => $head->id, 'statement' => 'Revise after shared observation']);

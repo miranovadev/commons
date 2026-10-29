@@ -3,10 +3,10 @@
 namespace App\Services;
 
 use App\Contracts\WebSearchProvider;
-use App\Enums\PhaseKind;
 use App\Domain\Evidence\InstrumentObservation;
 use App\Domain\Evidence\PropositionCollection;
 use App\Domain\Evidence\SearchObservation;
+use App\Enums\PhaseKind;
 use App\Exceptions\ArtifactStorageException;
 use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;

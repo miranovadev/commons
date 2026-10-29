@@ -46,6 +46,7 @@ class ChargeBoundaryTragedyTest extends TestCase
     public function test_fresh_expression_uses_the_canonical_resolved_charge(float $value, bool $tragic): void
     {
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
+        $this->instrumentGateFixture($phase);
         $this->resolveExpressiveFieldFixture($value);
         $target = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'Expression may reach the field boundary']);
@@ -78,6 +79,7 @@ class ChargeBoundaryTragedyTest extends TestCase
     {
         [$this->substrate, $this->origin, , $seed] = $this->naturalBoundaryHistory();
         $phase = $this->phase($seed, PhaseKind::Distinguish);
+        $this->instrumentGateFixture($phase);
         $target = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'An untested expressive continuation']);
         $measurement = $target->measurement;
@@ -103,6 +105,7 @@ class ChargeBoundaryTragedyTest extends TestCase
             'kind' => PhaseKind::Persist, 'gate_proposition_id' => $gate->id,
             'write_register' => $prior->write_register, 'started_at' => now()]);
         $phase->save();
+        $this->instrumentGateFixture($phase);
         $this->resolveExpressiveFieldFixture(-1);
         $target = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.revise', 'proposition_id' => $head->id, 'statement' => 'Boundary revision']);
@@ -114,6 +117,7 @@ class ChargeBoundaryTragedyTest extends TestCase
     public function test_zero_potential_allows_further_personally_explored_evidenced_variants_with_positive_charge(): void
     {
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
+        $this->instrumentGateFixture($phase);
         $this->resolveExpressiveFieldFixture(.8);
         $first = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'No demonstrated tension reduction']);
@@ -149,6 +153,7 @@ class ChargeBoundaryTragedyTest extends TestCase
         $root = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
         $seed = $this->commitFrom($root, .4);
         $phase = $this->phase($seed, PhaseKind::Distinguish);
+        $this->instrumentGateFixture($phase);
         $this->resolveExpressiveFieldFixture(.8);
         $target = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'Increasing tension remains expressive']);
@@ -170,6 +175,7 @@ class ChargeBoundaryTragedyTest extends TestCase
             $gate = $this->node($this->phase($region, PhaseKind::Constrain), $region);
             $phase = $this->phase($gate, PhaseKind::Disperse);
             $this->receiptFixture($gate);
+            $this->instrumentGateFixture($phase);
             $target = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
                 ['action' => 'proposition.variant', 'statement' => 'A regional boundary']);
             $this->assertSame($target->id, Tragedy::where('governing_committal_id', $region->id)->sole()->terminal_proposition_id);
@@ -187,6 +193,7 @@ class ChargeBoundaryTragedyTest extends TestCase
     public function test_later_direct_encounter_retains_first_identity_and_exhausts(): void
     {
         $firstPhase = $this->phase($this->origin, PhaseKind::Distinguish);
+        $this->instrumentGateFixture($firstPhase);
         $read = $this->node($this->phase($this->origin, PhaseKind::Constrain), $this->origin);
         $secondPhase = $this->phase($read, PhaseKind::Disperse);
         $this->resolveExpressiveFieldFixture(1);
@@ -218,6 +225,7 @@ class ChargeBoundaryTragedyTest extends TestCase
     public function test_later_encounter_rollback_restores_resolution_and_warrant(): void
     {
         $firstPhase = $this->phase($this->origin, PhaseKind::Distinguish);
+        $this->instrumentGateFixture($firstPhase);
         $read = $this->node($this->phase($this->origin, PhaseKind::Constrain), $this->origin);
         $phase = $this->phase($read, PhaseKind::Disperse);
         $this->resolveExpressiveFieldFixture(-1);
@@ -245,6 +253,7 @@ class ChargeBoundaryTragedyTest extends TestCase
     public function test_historical_boundary_recalculation_and_repeat_observation_do_not_exhaust(): void
     {
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
+        $this->instrumentGateFixture($phase);
         $this->resolveExpressiveFieldFixture(1);
         $first = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'Only one fresh event']);
@@ -270,6 +279,7 @@ class ChargeBoundaryTragedyTest extends TestCase
     public function test_failed_or_rolled_back_contributions_do_not_leave_a_catastrophe(): void
     {
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
+        $this->instrumentGateFixture($phase);
         $this->resolveExpressiveFieldFixture(-1);
         $before = Proposition::count();
         try {

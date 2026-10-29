@@ -321,7 +321,7 @@ class ParticipantExplorationTest extends TestCase
         $return = $this->returnAfterRest($bias);
         $history = DB::table('exploration_events')->get()->toJson();
         $receipts = app(HorizonReceiptService::class);
-        $receipt = $receipts->ordinaryAvailable($return)->sole();
+        $available = $receipts->ordinaryAvailable($return);
         $phase = $return;
         foreach ([$signal, $persist, $constrain, $activity] as $node) {
             $phase = app(PhaseProgressionService::class)->advance($phase, $node);
@@ -329,7 +329,9 @@ class ParticipantExplorationTest extends TestCase
         $changed = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
         $bias = app(PhaseProgressionService::class)->advance($phase, $changed);
-        DB::transaction(fn () => $receipts->consume($constrain->phase, $persist, $constrain, $receipt->id));
+        foreach ($available as $receipt) {
+            DB::transaction(fn () => $receipts->consume($constrain->phase, $persist, $constrain, $receipt->id));
+        }
         $this->assertFalse(app(PhaseGenerationService::class)->available($bias, 'proposition.reclassify'));
         $this->assertTrue(app(ParticipantExplorationService::class)->explored($stance, $bias));
         $this->publishPotentialFixture($this->substrate);
@@ -376,6 +378,7 @@ class ParticipantExplorationTest extends TestCase
         $this->assertSame([$result->id], $exploration->heads($other->id, $otherMediate, $foreignContext)->keys()->all());
         $this->assertFalse($exploration->heads($head->id, $terminal, $context)->has($head->id), 'Hard-superseded inputs are not heads');
         $entry = $this->phase($this->origin, PhaseKind::Distinguish);
+        $this->instrumentGateFixture($entry);
         $this->assertEmpty($exploration->heads($signal->id, $entry, new ParticipationContext($entry)));
         $this->assertFalse($exploration->explored($signal, $entry), 'Retired history does not invent a personal encounter');
         $this->assertTrue(app(PhaseGenerationService::class)->available($entry, 'proposition.variant'), 'No active authorized continuation remains to explore');

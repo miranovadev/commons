@@ -523,6 +523,9 @@ class CausalRecoveryTest extends TestCase
         $cycle = $participant->cycles()->whereNull('completed_at')->sole();
         $this->assertSame($h3->id, $cycle->context_horizon_id);
         $this->assertSame('activity', $cycle->currentPhase->write_register);
+        // The routing fixture's canonical snapshot supplies its frozen Closure output.
+        $this->controlledBirthClosureFixture($cycle->currentPhase->gate->commitmentSnapshot->closure, includeCommittal: true);
+        $this->instrumentGateFixture($cycle->currentPhase);
         $state = app(ParticipationService::class)->contribute($participant, $cycle->currentPhase->id,
             ['action' => 'proposition.variant', 'statement' => 'A new Signal in the selected historical region.']);
         $write = $participant->fresh()->position;
@@ -573,6 +576,9 @@ class CausalRecoveryTest extends TestCase
         $cycle = $participant->cycles()->whereNull('completed_at')->sole();
         $this->assertSame($h3->id, $cycle->context_horizon_id);
         $this->assertSame($commit->id, $cycle->currentPhase->gate_proposition_id);
+        // The routing fixture's canonical snapshot supplies its frozen Closure output.
+        $this->controlledBirthClosureFixture($cycle->currentPhase->gate->commitmentSnapshot->closure, includeCommittal: true);
+        $this->instrumentGateFixture($cycle->currentPhase);
         app(ParticipationService::class)->contribute($participant, $cycle->currentPhase->id,
             ['action' => 'proposition.variant', 'statement' => 'Activity follows the selected Emergence entry.']);
         $this->assertSame('activity', $participant->fresh()->position->register);

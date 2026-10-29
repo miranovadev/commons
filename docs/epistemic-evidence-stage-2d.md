@@ -1,5 +1,8 @@
 # Epistemic evidence Stage 2D
 
+> Acquisition eligibility and allowances are superseded by [Personal Gate Acquisition](personal-gate-acquisition.md): Preparation now also serves Persist, and completion belongs to Participant × Gate × role. The reader, immutable observation and transient delivery contracts below remain applicable.
+
+
 > The [Evidence Resilience contract](evidence-preparation-resilience.md) supersedes the historical no-Receipt failure rule: genuinely attempted technical failures now produce ordinary failure Receipts while execution status remains failed. Invalid and stale requests do not mint evidence. Explicit reading lengths are preferences within unchanged budgets.
 
 > Stage 3C supersedes the fixed-length reading policy and expands the registry. See [current readers and adaptive allocation](artifact-readers-stage-3c.md). The lifecycle and causal-access contracts below remain authoritative; the original reader table and limits describe Stage 2D.

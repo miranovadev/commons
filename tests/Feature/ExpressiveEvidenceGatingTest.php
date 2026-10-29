@@ -78,19 +78,19 @@ class ExpressiveEvidenceGatingTest extends TestCase
             $this->assertArrayNotHasKey('proposition.variant', $this->actions($phase));
             $initialReceipt = $this->sharedObservation();
         }
-        $this->assertArrayHasKey('proposition.variant', $this->actions($phase));
+        $this->assertArrayNotHasKey('proposition.variant', $this->actions($phase), 'Shared evidence does not complete personal acquisition');
+        $this->instrumentGateFixture($phase);
         $write = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'Explore this possibility']);
         $actions = $this->actions($phase);
-        if (isset($initialReceipt)) {
-            // Consume the generation prerequisite before testing independent Attestation evidence.
-            $consumerPhase = $this->phase($write, PhaseKind::Constrain);
+        // Consume all ordinary observations to isolate the independent Attestation prerequisite.
+        $consumerPhase = $this->phase($write, PhaseKind::Constrain);
+        foreach (app(HorizonReceiptService::class)->ordinaryAvailable($consumerPhase) as $observation) {
             $consumer = $this->node($consumerPhase, $write);
-            DB::transaction(fn () => app(HorizonReceiptService::class)->consume($consumerPhase, $write, $consumer, $initialReceipt->id));
-            $actions = $this->actions($phase);
+            DB::transaction(fn () => app(HorizonReceiptService::class)->consume($consumerPhase, $write, $consumer, $observation->id));
         }
-        $this->assertSame($kind === PhaseKind::Disperse ? [$phase->gate_proposition_id] : [],
-            $actions['instrument.execute']['properties']['proposition_id']['enum'] ?? []);
+        $actions = $this->actions($phase);
+        $this->assertArrayNotHasKey('instrument.execute', $actions, 'Consumption does not reset personal acquisition');
         $this->assertArrayNotHasKey('proposition.variant', $actions);
         $this->assertArrayNotHasKey('attestation.create', $actions);
         $this->assertArrayNotHasKey('proposition.reclassify', $actions);
@@ -133,7 +133,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $actions = $this->actions($next);
         $this->assertSame([$write->id], $actions['proposition.traverse']['properties']['proposition_id']['enum']);
         $this->assertArrayNotHasKey('proposition.variant', $actions);
-        $this->assertSame($kind === PhaseKind::Disperse ? [$next->gate_proposition_id] : [],
+        $this->assertSame([$next->gate_proposition_id],
             $actions['instrument.execute']['properties']['proposition_id']['enum'] ?? []);
     }
 
@@ -146,6 +146,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $this->assertFalse($generation->available($phase, 'proposition.variant'));
         $instruments = app(EvidenceExecutionService::class);
         $receipt = $this->sharedObservation($kind === PhaseKind::Distinguish ? $first : null);
+        $this->instrumentGateFixture($phase);
         $this->assertFalse($generation->available($phase, 'proposition.variant'), 'Instrument alone is insufficient');
         $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $first->id, 'direction' => 'support']);
         $vote->save();
@@ -226,6 +227,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $this->assertFalse($generation->available($phase, 'proposition.variant'), 'A explored attested route still needs genuine evidence');
         $vote->delete();
         $this->sharedObservation($kind === PhaseKind::Distinguish ? $write : null);
+        $this->instrumentGateFixture($phase);
         $this->assertFalse($generation->available($phase, 'proposition.variant'), 'A explored instrumented route still needs effective Attestation');
         $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $write->id, 'direction' => 'support']);
         $vote->save();
@@ -236,6 +238,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
 
         // Another Participant has no completed encounter, despite identical evidence.
         $phase = $this->phase($phase->gate, $kind);
+        $this->instrumentGateFixture($phase);
         $this->assertFalse($generation->available($phase, 'proposition.variant'));
         $this->assertArrayNotHasKey('proposition.variant', $this->actions($phase));
         $this->expectException(\DomainException::class);

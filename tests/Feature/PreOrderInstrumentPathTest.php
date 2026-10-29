@@ -8,6 +8,7 @@ use App\Services\ParticipationService;
 use App\Services\PropositionOptionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
@@ -33,7 +34,7 @@ class PreOrderInstrumentPathTest extends TestCase
         $before = $service->stateFor($f->viewer)['plan'];
         $this->assertSame(in_array($kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true), isset($before['schema']['$defs']['actions']['instrument.execute']));
         $this->assertSame(in_array($kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true) ? [$gate->id] : [], app(PropositionOptionService::class)->instrumentOptionsFor($f->phase)->pluck('id')->all());
-        $this->expectException(in_array($kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true) ? \DomainException::class : \Symfony\Component\HttpKernel\Exception\ConflictHttpException::class);
+        $this->expectException(in_array($kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true) ? \DomainException::class : ConflictHttpException::class);
         app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase,
             ['action' => 'instrument.execute', 'proposition_id' => $write->id,
                 'instrument' => ['kind' => 'citation', 'reference' => $gate->id]]);
