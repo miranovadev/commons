@@ -122,17 +122,31 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
         }
         $actor = $actors[0];
         $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Develop shared observations']);
+        $distinction = $state['plan']['gate_id'];
         $this->assertActionUnavailable($state, 'preparation.start');
         $state = $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
             'instrument' => ['kind' => 'citation', 'reference' => $gate]]);
         $this->assertActionUnavailable($state, 'preparation.start');
-        $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Persistent observation']);
+        $persist = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Persistent observation'])['plan']['gate_id'];
         $returned = $this->contribute($actor, ['action' => 'participant.rest']);
         $this->assertSame($gate, $returned['plan']['gate_id']);
         $this->assertSame('completed', $returned['plan']['acquisition']['status']);
         $this->assertActionUnavailable($returned, 'instrument.execute');
         $this->assertDatabaseCount('receipt_consumptions', 0);
         $this->assertDatabaseCount('exploration_events', 0);
+        $this->judge($actor, $distinction);
+        $state = $this->judge($actor, $persist);
+        $receipt = $state['plan']['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'][0];
+        $state = $this->contribute($actor, ['action' => 'proposition.reclassify', 'proposition_id' => $persist, 'receipt_id' => $receipt]);
+        $this->assertSame('disperse', $state['plan']['phase']['kind']);
+        $this->assertActionAvailable($state, 'instrument.execute');
+        $this->assertActionUnavailable($state, 'preparation.start');
+        $after = $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+            'instrument' => ['kind' => 'citation', 'reference' => $gate]]);
+        $this->assertSame($state['plan']['phase'], $after['plan']['phase']);
+        $this->assertActionUnavailable($after, 'preparation.start');
+        $this->assertActionAvailable($after, 'proposition.variant');
+        $this->auditEvidencePacket($after);
     }
 
     public function test_real_persist_read_failure_completes_only_after_attempted_delivery(): void
@@ -197,6 +211,10 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
         $this->assertDatabaseMissing('participant_receipt_contexts', ['participant_id' => $observer, 'receipt_id' => $consumed]);
         foreach ($executions as $execution) {
             $this->assertContains($execution->receipt->id, array_column($packet['receipts'], 'id'));
+            if ($execution->cycle->participant_id === $actor) {
+                $this->assertArrayNotHasKey('loaded_inline_content', collect($packet['receipts'])->firstWhere('id', $execution->receipt->id),
+                    'An ancestral acquisition is not direct Read consumption');
+            }
         }
         $prior = DB::table('exploration_events')->get()->toJson();
         $parked = $this->readParticipation($witness);
@@ -227,6 +245,8 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
         }
         $this->assertActionUnavailable($state, 'instrument.execute');
         $this->assertActionUnavailable($state, 'preparation.start');
+        $this->assertTrue($this->visibleProposition($this->readParticipation($actor), $a)['explored'],
+            'Reconsideration alone has not reopened the original Participant\'s route');
         $newHead = $this->contribute($observer, ['action' => 'proposition.variant', 'statement' => 'A new continuation from completed participation'])['current_proposition_id'];
         $return = $this->readParticipation($actor);
         $this->assertFalse($this->visibleProposition($return, $a)['explored']);
