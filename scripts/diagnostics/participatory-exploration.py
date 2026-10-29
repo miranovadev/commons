@@ -46,6 +46,14 @@ def inspect(path, slug):
         if edge['type'] != 'variant':
             retired[edge['source_proposition_id']].append(edge['created_at'])
     events = [e for e in tables['exploration_events'] if owner(e['phase_id']) in actors]
+    executions = [e for e in tables['evidence_executions'] if owner(e['phase_id']) in actors]
+    acquisitions = collections.Counter((owner(e['phase_id']), e['proposition_id'], phases[e['phase_id']]['kind'])
+                                      for e in executions)
+    artifact_ids = set()
+    for receipt in tables['receipts']:
+        if receipt.get('phase_id') and owner(receipt['phase_id']) in actors:
+            for artifact in json.loads(receipt['metadata'] or '{}').get('artifacts', []):
+                artifact_ids.add(artifact['hash'])
     foreign, personal_heads, candidates = 0, 0, []
     for event in events:
         actor, at = owner(event['phase_id']), event['recorded_at']
@@ -81,6 +89,10 @@ def inspect(path, slug):
                 'foreign_witness': foreign_witness, 'personal_head_attestations': personal(event['proposition_id']),
                 'selected_route': route, 'active_missing_personal_judgment_candidates': missing})
     return {'substrate': slug, 'events': len(events), 'foreign_witnesses': foreign,
+        'historical_executions': len(executions),
+        'historical_preparations': sum(e['type'] == 'prepare' for e in executions),
+        'preserved_artifacts': len(artifact_ids),
+        'repeated_participant_gate_phase_groups': sum(count > 1 for count in acquisitions.values()),
         'events_with_effective_personal_head_judgment': personal_heads,
         'events_with_route_judgment_candidates': sum(bool(r['active_missing_personal_judgment_candidates']) for r in candidates),
         'examples': candidates[:3],

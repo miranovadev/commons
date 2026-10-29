@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Contracts\ParticipantInference;
 use App\Models\Connection;
 use App\Models\Participant;
+use App\Models\Receipt;
 use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipantPromptFactory;
 use Opis\JsonSchema\Helper;
@@ -41,6 +42,13 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
                 $this->assertSame($actor, $metadata['participant_id']);
                 $this->assertSame(Participant::findOrFail($actor)->substrate_id, $metadata['substrate_id']);
                 $index = count($phases);
+                if (in_array($index, [1, 3], true)) {
+                    $receipt = Receipt::where('phase_id', $state['plan']['phase']['id'])->sole();
+                    $this->assertSame('completed', $receipt->evidenceExecution->status);
+                    $this->assertSame($actor, $receipt->evidenceExecution->cycle->participant_id);
+                    $this->assertSame('completed', $state['plan']['acquisition']['status']);
+                    $this->assertContains($receipt->id, array_column($state['plan']['receipts'], 'id'));
+                }
                 $this->assertSame(['distinguish', 'distinguish', 'persist', 'persist', 'constrain'][$index], $state['plan']['phase']['kind']);
                 $this->assertSame('settlement', $state['domain']);
                 $this->assertSame($initial['context_horizon_id'], $state['context_horizon_id']);

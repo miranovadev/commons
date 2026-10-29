@@ -5,7 +5,7 @@ namespace Tests\Fixtures;
 /** Explicit Persist-only HTTP actions; no fixture writes or inferred failure rows. */
 trait PersistExplorationHttpFixture
 {
-    private function personalExplorationJourney(): array
+    private function personalExplorationJourney(bool $observerInstrument = false): array
     {
         // Authored HTTP journey with personal discovery and Persist examination.
         $this->startSubstrate();
@@ -42,7 +42,10 @@ trait PersistExplorationHttpFixture
         $this->resolvePersonalReading($observer);
         $this->judge($observer, $persist);
         $this->judge($observer, $constrain);
-        $parked = $this->resolvePersonalReading($observer);
+        $parked = $observerInstrument
+            ? $this->contribute($observer, ['action' => 'instrument.execute', 'proposition_id' => $constrain,
+                'instrument' => ['kind' => 'citation', 'reference' => $a]])
+            : $this->resolvePersonalReading($observer);
         $witness = $this->joinParticipant('disperse-witness');
         $this->enterParticipant($witness);
         $this->judge($witness, $a);
@@ -54,7 +57,7 @@ trait PersistExplorationHttpFixture
         $state = $this->contribute($actor, ['action' => 'participant.rest']);
         $this->assertDatabaseMissing('evidence_executions', ['proposition_id' => $b]);
 
-        return compact('actor', 'originObserver', 'observer', 'witness', 'origin', 'a', 'b', 'slot', 'parked', 'witnessState', 'state');
+        return compact('actor', 'originObserver', 'observer', 'witness', 'origin', 'a', 'persist', 'constrain', 'b', 'slot', 'parked', 'witnessState', 'state');
     }
 
     private function resolvePersonalReading(string $participant): array

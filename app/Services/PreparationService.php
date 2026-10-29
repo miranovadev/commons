@@ -197,6 +197,10 @@ final class PreparationService
                 $this->executions->fail($stored, $reason, $diagnostic);
             } else {
                 $this->executions->recordPreparationFailure($stored, $reason, $diagnostic);
+                // Failure can resolve outside ParticipationService (reader or Wake).
+                // Its Receipt changes the field just like a successful resolution.
+                // Publish only after commit, outside the evidence write locks.
+                DB::afterCommit(fn () => app(PotentialProjectionService::class)->refresh($participant->substrate_id));
             }
         });
     }
