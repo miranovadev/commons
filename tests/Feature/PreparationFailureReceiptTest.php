@@ -8,6 +8,7 @@ use App\Services\Evidence\ReceiptEvidenceService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\ParticipantReceiptProjection;
+use App\Services\PotentialProjectionService;
 use App\Services\PreparationService;
 use App\Services\PropositionStateService;
 use App\Services\ReceiptContextService;
@@ -46,6 +47,9 @@ class PreparationFailureReceiptTest extends TestCase
         $input = $fixture->input();
         $input['artifacts'][0]['parameters'] = ['offset' => 2, 'max_chars' => 20000];
         $execution = $service->start($f->viewer, $f->phase, $input);
+        // This isolated fixture leaves earlier structural impacts dirty. Publish
+        // those before attributing any subsequent changes to the failed reading.
+        app(PotentialProjectionService::class)->refresh($f->substrate->id);
         $before = $this->structure();
         Storage::disk('artifacts')->delete($fixture->source->metadata['artifacts'][0]['path']);
         try {

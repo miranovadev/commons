@@ -19,6 +19,7 @@ use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\ParticipantReceiptProjection;
 use App\Services\ParticipationService;
+use App\Services\PotentialProjectionService;
 use App\Services\PreparationService;
 use App\Services\PropositionOptionService;
 use App\Services\ReceiptContextService;
@@ -303,6 +304,9 @@ class PreparationExecutionTest extends TestCase
         $fixture = new PreparationFixture;
         $f = $fixture->context;
         $service = app(PreparationService::class);
+        // Settle earlier fixture impacts before attributing any structural
+        // change to the failed observation's projection refresh.
+        app(PotentialProjectionService::class)->refresh($f->substrate->id);
         $before = $this->structuralSnapshot();
         $execution = $service->start($f->viewer, $f->phase, $fixture->input());
         $service->fail($f->viewer, $execution, 'native-extract', '1', 'read', 'Unsupported encoding; no material delivered.');

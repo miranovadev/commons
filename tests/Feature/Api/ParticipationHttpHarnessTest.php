@@ -6,13 +6,14 @@ use App\Services\Observables\LineageMeasurementService;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\EvidenceLifecycleAudit;
 use Tests\Fixtures\PersistCommitHttpFixture;
 use Tests\Support\ScriptedParticipationTestCase;
 
 #[Group('http-participation')]
 class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
 {
-    use PersistCommitHttpFixture;
+    use EvidenceLifecycleAudit, PersistCommitHttpFixture;
 
     #[Group('integration')]
     public function test_real_http_actions_reach_an_operational_commit(): void
@@ -21,6 +22,15 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
         $origin = $initial['current_proposition_id'];
         foreach (array_keys($this->persistJourneySteps) as $index) {
             $state = $this->executePersistJourneyStep($actor, $index);
+            $packet = $this->auditEvidencePacket($state);
+            if ($this->persistJourneySteps[$index]['result'] === 'p15'
+                && $this->persistJourneySteps[$index]['input']['action'] === 'proposition.reconcile') {
+                foreach (['r0', 'r1', 'r3', 'r4', 'r5'] as $reference) {
+                    $this->assertContains($this->persistJourneyIds[$reference], array_column($packet['receipts'], 'id'));
+                }
+                $this->assertNotContains($this->persistJourneyIds['rp8'], array_column($packet['receipts'], 'id'),
+                    'Unattached sibling examination is excluded; r4 qualifies through its actual consumption by p13');
+            }
         }
         $this->assertNotSame($origin, $state['last_commitment']['proposition_id']);
         $this->assertSame('distinguish', $state['plan']['phase']['kind']);
