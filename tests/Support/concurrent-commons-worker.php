@@ -78,7 +78,7 @@ try {
                     $service->defer($participant, EvidenceExecution::findOrFail($input['execution_id']), 'Concurrent deferment loses.');
                 }
             } catch (ConflictHttpException $exception) {
-                if (str_contains($exception->getMessage(), 'already reserved') || str_contains($exception->getMessage(), 'active Disperse')) {
+                if (str_contains($exception->getMessage(), 'already resolved') || str_contains($exception->getMessage(), 'active Persist or Disperse')) {
                     return;
                 }
                 throw $exception;
@@ -97,7 +97,7 @@ try {
                     ) : null,
                 );
             } catch (ConflictHttpException $exception) {
-                if (str_contains($exception->getMessage(), 'unused Cycle allowance')) {
+                if (str_contains($exception->getMessage(), 'acquisition')) {
                     return;
                 }
                 throw $exception;

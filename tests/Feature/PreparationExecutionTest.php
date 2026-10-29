@@ -404,7 +404,7 @@ class PreparationExecutionTest extends TestCase
         $this->assertNotNull($f->phase->fresh()->completed_at);
     }
 
-    public function test_allowances_are_independent_between_participants_cycles_and_execution_types(): void
+    public function test_personal_roles_are_independent_between_participants_and_persist_across_cycles(): void
     {
         $fixture = new PreparationFixture;
         $f = $fixture->context;
@@ -415,13 +415,14 @@ class PreparationExecutionTest extends TestCase
         $second = $service->start($other->cycle->participant, $other, $fixture->input());
         $this->assertNotSame($execution->cycle_id, $second->cycle_id);
         $this->assertSame(0, EvidenceExecution::where('cycle_id', $execution->cycle_id)->where('type', 'instrument')->where('status', 'completed')->count());
-        // Isolate the allowance predicate from Phase ordering: a completed prepare
-        // row must not be counted as an Instrument, even in the same Cycle.
+        // A completed Disperse role leaves the Persist role independent. Readable
+        // Artifacts require Preparation for Persist, not Instrument fallback.
         $this->assertTrue(app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->isEmpty());
         $persistGate = DB::transaction(fn () => $f->node($f->seed, 'activity', position: PhaseKind::Distinguish));
         $probe = $f->phase->replicate();
         $probe->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $persistGate->id, 'write_register' => 'frontier']);
-        $this->assertNotEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($probe));
+        $this->assertEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($probe));
+        $this->assertTrue($service->eligible($probe));
         $f->phase->forceFill(['completed_at' => now()])->save();
         $f->phase->cycle->forceFill(['completed_at' => now()])->save();
         $next = $f->phase->cycle->replicate();
@@ -429,9 +430,9 @@ class PreparationExecutionTest extends TestCase
         $phase = $f->phase->replicate();
         $phase->forceFill(['cycle_id' => $next->id, 'completed_at' => null])->save();
         $newSource = $fixture->receipt('new observation in a later Cycle');
-        $nextExecution = $service->start($f->viewer, $phase, $fixture->input([$newSource]));
-        $this->assertNotSame($execution->cycle_id, $nextExecution->cycle_id);
-        $this->assertSame($f->viewer->id, $nextExecution->cycle->participant_id);
+        $this->assertFalse($service->eligible($phase));
+        $this->expectException(ConflictHttpException::class);
+        $service->start($f->viewer, $phase, $fixture->input([$newSource]));
     }
 
     public function test_selection_authority_survives_later_consumption_without_granting_new_access(): void
@@ -499,7 +500,7 @@ class PreparationExecutionTest extends TestCase
         }
     }
 
-    public function test_preparation_receipt_alone_enables_shared_persist_generation_independently_of_loading(): void
+    public function test_shared_preparation_receipt_does_not_waive_personal_persist_examination(): void
     {
         $fixture = new PreparationFixture;
         $f = $fixture->context;
@@ -522,9 +523,14 @@ class PreparationExecutionTest extends TestCase
                 $contexts->clear($actor, $other, $receipt->id);
             }
             $actions = app(InputPlanService::class)->forPhase($actor, $other)['schema']['$defs']['actions'];
-            $this->assertArrayHasKey('proposition.variant', $actions);
+            $this->assertArrayNotHasKey('proposition.variant', $actions);
+            $this->assertArrayHasKey('preparation.start', $actions);
             $this->assertArrayNotHasKey('instrument.execute', $actions);
         }
+        $personal = $service->start($actor, $other, $fixture->input());
+        $delivery = $service->delivery($actor, $personal, 'inline-text');
+        $service->acknowledge($actor, $personal, $delivery['presentation_token']);
+        $service->defer($actor, $personal, 'Personally examined the shared material.');
         $result = app(ContributionDispatcher::class)->dispatch($actor, $other,
             ['action' => 'proposition.variant', 'statement' => 'Develop another Participant’s Preparation observation.']);
         $this->assertSame([$gate->id], $result->parents()->pluck('propositions.id')->all());

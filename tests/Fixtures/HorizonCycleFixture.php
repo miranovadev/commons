@@ -111,7 +111,7 @@ trait HorizonCycleFixture
             $action = collect(['preparation.start', 'instrument.execute', 'proposition.commit', 'proposition.reclassify', 'attestation.create',
                 'proposition.variant', 'proposition.reconcile', 'proposition.traverse', 'participant.rest'])
                 ->first(fn ($candidate) => isset($actions[$candidate])
-                    && ($candidate !== 'instrument.execute' || $needsEvidence || count($actions) === 1)
+                    && ($candidate !== 'instrument.execute' || ($plan['acquisition']['status'] ?? null) === 'required' || $needsEvidence || count($actions) === 1)
                     && ($candidate !== 'attestation.create' || $preferredJudgment
                         || ($plan['phase']['number'] === 1 && ! isset($actions['proposition.variant']))))
                 ?? 'attestation.create';

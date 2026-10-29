@@ -190,6 +190,7 @@ final readonly class InputPlanService
                 'started_at' => $phase->started_at,
             ],
             ...($includeWorkspace ? ['workspace' => $workspace] : []),
+            'acquisition' => app(PersonalAcquisitionService::class)->state($phase, $context),
             'preparation' => $preparation === null ? null : [
                 'execution_id' => $preparation->id, 'status' => $preparation->status,
                 'purpose' => $preparation->input['purpose'], 'selections' => $preparation->input['artifacts'],

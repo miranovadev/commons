@@ -3,9 +3,10 @@
 return [
     1 => [
         'name' => 'distinguish',
-        'description' => 'Create a distinction or traverse an existing local Expressive Proposition from the current Committal Gate.',
+        'description' => 'Instrument once personally at this Committal before creating a new distinction. Existing lawful Traverse remains available.',
         'gate' => 'participant-position',
         'actions' => [
+            'instrument.execute',
             'proposition.variant',
             'attestation.create',
             'proposition.traverse',
@@ -13,10 +14,11 @@ return [
     ],
     2 => [
         'name' => 'persist',
-        'description' => 'Develop the selected distinction structurally, support its existing viable Write, or acquire evidence once per Cycle at the current Gate without advancing Persist.',
+        'description' => 'Examine this Gate once personally: Prepare a readable Artifact, or Instrument when none is readable. Resolve the acquisition before fresh generation.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'instrument.execute',
+            'preparation.start',
             'proposition.variant',
             'proposition.revise',
             'attestation.create',
@@ -43,7 +45,7 @@ return [
     ],
     4 => [
         'name' => 'disperse',
-        'description' => 'With available ordinary evidence, develop a structurally lawful Variant or Revise. Otherwise Prepare accessible readable Artifacts once per Cycle, then contribute or explicitly defer. Only when none are readable, acquire evidence using the remaining Instrument allowance without advancing Disperse. Attestation and Traverse retain their independent rules.',
+        'description' => 'Acquire once personally at this Gate: choose Instrument or an available Preparation. Then develop a lawful Variant or Revise with ordinary evidence; Traverse and Attestation remain independent.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'preparation.start',

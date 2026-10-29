@@ -398,6 +398,7 @@ interface GateAdmissibility {
 }
 
 export interface ParticipantPlan {
+  acquisition?: { role: string | null; gate_id?: string; status: 'not_required' | 'required' | 'pending' | 'completed'; execution_id?: string | null; outcome?: string | null } | null;
   receipt_cognition?: ReceiptCognition;
   preparation?: { execution_id: string; status: string; purpose: string; selections: PreparationSelection[] } | null;
   preparation_options?: PreparationOption[];

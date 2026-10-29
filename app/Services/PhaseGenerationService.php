@@ -23,22 +23,23 @@ final readonly class PhaseGenerationService
         private CausalWriteService $writes,
     ) {}
 
-    /** Shared catalogue availability selects acquisition or generation, never attachment. */
+    /** Personal completion and shared structural evidence are independent prerequisites. */
     public function epistemicActionAvailable(Phase $phase, string $action, ?ParticipationContext $context = null): bool
     {
-        // Acquisition and fresh generation share one authoritative Receipt prerequisite.
-        if (! in_array($phase->kind, [PhaseKind::Persist, PhaseKind::Disperse], true)
-            || ! in_array($action, ['instrument.execute', 'preparation.start', 'proposition.variant', 'proposition.revise'], true)) {
+        $acquisition = app(PersonalAcquisitionService::class);
+        if (in_array($action, ['instrument.execute', 'preparation.start'], true)) {
+            return $acquisition->allows($phase, $action, $context);
+        }
+        if (! in_array($action, ['proposition.variant', 'proposition.revise'], true)
+            || $acquisition->role($phase) === null) {
             return true;
         }
-
-        $available = app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
-
-        if ($action === 'instrument.execute' && $phase->kind === PhaseKind::Disperse) {
-            return ! $available && ! app(PreparationService::class)->hasReadableArtifacts($phase, $context);
+        if ($acquisition->state($phase, $context)['status'] !== 'completed') {
+            return false;
         }
 
-        return in_array($action, ['instrument.execute', 'preparation.start'], true) ? ! $available : $available;
+        return $phase->kind === PhaseKind::Distinguish
+            || app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
     }
 
     public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null, bool $prepared = false, bool $withoutReceipt = false): bool

@@ -51,6 +51,7 @@ final class ParticipantContextSerializer
         return [
             'phase' => Arr::only($plan['phase'], ['id', 'number', 'kind', 'write_register']),
             'provenance_id' => $plan['provenance_id'] ?? null,
+            'acquisition' => $plan['acquisition'] ?? null,
             'preparation' => $plan['preparation'] ?? null,
             'preparation_options' => $plan['preparation_options'] ?? [],
             'exhausted_alternatives' => array_map($this->historical(...), $plan['exhausted_alternatives'] ?? []),
@@ -124,6 +125,9 @@ final class ParticipantContextSerializer
             ], $register['propositions']);
         }
         unset($register);
+        if (isset($plan['acquisition']) && $plan['acquisition']['role'] !== null) {
+            $registers['gate']['acquisition'] = $plan['acquisition'];
+        }
         $registers['write']['question'] = app(ParticipantRegisterQuestions::class)->forPhase(
             PhaseKind::from($plan['phase']['number']), $plan['phase']['write_register'],
         );
