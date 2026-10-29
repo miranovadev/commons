@@ -24,15 +24,16 @@ class PreOrderInstrumentPathTest extends TestCase
     public function test_only_acquisition_phases_offer_instrumentation_and_never_on_a_write(PhaseKind $kind, string $register): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
-        $gate = $kind === PhaseKind::Distinguish ? $f->seed : $f->gate;
+        $gate = $kind === PhaseKind::Distinguish ? $f->seed : ($kind === PhaseKind::Disperse
+            ? $f->node($f->seed, 'canon', position: PhaseKind::Constrain) : $f->gate);
         $write = $f->node($gate, $register, position: $kind);
         $f->phase->forceFill(['kind' => $kind, 'gate_proposition_id' => $gate->id, 'write_register' => $register])->save();
         $service = app(ParticipationService::class);
         $this->publishPotentialFixture($f->viewer);
         $before = $service->stateFor($f->viewer)['plan'];
-        $this->assertSame($kind === PhaseKind::Disperse, isset($before['schema']['$defs']['actions']['instrument.execute']));
-        $this->assertSame($kind === PhaseKind::Disperse ? [$gate->id] : [], app(PropositionOptionService::class)->instrumentOptionsFor($f->phase)->pluck('id')->all());
-        $this->expectException(\DomainException::class);
+        $this->assertSame(in_array($kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true), isset($before['schema']['$defs']['actions']['instrument.execute']));
+        $this->assertSame(in_array($kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true) ? [$gate->id] : [], app(PropositionOptionService::class)->instrumentOptionsFor($f->phase)->pluck('id')->all());
+        $this->expectException(in_array($kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true) ? \DomainException::class : \Symfony\Component\HttpKernel\Exception\ConflictHttpException::class);
         app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase,
             ['action' => 'instrument.execute', 'proposition_id' => $write->id,
                 'instrument' => ['kind' => 'citation', 'reference' => $gate->id]]);

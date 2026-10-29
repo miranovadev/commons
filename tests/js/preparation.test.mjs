@@ -74,7 +74,7 @@ test('human content is escaped, acknowledged after rendering, and discarded when
   assert.match(element.textContent, /More content exists/);
   assert.match(element.textContent, /Delivered 12 characters \/ 12 bytes/);
   assert.match(element.textContent, /Automatic allocation/);
-  const defer = [...element.querySelectorAll('button')].find(b => b.textContent === 'Defer with a reason');
+  const defer = [...element.querySelectorAll('button')].find(b => b.textContent === 'Resolve without contribution');
   assert.equal(defer.disabled, false);
   await act(async () => defer.click());
   assert.equal(globalThis.preparationHarness.deferred, 1);
