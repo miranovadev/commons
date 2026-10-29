@@ -192,6 +192,10 @@ class HomologousOrderTest extends TestCase
         // The natural Commit suites separately prove full unmocked history.
         Phase::query()->update(['completed_at' => now()]);
         Cycle::query()->update(['completed_at' => now()]);
+        $discovery = $this->phase($this->a, $this->a, PhaseKind::Distinguish);
+        $this->instrumentGateFixture($discovery);
+        $discovery->forceFill(['completed_at' => now()])->save();
+        $discovery->cycle->forceFill(['completed_at' => now()])->save();
         $stance = $this->position($this->a, PhaseKind::Mediate);
         $this->edge($this->a, $stance, 'variant');
         $bias = $this->phase($this->a, $stance, PhaseKind::Bias);

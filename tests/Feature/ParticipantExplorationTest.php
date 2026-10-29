@@ -88,6 +88,7 @@ class ParticipantExplorationTest extends TestCase
         [, , , $activity, $mediate] = $this->personalJourney();
         $stance = $this->node($mediate, $activity);
         $this->measure($stance, 0);
+        $this->personalVote($mediate, $stance);
         // Historical selector input only: this Rest must not invent another encounter.
         ExplorationHistory::record($stance, $mediate);
         $this->publishPotentialFixture($this->substrate);
@@ -281,6 +282,7 @@ class ParticipantExplorationTest extends TestCase
         // Isolated history applicability, not an event-publication or natural Commit proof.
         [$signal, , , $activity, $mediate] = $this->personalJourney();
         $stance = $this->node($mediate, $activity);
+        $this->personalVote($mediate, $stance);
         $bias = app(PhaseProgressionService::class)->advance($mediate, $stance);
         $head = $this->node($bias, $stance);
         $this->measure($head, .8);
@@ -289,7 +291,7 @@ class ParticipantExplorationTest extends TestCase
         ExplorationHistory::record($head, $bias);
         $history = DB::table('exploration_events')->get()->toJson();
         $exploration = app(ParticipantExplorationService::class);
-        self::assertTrue($exploration->explored($head, $bias));
+        self::assertFalse($exploration->explored($head, $bias), 'Historical encounter cannot waive a lawful first personal judgment');
         $changed = app(ContributionDispatcher::class)->dispatch($bias->cycle->participant, $bias,
             ['action' => 'attestation.create', 'proposition_id' => $head->id, 'direction' => 'support']);
         $order = app(PhaseProgressionService::class)->advance($bias, $changed);
@@ -451,6 +453,7 @@ class ParticipantExplorationTest extends TestCase
         foreach ([2, 8] as $size) {
             while ($ids->count() < $size) {
                 $node = $this->node($this->phase($constrain, PhaseKind::Disperse), $constrain);
+                $this->personalVote($return, $node);
                 ExplorationHistory::record($node, $return);
                 $ids->push($node->id);
             }

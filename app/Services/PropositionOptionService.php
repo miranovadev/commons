@@ -169,13 +169,18 @@ final class PropositionOptionService
         }
 
         $shared = app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
-        $expressive = in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true);
 
         $writes = $this->availableWrites($phase, $context);
 
-        return $writes->filter(fn (Proposition $node): bool => $this->availability->mutable($node, $context)
-            && ($expressive ? $shared
-                : ($shared || $this->evidence->canAttest($node, $context))))->values();
+        return $writes->filter(fn (Proposition $node): bool => $this->attestationEvidenceAvailable($node, $phase->kind, $shared, $context))->values();
+    }
+
+    /** Base evidence/mutability predicate; caller still owns Write and movement selection. */
+    public function attestationEvidenceAvailable(Proposition $node, PhaseKind $kind, bool $shared, ?ParticipationContext $context = null): bool
+    {
+        return $kind !== PhaseKind::Order && $this->availability->mutable($node, $context)
+            && (in_array($kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)
+                ? $shared : ($shared || $this->evidence->canAttest($node, $context)));
     }
 
     /**
