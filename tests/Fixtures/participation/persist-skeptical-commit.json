@@ -1,6 +1,24 @@
 {
-  "description": "Active causal Cadence journey recorded from real CommitSourceHistoryLifecycleTest. Skeptical development, supportive synthesis, then an offered reversal revisits its existing classification. Fixed inputs and Phase/Cycle/Gate/results; no runtime selection or synthetic encounters.",
+  "description": "Fixed lawful HTTP journey with personal Gate discovery, Persist examination and Disperse acquisition; no renewed allowance on later Cycles.",
   "steps": [
+    {
+      "cycle": 2,
+      "phase": 1,
+      "gate": "origin",
+      "receipt": "r0",
+      "input": {
+        "action": "instrument.execute",
+        "proposition_id": {
+          "ref": "origin"
+        },
+        "instrument": {
+          "kind": "proposition_search",
+          "limit": 1,
+          "query": "Origin discovery"
+        }
+      },
+      "result": "origin"
+    },
     {
       "cycle": 2,
       "phase": 1,
@@ -392,6 +410,49 @@
       "input": {
         "action": "proposition.variant",
         "statement": "Opportunity 27"
+      },
+      "result": "p8"
+    },
+    {
+      "cycle": 8,
+      "phase": 2,
+      "gate": "p8",
+      "execution": "ep8",
+      "input": {
+        "action": "preparation.start",
+        "proposition_id": {
+          "ref": "p8"
+        },
+        "purpose": "Examine the new distinction.",
+        "artifacts": [
+          {
+            "receipt_id": {
+              "ref": "r1"
+            },
+            "artifact_id": {
+              "artifact_of": "r1"
+            },
+            "read_type": "text",
+            "parameters": {
+              "max_chars": 4000,
+              "offset": 0
+            }
+          }
+        ]
+      },
+      "result": "p8"
+    },
+    {
+      "cycle": 8,
+      "phase": 2,
+      "gate": "p8",
+      "receipt": "rp8",
+      "input": {
+        "action": "preparation.defer",
+        "execution_id": {
+          "ref": "ep8"
+        },
+        "reason": "Reading resolved; develop the distinction next."
       },
       "result": "p8"
     },
@@ -875,23 +936,6 @@
         "action": "proposition.traverse",
         "proposition_id": {
           "ref": "p1"
-        }
-      },
-      "result": "p1"
-    },
-    {
-      "cycle": 15,
-      "phase": 2,
-      "gate": "p1",
-      "receipt": "r7",
-      "input": {
-        "action": "instrument.execute",
-        "proposition_id": {
-          "ref": "p1"
-        },
-        "instrument": {
-          "kind": "hyperlink",
-          "reference": "https://evidence.example.test/evidence/61"
         }
       },
       "result": "p1"

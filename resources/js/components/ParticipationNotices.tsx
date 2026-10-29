@@ -8,6 +8,18 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
   participation: Participation; plan?: ParticipantPlan; canCommit: boolean; canRest: boolean; error?: unknown; onRest: () => void;
 }): WorkspaceNotice[] {
   const notices: WorkspaceNotice[] = [];
+  const acquisition = plan?.acquisition;
+  if (acquisition?.role) notices.push({ id: 'personal-acquisition', title: acquisition.status === 'completed' ? 'Personal acquisition completed' : acquisition.status === 'pending' ? 'Acquisition in progress' : 'Personal acquisition required',
+    color: acquisition.status === 'completed' ? 'teal' : 'indigo', satisfied: acquisition.status === 'completed', icon: IconRoute,
+    content: <Stack gap="xs">
+      <Text size="sm">{acquisition.status === 'completed' ? 'Your acquisition at this Gate is recorded and remains complete on later visits.'
+        : acquisition.status === 'pending' ? 'Resolve the current execution before starting another acquisition.'
+          : 'Complete your own acquisition at this Gate before fresh generation. Existing evidence does not replace your participation.'}</Text>
+      {acquisition.status === 'required' && <Text size="xs">{plan?.phase.kind === 'persist' && plan.schema?.$defs?.actions?.['preparation.start']
+        ? 'Prepare an accessible Artifact, then resolve the reading before continuing.'
+        : plan?.phase.kind === 'disperse' ? 'Choose Instrument or an available Preparation; either satisfies this Gate’s acquisition.' : 'Choose an available Instrument.'}</Text>}
+      {acquisition.outcome && <Text size="xs">Recorded outcome: {acquisition.outcome}</Text>}
+    </Stack> });
   const correspondence = plan?.correspondence_admissibility;
   const chirality = plan?.chirality_admissibility;
   const coherence = [

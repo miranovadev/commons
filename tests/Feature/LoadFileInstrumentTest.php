@@ -47,12 +47,12 @@ class LoadFileInstrumentTest extends TestCase
         Storage::fake('artifacts');
     }
 
-    private function fixture(): ParticipantContextFixture
+    private function fixture(PhaseKind $kind = PhaseKind::Persist): ParticipantContextFixture
     {
-        return DB::transaction(function () {
+        return DB::transaction(function () use ($kind) {
             $f = new ParticipantContextFixture(1, 0, false);
-            $f->gate = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
-            $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $f->gate->id, 'write_register' => 'frontier'])->save();
+            $f->gate = $f->node($f->seed, $kind === PhaseKind::Persist ? 'activity' : 'canon', position: $kind === PhaseKind::Persist ? PhaseKind::Distinguish : PhaseKind::Constrain);
+            $f->phase->forceFill(['kind' => $kind, 'gate_proposition_id' => $f->gate->id, 'write_register' => $kind === PhaseKind::Persist ? 'frontier' : 'activity'])->save();
             $f->viewer->forceFill(['current_proposition_id' => $f->gate->id])->save();
 
             return $f;
@@ -122,7 +122,7 @@ class LoadFileInstrumentTest extends TestCase
         }
     }
 
-    public function test_shared_receipt_enables_generation_without_loading_and_consumption_preserves_artifact_access(): void
+    public function test_shared_receipt_requires_personal_preparation_and_consumption_preserves_artifact_access(): void
     {
         $f = $this->fixture();
         $observer = DB::transaction(function () use ($f) {
@@ -140,7 +140,8 @@ class LoadFileInstrumentTest extends TestCase
         Http::fake(['*' => Http::response('Shared acquired text', 200, ['Content-Type' => 'text/plain'])]);
         $receipt = app(OperationalInstrumentService::class)->execute($observer, $f->gate, $this->input());
         $actions = app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema']['$defs']['actions'];
-        $this->assertArrayHasKey('proposition.variant', $actions);
+        $this->assertArrayNotHasKey('proposition.variant', $actions);
+        $this->assertArrayHasKey('preparation.start', $actions);
         $this->assertArrayNotHasKey('instrument.execute', $actions);
         $this->assertDatabaseCount('participant_receipt_contexts', 0);
         $original = $receipt->fresh()->getAttributes();
@@ -150,7 +151,8 @@ class LoadFileInstrumentTest extends TestCase
         $this->assertTrue(app(HorizonReceiptService::class)->accessibleOrdinary($f->phase)->contains('id', $receipt->id));
         $this->assertSame('Shared acquired text', app(ArtifactStore::class)->read($receipt->metadata['artifacts'][0]));
         $actions = app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema']['$defs']['actions'];
-        $this->assertArrayHasKey('instrument.execute', $actions);
+        $this->assertArrayNotHasKey('instrument.execute', $actions);
+        $this->assertArrayHasKey('preparation.start', $actions);
         $this->assertArrayNotHasKey('proposition.variant', $actions);
     }
 
@@ -258,20 +260,17 @@ class LoadFileInstrumentTest extends TestCase
         $relevant->assertAvailable($f->gate, $this->input(), download: $same);
     }
 
-    public function test_stale_observation_cannot_bypass_changed_receipt_availability(): void
+    public function test_shared_observation_does_not_cancel_personal_acquisition(): void
     {
         $f = $this->fixture();
         Http::fake(['*' => Http::response('bytes')]);
         $service = app(OperationalInstrumentService::class);
         $observed = $service->observeFor($f->phase, $f->gate, $this->input());
         $this->observationFixture($f->gate->phase, $f->gate, ['kind' => 'citation', 'reference' => $f->seed->id]);
-        try {
-            $service->execute($f->phase, $f->gate, $this->input(), observed: $observed);
-            $this->fail('Stale acquisition bypassed Receipt-governed availability');
-        } catch (ConflictHttpException) {
-            $this->assertSame(0, Receipt::where('type', 'load_file')->count());
-            Http::assertSentCount(1);
-        }
+        $receipt = $service->execute($f->phase, $f->gate, $this->input(), observed: $observed);
+        $this->assertSame($f->viewer->id, $receipt->evidenceExecution->cycle->participant_id);
+        $this->assertSame(1, Receipt::where('type', 'load_file')->count());
+        Http::assertSentCount(1);
     }
 
     public function test_unsupported_binary_is_valid_acquisition_with_no_advertised_reader(): void
@@ -290,7 +289,7 @@ class LoadFileInstrumentTest extends TestCase
 
     public function test_download_replay_keeps_source_invocation_and_records_a_changed_exact_byte_version(): void
     {
-        $f = $this->fixture();
+        $f = $this->fixture(PhaseKind::Disperse);
         Http::fake(['*' => Http::sequence()->push('old bytes')->push('new bytes')]);
         $source = app(OperationalInstrumentService::class)->execute($f->phase, $f->gate, $this->input());
         DB::transaction(fn () => $this->consumeObservationFixture($f, $source));
@@ -298,7 +297,10 @@ class LoadFileInstrumentTest extends TestCase
             $f->phase->forceFill(['completed_at' => now()])->save();
             $f->phase->cycle->forceFill(['completed_at' => now()])->save();
             $cycle = $f->phase->cycle->replicate();
-            $cycle->sequence++;
+            $participant = (new Participant)->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'Replay observer', 'current_proposition_id' => $f->gate->id]);
+            $participant->save();
+            $cycle->participant_id = $participant->id;
+            $cycle->sequence = 1;
             $cycle->completed_at = null;
             $cycle->save();
             $phase = $f->phase->replicate();
@@ -306,7 +308,7 @@ class LoadFileInstrumentTest extends TestCase
             $phase->completed_at = null;
             $phase->save();
 
-            return $phase;
+            return $phase->fresh();
         });
         $result = app(OperationalInstrumentService::class)->execute($phase, $f->gate, $source->replayInvocation(), replayedFrom: $source);
         $this->assertSame($source->id, $result->evidenceExecution->replayed_from_receipt_id);

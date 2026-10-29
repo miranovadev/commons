@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
-use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -100,21 +99,20 @@ final class PropositionOptionService
             ));
     }
 
-    /** Persist acquisition and Disperse fallback share one exact-Gate allowance per Cycle. */
+    /** Personal acquisition never depends on whether another Participant acquired here. */
     public function instrumentOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        if (! in_array($phase->kind, [PhaseKind::Persist, PhaseKind::Disperse], true) || $phase->completed_at !== null
-            || $phase->cycle->completed_at !== null
-            || app(PreparationService::class)->active($phase) !== null
-            || ! $this->generation->epistemicActionAvailable($phase, 'instrument.execute', $context)
-            || EvidenceExecution::query()->where('type', 'instrument')->where('status', 'completed')
-                ->where('cycle_id', $phase->cycle_id)->exists()) {
+        if (! in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Disperse], true)
+            || $phase->completed_at !== null || $phase->cycle->completed_at !== null
+            || ! $this->generation->epistemicActionAvailable($phase, 'instrument.execute', $context)) {
             return collect();
         }
-
         $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->first();
 
-        return $gate !== null && $this->availability->mutable($gate, $context)
+        return $gate !== null && ($phase->kind === PhaseKind::Distinguish
+            ? app(PhasePositionService::class)->acceptsGate($phase, $gate)
+                && ($context !== null ? $context->activeIds->has($gate->id) : ! app(ExhaustionService::class)->unavailable($gate))
+            : $this->availability->mutable($gate, $context))
             ? collect([$gate]) : collect();
     }
 

@@ -44,7 +44,7 @@ class InstrumentAllowanceConcurrencyTest extends TestCase
     }
 
     #[DataProvider('instrumentKinds')]
-    public function test_two_independent_connections_cannot_complete_the_same_cycle_allowance(string $kind, PhaseKind $phaseKind): void
+    public function test_two_independent_connections_cannot_complete_the_same_personal_gate_role(string $kind, PhaseKind $phaseKind): void
     {
         if (DB::getDriverName() !== 'pgsql') {
             $this->markTestSkipped('Requires independent PostgreSQL connections and row locks.');
@@ -109,7 +109,7 @@ class InstrumentAllowanceConcurrencyTest extends TestCase
         $this->whileWorkerWaits($f->substrate, ['operation' => $operation,
             'participant_id' => $f->viewer->id, 'phase_id' => $f->phase->id,
             'contribution' => ['action' => 'proposition.variant', 'statement' => 'Validated before consumption'],
-            'expected_message' => 'generation opportunity is unavailable'],
+            'expected_message' => 'Personal acquisition or ordinary evidence prerequisites'],
             fn () => app(HorizonReceiptService::class)->consume($target->phase, $source, $target, $receipt->id));
         $this->assertSame($before, Proposition::count());
         $this->assertNull($f->phase->fresh()->completed_at);

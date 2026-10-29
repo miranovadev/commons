@@ -42,6 +42,7 @@ class DirectTragedyResolutionTest extends TestCase
     public function test_authorised_first_birth_can_exhaust_immediately(): void
     {
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
+        $this->instrumentGateFixture($phase);
         $this->resolveExpressiveFieldFixture(1);
         $target = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'Direct boundary component']);
@@ -280,6 +281,7 @@ class DirectTragedyResolutionTest extends TestCase
     {
         $target = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
         $sibling = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $this->instrumentGateFixture($sibling->phase);
         $this->encounter($target);
         $before = Proposition::count();
         try {
@@ -307,6 +309,7 @@ class DirectTragedyResolutionTest extends TestCase
             'gate_proposition_id' => $gate->id, 'write_register' => $prior->write_register, 'started_at' => now()]);
         $phase->save();
         $actor = $cycle->participant;
+        $this->instrumentGateFixture($phase);
         $options = app(PropositionOptionService::class);
         $this->assertContains($write->id, $options->revisionOptionsFor($phase, $actor)->pluck('id'));
         $terminal = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
@@ -331,6 +334,7 @@ class DirectTragedyResolutionTest extends TestCase
         $source = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
         $child = $this->commitFrom($source);
         $phase = $this->phase($child, PhaseKind::Distinguish);
+        $this->instrumentGateFixture($phase);
         $terminal = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
         $this->encounter($terminal);
         $this->assertTrue(app(PhaseGenerationService::class)->available($phase, 'proposition.variant'));

@@ -145,6 +145,7 @@ class CrossoverRecoveryTest extends TestCase
         $this->assertFalse(app(ExhaustionService::class)->unavailable($seed));
         $this->assertSame($seed->id, $other->cycle->participant->fresh()->current_proposition_id);
         $this->assertFalse(app(InputPlanService::class)->forPhase($other->cycle->participant, $other)['rest_available']);
+        $this->instrumentGateFixture($other);
         app(ParticipationService::class)->contribute($other->cycle->participant, $other->id,
             ['action' => 'proposition.variant', 'statement' => 'Another participant continues this open Region.']);
         $this->assertSame($seed->id, $other->cycle->fresh()->entry_committal_id);

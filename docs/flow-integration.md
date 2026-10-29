@@ -21,13 +21,15 @@ not region-wide traversal eligibility.
 
 | Phase | Structural flow |
 | --- | --- |
-| 1 Distinguish | Empty viable position: Variant. Available shared ordinary Receipt: Attest. Personal earlier-Cycle Attestation: Traverse on that side. |
-| 2 Persist | Instrument the current Gate once per Participant Cycle without advancing; develop the selected Distinguish Proposition through Variant, subject to shared structural viability. |
+| 1 Distinguish | Personal Instrument acquisition at the governing Gate before fresh Variant. Empty viable position: Variant. Available shared ordinary Receipt: Attest. Personal earlier-Cycle Attestation: Traverse on that side. |
+| 2 Persist | Complete personal Preparation at the current Gate when readable Artifacts exist, otherwise Instrument fallback; develop the selected Distinguish Proposition through Variant, subject to shared structural viability. |
 | 3 Constrain | Reclassify a grounded, attested Persist source with explicit `receipt_id`; attach/consume and advance atomically. |
-| 4 Disperse | Same Variant / Attest / later-Cycle Traverse pattern as Distinguish; no Instrument action. |
+| 4 Disperse | Choose Instrument or accessible Preparation once per personal Gate role before fresh generation; retain ordinary Variant / Attest / later-Cycle Traverse rules. |
 | 5 Mediate | Existing directed reconciliation and Correspondence conditions develop Disperse plurality. |
 | 6 Bias | Reclassify an eligible Mediate source with explicit `receipt_id`, preserving existing lineage agreement. |
 | 7 Order | Existing grounded, attested, Closure-aligned Commit or established Committal Traverse. |
+
+See [personal Gate acquisition](personal-gate-acquisition.md) for completion, failure and returning-Participant rules.
 
 Ordinary Receipt availability is Commit-Region-scoped and independent of authorship, age, loading and Participant presence. Completed ordinary Instruments create one persistent Receipt. Tragedy creates its one Receipt without a fake EvidenceExecution. Only Reclassify consumes; reading is free and does not advance the Phase. Commit may retain already attached evidence without consuming it again.
 

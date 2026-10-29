@@ -49,6 +49,7 @@ class OperationalCommitmentTest extends TestCase
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin'],
         ]);
         $this->origin = Proposition::findOrFail($state['plan']['gate_id']);
+        $this->instrumentGateFixture(Phase::findOrFail($state['plan']['phase']['id']));
         // These tests isolate the operational receipt/phase path. Real component
         // evaluation and refusal are covered by ClosureHysteresisTest.
         $this->controlledBirthClosureFixture(1.0, includeCommittal: true);
@@ -117,8 +118,7 @@ class OperationalCommitmentTest extends TestCase
         $this->assertTrue($receipt->metadata['content_verified']);
         $this->assertNotNull($receipt->signature);
         $this->assertNotNull($gate->fresh()->measurement);
-        $this->expectException(DomainException::class);
-        app(EvidenceExecutionService::class)->complete($receipt->evidenceExecution, $gate);
+        $this->assertSame($receipt->id, app(EvidenceExecutionService::class)->complete($receipt->evidenceExecution, $gate)->id);
     }
 
     public function test_pending_and_failed_executions_are_visible_without_satisfying_grounding(): void
@@ -163,7 +163,7 @@ class OperationalCommitmentTest extends TestCase
             } catch (\InvalidArgumentException) {
                 $this->assertDatabaseMissing('propositions', ['statement' => 'Rejected']);
                 $this->assertNull(Phase::findOrFail($state['plan']['phase']['id'])->completed_at);
-                $this->assertDatabaseCount('evidence_executions', 2);
+                $this->assertDatabaseCount('evidence_executions', 3);
             }
         }
         $this->expectException(DomainException::class);

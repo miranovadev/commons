@@ -1,5 +1,7 @@
 # Epistemic Evidence Stage 2B
 
+Historical implementation record: acquisition availability and per-Cycle allowances below are superseded by [Personal Gate Acquisition](personal-gate-acquisition.md). Other evidence and structural contracts remain applicable.
+
 Approved implementation contract: Claire / Chat Nova's Stage 2B handoff.
 The ten Core Invariants govern this contract.
 

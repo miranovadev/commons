@@ -33,6 +33,7 @@ final class PotentialProjectionTest extends TestCase
         [$participant, $origin] = $this->fixture();
         $service = app(ParticipationService::class);
         $phase = $participant->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        $this->instrumentGateFixture($phase);
         $service->contribute($participant, $phase->id, ['action' => 'proposition.variant', 'statement' => 'A continuation']);
         $first = $participant->fresh()->position;
         $this->assertProjectionMatches($participant, $first);
@@ -88,6 +89,7 @@ final class PotentialProjectionTest extends TestCase
     {
         [$participant, $origin] = $this->fixture();
         $phase = $participant->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        $this->instrumentGateFixture($phase);
         app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'proposition.variant', 'statement' => 'Exhausted position']);
         $position = $participant->fresh()->position;
         $cycle = $participant->cycles()->whereNull('completed_at')->sole();
@@ -136,6 +138,7 @@ final class PotentialProjectionTest extends TestCase
     {
         [$participant] = $this->fixture();
         $phase = $participant->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        $this->instrumentGateFixture($phase);
         app(FieldMutationService::class)->touch($phase, [$phase->gate_proposition_id]);
         $outer = DB::transactionLevel();
         $raced = false;
@@ -161,6 +164,7 @@ final class PotentialProjectionTest extends TestCase
     {
         [$participant] = $this->fixture();
         $phase = $participant->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        $this->instrumentGateFixture($phase);
         app(FieldMutationService::class)->touch($phase, [$phase->gate_proposition_id]);
         $contended = true;
         $attempts = 0;

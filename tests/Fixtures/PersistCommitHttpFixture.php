@@ -60,7 +60,7 @@ trait PersistCommitHttpFixture
     private function revisitPersistCommit(string $observer): array
     {
         // The fixed final Cycle supplies the selected path, not all Reconcile parents.
-        foreach ([67, 68, 69, 70, 71] as $index) {
+        foreach ([69, 70, 71, 72, 73] as $index) {
             $target = $this->persistJourneyIds[$this->persistJourneySteps[$index]['gate']];
             $state = $this->contribute($observer, ['action' => 'attestation.create',
                 'proposition_id' => $target, 'direction' => 'refute']);
@@ -84,8 +84,8 @@ trait PersistCommitHttpFixture
         $this->assertSame($this->persistJourneyIds[$step['result']], $after['current_proposition_id']);
         if (isset($step['receipt'])) {
             $instrument = $step['input']['action'] === 'instrument.execute';
-            $this->assertSame($instrument ? 2 : 4, $step['phase']);
-            if ($instrument) {
+            $this->assertContains($step['phase'], $instrument ? [1, 2, 4] : [2, 4]);
+            if ($instrument || $step['input']['action'] === 'preparation.defer') {
                 $this->assertSame($before['plan']['phase'], $after['plan']['phase']);
                 $this->assertSame($before['cycle'], $after['cycle']);
             } else {

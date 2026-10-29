@@ -34,6 +34,7 @@ use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ProspectiveClosureService;
 use App\Services\OperationalInstrumentService;
+use App\Services\PersonalAcquisitionService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
@@ -290,6 +291,17 @@ abstract class TestCase extends BaseTestCase
         app(LedgerService::class)->record($edge);
 
         return $edge;
+    }
+
+    /** Complete an isolated fixture's acquisition through the real Instrument boundary. */
+    protected function instrumentGateFixture(Phase $phase): void
+    {
+        if (app(PersonalAcquisitionService::class)->state($phase)['status'] !== 'required') {
+            return;
+        }
+        app(OperationalInstrumentService::class)->execute($phase, $phase->gate,
+            ['kind' => 'hyperlink', 'reference' => 'https://example.test/personal-acquisition/'.str()->ulid()]);
+        $this->publishPotentialFixture($phase->cycle->participant);
     }
 
     /** Fixture authors supply the governor before creating immutable history. */

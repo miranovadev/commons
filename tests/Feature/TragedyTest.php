@@ -116,12 +116,12 @@ class TragedyTest extends TestCase
             $fixture = new GovernedExpressionFixture;
             $fixture->advanceToConstrain();
             if ($kind === PhaseKind::Disperse) {
-                $receipt = app(HorizonReceiptService::class)->ordinaryAvailable($fixture->phase)->sole();
+                $receipt = app(HorizonReceiptService::class)->ordinaryAvailable($fixture->phase)->firstOrFail();
                 $result = app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,
                     ['action' => 'proposition.reclassify', 'proposition_id' => $fixture->expression->id, 'receipt_id' => $receipt->id]);
                 $fixture->phase = app(PhaseProgressionService::class)->advance($fixture->phase, $result);
                 // This case isolates action exhaustion with shared ordinary evidence available.
-                $this->observationFixture($fixture->phase, $result, ['kind' => 'citation', 'reference' => $result->id]);
+                $this->instrumentGateFixture($fixture->phase);
             }
 
             return [$fixture->actor->fresh(), $fixture->phase];
@@ -134,6 +134,9 @@ class TragedyTest extends TestCase
         if ($action === 'proposition.variant' && in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist], true)) {
             $service = app(ParticipationService::class);
             $state = $service->enter($viewer, ['statement' => 'Origin', 'attestation' => ['direction' => 'support']]);
+            $state = $service->contribute($viewer, $state['plan']['phase']['id'],
+                ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+                    'instrument' => ['kind' => 'proposition_search', 'limit' => 1]]);
             if ($kind === PhaseKind::Persist) {
                 $state = $service->contribute($viewer, $state['plan']['phase']['id'],
                     ['action' => 'proposition.variant', 'statement' => 'First distinction']);

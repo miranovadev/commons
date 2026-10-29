@@ -211,8 +211,10 @@ final readonly class ParticipationService
         }
 
         $observedPhase = Phase::with('cycle')->find($phaseId);
+        $execution = isset($input['execution_id']) ? EvidenceExecution::findOrFail($input['execution_id']) : null;
+        $resolvedRetry = $execution !== null && $execution->phase_id === $phaseId && $execution->status === 'completed';
         if ($observedPhase === null || $observedPhase->cycle->participant_id !== $participant->id
-            || $observedPhase->completed_at !== null || $observedPhase->cycle->completed_at !== null) {
+            || (! $resolvedRetry && ($observedPhase->completed_at !== null || $observedPhase->cycle->completed_at !== null))) {
             throw new ConflictHttpException('The participation state changed. Refresh before contributing.');
         }
 
@@ -226,7 +228,6 @@ final readonly class ParticipationService
             return $this->stateFor($participant->fresh());
         }
         if (isset($input['execution_id'])) {
-            $execution = EvidenceExecution::findOrFail($input['execution_id']);
             if ($execution->phase_id !== $phaseId) {
                 throw new ConflictHttpException('The Preparation does not belong to this Phase.');
             }
@@ -236,6 +237,9 @@ final readonly class ParticipationService
                 app(PreparationService::class)->defer($participant, $execution, $input['reason']);
             } else {
                 app(PreparationService::class)->contribute($participant, $execution, $input);
+            }
+            if ($resolvedRetry) {
+                return $this->stateFor($participant->fresh());
             }
             app(PotentialProjectionService::class)->refresh($participant->substrate_id);
             $this->cycleEntry->prepare($participant->fresh());

@@ -7,12 +7,12 @@ trait PersistExplorationHttpFixture
 {
     private function personalExplorationJourney(): array
     {
-        // Authored HTTP journey: observation is an extra Persist action, not
-        // an obsolete Distinguish/Disperse progression operation.
+        // Authored HTTP journey with personal discovery and Persist examination.
         $this->startSubstrate();
         $actor = $this->joinParticipant('staggered-explorer');
         $initial = $this->enterParticipant($actor, true);
         $origin = $initial['current_proposition_id'];
+        $this->discoverGate($actor);
         $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Distinguish opportunity A']);
         $a = $state['current_proposition_id'];
         $originObserver = $this->joinParticipant('distinguish-observer');

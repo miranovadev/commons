@@ -6,6 +6,7 @@ use App\Domain\Evidence\PropositionCollection;
 use App\Enums\PhaseKind;
 use App\Models\ContextHorizon;
 use App\Models\Cycle;
+use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
@@ -257,11 +258,13 @@ class PropositionSearchTest extends TestCase
 
         $older = $this->historyNode($s['fixture'], null, $s['root'], 'needle older history');
         $s['fixture']->edge($older, $s['oldest'], 'variant');
-        // A new collection still requires a fresh personal Cycle allowance.
+        // A distinct Participant may acquire the changed collection; a new Cycle alone cannot renew completion.
         $s['phase']->forceFill(['completed_at' => now()])->save();
         $s['phase']->cycle->forceFill(['completed_at' => now()])->save();
         $cycle = $s['phase']->cycle->replicate();
-        $cycle->forceFill(['sequence' => (int) $s['fixture']->viewer->cycles()->max('sequence') + 1, 'completed_at' => null])->save();
+        $observer = (new Participant)->forceFill(['substrate_id' => $s['fixture']->substrate->id, 'callsign' => 'New search observer', 'current_proposition_id' => $s['head']->id]);
+        $observer->save();
+        $cycle->forceFill(['participant_id' => $observer->id, 'sequence' => 1, 'completed_at' => null])->save();
         $phase = $s['phase']->replicate();
         $phase->forceFill(['cycle_id' => $cycle->id, 'completed_at' => null])->save();
         $s['fixture']->phase = $phase;

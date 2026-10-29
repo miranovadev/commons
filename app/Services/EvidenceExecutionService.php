@@ -90,6 +90,11 @@ final readonly class EvidenceExecutionService
                 ->lockForUpdate()
                 ->findOrFail($execution->getKey());
 
+            if ($locked->type === 'instrument' && $locked->status === 'completed'
+                && ($receiptable instanceof Proposition ? $receiptable->id : ($receiptable instanceof Attestation ? $receiptable->proposition_id : null)) === $locked->proposition_id) {
+                return $locked->receipt()->firstOrFail();
+            }
+
             if ($locked->type !== 'instrument' || $locked->status !== 'pending') {
                 throw new DomainException(
                     'Only a pending instrument execution can complete.'
@@ -171,7 +176,7 @@ final readonly class EvidenceExecutionService
     }
 
     /** The caller creates the contribution and advances it in this same transaction. */
-    public function completePreparation(EvidenceExecution $execution, ?Proposition $result, ?string $reason): Receipt
+    public function completePreparation(EvidenceExecution $execution, ?Proposition $result, ?string $reason, ?string $resolutionHash = null): Receipt
     {
         if (DB::transactionLevel() === 0 || $execution->type !== 'prepare' || $execution->status !== 'presented'
             || $execution->presentation === null || (($result !== null) === ($reason !== null))
@@ -181,6 +186,7 @@ final readonly class EvidenceExecutionService
         $execution->outcome = $result === null ? 'deferred' : 'contributed';
         $execution->resulting_proposition_id = $result?->id;
         $metadata = [
+            'resolution_hash' => $resolutionHash,
             'originating_gate_id' => $execution->proposition_id,
             'participant_id' => $execution->phase->cycle->participant_id,
             'purpose' => $execution->input['purpose'], 'selections' => $execution->input['artifacts'],

@@ -1,5 +1,7 @@
 # Epistemic Evidence Stage 2A
 
+Historical implementation record: acquisition availability and per-Cycle allowances below are superseded by [Personal Gate Acquisition](personal-gate-acquisition.md). Other evidence and structural contracts remain applicable.
+
 Approved scope: phase-neutral Instrumentation only. Instrument executes in Persist
 against the exact current Gate, at most once per Participant Cycle. It produces
 its ordinary immutable execution, Receipt, ledger history and C2 creator load.

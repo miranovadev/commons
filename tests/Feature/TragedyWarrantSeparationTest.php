@@ -56,7 +56,7 @@ class TragedyWarrantSeparationTest extends TestCase
             $this->assertTrue($service->ordinaryAvailable($phase, $context)->isEmpty());
             $this->assertSame($receipt->id, $service->tragedyWarrant($phase, $context)->id);
             $this->assertTrue(app(PropositionStateService::class)->receipts($write, $context)->isEmpty());
-            $this->assertSame(in_array($kind, [PhaseKind::Persist, PhaseKind::Disperse], true) ? [$gate->id] : [], app(PropositionOptionService::class)->instrumentOptionsFor($phase, $context)->pluck('id')->all());
+            $this->assertSame(in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Disperse], true) ? [$gate->id] : [], app(PropositionOptionService::class)->instrumentOptionsFor($phase, $context)->pluck('id')->all());
             $this->assertNotContains($write->id, app(PropositionOptionService::class)->attestationOptionsFor($phase, $context)->pluck('id'));
         }
         $this->assertEmpty($service->instrumentedIds($phase, collect([$write->id])));
@@ -73,7 +73,7 @@ class TragedyWarrantSeparationTest extends TestCase
         DB::transaction(fn () => app(ReceiptContextService::class)->desired($phase->cycle->participant, $phase, ['load' => [$receipt->id]]));
         foreach ([null, new ParticipationContext($phase)] as $context) {
             $this->assertTrue($service->ordinaryAvailable($phase, $context)->isEmpty());
-            $this->assertSame(in_array($kind, [PhaseKind::Persist, PhaseKind::Disperse], true) ? [$gate->id] : [], app(PropositionOptionService::class)->instrumentOptionsFor($phase, $context)->pluck('id')->all());
+            $this->assertSame(in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Disperse], true) ? [$gate->id] : [], app(PropositionOptionService::class)->instrumentOptionsFor($phase, $context)->pluck('id')->all());
             $this->assertNotContains($write->id, app(PropositionOptionService::class)->attestationOptionsFor($phase, $context)->pluck('id'));
         }
         $this->assertEmpty($service->instrumentedIds($phase, collect([$write->id])));

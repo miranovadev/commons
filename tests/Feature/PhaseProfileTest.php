@@ -548,6 +548,7 @@ class PhaseProfileTest extends TestCase
     public function test_real_dispatch_passes_authorized_source(): void
     {
         $phase = $this->firstCycle->phases()->sole();
+        $this->instrumentGateFixture($phase);
         $p = app(ContributionDispatcher::class)->dispatch($this->actor, $phase,
             ['action' => 'proposition.variant', 'statement' => 'A real authored distinction']);
         $this->assertSame('first_expressive_observation', $this->observation($p)['reason']);
@@ -588,6 +589,7 @@ class PhaseProfileTest extends TestCase
     public function test_diagnostics_are_read_only_and_leave_all_production_state_unchanged(): void
     {
         $phase = $this->firstCycle->phases()->sole();
+        $this->instrumentGateFixture($phase);
         $p = app(ContributionDispatcher::class)->dispatch($this->actor, $phase,
             ['action' => 'proposition.variant', 'statement' => 'A real observed distinction']);
         app(PropositionMeasurementService::class)->recalculate($p);

@@ -6,6 +6,7 @@ use App\Contracts\WebSearchProvider;
 use App\Domain\Evidence\InstrumentObservation;
 use App\Domain\Evidence\PropositionCollection;
 use App\Domain\Evidence\SearchObservation;
+use App\Enums\PhaseKind;
 use App\Exceptions\ArtifactStorageException;
 use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
@@ -58,11 +59,22 @@ final readonly class OperationalInstrumentService
             $origin = $bootstrap && $proposition->tier === 'committal'
                 && $proposition->ledgerEntry?->sequence === 1 && ! $proposition->parents()->exists()
                 && ! CommitmentSnapshot::where('substrate_id', $substrateId)->exists();
-            if (! $origin && ! $this->availability->mutable($proposition)) {
+            if (! $origin) {
+                $phase = $phase->fresh(['cycle.participant']);
+                try {
+                    $current = app(PhaseService::class)->currentFor($phase->cycle->participant);
+                } catch (DomainException $exception) {
+                    throw new ConflictHttpException('The acquisition Phase is no longer active.', $exception);
+                }
+                if ($current->id !== $phase->id) {
+                    throw new ConflictHttpException('The acquisition Phase is no longer active.');
+                }
+            }
+            if (! $origin && $phase->kind !== PhaseKind::Distinguish && ! $this->availability->mutable($proposition)) {
                 throw new DomainException('Committed sources and Committal results cannot receive instruments. Develop a Variant from the Committal instead.');
             }
             if (! $origin && ! app(PropositionOptionService::class)->instrumentOptionsFor($phase->fresh())->contains('id', $proposition->id)) {
-                throw new ConflictHttpException('Instrumentation requires the active Persist or fallback Disperse Gate, an unused Cycle allowance and no available ordinary Receipt; Disperse also requires no readable Artifact.');
+                throw new ConflictHttpException('Instrumentation requires the exact active Gate and an unfulfilled personal acquisition role.');
             }
 
             $metadata = match ($input['kind']) {
@@ -91,11 +103,11 @@ final readonly class OperationalInstrumentService
         if ($phase->cycle->participant->substrate_id !== $proposition->phase->cycle->participant->substrate_id) {
             throw new DomainException('An instrument cannot cross substrate boundaries.');
         }
-        if (! $bootstrap && ! $this->availability->mutable($proposition)) {
+        if (! $bootstrap && $phase->kind !== PhaseKind::Distinguish && ! $this->availability->mutable($proposition)) {
             throw new DomainException('Committed sources and Committal results cannot receive instruments. Develop a Variant from the Committal instead.');
         }
         if (! $bootstrap && ! app(PropositionOptionService::class)->instrumentOptionsFor($phase->fresh())->contains('id', $proposition->id)) {
-            throw new ConflictHttpException('Instrumentation requires the active Persist or fallback Disperse Gate, an unused Cycle allowance and no available ordinary Receipt; Disperse also requires no readable Artifact.');
+            throw new ConflictHttpException('Instrumentation requires the exact active Gate and an unfulfilled personal acquisition role.');
         }
         app(RelevantInstrumentService::class)->assertAvailable($proposition, $input);
         $normalized = $this->normalize($input);

@@ -111,6 +111,7 @@ class OriginGroundingTest extends TestCase
         $participant = $this->creator();
         $service = app(ParticipationService::class);
         $state = $service->enter($participant, ['statement' => 'Origin', 'attestation' => ['direction' => 'support']]);
+        $this->instrumentGateFixture(Phase::findOrFail($state['plan']['phase']['id']));
         $service->contribute($participant, $state['plan']['phase']['id'], ['action' => 'proposition.variant', 'statement' => 'Ordinary candidate']);
         $candidate = Proposition::where('tier', 'expressive')->sole();
         $attestation = (new Attestation)->forceFill(['phase_id' => $candidate->phase_id, 'proposition_id' => $candidate->id, 'direction' => 'support']);

@@ -55,10 +55,13 @@ class ReceiptCapabilitiesMigrationTest extends TestCase
         $migration = require database_path('migrations/2026_09_14_120000_add_receipt_capabilities_and_replay.php');
         // Unwind the later partial index before SQLite rebuilds the old schema.
         $preparation = require database_path('migrations/2026_10_23_000000_enable_preparation_executions.php');
+        $acquisition = require database_path('migrations/2026_10_29_000000_scope_acquisition_to_personal_gates.php');
+        $acquisition->down();
         $preparation->down();
         $migration->down();
         $migration->up();
         $preparation->up();
+        $acquisition->up();
         $legacy = $receipt->fresh();
         $this->assertSame($original, $legacy->only(array_keys($original)));
         $this->assertNull($legacy->capabilities);

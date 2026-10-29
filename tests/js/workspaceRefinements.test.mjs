@@ -173,3 +173,26 @@ test('snap viewport has a zero horizontal origin and hides controls at the bound
   assert.match(source, /hidden=\{!navigation.previous\}/);
   assert.match(source, /useLayoutEffect/);
 });
+
+
+test('personal acquisition notices explain authoritative choices and durable completion without blocking', () => {
+  for (const [kind, actions, wording] of [
+    ['distinguish', ['instrument.execute'], /Choose an available Instrument/],
+    ['persist', ['preparation.start'], /Prepare an accessible Artifact/],
+    ['persist', ['instrument.execute'], /Choose an available Instrument/],
+    ['disperse', ['instrument.execute', 'preparation.start'], /Choose Instrument or an available Preparation/],
+  ]) {
+    const plan = { phase: { kind }, acquisition: { role: 'role', status: 'required' }, schema: { $defs: { actions: Object.fromEntries(actions.map(a => [a, {}])) } } };
+    const notice = ui.nativeAdmissibility(plan).find(n => n.id === 'personal-acquisition');
+    assert.equal(notice.satisfied, false);
+    assert.match(notice.html, wording);
+    assert.doesNotMatch(notice.html, /<button/);
+    for (const [status, outcome, expected] of [['pending', null, /Resolve the current execution/], ['completed', 'deferred', /remains complete on later visits/]]) {
+      plan.acquisition = { role: 'role', status, outcome };
+      const result = ui.nativeAdmissibility(plan).find(n => n.id === 'personal-acquisition');
+      assert.equal(result.satisfied, status === 'completed');
+      assert.match(result.html, expected);
+      if (outcome) assert.match(result.html, /Recorded outcome: deferred/);
+    }
+  }
+});
