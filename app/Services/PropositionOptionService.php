@@ -39,9 +39,11 @@ final class PropositionOptionService
     public function traversalOptionsFor(Phase $phase, ?ParticipationContext $context = null, bool $base = false): Collection
     {
         if ($phase->kind === PhaseKind::Order) {
-            return $this->generation->committedWrites($phase, $context)
+            $options = $this->generation->committedWrites($phase, $context)
                 ->concat(app(HomologousOrderService::class)->forPhase($phase, $context))
                 ->unique('id')->sortBy('id')->values();
+
+            return $base ? $options : $this->unexplored($phase, $options, $context);
         }
 
         if ($phase->kind === PhaseKind::Bias) {
@@ -67,7 +69,9 @@ final class PropositionOptionService
         // Receipt consumption never erases the path established by an earlier vote.
         $options = $this->availableWrites($phase, $context);
         if (! $base) {
-            $options = $this->unexplored($phase, $options, $context);
+            $actionable = $this->unexplored($phase, $options->concat($committed), $context)->pluck('id')->flip();
+            $options = $options->filter(fn ($node) => $actionable->has($node->id));
+            $committed = $committed->filter(fn ($node) => $actionable->has($node->id));
         }
         if ($context !== null) {
             $attested = $context->effectiveAttestations($options->pluck('id'))

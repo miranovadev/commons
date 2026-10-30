@@ -143,12 +143,12 @@ class ParticipantExplorationTest extends TestCase
         $this->assertCount(2, $exploration->heads($signal->id, $return, new ParticipationContext($return)), 'Evaluate the complete frontier before display limits');
         $this->assertTrue($exploration->explored($head, $return));
         $this->assertFalse(app(PhaseGenerationService::class)->available($return, 'proposition.variant'));
+        $this->assertContains($signal->id, app(PropositionOptionService::class)->attestationOptionsFor($return)->pluck('id'));
         $phase = $return;
         foreach ([$signal, $persist, $constrain] as $node) {
             $phase = app(PhaseProgressionService::class)->advance($phase, $node);
         }
         $options = app(PropositionOptionService::class);
-        $this->assertContains($signal->id, $options->attestationOptionsFor($return)->pluck('id'));
         $targets = $options->attestationOptionsFor($phase)->pluck('id');
         $this->assertContains($sibling->id, $targets);
         $this->assertNotContains($head->id, $targets);
@@ -220,7 +220,7 @@ class ParticipantExplorationTest extends TestCase
         $this->assertDatabaseCount('exploration_events', 0);
     }
 
-    public function test_a_lawful_attestation_reversal_reopens_only_when_it_enables_bias_generation(): void
+    public function test_other_participants_judgments_reopen_a_route_when_they_enable_bias_generation(): void
     {
         [$signal, $persist, $constrain, $activity, $mediate] = $this->personalJourney();
         $stance = $this->node($mediate, $activity);
@@ -237,9 +237,11 @@ class ParticipantExplorationTest extends TestCase
         foreach ([$signal, $persist, $constrain, $activity] as $node) {
             $phase = app(PhaseProgressionService::class)->advance($phase, $node);
         }
-        $other = $this->phase($activity, PhaseKind::Mediate);
-        $changed = app(ContributionDispatcher::class)->dispatch($other->cycle->participant, $other,
-            ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
+        foreach (range(1, 2) as $judgment) {
+            $other = $this->phase($activity, PhaseKind::Mediate);
+            $changed = app(ContributionDispatcher::class)->dispatch($other->cycle->participant, $other,
+                ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
+        }
         $current = app(PhaseProgressionService::class)->advance($phase, $changed);
         $this->assertTrue(app(PhaseGenerationService::class)->available($current, 'proposition.reclassify'));
         foreach ([null, new ParticipationContext($current)] as $context) {
@@ -327,9 +329,11 @@ class ParticipantExplorationTest extends TestCase
         foreach ([$signal, $persist, $constrain, $activity] as $node) {
             $phase = app(PhaseProgressionService::class)->advance($phase, $node);
         }
-        $other = $this->phase($activity, PhaseKind::Mediate);
-        $changed = app(ContributionDispatcher::class)->dispatch($other->cycle->participant, $other,
-            ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
+        foreach (range(1, 2) as $judgment) {
+            $other = $this->phase($activity, PhaseKind::Mediate);
+            $changed = app(ContributionDispatcher::class)->dispatch($other->cycle->participant, $other,
+                ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
+        }
         $bias = app(PhaseProgressionService::class)->advance($phase, $changed);
         foreach ($available as $receipt) {
             DB::transaction(fn () => $receipts->consume($constrain->phase, $persist, $constrain, $receipt->id));
