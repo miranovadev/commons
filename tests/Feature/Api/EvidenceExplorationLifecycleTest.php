@@ -237,26 +237,15 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
         $judgment = DB::table('attestations')->join('phases', 'phases.id', '=', 'attestations.phase_id')
             ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')->where('attestations.id', $proof['attestation_id'])->sole();
         $this->assertSame($observer, $judgment->participant_id);
-        // A slower Participant develops new active structure after both personal encounters.
+        $this->assertTrue($this->visibleProposition($returned, $a)['explored']);
+        $this->assertActionUnavailable($returned, 'attestation.create');
+        $this->assertActionUnavailable($returned, 'proposition.traverse');
         $history = DB::table('exploration_events')->orderBy('phase_id')->get()->toJson();
-        $acquisitions = EvidenceExecution::count();
-        foreach ([$a, $persist, $gate] as $target) {
-            $state = $this->contribute($observer, ['action' => 'attestation.create', 'proposition_id' => $target, 'direction' => 'refute']);
+        foreach (['support', 'refute'] as $direction) {
+            $response = $this->postContribution($observer, $returned['plan']['phase']['id'],
+                ['action' => 'attestation.create', 'proposition_id' => $a, 'direction' => $direction]);
+            $this->assertContains($response->status(), [409, 422]);
         }
-        $this->assertActionUnavailable($state, 'instrument.execute');
-        $this->assertActionUnavailable($state, 'preparation.start');
-        $this->assertTrue($this->visibleProposition($this->readParticipation($actor), $a)['explored'],
-            'Reconsideration alone has not reopened the original Participant\'s route');
-        $newHead = $this->contribute($observer, ['action' => 'proposition.variant', 'statement' => 'A new continuation from completed participation'])['current_proposition_id'];
-        $return = $this->readParticipation($actor);
-        $this->assertFalse($this->visibleProposition($return, $a)['explored']);
-        foreach ([$a, $persist, $gate] as $target) {
-            $state = $this->contribute($actor, ['action' => 'proposition.traverse', 'proposition_id' => $target]);
-        }
-        $this->assertActionUnavailable($state, 'instrument.execute');
-        $this->assertActionUnavailable($state, 'preparation.start');
-        $this->judge($actor, $newHead);
-        $this->assertSame($acquisitions, EvidenceExecution::count());
         $this->assertSame($history, DB::table('exploration_events')->orderBy('phase_id')->get()->toJson());
     }
 }

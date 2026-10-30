@@ -42,7 +42,7 @@ See [validation and acceptance coverage](participant-relative-exploration-valida
 | --- | --- | --- |
 | Forward generation | Variant, Reconcile, Reclassify, Commit | New authorized active structure or newly lawful generation can reopen the relevant frontier |
 | Forward movement | Traverse | Accesses existing unexplored structure; availability alone never reopens a head |
-| Reconsideration | Attestation, Revise | Remains independently lawful; only resulting changes to generating eligibility can reopen exploration |
+| Reconsideration | Attestation, Revise | Available on unexplored Writes. Personally explored Writes stay visible with their explored badge and have no reconsideration actions. |
 
 `ContinuationOpportunityService::nonVariantGenerationAvailable` evaluates base Reconcile, Reclassify and Commit lawfulness. Fresh Variant is deliberately excluded: it must never supply its own prerequisite for reopening or authorizing another Variant. Existing reachable Variants remain structural continuations in active-head discovery. Evidence acquisition retains its separate completion safeguards.
 
