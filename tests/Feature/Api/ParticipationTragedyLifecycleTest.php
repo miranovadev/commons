@@ -29,25 +29,24 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         [$actor, , $initial, $committed] = $this->persistCommitWithObserver('tragic-explorer', 'open-entrant');
 
         // C2 loads the ordinary observation at its actual Persist acquisition.
-        foreach (['r1', 'r2', 'r6'] as $observation) {
+        foreach (['r1', 'r2', 'rightPreparation'] as $observation) {
             $ordinary = DB::table('receipts')->where('id', $this->persistJourneyIds[$observation])->sole();
             $load = DB::table('participant_receipt_contexts')->where('participant_id', $actor)->where('receipt_id', $ordinary->id)->sole();
             $this->assertNull($load->cleared_at);
             $this->assertDatabaseHas('receipt_context_events', ['participant_receipt_context_id' => $load->id,
                 'phase_id' => $ordinary->phase_id, 'action' => 'loaded']);
         }
-        $classification = Proposition::findOrFail($this->persistJourneyIds['p20']);
+        $classification = Proposition::findOrFail($this->persistJourneyIds['classification']);
         $this->assertSame(1, app(ReinforcementService::class)->count($classification));
-        $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $this->persistJourneyIds['r6'], 'proposition_id' => $classification->id]);
+        $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $this->persistJourneyIds['rightPreparation'], 'proposition_id' => $classification->id]);
         $boundary = $committed['last_commitment'];
         // This lawful skeptical history remains in Settlement; instrumentation
         // changes the chronology, not the domain-transition or margin equations.
         $this->assertFalse($boundary['closure_boundary']);
         $this->assertEqualsWithDelta(0, $boundary['depth'], 0.0000001);
         $this->assertEqualsWithDelta(0, $boundary['cadence'], 0.0000001);
-        // The still-open entrant counts alongside completed participation,
-        // including Stage 3's additional lawful reconsideration Cycle.
-        $this->assertSame(16, (int) DB::table('commitment_snapshots')
+        // Twelve author Cycles at Origin and three still-open observer Cycles.
+        $this->assertSame(15, (int) DB::table('commitment_snapshots')
             ->where('proposition_id', $boundary['proposition_id'])->value('cadence_interval'));
         $this->discoverGate($actor);
         $observing = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Develop the completed region']);
@@ -61,19 +60,18 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $seed = Proposition::findOrFail($boundary['proposition_id']);
         $entries = DB::table('cycles')->where('entry_committal_id', $origin)
             ->where('context_horizon_id', $seed->phase->cycle->context_horizon_id);
-        $this->assertSame(16, $entries->count());
+        $this->assertSame(15, $entries->count());
         $this->assertTrue($entries->whereNull('completed_at')->exists());
         $diagnostic = app(CrossoverMarginService::class)->inspect($cycle);
         $this->assertReceiptNeutralChiralityChain($participant->position);
         $this->assertSame($boundary['tension_after'], $seed->commitmentSnapshot->tension);
         $this->assertSame($seed->id, $diagnostic['governing_committal_id']);
         $this->assertSame('settlement', $diagnostic['domain']);
-        // Completing the previously missed route judgments changes the actual
-        // Attestation history. Keep exact values and the independent projection below.
-        foreach (['correspondence' => -0.2793287, 'chirality' => -0.1788649,
+        // Check this transcript's frozen values and independently project its margin below.
+        foreach (['correspondence' => -0.2962244, 'chirality' => -0.118394,
             'prospective_depth' => 0, 'prospective_committed_cardinal_position' => 0, 'admissible_cadence_bound' => 0,
-            'tension_bound' => -0.1527312,
-            'crossover_margin' => -0.1527312] as $name => $value) {
+            'tension_bound' => -0.1382062,
+            'crossover_margin' => -0.1382062] as $name => $value) {
             $this->assertEqualsWithDelta($value, $diagnostic[$name], 1e-7, $name.' '.json_encode($diagnostic));
         }
         // Settlement's negative retained Cardinal direction admits a zero

@@ -41,20 +41,20 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
         $late = $this->joinParticipant('late-operand-reader');
         $this->enterParticipant($late);
         $this->discoverGate($late);
-        $this->judge($late, $this->persistJourneyIds['p1']);
+        $this->judge($late, $this->persistJourneyIds['leftDistinction']);
         $this->resolvePersonalReading($late);
-        $this->judge($late, $this->persistJourneyIds['p12']);
-        $parked = $this->judge($late, $this->persistJourneyIds['p13']);
+        $this->judge($late, $this->persistJourneyIds['leftPersist']);
+        $parked = $this->judge($late, $this->persistJourneyIds['leftCanon']);
         $this->assertActionAvailable($parked, 'preparation.start');
         $this->assertActionAvailable($parked, 'instrument.execute');
         $this->contribute($late, ['action' => 'instrument.execute', 'proposition_id' => $parked['plan']['gate_id'],
-            'instrument' => ['kind' => 'citation', 'reference' => $this->persistJourneyIds['p1']]]);
+            'instrument' => ['kind' => 'citation', 'reference' => $this->persistJourneyIds['leftDistinction']]]);
         $receipt = EvidenceExecution::where('phase_id', $parked['plan']['phase']['id'])->sole()->receipt;
         $freshState = $this->readParticipation($author);
         $fresh = $this->auditEvidencePacket($freshState);
         $this->assertNotContains($receipt->id, array_column($before['receipts'], 'id'));
         $this->assertContains($receipt->id, array_column($fresh['receipts'], 'id'));
-        $this->assertSame($this->persistJourneyIds['p13'], collect($fresh['receipts'])->firstWhere('id', $receipt->id)['originating_gate_id']);
+        $this->assertSame($this->persistJourneyIds['leftCanon'], collect($fresh['receipts'])->firstWhere('id', $receipt->id)['originating_gate_id']);
         $this->assertSame($edges, DB::table('supersessions')->where('target_proposition_id', $head)->orderBy('id')->get()->toJson());
         $this->assertSame($consumptions, DB::table('receipt_consumptions')->orderBy('receipt_id')->get()->toJson());
         $phase = Phase::findOrFail($freshState['plan']['phase']['id']);
