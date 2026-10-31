@@ -151,10 +151,6 @@ class OperationalCommitmentTest extends TestCase
     public function test_invalid_and_unsupported_instruments_leave_no_partial_write(): void
     {
         $observing = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
-        $distinction = $observing['plan']['gate_id'];
-        $this->move($this->participant, ['action' => 'participant.rest']);
-        $observing = $this->move($this->participant, ['action' => 'attestation.create',
-            'proposition_id' => $distinction, 'direction' => 'support']);
         $this->move($this->participant, ['action' => 'instrument.execute', 'proposition_id' => $observing['plan']['gate_id'],
             'instrument' => ['kind' => 'citation', 'reference' => $this->origin->id]]);
         $state = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Persist the distinction']);
@@ -235,10 +231,6 @@ class OperationalCommitmentTest extends TestCase
     public function test_removed_reclassification_contracts_reject_payloads(): void
     {
         $observing = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
-        $distinction = $observing['plan']['gate_id'];
-        $this->move($this->participant, ['action' => 'participant.rest']);
-        $observing = $this->move($this->participant, ['action' => 'attestation.create',
-            'proposition_id' => $distinction, 'direction' => 'support']);
         $this->move($this->participant, ['action' => 'instrument.execute', 'proposition_id' => $observing['plan']['gate_id'],
             'instrument' => ['kind' => 'citation', 'reference' => $this->origin->id]]);
         $early = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Persist the distinction']);

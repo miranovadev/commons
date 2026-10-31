@@ -542,7 +542,7 @@ unchanged.
 
 ## Bias grounding
 
-Reclassification is separate from Instrument execution. Distinguish, Persist fallback and Disperse expose Instruments on the exact Gate for a prospective fresh Variant, once per Cycle. Shared ordinary Receipt availability permits Attestation subject to its remaining eligibility rules; Receipt and effective Attestation are required for reclassification. Reclassify attaches the selected regional Receipt and resets judgments. New Writes do not require a new Instrument execution on that Write.
+Reclassification is separate from Instrument execution. Distinguish, Persist fallback and Disperse expose Instruments on the exact Gate for a prospective fresh Variant, once per exact Phase/generative opportunity. Multiple Phases may acquire independently within one Cycle. Shared ordinary Receipt availability permits Attestation subject to its remaining eligibility rules; Receipt and effective Attestation are required for reclassification. Reclassify attaches the selected regional Receipt and resets judgments. New Writes do not require a new Instrument execution on that Write.
 
 A fresh Bias classification may reach Order before anyone attests it. If neither a qualifying Commit Gate nor an established Committal Write exists, Rest is valid. Another Participant can later attest the classification through Bias or an earlier eligible Write encounter. Receipt loading remains optional before Order and never advances a Phase.
 

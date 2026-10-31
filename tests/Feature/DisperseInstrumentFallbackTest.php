@@ -135,7 +135,7 @@ class DisperseInstrumentFallbackTest extends TestCase
     }
 
     #[DataProvider('spentPhases')]
-    public function test_consumed_observation_retains_its_cycle_reservation_even_after_failed_verification(PhaseKind $kind): void
+    public function test_consumed_observation_reserves_only_its_exact_phase_even_after_failed_verification(PhaseKind $kind): void
     {
         $f = $this->fixture();
         $phase = $f->phase;
@@ -153,7 +153,7 @@ class DisperseInstrumentFallbackTest extends TestCase
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/missing']);
         $this->assertSame('completed', $receipt->evidenceExecution->status);
         if ($kind === PhaseKind::Persist) {
-            // Position the separate role only after the real Persist attempt completed.
+            // Isolated service fixture: position a separate Phase after the recorded Persist observation.
             $phase->forceFill(['completed_at' => now()])->save();
             $next = $phase->replicate();
             $next->forceFill(['kind' => PhaseKind::Disperse, 'gate_proposition_id' => $f->gate->id, 'write_register' => 'activity', 'completed_at' => null])->save();
@@ -166,8 +166,9 @@ class DisperseInstrumentFallbackTest extends TestCase
         $actions = $this->actions($f);
         $this->assertArrayNotHasKey('proposition.variant', $actions);
         if ($kind === PhaseKind::Persist) {
-            $this->assertArrayNotHasKey('instrument.execute', $actions);
-            $this->assertSame('resolved', app(AcquisitionAttemptService::class)->state($f->phase)['status']);
+            $this->assertArrayHasKey('instrument.execute', $actions);
+            $this->assertSame('required', app(AcquisitionAttemptService::class)->state($f->phase)['status']);
+            $this->assertNull(app(AcquisitionAttemptService::class)->execution($f->phase));
         } else {
             $this->assertArrayNotHasKey('instrument.execute', $actions);
             $this->assertArrayHasKey('acquisition.defer', $actions);
