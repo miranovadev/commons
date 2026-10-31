@@ -31,6 +31,9 @@ class ClosureBirthTest extends TestCase
         $fixture = new GovernedExpressionFixture;
         $first = $fixture->expression;
         $states = app(ProspectiveClosureService::class);
+        // The new Cycle legitimately updates prospective cadence. Capture the
+        // baseline after entry, then isolate the subsequent structural birth.
+        $fixture->enterPersist();
         $before = $states->stored($first);
         $interval = app(PhaseProfileObservationService::class)->stored($first->id);
         $fixture->writePersist();

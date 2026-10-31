@@ -43,7 +43,12 @@ abstract class ParticipationHttpTestCase extends TestCase
         $state = $this->readParticipation($actor);
 
         return $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
-            'instrument' => ['kind' => 'proposition_search', 'query' => 'Personal discovery '.$actor, 'limit' => 1]]);
+            'instrument' => ['kind' => 'proposition_search', 'query' => 'Personal discovery '.$actor.' Cycle '.$state['cycle']['sequence'], 'limit' => 1]]);
+    }
+
+    protected function judge(string $participant, string $proposition): array
+    {
+        return $this->contribute($participant, ['action' => 'attestation.create', 'proposition_id' => $proposition, 'direction' => 'support']);
     }
 
     use RefreshDatabase;

@@ -8,7 +8,6 @@ use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Supersession;
 use App\Services\CommitmentAdmissibilityService;
-use App\Services\ContributionDispatcher;
 use App\Services\HomologousPositionService;
 use App\Services\Observables\CommittalLineageService;
 use App\Services\Observables\ProspectiveClosureService;
@@ -54,7 +53,7 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
         $before = $service->stateFor($actor);
         $before = $service->contribute($actor, $before['plan']['phase']['id'],
             ['action' => 'instrument.execute', 'proposition_id' => $commit->id,
-                'instrument' => ['kind' => 'proposition_search', 'limit' => 1]]);
+                'instrument' => ['kind' => 'proposition_search', 'limit' => 10]]);
         $discovery = Receipt::whereHas('evidenceExecution', fn ($q) => $q->where('phase_id', $before['plan']['phase']['id']))->sole();
         $this->assertSame($commit->id, $discovery->evidenceExecution->proposition_id);
         $receiptsAfterDiscovery = [...$receipts, $discovery->id];
@@ -96,22 +95,22 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
         $this->assertNotContains($otherOperand, $expected, 'Reconcile does not import the other branch into selected history.');
         $this->assertNotContains($origin->id, array_column($search->results, 'proposition_id'));
         $this->assertSame('settlement', $search->domain);
-        // Persist observes its current Gate. The ordinary Receipt supplies evidence,
-        // while its result collection grants no structural authority.
+        // The real search was recorded against the Committal before this
+        // descendant existed. Moving its results into personal memory grants no
+        // evidence ownership to the descendant and cannot reuse the Cycle's attempt.
         $edges = Supersession::count();
-        app(ContributionDispatcher::class)->dispatch($actor, $phase,
-            ['action' => 'instrument.execute', 'proposition_id' => $head->id,
-                'instrument' => ['kind' => 'proposition_search', 'limit' => 10]]);
-        $memory = Receipt::where('type', 'proposition_search')->whereHas('evidenceExecution', fn ($q) => $q->where('phase_id', $phase->id))->sole();
-        $this->assertSame($expected, array_column($memory->metadata['proposition_collection']['results'], 'proposition_id'));
-        $this->assertSame([2, 3, 4, 5, 6, 7], array_column($memory->metadata['proposition_collection']['results'], 'lineage_distance'));
-        $this->assertSame($head->id, $memory->evidenceExecution->proposition_id);
-        $this->assertSame(1, $head->evidenceExecutions()->count());
+        $memory = $discovery;
+        // At initial entry the two loaded subjects are already cognitively visible.
+        $this->assertSame([$gates[7], $gates[6], $gates[5], $gates[3]],
+            array_column($memory->metadata['proposition_collection']['results'], 'proposition_id'));
+        $this->assertSame([1, 2, 3, 5], array_column($memory->metadata['proposition_collection']['results'], 'lineage_distance'));
+        $this->assertSame($commit->id, $memory->evidenceExecution->proposition_id);
+        $this->assertSame(0, $head->evidenceExecutions()->count());
         $this->assertSame($memory->metadata['observation_identity'], $memory->signature);
-        $this->assertTrue(app(CommitmentAdmissibilityService::class)->grounding($head)['requirements']['receipt']);
-        $this->assertSame(1, app(ReinforcementService::class)->count($head));
+        $this->assertFalse(app(CommitmentAdmissibilityService::class)->grounding($head)['requirements']['receipt']);
+        $this->assertSame(0, app(ReinforcementService::class)->count($head));
         $this->publishPotentialFixture($actor);
-        $this->assertArrayHasKey('proposition.variant', $service->stateFor($actor)['plan']['schema']['$defs']['actions']);
+        $this->assertArrayNotHasKey('proposition.variant', $service->stateFor($actor)['plan']['schema']['$defs']['actions']);
         $load = app(ReceiptContextService::class)->read($actor, $phase, $memory->id);
         $this->assertSame($memory->signature, $load->evidence_signature);
         $this->assertSame($edges, Supersession::count());

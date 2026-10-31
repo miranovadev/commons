@@ -48,9 +48,13 @@ trait PersistCommitHttpFixture
     private function persistCommitWithObserver(string $authorName, string $observerName): array
     {
         [$actor, $initial] = $this->beginPersistJourney($authorName);
-        $observer = $this->joinParticipant($observerName);
-        $this->enterParticipant($observer);
         foreach (array_keys($this->persistJourneySteps) as $index) {
+            // Enter before the actual Commit, retaining the Origin route without
+            // changing the earlier measured participation population.
+            if ($this->persistJourneySteps[$index]['input']['action'] === 'proposition.commit') {
+                $observer = $this->joinParticipant($observerName);
+                $this->enterParticipant($observer);
+            }
             $committed = $this->executePersistJourneyStep($actor, $index);
         }
 

@@ -169,8 +169,13 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
                 'artifact_id' => $source['artifact_id'], 'read_type' => 'text', 'parameters' => ['offset' => 2, 'max_chars' => 30]]]]);
         $this->assertSame('pending', $started['plan']['acquisition']['status']);
         $this->assertSame($state['plan']['phase'], $started['plan']['phase']);
-        $this->assertActionUnavailable($started, 'proposition.variant');
         $id = $started['plan']['preparation']['execution_id'];
+        // The worker receives its resolution schema with the reading. Execution
+        // still requires the real presentation acknowledgement.
+        $this->postContribution($actor, $started['plan']['phase']['id'], [
+            'action' => 'proposition.variant', 'execution_id' => $id,
+            'statement' => 'Premature unread contribution',
+        ])->assertConflict();
         $this->assertDatabaseMissing('receipts', ['evidence_execution_id' => $id]);
         Storage::disk('artifacts')->delete(Receipt::findOrFail($source['receipt_id'])->metadata['artifacts'][0]['path']);
         $url = '/api/substrates/'.$this->substrateSlug.'/participants/'.$actor.'/preparations/'.$id.'/reading';

@@ -93,7 +93,9 @@ class DownloadParticipationHttpTest extends ParticipationHttpTestCase
         $this->assertSame('deferred', $receipt->metadata['outcome']['type']);
         $this->assertSame(31, array_sum(array_column(array_column($receipt->metadata['deliveries'], 'boundaries'), 'length')));
         $this->assertStringNotContainsString('research,42', json_encode($receipt->metadata));
-        $this->assertActionAvailable($resolved, 'proposition.variant');
+        $this->assertActionUnavailable($resolved, 'proposition.variant');
+        $this->assertSame('not_required', $resolved['plan']['acquisition']['status']);
+        $this->assertActionAvailable($resolved, 'proposition.traverse');
         Http::assertSentCount(1);
     }
 }

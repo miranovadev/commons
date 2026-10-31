@@ -29,7 +29,7 @@ class PreparationConcurrencyTest extends TestCase
         });
     }
 
-    public function test_competing_starts_reserve_only_one_personal_gate_role(): void
+    public function test_competing_starts_reserve_only_one_attempt_in_the_cycle(): void
     {
         if (DB::getDriverName() !== 'pgsql') {
             $this->markTestSkipped('Requires independent PostgreSQL row locks.');

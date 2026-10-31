@@ -55,6 +55,7 @@ class CausalHorizonLineageTest extends TestCase
     {
         $this->isolateCorrespondenceOutput();
         $fixture = new GovernedExpressionFixture;
+        $fixture->enterPersist();
         $cycle = $fixture->phase->cycle;
         $horizon = $cycle->contextHorizon;
         $governor = $cycle->entry_committal_id;

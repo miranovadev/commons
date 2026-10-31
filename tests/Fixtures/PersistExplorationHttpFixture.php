@@ -88,11 +88,6 @@ trait PersistExplorationHttpFixture
             'reason' => 'Observation complete; continue through existing structure.']);
     }
 
-    private function judge(string $participant, string $proposition): array
-    {
-        return $this->contribute($participant, ['action' => 'attestation.create', 'proposition_id' => $proposition, 'direction' => 'support']);
-    }
-
     private function observePersist(string $participant, string $gate, string $reference): void
     {
         $before = $this->readParticipation($participant);

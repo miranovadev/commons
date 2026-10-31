@@ -1,7 +1,14 @@
 # Solo first-Commit design review
 
-Acquisition redesign note: the original diagnostic conclusions below describe the permanent-Gate lifecycle. The new Cycle-wide admission changes birth intervals. The retained positive solo driver was checked once and still stalled; its skip remains. The updated multi-Participant natural Commit fixture passes with real measurements. No broader solo search or measurement change is part of this PR.
+## Acquisition redesign follow-up
 
+The original proof below is historical: it describes the permanent-Gate lifecycle at PR #290. The Cycle-wide attempt changes birth intervals without changing any measurement. The bounded diagnostic now exercises one real solo branch with Preparation, an extra Preparation/Defer Cycle, Instrument, and a recorded unsuccessful Instrument. Its Persist/Constrain/Disperse intervals are `1, 1, 0`, or `1, 1, 1` after Defer. The unchanged Phase Profile is respectively `-1/7` or `-3/7`, coherent with negative Shape Topology. **The earlier healthy-solo Mediate contradiction no longer establishes impossibility under the new lifecycle.**
+
+The failed-Preparation diagnostic still exercises two lawful Revisions without creating a second operand. Both diagnostic classes remain executable on SQLite and PostgreSQL; neither claims a complete solo Commit proof. The positive `HorizonProofCycleTest` was checked once with its existing 101-action driver and still did not reach Commit. Its original assertions and narrow skip remain. Re-enable it when a complete lawful solo transcript is available; do not infer universal impossibility from that bounded driver. No alternative-history search or measurement change is included here.
+
+The current multi-Participant transcript reaches natural Reconciliation, Bias and Commit with real measurements. The old solo diagnostic source and original transcript remain available at [the merged PR #290 revision](https://github.com/miranovadev/commons/tree/d52fcc43bb1e4c034db625ae86f7f76cabb4ebc9/tests/Diagnostics).
+
+## Historical PR #290 findings
 
 Accepted limitation: the positive `HorizonProofCycleTest` retains its journey and assertions behind an explicit PHPUnit skip. Re-enable it after the upcoming acquisition and recovery corrections establish a lawful fresh-Origin solo path without weakening measurement gates or bypassing explored status. The diagnostic tests remain enabled. This investigation is deliberately deferred and does not block the explored-Write correction.
 
@@ -9,7 +16,7 @@ The explored-Write restriction blocks first Commit from a fresh Origin with one 
 
 ## Smallest healthy reproduction
 
-Use the first 16 author actions of `tests/Fixtures/participation/persist-skeptical-commit.json`. The HTTP harness creates Origin and exercises each acquisition, Attestation, consumption and Rest through application endpoints.
+Use the first 16 author actions of [the PR #290 transcript](https://github.com/miranovadev/commons/blob/d52fcc43bb1e4c034db625ae86f7f76cabb4ebc9/tests/Fixtures/participation/persist-skeptical-commit.json). The HTTP harness creates Origin and exercises each acquisition, Attestation, consumption and Rest through application endpoints.
 
 | Live Cycle | Actions | Result |
 | --- | --- | --- |

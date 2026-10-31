@@ -61,7 +61,9 @@ final class GovernedExpressionFixture
     /** Acquire shared evidence, then produce the real Persist Write. */
     public function writePersist(): void
     {
-        $this->enterPersist();
+        if ($this->phase->kind !== PhaseKind::Persist) {
+            $this->enterPersist();
+        }
         app(ContributionDispatcher::class)->dispatch($this->actor, $this->phase,
             ['action' => 'instrument.execute', 'proposition_id' => $this->phase->gate_proposition_id,
                 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/grounded-development']]);

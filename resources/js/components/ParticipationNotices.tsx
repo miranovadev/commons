@@ -9,7 +9,7 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
 }): WorkspaceNotice[] {
   const notices: WorkspaceNotice[] = [];
   const acquisition = plan?.acquisition;
-  if (acquisition?.role && acquisition.status !== 'not_required') notices.push({ id: 'personal-acquisition', title: acquisition.status === 'resolved' ? 'Acquisition attempt completed' : acquisition.status === 'pending' ? 'Acquisition in progress' : 'Acquire before creating a Variant',
+  if (acquisition?.role && acquisition.status !== 'not_required') notices.push({ id: 'personal-acquisition', title: acquisition.status === 'resolved' ? 'Acquisition attempt completed' : acquisition.status === 'pending' ? 'Acquisition in progress' : acquisition.status === 'awaiting_resolution' ? 'Choose Variant or Defer' : 'Acquire before creating a Variant',
     color: acquisition.status === 'resolved' ? 'teal' : 'indigo', satisfied: acquisition.status === 'resolved', icon: IconRoute,
     content: <Stack gap="xs">
       <Text size="sm">{acquisition.status === 'resolved' ? 'This Cycle’s attempt is complete. Later Cycles evaluate fresh opportunities independently.'

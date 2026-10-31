@@ -1,5 +1,7 @@
 # Evidence & Participatory Exploration: natural lifecycle validation
 
+Historical Stage 4 validation record. The subsequent [generative acquisition redesign](generative-acquisition.md) supersedes the permanent acquisition prerequisites and deferment lifecycle below. The current executable journeys have been updated; the original measurements and campaign results remain historical evidence.
+
 Historical Stage 4 validation. Acquisition sequencing and permanent completion expectations below are superseded by [generative acquisition](generative-acquisition.md); current tests use one attempt per Cycle. Measurement, cognition and movement contracts remain unchanged.
 
 

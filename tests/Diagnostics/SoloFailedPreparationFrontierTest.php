@@ -31,10 +31,12 @@ class SoloFailedPreparationFrontierTest extends ParticipationHttpTestCase
         $rest = fn () => $this->contribute($actor, ['action' => 'participant.rest']);
 
         $distinction = $variant('First distinction');
+        $rest();
+        $judge($distinction);
         $this->attemptUnavailableMaterial($actor, $source);
         $persist = $variant('First persistence');
         $rest();
-        $judge($distinction);
+        $move($distinction);
         $judge($persist);
         $state = $this->contribute($actor, ['action' => 'proposition.reclassify',
             'proposition_id' => $persist, 'receipt_id' => $source->id]);
@@ -62,8 +64,8 @@ class SoloFailedPreparationFrontierTest extends ParticipationHttpTestCase
             $node = Proposition::findOrFail($signal);
             $this->assertTrue(app(CorrespondenceGateService::class)->evaluate($node)['admissible']);
             $profile = app(PhaseProfileService::class)->inspect($node);
-            $this->assertSame(-1 / 7, $profile['phase_profile']);
-            $this->assertSame([null, 0.0, 1.0, (float) $revision, null, null, null], $profile['current']['means']);
+            $this->assertSame(-3 / 7, $profile['phase_profile']);
+            $this->assertSame([null, 1.0, 1.0, (float) $revision, null, null, null], $profile['current']['means']);
             $this->assertSame(['participant.rest'], array_keys($this->actionDefinitions($state)));
             $this->assertSame([$signal], array_column($state['plan']['gate_options'], 'id'));
             $rest();
@@ -101,7 +103,7 @@ class SoloFailedPreparationFrontierTest extends ParticipationHttpTestCase
         $after = $this->readParticipation($actor);
         $this->assertSame($before['plan']['phase'], $after['plan']['phase']);
         $this->assertSame($before['cycle'], $after['cycle']);
-        $this->assertSame('completed', $after['plan']['acquisition']['status']);
+        $this->assertSame('awaiting_resolution', $after['plan']['acquisition']['status']);
         $execution = EvidenceExecution::findOrFail($id);
         $this->assertSame('failed', $execution->status);
         $this->assertFalse($execution->receipt->metadata['content_verified']);

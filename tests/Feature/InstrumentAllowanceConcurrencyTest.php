@@ -44,7 +44,7 @@ class InstrumentAllowanceConcurrencyTest extends TestCase
     }
 
     #[DataProvider('instrumentKinds')]
-    public function test_two_independent_connections_cannot_complete_the_same_personal_gate_role(string $kind, PhaseKind $phaseKind): void
+    public function test_two_independent_connections_cannot_reserve_a_second_attempt_in_the_cycle(string $kind, PhaseKind $phaseKind): void
     {
         if (DB::getDriverName() !== 'pgsql') {
             $this->markTestSkipped('Requires independent PostgreSQL connections and row locks.');

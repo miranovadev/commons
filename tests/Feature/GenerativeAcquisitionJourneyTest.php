@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Cycle;
 use App\Models\EvidenceExecution;
+use App\Services\ParticipantContextSerializer;
 use Tests\Support\ParticipationHttpTestCase;
 
 class GenerativeAcquisitionJourneyTest extends ParticipationHttpTestCase
@@ -97,5 +98,50 @@ class GenerativeAcquisitionJourneyTest extends ParticipationHttpTestCase
         $this->assertSame(3, EvidenceExecution::where('type', 'prepare')->where('status', 'completed')->count());
         $this->assertDatabaseCount('exploration_events', 0);
         $this->assertDatabaseCount('receipt_consumptions', 0);
+    }
+
+    public function test_slower_participant_loads_shared_deferred_observations_then_uses_its_own_attempt(): void
+    {
+        $this->startSubstrate();
+        $first = $this->joinParticipant('early reader');
+        $initial = $this->enterParticipant($first, true);
+        $gate = $initial['plan']['gate_id'];
+        $second = $this->joinParticipant('other early reader');
+        $this->enterParticipant($second);
+        $receipts = [];
+        foreach ([$first, $second] as $actor) {
+            $state = $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $gate,
+                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://evidence.example.test/deferred/'.$actor]]);
+            $execution = EvidenceExecution::findOrFail($state['plan']['acquisition']['execution_id']);
+            $receipts[] = $execution->receipt->id;
+            $this->contribute($actor, ['action' => 'acquisition.defer', 'execution_id' => $execution->id,
+                'reason' => 'Preserve an observation for later consideration.']);
+        }
+        $slow = $this->joinParticipant('later reader');
+        $state = $this->enterParticipant($slow);
+        $packet = app(ParticipantContextSerializer::class)->inference($state);
+        foreach ($receipts as $id) {
+            $entry = collect($packet['receipts'])->firstWhere('id', $id);
+            $this->assertNotEmpty($entry['summary']);
+            $this->assertFalse($entry['loaded']);
+        }
+        $this->assertActionUnavailable($state, 'proposition.variant');
+        $state = $this->contribute($slow, ['action' => 'instrument.execute', 'proposition_id' => $gate,
+            'instrument' => ['kind' => 'proposition_search', 'query' => 'Consider the accumulated observations', 'limit' => 1],
+            'receipt_options' => ['load' => $receipts]]);
+        $packet = app(ParticipantContextSerializer::class)->inference($state);
+        foreach ($receipts as $id) {
+            $entry = collect($packet['receipts'])->firstWhere('id', $id);
+            $this->assertTrue($entry['loaded']);
+            $this->assertSame(1, collect($packet['receipts'])->where('id', $id)->count());
+        }
+        $own = EvidenceExecution::findOrFail($state['plan']['acquisition']['execution_id']);
+        $this->assertSame($slow, $own->cycle->participant_id);
+        $this->assertSame($gate, $own->proposition_id);
+        $this->contribute($slow, ['action' => 'proposition.variant', 'execution_id' => $own->id,
+            'statement' => 'A distinct question informed by shared observations']);
+        $this->assertDatabaseCount('receipt_consumptions', 0);
+        $this->assertDatabaseCount('exploration_events', 0);
+        $this->assertDatabaseCount('propositions', 2);
     }
 }
