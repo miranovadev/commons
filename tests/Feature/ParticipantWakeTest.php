@@ -9,6 +9,7 @@ use App\Enums\PhaseKind;
 use App\Jobs\WakeParticipant;
 use App\Models\Connection;
 use App\Models\Cycle;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\ParticipantConnection;
 use App\Models\Phase;
@@ -381,7 +382,7 @@ class ParticipantWakeTest extends TestCase
         $cycleId = $f->phase->cycle_id;
         $calls = [];
         $inference = Mockery::mock(ParticipantInference::class);
-        $inference->shouldReceive('contribute')->times($mode === 'rest' ? 10 : 7)->andReturnUsing(function (Connection $connection, array $state) use (&$calls, $receipt, $nodes, $cycleId, $f): array {
+        $inference->shouldReceive('contribute')->times($mode === 'rest' ? 12 : 7)->andReturnUsing(function (Connection $connection, array $state) use (&$calls, $receipt, $nodes, $cycleId, $f): array {
             $activity = app(ParticipantActivityService::class)->snapshot(collect([$f->viewer->fresh()]))['participants'][0];
             $this->assertTrue($activity['is_active']);
             $this->assertNotNull($activity['current_proposition_id']);
@@ -414,12 +415,12 @@ class ParticipantWakeTest extends TestCase
         $this->app->instance(ParticipantInference::class, $inference);
         $this->app->call([new WakeParticipant($connection->id), 'handle']);
         if ($mode === 'rest') {
-            $this->assertSame([1, 2, 3, 4, 5, 6, 7, 1, 1, 2], array_column($calls, 0));
-            $this->assertCount(9, array_unique(array_column($calls, 1)));
+            $this->assertSame([1, 2, 3, 4, 5, 6, 7, 1, 1, 2, 2, 3], array_column($calls, 0));
+            $this->assertCount(10, array_unique(array_column($calls, 1)));
             $this->assertNotNull(Cycle::findOrFail($cycleId)->completed_at);
             $this->assertNull(Cycle::findOrFail($cycleId)->rested_at);
             $this->assertSame($calls[7][1], $calls[8][1]);
-            $this->assertNotNull(Phase::findOrFail($calls[9][1])->cycle->rested_at);
+            $this->assertNotNull(Phase::findOrFail($calls[11][1])->cycle->rested_at);
 
             return;
         }
@@ -506,19 +507,31 @@ class ParticipantWakeTest extends TestCase
     public function test_cycle_mode_stops_when_the_current_cycle_rests(): void
     {
         $this->resolveExpressiveFieldFixture(.8);
-        [$participant, $connection] = $this->readyConnection();
+        [$participant, $connection] = $this->readyConnection(governed: true);
         $connection->forceFill(['configuration' => array_replace_recursive($connection->configuration, ['wake' => ['termination' => 'cycle']])])->save();
-        $cycle = $participant->cycles()->firstOrFail();
+        $cycle = $participant->cycles()->whereNull('completed_at')->firstOrFail();
         $inference = Mockery::mock(ParticipantInference::class);
-        $inference->shouldReceive('contribute')->twice()->andReturnUsing(function ($connection, $state): array {
+        $inference->shouldReceive('contribute')->times(4)->andReturnUsing(function ($connection, $state): array {
             if ($state['plan']['phase']['number'] === 1) {
                 return ['action' => 'proposition.variant', 'statement' => 'A fresh distinction.'];
+            }
+            if (isset($state['plan']['schema']['$defs']['actions']['preparation.start'])) {
+                $source = $state['plan']['preparation_options'][0];
+
+                return ['action' => 'preparation.start', 'proposition_id' => $state['plan']['gate_id'],
+                    'purpose' => 'Read before developing in this Phase', 'artifacts' => [[
+                        'receipt_id' => $source['receipt_id'], 'artifact_id' => $source['artifact_id'],
+                        'read_type' => 'text', 'parameters' => ['max_chars' => 4000]]]];
             }
             if (isset($state['plan']['schema']['$defs']['actions']['instrument.execute'])) {
                 return ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
                     'instrument' => ['kind' => 'proposition_search', 'limit' => 3]];
             }
-            $this->assertArrayHasKey('participant.rest', $state['plan']['schema']['$defs']['actions']);
+            if (isset($state['plan']['schema']['$defs']['actions']['proposition.variant'])) {
+                return ['action' => 'proposition.variant', 'statement' => 'Resolve the independent Persist attempt.',
+                    ...isset($state['plan']['preparation']['execution_id']) ? ['execution_id' => $state['plan']['preparation']['execution_id']] : []];
+            }
+            $this->assertArrayHasKey('participant.rest', $state['plan']['schema']['$defs']['actions'], json_encode([$state['plan']['phase']['number'], array_keys($state['plan']['schema']['$defs']['actions']), $state['plan']['acquisition'] ?? null, EvidenceExecution::find($state['plan']['acquisition']['execution_id'] ?? null)?->only(['type', 'status', 'outcome', 'metadata'])]));
 
             return ['action' => 'participant.rest'];
         });
@@ -531,9 +544,9 @@ class ParticipantWakeTest extends TestCase
     public function test_whole_job_deadline_preserves_completed_work_and_next_wake_resumes(): void
     {
         $this->resolveExpressiveFieldFixture(.8);
-        [$participant, $connection] = $this->readyConnection();
+        [$participant, $connection] = $this->readyConnection(governed: true);
         $connection->forceFill(['configuration' => array_replace_recursive($connection->configuration, ['wake' => ['termination' => 'rest', 'timeout_seconds' => 600]])])->save();
-        $cycle = $participant->cycles()->firstOrFail();
+        $cycle = $participant->cycles()->whereNull('completed_at')->firstOrFail();
         $tragedies = Tragedy::count();
         $exhaustions = DB::table('commit_region_exhaustions')->count();
         $clock = Mockery::mock(WakeClock::class);
@@ -555,14 +568,26 @@ class ParticipantWakeTest extends TestCase
         $phase = $cycle->phases()->whereNull('completed_at')->firstOrFail();
         $this->app->instance(WakeClock::class, new WakeClock);
         $resume = Mockery::mock(ParticipantInference::class);
-        $resume->shouldReceive('contribute')->once()->andReturnUsing(function ($connection, $state) use ($phase): array {
+        $resume->shouldReceive('contribute')->times(3)->andReturnUsing(function ($connection, $state) use ($phase): array {
+            if (isset($state['plan']['schema']['$defs']['actions']['preparation.start'])) {
+                $source = $state['plan']['preparation_options'][0];
+
+                return ['action' => 'preparation.start', 'proposition_id' => $state['plan']['gate_id'],
+                    'purpose' => 'Read before developing in this Phase', 'artifacts' => [[
+                        'receipt_id' => $source['receipt_id'], 'artifact_id' => $source['artifact_id'],
+                        'read_type' => 'text', 'parameters' => ['max_chars' => 4000]]]];
+            }
             if (isset($state['plan']['schema']['$defs']['actions']['instrument.execute'])) {
                 $this->assertSame($phase->id, $state['plan']['phase']['id']);
 
                 return ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
                     'instrument' => ['kind' => 'proposition_search', 'limit' => 3]];
             }
-            $this->assertArrayHasKey('participant.rest', $state['plan']['schema']['$defs']['actions']);
+            if (isset($state['plan']['schema']['$defs']['actions']['proposition.variant'])) {
+                return ['action' => 'proposition.variant', 'statement' => 'Resolve the independent Persist attempt.',
+                    ...isset($state['plan']['preparation']['execution_id']) ? ['execution_id' => $state['plan']['preparation']['execution_id']] : []];
+            }
+            $this->assertArrayHasKey('participant.rest', $state['plan']['schema']['$defs']['actions'], json_encode([$state['plan']['phase']['number'], array_keys($state['plan']['schema']['$defs']['actions']), $state['plan']['acquisition'] ?? null, EvidenceExecution::find($state['plan']['acquisition']['execution_id'] ?? null)?->only(['type', 'status', 'outcome', 'metadata'])]));
 
             return ['action' => 'participant.rest'];
         });
@@ -690,8 +715,17 @@ class ParticipantWakeTest extends TestCase
     /** @return array{Participant, ParticipantConnection} */
     private function readyConnection(
         ?CarbonImmutable $nextTriggerAt = null,
+        bool $governed = false,
     ): array {
         $participant = $this->participant();
+        if ($governed) {
+            app(CycleEntryService::class)->enter($participant, ['statement' => 'Wake lifecycle Origin',
+                'attestation' => ['direction' => 'support']]);
+            $phase = $participant->cycles()->whereNull('completed_at')->sole()->currentPhase;
+            $this->instrumentGateFixture($phase);
+
+            return [$participant, $this->connectionFor($participant, $nextTriggerAt)];
+        }
         $cycle = new Cycle;
         $cycle->forceFill([
             'participant_id' => $participant->getKey(),

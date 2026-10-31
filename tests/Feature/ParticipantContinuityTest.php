@@ -115,7 +115,7 @@ class ParticipantContinuityTest extends TestCase
         $this->assertSame($register, $continued['plan']['phase']['write_register']);
 
         // The slower participant explores the existing Distinction without
-        // acquisition, then uses its own Cycle's opportunity to develop Persist.
+        // acquisition, then uses its own Persist opportunity to develop Persist.
         $persist = $service->contribute($other, $continued['plan']['phase']['id'],
             ['action' => 'attestation.create', 'proposition_id' => $first['current_proposition_id'], 'direction' => 'support']);
         $this->instrumentGateFixture(Phase::findOrFail($persist['plan']['phase']['id']));

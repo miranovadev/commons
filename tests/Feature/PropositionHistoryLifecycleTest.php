@@ -65,7 +65,7 @@ class PropositionHistoryLifecycleTest extends TestCase
         $sourceTouches = $state->touchCount($source);
         $votes = $state->attestations(collect([$source]))->pluck('id')->all();
         $receipts = $state->receipts($source)->pluck('id')->all();
-        $this->assertCount($operation === 'variant' ? 2 : 1, $votes);
+        $this->assertCount(1, $votes); // Only the actual judging Participant supplies a vote.
         $this->assertCount($operation === 'variant' ? 2 : 0, $receipts);
         $availableReceipt = app(HorizonReceiptService::class)->ordinaryAvailable($phase)->firstOrFail();
         $this->assertGreaterThan(0, $sourceTouches);

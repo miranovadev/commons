@@ -68,7 +68,7 @@ The forms are mutually exclusive. The schema enumerates replay IDs for each exac
 eligible Instrument target. Catalogue visibility or replay capability alone grants
 no execution authority. The server restores the immutable originating invocation;
 the Participant does not restate its URL or query. Replay follows ordinary Instrument
-Gate acquisition eligibility and the once-per-Cycle allowance, without Phase progression.
+Gate acquisition eligibility and the one-attempt-per-Phase invariant, without Phase progression.
 
 Loading is separate: optional Gate `receipt_options.load/unload` accompanies a
 successful forward contribution atomically. There is no standalone Receipt Read
