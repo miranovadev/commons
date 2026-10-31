@@ -118,7 +118,7 @@ final class PreparationService
     public function contribute(Participant $participant, EvidenceExecution $execution, array $input): Receipt
     {
         if (! in_array($input['action'] ?? null, ['proposition.variant'], true)) {
-            throw new DomainException('Preparation can contribute only a lawful Disperse Variant or Revise.');
+            throw new DomainException('Preparation can contribute only its admitted lawful Variant.');
         }
 
         return DB::transaction(function () use ($participant, $execution, $input): Receipt {
@@ -317,25 +317,21 @@ final class PreparationService
 
     public function resolutionSchema(Participant $participant, Phase $phase, EvidenceExecution $execution): array
     {
-        $revisions = app(PropositionOptionService::class)->revisionOptionsFor($phase, $participant, prepared: true)->pluck('id')->all();
+        if ($execution->status !== 'presented') {
+            return app(InputSchemaService::class)->forPhase($phase->kind, []);
+        }
         $actions = ['preparation.defer'];
-        foreach (['proposition.variant'] as $action) {
-            if (app(PhaseGenerationService::class)->available($phase, $action, prepared: true)
-                && ($action !== 'proposition.revise' || $revisions !== [])) {
-                $actions[] = $action;
-            }
+        if (app(PhaseGenerationService::class)->available($phase, 'proposition.variant', prepared: true)) {
+            $actions[] = 'proposition.variant';
         }
         $schema = app(InputSchemaService::class)->forPhase($phase->kind, $actions);
         foreach ($schema['$defs']['actions'] as $action => &$definition) {
             $definition['properties']['execution_id'] = ['type' => 'string', 'const' => $execution->id];
             $definition['required'][] = 'execution_id';
-            if ($action === 'proposition.revise') {
-                $definition['properties']['proposition_id']['enum'] = $revisions;
-            }
         }
         unset($definition);
 
-        return $schema;
+        return app(InputSchemaService::class)->withReceiptOptions($schema, $phase, null);
     }
 
     /** The dispatcher requires this explicit execution, never an ambient bypass flag. */

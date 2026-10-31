@@ -1,5 +1,8 @@
 # Solo first-Commit design review
 
+Acquisition redesign note: the original diagnostic conclusions below describe the permanent-Gate lifecycle. The new Cycle-wide admission changes birth intervals. The retained positive solo driver was checked once and still stalled; its skip remains. The updated multi-Participant natural Commit fixture passes with real measurements. No broader solo search or measurement change is part of this PR.
+
+
 Accepted limitation: the positive `HorizonProofCycleTest` retains its journey and assertions behind an explicit PHPUnit skip. Re-enable it after the upcoming acquisition and recovery corrections establish a lawful fresh-Origin solo path without weakening measurement gates or bypassing explored status. The diagnostic tests remain enabled. This investigation is deliberately deferred and does not block the explored-Write correction.
 
 The explored-Write restriction blocks first Commit from a fresh Origin with one Participant and the current seven-Phase lifecycle. The blocker occurs before Bias. A healthy route can complete personal exploration, but the Participant cannot develop the pair of coherent Signals needed for its first Reconciliation. This finding concerns a fresh substrate with one Participant throughout. It does not establish a restriction on one Participant continuing a previously developed population history.

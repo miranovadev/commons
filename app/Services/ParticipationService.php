@@ -103,8 +103,8 @@ final readonly class ParticipationService
 
             return [...$this->waiting(
                 $recovering ? ($recoveryReady ? 'recovery_pending' : 'recovery_unavailable') : 'cycle_not_started',
-                $recovering ? ($recoveryReady ? 'Rest completed; recovery is ready for the next entry attempt.'
-                    : 'Rest completed; no valid recovery basin entry can be established.') : 'The Participant is waiting for a Cycle to begin.',
+                $recovering ? ($recoveryReady ? 'The Cycle completed; recovery is ready for the next entry attempt.'
+                    : 'The Cycle completed; no valid recovery basin entry can be established.') : 'The Participant is waiting for a Cycle to begin.',
                 entry: $entry,
             ), 'completion' => $completed !== null && $completed->rested_at === null && $finalPhase?->kind === PhaseKind::Order ? [
                 'cycle_id' => $completed->id,
@@ -136,6 +136,7 @@ final readonly class ParticipationService
             );
         }
 
+        app(AcquisitionAttemptService::class)->recover($phase);
         app(PreparationService::class)->recover($participant, $phase);
         $version = app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id);
         $plan = $this->plans->forPhase($participant, $phase, $workspace);

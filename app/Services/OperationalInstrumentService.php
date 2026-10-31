@@ -74,8 +74,12 @@ final readonly class OperationalInstrumentService
             if (! $origin && $phase->kind !== PhaseKind::Distinguish && ! $this->availability->mutable($proposition)) {
                 throw new DomainException('Committed sources and Committal results cannot receive instruments. Develop a Variant from the Committal instead.');
             }
+            // Trusted pre-observed service calls still require admission under the root lock.
+            if (! $origin && app(AcquisitionAttemptService::class)->execution($phase) === null) {
+                $this->reserve($phase, $proposition, $input, $replayedFrom);
+            }
             if (! $origin && ! app(AcquisitionAttemptService::class)->admitted($phase)) {
-                throw new ConflictHttpException('Instrumentation requires the exact active Gate and an unfulfilled personal acquisition role.');
+                throw new ConflictHttpException('Instrumentation requires the exact active Gate and an admitted current-Cycle acquisition attempt.');
             }
 
             $metadata = match ($input['kind']) {
@@ -113,22 +117,12 @@ final readonly class OperationalInstrumentService
             throw new DomainException('Committed sources and Committal results cannot receive instruments. Develop a Variant from the Committal instead.');
         }
         if (! $bootstrap && ! app(PropositionOptionService::class)->instrumentOptionsFor($phase->fresh())->contains('id', $proposition->id)) {
-            throw new ConflictHttpException('Instrumentation requires the exact active Gate and an unfulfilled personal acquisition role.');
+            throw new ConflictHttpException('Instrumentation requires the exact active Gate and an admitted current-Cycle acquisition attempt.');
         }
         app(RelevantInstrumentService::class)->assertAvailable($proposition, $input);
         $normalized = $this->normalize($input);
         if (! $bootstrap) {
-            DB::transaction(function () use ($phase, $proposition, $normalized, $replayedFrom): void {
-                Substrate::lockForUpdate()->findOrFail($phase->cycle->participant->substrate_id);
-                $phase = $phase->fresh(['cycle.participant']);
-                if (! app(AcquisitionAttemptService::class)->allows($phase, 'instrument.execute')) {
-                    throw new ConflictHttpException('This Cycle already has an acquisition attempt or exploration is outstanding.');
-                }
-                $execution = new EvidenceExecution;
-                $execution->forceFill(['phase_id' => $phase->id, 'proposition_id' => $proposition->id,
-                    'kind' => $normalized['kind'], 'reference' => $this->reference($normalized),
-                    'replayed_from_receipt_id' => $replayedFrom?->id, 'input' => $normalized, 'started_at' => now(), 'attempt_admitted_at' => now()])->save();
-            });
+            $this->reserve($phase, $proposition, $normalized, $replayedFrom);
         }
         if ($normalized['kind'] === 'proposition_search') {
             $substrateId = $phase->cycle->participant->substrate_id;
@@ -144,6 +138,24 @@ final readonly class OperationalInstrumentService
         }
 
         return $this->observe($normalized);
+    }
+
+    private function reserve(Phase $phase, Proposition $proposition, array $normalized, ?Receipt $replayedFrom): void
+    {
+        DB::transaction(function () use ($phase, $proposition, $normalized, $replayedFrom): void {
+            Substrate::lockForUpdate()->findOrFail($phase->cycle->participant->substrate_id);
+            $phase = $phase->fresh(['cycle.participant']);
+            if (app(PhaseService::class)->currentFor($phase->cycle->participant)->id !== $phase->id) {
+                throw new ConflictHttpException('The acquisition Phase is no longer active.');
+            }
+            if (! app(AcquisitionAttemptService::class)->allows($phase, 'instrument.execute')) {
+                throw new ConflictHttpException('This Cycle already has an acquisition attempt or exploration is outstanding.');
+            }
+            $execution = new EvidenceExecution;
+            $execution->forceFill(['phase_id' => $phase->id, 'proposition_id' => $proposition->id,
+                'kind' => $normalized['kind'], 'reference' => $this->reference($normalized),
+                'replayed_from_receipt_id' => $replayedFrom?->id, 'input' => $normalized, 'started_at' => now(), 'attempt_admitted_at' => now()])->save();
+        });
     }
 
     /** External I/O only: callers composing transactions must prepare this first. */
@@ -174,7 +186,7 @@ final readonly class OperationalInstrumentService
                 $verification = $this->verifier->verify($reference);
             } catch (ArtifactStorageException $exception) {
                 // Infrastructure failure is not a failed observation of the resource.
-                // No execution/Receipt has been persisted and no write lock is held.
+                // Admission is retained without a Receipt; expiry permits explicit Defer. No write lock is held.
                 throw $exception;
             } catch (\Throwable $exception) {
                 // A failed verification is still an observable Instrument attempt.

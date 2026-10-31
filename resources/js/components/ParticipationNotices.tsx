@@ -18,7 +18,7 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
           : 'Explore existing structure first. Acquire for this fresh Variant opportunity, then choose Variant or Defer.'}</Text>
       {acquisition.status === 'required' && <Text size="xs">{plan?.phase.kind === 'persist' && plan.schema?.$defs?.actions?.['preparation.start']
         ? 'Prepare an accessible Artifact, then resolve the reading before continuing.'
-        : plan?.phase.kind === 'disperse' ? 'Choose Instrument or an available Preparation; either satisfies this Gate’s acquisition.' : 'Choose an available Instrument.'}</Text>}
+        : plan?.phase.kind === 'disperse' ? 'Choose Instrument or an available Preparation; either admits this Cycle’s generative attempt.' : 'Choose an available Instrument.'}</Text>}
       {acquisition.outcome && <Text size="xs">Recorded outcome: {acquisition.outcome.action}</Text>}
     </Stack> });
   const correspondence = plan?.correspondence_admissibility;

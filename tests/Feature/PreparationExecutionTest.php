@@ -12,17 +12,15 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
-use App\Services\ContributionDispatcher;
 use App\Services\Evidence\ReceiptEvidenceService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
-use App\Services\LedgerService;
 use App\Services\ParticipantReceiptProjection;
 use App\Services\ParticipationService;
+use App\Services\PhaseGenerationService;
 use App\Services\PotentialProjectionService;
 use App\Services\PreparationService;
 use App\Services\PropositionOptionService;
-use App\Services\ReceiptContextService;
 use DomainException;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
@@ -54,6 +52,31 @@ class PreparationExecutionTest extends TestCase
         Storage::fake('artifacts');
     }
 
+    public function test_causal_secondary_operand_artifacts_are_accessible_without_sibling_expansion(): void
+    {
+        // Recorded graph component: Artifact selection is independent of movement and acquisition admission.
+        $fixture = new PreparationFixture(true);
+        $f = $fixture->context;
+        $acting = $f->gate;
+        $signal = $f->node($acting, 'activity', position: PhaseKind::Disperse);
+        $secondaryRoot = $f->node($f->seed, 'canon', position: PhaseKind::Constrain);
+        $secondary = $f->node($secondaryRoot, 'activity', position: PhaseKind::Disperse);
+        $unrelated = $f->node($secondaryRoot, 'activity', position: PhaseKind::Disperse);
+        $f->node($signal, 'frontier', 'reconcile', additionalParent: $secondary, position: PhaseKind::Mediate);
+        $f->gate = $secondaryRoot;
+        $included = $fixture->receipt('Secondary ancestor preserved bytes', true);
+        $f->gate = $unrelated;
+        $excluded = $fixture->receipt('Unrelated sibling preserved bytes', true);
+        $f->gate = $acting;
+        $options = app(PreparationService::class)->options($f->phase);
+        $ids = array_column($options, 'receipt_id');
+        $this->assertContains($included->id, $ids);
+        $this->assertNotContains($excluded->id, $ids);
+        $this->assertSame(count($ids), count(array_unique($ids)));
+        $this->assertFalse(app(PreparationService::class)->eligible($f->phase), 'Existing unexplored continuation still takes precedence.');
+        $this->assertNotContains($secondary->id, app(PropositionOptionService::class)->traversalOptionsFor($f->phase)->pluck('id'));
+    }
+
     public function test_deferment_is_ordinary_shared_unattached_history_without_structural_progression(): void
     {
         $fixture = new PreparationFixture;
@@ -74,8 +97,13 @@ class PreparationExecutionTest extends TestCase
         $this->assertNull($execution->fresh()->receipt);
         $reason = '  Further comparison is needed; this is a reason, not an instruction.  ';
         $receipt = $service->defer($f->viewer, $execution, $reason);
-        $this->assertSame($before, $this->structuralSnapshot());
-        $this->assertNull($f->phase->fresh()->completed_at);
+        $after = $this->structuralSnapshot();
+        foreach (['propositions', 'supersessions', 'exploration_events', 'closure_births', 'phase_profile_observations', 'proposition_attestation_cursors'] as $table) {
+            $this->assertSame($before[$table], $after[$table], $table);
+        }
+        $this->assertNotNull($f->phase->fresh()->completed_at);
+        $this->assertNotNull($f->phase->cycle->fresh()->deferred_at);
+        $this->assertNull($f->phase->cycle->fresh()->rested_at);
         $this->assertSame($f->gate->id, $f->viewer->fresh()->current_proposition_id);
         $this->assertSame('completed', $execution->fresh()->status);
         $this->assertSame('deferred', $execution->fresh()->outcome);
@@ -398,54 +426,37 @@ class PreparationExecutionTest extends TestCase
         $this->assertNull($execution->fresh()->resulting_proposition_id);
     }
 
-    public function test_revision_preserves_ownership_refutation_and_does_not_advance_variant_epoch(): void
+    public function test_unexplored_revision_target_does_not_admit_a_prepared_variant_attempt(): void
     {
         $fixture = new PreparationFixture;
         $f = $fixture->context;
         $head = DB::transaction(fn () => $f->node($f->gate, 'activity', position: PhaseKind::Disperse));
-        $vote = (new Attestation)->forceFill(['phase_id' => $head->phase_id, 'proposition_id' => $head->id, 'direction' => 'refute']);
-        $vote->save();
-        app(LedgerService::class)->record($vote);
-        [$service, $execution] = $this->presented($fixture);
-        $encounters = DB::table('exploration_events')->count();
-        $receipt = $service->contribute($f->viewer, $execution, ['action' => 'proposition.revise',
-            'proposition_id' => $head->id, 'statement' => 'Reconsider the refuted account after examination.']);
-        $result = $execution->fresh()->resultingProposition;
-        $this->assertSame([$head->id], $result->parents()->pluck('propositions.id')->all());
-        $this->assertSame($encounters, DB::table('exploration_events')->count());
-        $this->assertOrdinary($receipt, $execution);
-        $this->assertNotNull($f->phase->fresh()->completed_at);
+        $this->assertFalse(app(PreparationService::class)->eligible($f->phase));
+        $this->assertFalse(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant', prepared: true));
+        $this->assertDatabaseCount('exploration_events', 0);
     }
 
-    public function test_personal_roles_are_independent_between_participants_and_persist_across_cycles(): void
+    public function test_attempts_are_independent_between_participants_and_renew_on_later_cycles(): void
     {
         $fixture = new PreparationFixture;
         $f = $fixture->context;
         [$service, $execution] = $this->presented($fixture);
         $receipt = $service->defer($f->viewer, $execution, 'The observation stands.');
-        $this->reclassify($fixture, $receipt);
         $other = $this->other($f->phase);
         $second = $service->start($other->cycle->participant, $other, $fixture->input());
         $this->assertNotSame($execution->cycle_id, $second->cycle_id);
         $this->assertSame(0, EvidenceExecution::where('cycle_id', $execution->cycle_id)->where('type', 'instrument')->where('status', 'completed')->count());
-        // A completed Disperse role leaves the Persist role independent. Readable
-        // Artifacts require Preparation for Persist, not Instrument fallback.
-        $this->assertTrue(app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->isEmpty());
-        $persistGate = DB::transaction(fn () => $f->node($f->seed, 'activity', position: PhaseKind::Distinguish));
-        $probe = $f->phase->replicate();
-        $probe->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $persistGate->id, 'write_register' => 'frontier']);
-        $this->assertEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($probe));
-        $this->assertTrue($service->eligible($probe));
         $f->phase->forceFill(['completed_at' => now()])->save();
         $f->phase->cycle->forceFill(['completed_at' => now()])->save();
         $next = $f->phase->cycle->replicate();
         $next->forceFill(['completed_at' => null, 'sequence' => (int) $f->viewer->cycles()->max('sequence') + 1])->save();
         $phase = $f->phase->replicate();
         $phase->forceFill(['cycle_id' => $next->id, 'completed_at' => null])->save();
+        $phase = $phase->fresh();
         $newSource = $fixture->receipt('new observation in a later Cycle');
-        $this->assertFalse($service->eligible($phase));
-        $this->expectException(ConflictHttpException::class);
-        $service->start($f->viewer, $phase, $fixture->input([$newSource]));
+        $this->assertTrue($service->eligible($phase));
+        $nextAttempt = $service->start($f->viewer, $phase, $fixture->input([$newSource]));
+        $this->assertNotSame($execution->id, $nextAttempt->id);
     }
 
     public function test_selection_authority_survives_later_consumption_without_granting_new_access(): void
@@ -513,40 +524,24 @@ class PreparationExecutionTest extends TestCase
         }
     }
 
-    public function test_shared_preparation_receipt_does_not_waive_personal_persist_examination(): void
+    public function test_shared_preparation_receipt_does_not_waive_another_participants_current_attempt(): void
     {
         $fixture = new PreparationFixture;
         $f = $fixture->context;
         [$service, $execution] = $this->presented($fixture);
         $receipt = $service->defer($f->viewer, $execution, 'Preserve the comparison for later development.');
-        $this->assertNotNull($fixture->source->consumption);
         $other = $this->other($f->phase);
-        $gate = DB::transaction(fn () => $f->node($f->seed, 'activity', position: PhaseKind::Distinguish));
-        $other->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $gate->id, 'write_register' => 'frontier'])->save();
         $actor = $other->cycle->participant;
-        $actor->forceFill(['current_proposition_id' => $gate->id])->save();
-        $this->assertSame([$receipt->id], app(HorizonReceiptService::class)->ordinaryAvailable($other)->modelKeys());
-        $contexts = app(ReceiptContextService::class);
-        $contexts->clear($f->viewer, $f->phase, $receipt->id);
-        foreach (['unloaded', 'loaded', 'cleared'] as $state) {
-            if ($state === 'loaded') {
-                $contexts->read($actor, $other, $receipt->id);
-            }
-            if ($state === 'cleared') {
-                $contexts->clear($actor, $other, $receipt->id);
-            }
-            $actions = app(InputPlanService::class)->forPhase($actor, $other)['schema']['$defs']['actions'];
-            $this->assertArrayNotHasKey('proposition.variant', $actions);
-            $this->assertArrayHasKey('preparation.start', $actions);
-            $this->assertArrayNotHasKey('instrument.execute', $actions);
-        }
+        $actions = app(InputPlanService::class)->forPhase($actor, $other)['schema']['$defs']['actions'];
+        $this->assertArrayNotHasKey('proposition.variant', $actions);
+        $this->assertArrayHasKey('preparation.start', $actions);
         $personal = $service->start($actor, $other, $fixture->input());
         $delivery = $service->delivery($actor, $personal, 'inline-text');
         $service->acknowledge($actor, $personal, $delivery['presentation_token']);
-        $service->defer($actor, $personal, 'Personally examined the shared material.');
-        $result = app(ContributionDispatcher::class)->dispatch($actor, $other,
-            ['action' => 'proposition.variant', 'statement' => 'Develop another Participant’s Preparation observation.']);
-        $this->assertSame([$gate->id], $result->parents()->pluck('propositions.id')->all());
+        $ownReceipt = $service->contribute($actor, $personal, ['action' => 'proposition.variant',
+            'execution_id' => $personal->id, 'statement' => 'Develop the shared evidence through a personal attempt.']);
+        $this->assertSame([$f->gate->id], $personal->fresh()->resultingProposition->parents()->pluck('propositions.id')->all());
+        $this->assertNotSame($receipt->id, $ownReceipt->id);
         $this->assertOrdinary($receipt, $execution);
         $this->assertSame('deferred', $execution->fresh()->outcome);
     }

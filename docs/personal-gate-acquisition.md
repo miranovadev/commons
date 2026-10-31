@@ -1,5 +1,7 @@
 # Personal Gate Acquisition — Stage 2
 
+Historical implementation record. The permanent Participant × Gate × role contract below is superseded by [acquisition for a generative attempt](generative-acquisition.md). Existing executions remain immutable; new admission is per Cycle and only before fresh Variant generation.
+
 Claire's Stage 2 implementation handoff authorizes personal acquisition as a prerequisite to fresh generation. This contract supersedes the per-Cycle allowances and shared-Receipt acquisition switches in the earlier epistemic Stage 2A/2B and Disperse fallback documents. It does not supersede Stage 1 Receipt cognition or structural admissibility.
 
 ## Identity and lifecycle

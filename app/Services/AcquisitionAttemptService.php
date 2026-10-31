@@ -39,7 +39,7 @@ final class AcquisitionAttemptService
             $status = 'not_required';
             if ($execution !== null) {
                 $status = $execution->attempt_resolution !== null || $execution->phase_id !== $phase->id ? 'resolved'
-                    : ($execution->observationRecorded() || $execution->status === 'presented' ? 'awaiting_resolution' : 'pending');
+                    : ($execution->observationRecorded() || in_array($execution->status, ['presented', 'failed'], true) ? 'awaiting_resolution' : 'pending');
             } elseif ($this->role($phase) !== null && app(PhaseGenerationService::class)->available($phase, 'proposition.variant', $context, prepared: true)) {
                 $status = 'required';
             }
@@ -65,27 +65,42 @@ final class AcquisitionAttemptService
             || $this->execution($phase, $context)->status === 'presented');
     }
 
+    public function recover(Phase $phase): void
+    {
+        $execution = $this->execution($phase);
+        if ($execution !== null && $execution->type === 'instrument' && $execution->status === 'pending'
+            && $execution->started_at->lt(now()->subSeconds((int) config('preparation.unresolved_seconds')))) {
+            app(EvidenceExecutionService::class)->fail($execution, 'Instrument reservation expired before a recorded observation.');
+        }
+    }
+
     public function schema(Phase $phase, EvidenceExecution $execution): array
     {
         $actions = [];
-        if ($this->ready($phase)) {
+        if ($this->ready($phase) || ($this->admitted($phase) && $execution->status === 'failed')) {
             $actions[] = 'acquisition.defer';
             if (app(PhaseGenerationService::class)->available($phase, 'proposition.variant')) {
                 $actions[] = 'proposition.variant';
             }
         }
         $schema = app(InputSchemaService::class)->forPhase($phase->kind, $actions);
-        foreach ($schema['$defs']['actions'] as &$definition) {
+        foreach ($schema['$defs']['actions'] as $action => &$definition) {
             $definition['properties']['execution_id'] = ['type' => 'string', 'const' => $execution->id];
-            $definition['required'][] = 'execution_id';
+            // Variant may bind implicitly to the locked active Phase; Defer names its attempt.
+            if ($action !== 'proposition.variant') {
+                $definition['required'][] = 'execution_id';
+            }
         }
 
-        return $schema;
+        return app(InputSchemaService::class)->withReceiptOptions($schema, $phase, null);
     }
 
     public function finish(EvidenceExecution $execution, ?Proposition $result, ?string $reason): void
     {
         $execution->refresh();
+        if (DB::transactionLevel() === 0 || ($result !== null && (! $result->wasRecentlyCreated || $result->phase_id !== $execution->phase_id))) {
+            throw new \DomainException('Attempt resolution requires its locked creating Phase and real contribution.');
+        }
         if ($execution->attempt_resolution !== null) {
             throw new ConflictHttpException('The acquisition attempt is already resolved.');
         }
@@ -118,7 +133,11 @@ final class AcquisitionAttemptService
                 || app(PhaseService::class)->currentFor($participant)->id !== $phase->id) {
                 throw new \DomainException('The acquisition attempt is no longer current.');
             }
-            app(CausalContextService::class)->assertPhase($phase);
+            if (($input['action'] ?? null) === 'proposition.variant') {
+                app(CausalContextService::class)->assertPhase($phase);
+            } elseif (trim($input['reason'] ?? '') === '' || str_contains($input['reason'] ?? '', "\0")) {
+                throw new \DomainException('Defer requires a nonempty reason.');
+            }
             app(ContributionService::class)->validateSchema($this->schema($phase, $execution), $input);
             $result = null;
             if ($input['action'] === 'proposition.variant') {

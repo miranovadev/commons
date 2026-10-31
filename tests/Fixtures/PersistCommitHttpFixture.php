@@ -73,7 +73,13 @@ trait PersistCommitHttpFixture
     {
         $step = $this->persistJourneySteps[$index];
         if (isset($step['entrant'])) {
-            $this->enterParticipant($this->joinParticipant($step['entrant']));
+            $entrant = $this->joinParticipant($step['entrant']);
+            $this->enterParticipant($entrant);
+            if (isset($step['entrant_judgment'])) {
+                $this->contribute($entrant, ['action' => 'attestation.create',
+                    'proposition_id' => $this->persistJourneyIds[$step['entrant_judgment']['proposition_id']['ref']],
+                    'direction' => $step['entrant_judgment']['direction']]);
+            }
         }
         $before = $this->readParticipation($actor);
         $this->assertSame($step['phase'], $before['plan']['phase']['number'], 'Fixed Phase at step '.$index);

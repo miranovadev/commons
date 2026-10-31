@@ -221,7 +221,7 @@ final readonly class InputSchemaService
         return $this->withReceiptOptions($schema, $occurrence, $context);
     }
 
-    private function withReceiptOptions(array $schema, Phase $phase, ?ParticipationContext $context): array
+    public function withReceiptOptions(array $schema, Phase $phase, ?ParticipationContext $context): array
     {
         if (isset($schema['$defs']['actions']['participant.rest'])
             && app(ContinuationOpportunityService::class)->pendingEvidence($phase, $context)) {
@@ -241,7 +241,7 @@ final readonly class InputSchemaService
                 : ['type' => 'array', 'uniqueItems' => true, 'items' => ['type' => 'string', 'enum' => $eligibleIds]];
         }
         foreach ($schema['$defs']['actions'] as $name => &$action) {
-            if (in_array($name, ['participant.rest', 'preparation.start', 'preparation.defer'], true)) {
+            if (in_array($name, ['participant.rest', 'preparation.start', 'preparation.defer', 'acquisition.defer'], true)) {
                 continue;
             }
             $action['properties']['receipt_options'] = ['type' => 'object', 'additionalProperties' => false,

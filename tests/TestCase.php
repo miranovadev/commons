@@ -541,7 +541,7 @@ abstract class TestCase extends BaseTestCase
     /** Attach a catalogue observation through the existing one-use consumption operation. */
     protected function consumeObservationFixture(ParticipantContextFixture $fixture, Receipt $receipt): void
     {
-        $source = $fixture->node($fixture->phase->gate, 'frontier', position: PhaseKind::Persist);
+        $source = $fixture->node($fixture->seed, 'frontier', position: PhaseKind::Persist);
         $target = $fixture->node($source, 'canon', 'reclassify', position: PhaseKind::Constrain);
         DB::transaction(fn () => app(HorizonReceiptService::class)->consume($target->phase, $source, $target, $receipt->id));
     }

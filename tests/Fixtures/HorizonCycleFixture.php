@@ -23,7 +23,7 @@ use Carbon\CarbonImmutable;
 
 trait HorizonCycleFixture
 {
-    /** Two readers enter between distinct births and supply real, independently consumable observations. */
+    /** Two readers enter between distinct births and exercise their own first judgments. */
     protected function driveStaggeredCommit(bool $realClosure = true, ?callable $recordAction = null): Proposition
     {
         $examined = [];
@@ -31,7 +31,7 @@ trait HorizonCycleFixture
             $plan = $state['plan'];
             $gate = $plan['gate_id'];
             if (count($examined) === 2 || isset($examined[$gate]) || $plan['phase']['number'] !== 2
-                || ! isset($plan['schema']['$defs']['actions']['proposition.variant'])) {
+                || ! isset($plan['schema']['$defs']['actions']['preparation.start'])) {
                 return;
             }
             $examined[$gate] = true;
@@ -40,9 +40,8 @@ trait HorizonCycleFixture
             $reader->save();
             $service = app(ParticipationService::class);
             $entry = $service->enter($reader);
-            $service->contribute($reader, $entry['plan']['phase']['id'], ['action' => 'instrument.execute',
-                'proposition_id' => $entry['plan']['gate_id'], 'instrument' => ['kind' => 'proposition_search',
-                    'query' => 'Shared observation '.count($examined), 'limit' => 1]]);
+            $service->contribute($reader, $entry['plan']['phase']['id'], ['action' => 'attestation.create',
+                'proposition_id' => $gate, 'direction' => 'support']);
         };
 
         return $this->driveHorizonCycle(realClosure: $realClosure, observe: $admitReader, additionalEntrants: 2,

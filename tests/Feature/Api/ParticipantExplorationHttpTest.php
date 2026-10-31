@@ -24,11 +24,13 @@ class ParticipantExplorationHttpTest extends ScriptedParticipationTestCase
         $this->assertFalse($this->visibleProposition($luna, $a)['explored']);
         $this->assertFalse($this->visibleProposition($this->readParticipation($observer), $b)['explored']);
         $this->assertFalse($this->visibleProposition($this->readParticipation($witness), $b)['explored']);
-        $this->assertActionAvailable($nova, 'proposition.variant');
+        $this->assertActionUnavailable($nova, 'proposition.variant');
+        $this->assertActionAvailable($nova, 'instrument.execute');
         $this->assertActionUnavailable($luna, 'proposition.variant');
         $this->assertActionAvailable($luna, 'attestation.create');
         $this->assertDatabaseCount('exploration_events', 1);
         $history = DB::table('exploration_events')->get()->toJson();
+        $this->discoverGate($actor);
         $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Nova explores a new alternative']);
         $this->assertSame($history, DB::table('exploration_events')->get()->toJson());
         $after = $this->readParticipation($originObserver);

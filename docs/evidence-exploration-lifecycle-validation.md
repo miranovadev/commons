@@ -1,5 +1,8 @@
 # Evidence & Participatory Exploration: natural lifecycle validation
 
+Historical Stage 4 validation. Acquisition sequencing and permanent completion expectations below are superseded by [generative acquisition](generative-acquisition.md); current tests use one attempt per Cycle. Measurement, cognition and movement contracts remain unchanged.
+
+
 Stage 4 validates the merged Stage 1–3 contract against main `dbf5bbfdafd19e8f09e7f80f8912e01127233da6`. Its tree is `15cdd8bc2f03639940370179c355f9cbd2023b41`, exactly the validated Stage 3 head `6d79f568cad5d10eceb00295fb51fdd306f6b0e1`. The implementation PR records final CI results, baseline comparisons and measured PostgreSQL timings.
 
 ## Complete lifecycle

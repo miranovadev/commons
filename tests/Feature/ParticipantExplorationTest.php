@@ -177,7 +177,7 @@ class ParticipantExplorationTest extends TestCase
         app(PropositionMeasurementService::class)->project($sibling, 0, 0, 0,
             correspondenceComponents: new CorrespondenceValues(.8, -.8));
         $this->assertTrue($exploration->explored($signal, $return));
-        $this->assertTrue(app(PhaseGenerationService::class)->available($return, 'proposition.variant'));
+        $this->assertTrue(app(PhaseGenerationService::class)->available($return, 'proposition.variant', prepared: true));
     }
 
     public function test_reversal_and_unrelated_updates_do_not_reopen_and_cold_hydrated_plans_agree(): void

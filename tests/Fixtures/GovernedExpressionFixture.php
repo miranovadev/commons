@@ -9,7 +9,9 @@ use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
+use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
+use App\Services\PhaseService;
 
 /** Real constitutional entry and authorised first expressive birth; no Commit double. */
 final class GovernedExpressionFixture
@@ -41,10 +43,21 @@ final class GovernedExpressionFixture
             ['action' => 'proposition.variant', 'statement' => 'An independently authored first distinction.']);
     }
 
+    /** Resolve the first attempt, Rest, and personally enter Persist in a new Cycle. */
+    public function enterPersist(): void
+    {
+        $this->phase = app(PhaseProgressionService::class)->advance($this->phase, $this->expression);
+        app(ParticipationService::class)->contribute($this->actor, $this->phase->id, ['action' => 'participant.rest']);
+        $entry = app(PhaseService::class)->currentFor($this->actor->fresh());
+        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $entry,
+            ['action' => 'attestation.create', 'proposition_id' => $this->expression->id, 'direction' => 'support']);
+        $this->phase = app(PhaseProgressionService::class)->advance($entry, $target);
+    }
+
     /** Acquire shared evidence, then produce the real Persist Write. */
     public function writePersist(): void
     {
-        $this->phase = app(PhaseProgressionService::class)->advance($this->phase, $this->expression);
+        $this->enterPersist();
         app(ContributionDispatcher::class)->dispatch($this->actor, $this->phase,
             ['action' => 'instrument.execute', 'proposition_id' => $this->phase->gate_proposition_id,
                 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/grounded-development']]);

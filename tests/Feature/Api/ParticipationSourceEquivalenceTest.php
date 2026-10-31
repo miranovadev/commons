@@ -46,7 +46,7 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
                     $receipt = Receipt::where('phase_id', $state['plan']['phase']['id'])->sole();
                     $this->assertSame('completed', $receipt->evidenceExecution->status);
                     $this->assertSame($actor, $receipt->evidenceExecution->cycle->participant_id);
-                    $this->assertSame('completed', $state['plan']['acquisition']['status']);
+                    $this->assertSame('awaiting_resolution', $state['plan']['acquisition']['status']);
                     $this->assertContains($receipt->id, array_column($state['plan']['receipts'], 'id'));
                 }
                 $this->assertSame(['distinguish', 'distinguish', 'persist', 'persist', 'constrain'][$index], $state['plan']['phase']['kind']);
