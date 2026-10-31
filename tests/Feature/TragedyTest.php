@@ -107,7 +107,7 @@ class TragedyTest extends TestCase
     {
         if ($kind === PhaseKind::Persist && $action === 'instrument.execute') {
             $fixture = new GovernedExpressionFixture;
-            $fixture->phase = app(PhaseProgressionService::class)->advance($fixture->phase, $fixture->expression);
+            $fixture->enterPersist();
 
             return [$fixture->actor->fresh(), $fixture->phase];
         }
@@ -120,7 +120,18 @@ class TragedyTest extends TestCase
                 $result = app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,
                     ['action' => 'proposition.reclassify', 'proposition_id' => $fixture->expression->id, 'receipt_id' => $receipt->id]);
                 $fixture->phase = app(PhaseProgressionService::class)->advance($fixture->phase, $result);
-                // This case isolates action exhaustion with shared ordinary evidence available.
+                // The Persist Variant used the earlier Cycle's attempt. Return
+                // through the judged route before acquiring at the new Canon.
+                $this->publishPotentialFixture($fixture->actor);
+                $service = app(ParticipationService::class);
+                $state = $service->contribute($fixture->actor, $fixture->phase->id, ['action' => 'participant.rest']);
+                foreach ([$fixture->expression->phase->gate_proposition_id, $fixture->expression->id] as $target) {
+                    $state = $service->contribute($fixture->actor, $state['plan']['phase']['id'],
+                        ['action' => 'proposition.traverse', 'proposition_id' => $target]);
+                }
+                $state = $service->contribute($fixture->actor, $state['plan']['phase']['id'],
+                    ['action' => 'attestation.create', 'proposition_id' => $result->id, 'direction' => 'support']);
+                $fixture->phase = Phase::findOrFail($state['plan']['phase']['id']);
                 $this->instrumentGateFixture($fixture->phase);
             }
 
@@ -140,6 +151,10 @@ class TragedyTest extends TestCase
             if ($kind === PhaseKind::Persist) {
                 $state = $service->contribute($viewer, $state['plan']['phase']['id'],
                     ['action' => 'proposition.variant', 'statement' => 'First distinction']);
+                $distinction = $state['current_proposition_id'];
+                $state = $service->contribute($viewer, $state['plan']['phase']['id'], ['action' => 'participant.rest']);
+                $state = $service->contribute($viewer, $state['plan']['phase']['id'],
+                    ['action' => 'attestation.create', 'proposition_id' => $distinction, 'direction' => 'support']);
                 $state = $service->contribute($viewer, $state['plan']['phase']['id'],
                     ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
                         'instrument' => ['kind' => 'citation', 'reference' => Phase::findOrFail($state['plan']['phase']['id'])->cycle->entry_committal_id]]);

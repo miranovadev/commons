@@ -307,6 +307,11 @@ class TransactionLockOrderTest extends TestCase
         [$substrate, $first, $initial] = $this->fixture();
         app(ParticipationService::class)->contribute($first, $initial->id, ['action' => 'proposition.variant', 'statement' => 'Shared classification source']);
         $persist = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        $distinction = $persist->gate_proposition_id;
+        $entry = app(ParticipationService::class)->contribute($first, $persist->id, ['action' => 'participant.rest']);
+        app(ParticipationService::class)->contribute($first, $entry['plan']['phase']['id'],
+            ['action' => 'attestation.create', 'proposition_id' => $distinction, 'direction' => 'support']);
+        $persist = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
         app(ParticipationService::class)->contribute($first, $persist->id, ['action' => 'instrument.execute',
             'proposition_id' => $persist->gate_proposition_id,
             'instrument' => ['kind' => 'citation', 'reference' => $persist->cycle->entry_committal_id]]);
@@ -419,6 +424,11 @@ class TransactionLockOrderTest extends TestCase
     {
         [, $first, $initial] = $this->fixture();
         app(ParticipationService::class)->contribute($first, $initial->id, ['action' => 'proposition.variant', 'statement' => 'Source']);
+        $persist = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        $distinction = $persist->gate_proposition_id;
+        $entry = app(ParticipationService::class)->contribute($first, $persist->id, ['action' => 'participant.rest']);
+        app(ParticipationService::class)->contribute($first, $entry['plan']['phase']['id'],
+            ['action' => 'attestation.create', 'proposition_id' => $distinction, 'direction' => 'support']);
         $persist = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
         app(ParticipationService::class)->contribute($first, $persist->id, ['action' => 'instrument.execute',
             'proposition_id' => $persist->gate_proposition_id,

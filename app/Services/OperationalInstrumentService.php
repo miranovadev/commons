@@ -93,7 +93,7 @@ final readonly class OperationalInstrumentService
 
             $execution = $origin ? $this->executions->start($phase, $proposition, $input['kind'], $reference, $input, $replayedFrom)
                 : app(AcquisitionAttemptService::class)->execution($phase);
-            if ($execution->status !== 'pending' || $execution->input !== $input) {
+            if ($execution->status !== 'pending' || $this->normalize($execution->input) !== $input) {
                 throw new ConflictHttpException('This acquisition is already observed or has a different invocation.');
             }
             if (! $origin && ! app(PhaseGenerationService::class)->available($phase, 'proposition.variant', prepared: true)) {

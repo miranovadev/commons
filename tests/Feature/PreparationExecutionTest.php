@@ -58,16 +58,18 @@ class PreparationExecutionTest extends TestCase
         $fixture = new PreparationFixture(true);
         $f = $fixture->context;
         $acting = $f->gate;
-        $signal = $f->node($acting, 'activity', position: PhaseKind::Disperse);
-        $secondaryRoot = $f->node($f->seed, 'canon', position: PhaseKind::Constrain);
-        $secondary = $f->node($secondaryRoot, 'activity', position: PhaseKind::Disperse);
-        $unrelated = $f->node($secondaryRoot, 'activity', position: PhaseKind::Disperse);
-        $f->node($signal, 'frontier', 'reconcile', additionalParent: $secondary, position: PhaseKind::Mediate);
-        $f->gate = $secondaryRoot;
-        $included = $fixture->receipt('Secondary ancestor preserved bytes', true);
-        $f->gate = $unrelated;
-        $excluded = $fixture->receipt('Unrelated sibling preserved bytes', true);
-        $f->gate = $acting;
+        DB::transaction(function () use ($f, $fixture, $acting, &$included, &$excluded, &$secondary): void {
+            $signal = $f->node($acting, 'activity', position: PhaseKind::Disperse);
+            $secondaryRoot = $f->node($f->seed, 'canon', position: PhaseKind::Constrain);
+            $secondary = $f->node($secondaryRoot, 'activity', position: PhaseKind::Disperse);
+            $unrelated = $f->node($secondaryRoot, 'activity', position: PhaseKind::Disperse);
+            $f->node($signal, 'frontier', 'reconcile', additionalParent: $secondary, position: PhaseKind::Mediate);
+            $f->gate = $secondaryRoot;
+            $included = $fixture->receipt('Secondary ancestor preserved bytes', true);
+            $f->gate = $unrelated;
+            $excluded = $fixture->receipt('Unrelated sibling preserved bytes', true);
+            $f->gate = $acting;
+        });
         $options = app(PreparationService::class)->options($f->phase);
         $ids = array_column($options, 'receipt_id');
         $this->assertContains($included->id, $ids);

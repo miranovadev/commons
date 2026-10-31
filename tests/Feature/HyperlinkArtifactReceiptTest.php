@@ -58,7 +58,11 @@ class HyperlinkArtifactReceiptTest extends TestCase
     private function persistFixture(): ParticipantContextFixture
     {
         $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
-        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier'])->save();
+        // A fresh sibling Gate isolates acquisition from the fixture's existing
+        // Mediate continuations, which must otherwise be explored first.
+        $f->gate = DB::transaction(fn () => $f->node($f->seed, 'activity', position: PhaseKind::Distinguish));
+        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier', 'gate_proposition_id' => $f->gate->id])->save();
+        $f->viewer->forceFill(['current_proposition_id' => $f->gate->id])->save();
 
         return $f;
     }
@@ -283,12 +287,13 @@ class HyperlinkArtifactReceiptTest extends TestCase
             $this->fail('Storage failure became an observation');
         } catch (ArtifactStorageException) {
             $this->assertDatabaseCount('receipts', 0);
-            $this->assertDatabaseCount('evidence_executions', 0);
+            $this->assertDatabaseCount('evidence_executions', 1);
+            $this->assertDatabaseHas('evidence_executions', ['phase_id' => $f->phase->id, 'status' => 'pending']);
             $this->assertDatabaseCount('participant_receipt_contexts', 0);
         }
     }
 
-    public function test_completion_rollback_leaves_only_the_immutable_artifact(): void
+    public function test_completion_rollback_preserves_reservation_and_immutable_artifact_without_observation(): void
     {
         $f = $this->persistFixture();
         Http::fake(['*' => Http::response('Retained after rollback', 200, ['Content-Type' => 'text/plain'])]);
@@ -301,7 +306,8 @@ class HyperlinkArtifactReceiptTest extends TestCase
         } catch (RuntimeException $error) {
             $this->assertSame('completion failure', $error->getMessage());
             $this->assertDatabaseCount('receipts', 0);
-            $this->assertDatabaseCount('evidence_executions', 0);
+            $this->assertDatabaseCount('evidence_executions', 1);
+            $this->assertDatabaseHas('evidence_executions', ['phase_id' => $f->phase->id, 'status' => 'pending']);
             $this->assertDatabaseCount('participant_receipt_contexts', 0);
             $this->assertDatabaseCount('reinforcement_sources', 0);
             $paths = Storage::disk('artifacts')->allFiles();

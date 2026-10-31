@@ -175,7 +175,7 @@ class ReceiptGovernedGenerationTest extends TestCase
         $input = ['kind' => 'citation', 'reference' => $f->seed->id];
         $service = app(OperationalInstrumentService::class);
         $observed = $service->observeFor($f->phase, $f->gate, $input);
-        $this->observe($f, $this->observer($f));
+        $this->observe($f, $this->observer($f), 'proposition_search');
         $count = Receipt::count();
         $service->execute($f->phase, $f->gate, $input, observed: $observed);
         $this->assertSame($count + 1, Receipt::count(), 'Independent shared evidence must not invalidate an admitted attempt.');

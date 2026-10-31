@@ -12,6 +12,7 @@ use App\Services\CycleEntryService;
 use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
 use App\Services\PhaseService;
+use App\Services\PotentialProjectionService;
 
 /** Real constitutional entry and authorised first expressive birth; no Commit double. */
 final class GovernedExpressionFixture
@@ -47,6 +48,9 @@ final class GovernedExpressionFixture
     public function enterPersist(): void
     {
         $this->phase = app(PhaseProgressionService::class)->advance($this->phase, $this->expression);
+        // Direct dispatcher fixtures perform the same projection maintenance as
+        // the participation boundary before using its authoritative Rest plan.
+        app(PotentialProjectionService::class)->refresh($this->actor->substrate_id);
         app(ParticipationService::class)->contribute($this->actor, $this->phase->id, ['action' => 'participant.rest']);
         $entry = app(PhaseService::class)->currentFor($this->actor->fresh());
         $target = app(ContributionDispatcher::class)->dispatch($this->actor, $entry,

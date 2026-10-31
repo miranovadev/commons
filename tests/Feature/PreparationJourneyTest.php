@@ -12,6 +12,7 @@ use App\Models\ParticipantConnection;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\User;
+use App\Services\AcquisitionAttemptService;
 use App\Services\ContributionDispatcher;
 use App\Services\Evidence\ArtifactStore;
 use App\Services\HorizonReceiptService;
@@ -71,17 +72,16 @@ class PreparationJourneyTest extends TestCase
         $service->acknowledge($f->viewer, $execution, $delivery['presentation_token']);
         $receipt = $service->defer($f->viewer, $execution, '  I need another comparison.  ');
         $this->assertSame('  I need another comparison.  ', $receipt->metadata['outcome']['reason']);
-        $this->assertNull($f->phase->fresh()->completed_at);
+        $this->assertNotNull($f->phase->fresh()->completed_at);
+        $this->assertNotNull($f->phase->cycle->fresh()->deferred_at);
         $this->assertNull($receipt->consumption);
-        $this->assertArrayHasKey('proposition.variant', $plan()['schema']['$defs']['actions']);
-        $this->assertArrayNotHasKey('preparation.start', $plan()['schema']['$defs']['actions']);
+        $this->assertSame('defer', $execution->fresh()->attempt_resolution['action']);
         $fixture->consume($receipt);
-        $actions = $plan()['schema']['$defs']['actions'];
-        $this->assertArrayNotHasKey('proposition.variant', $actions);
-        $this->assertArrayNotHasKey('preparation.start', $actions);
-        $this->assertArrayHasKey('participant.rest', $actions);
+        $this->assertSame('defer', $execution->fresh()->attempt_resolution['action']);
         $fixture->receipt('Another Participant observation', available: true);
-        $this->assertArrayHasKey('proposition.variant', $plan()['schema']['$defs']['actions']);
+        $this->assertFalse(app(AcquisitionAttemptService::class)->ready($f->phase));
+        $this->assertDatabaseCount('exploration_events', 0);
+
     }
 
     public function test_prepared_contribution_atomically_creates_unattached_receipt_without_prior_available_evidence(): void
@@ -172,7 +172,7 @@ class PreparationJourneyTest extends TestCase
         $this->assertNull($execution->fresh()->receipt);
         $this->assertNull($execution->fresh()->outcome);
         $this->assertNull($service->active($f->phase));
-        $this->assertArrayHasKey('preparation.start', app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema']['$defs']['actions']);
+        $this->assertSame(['acquisition.defer'], array_keys(app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema']['$defs']['actions']));
     }
 
     public function test_combined_oversized_requests_share_budget_and_complete_successfully(): void
@@ -201,7 +201,7 @@ class PreparationJourneyTest extends TestCase
             'read_type' => $item['read_type'], 'parameters' => $item['parameters'],
         ])->all();
         $this->assertSame($input['artifacts'], $selections);
-        $this->assertNull($f->phase->fresh()->completed_at);
+        $this->assertNotNull($f->phase->fresh()->completed_at);
     }
 
     public function test_empty_preserved_material_can_be_delivered_and_resolved_without_fabricated_content(): void
@@ -257,8 +257,9 @@ class PreparationJourneyTest extends TestCase
         $this->postJson($url.'/preparations/'.$id.'/presented', ['presentation_token' => $reading['presentation_token']])->assertOk();
         $this->postJson($url.'/preparations/'.$id.'/presented', ['presentation_token' => $reading['presentation_token']])->assertOk();
         $resolved = $this->postJson($url.'/participate', ['phase_id' => $f->phase->id, 'contribution' => $resolution])->assertOk();
-        $this->assertSame($f->phase->id, $resolved->json('data.plan.phase.id'));
-        $this->assertArrayHasKey('proposition.variant', $resolved->json('data.plan.schema.$defs.actions'));
+        $this->assertNotSame($f->phase->id, $resolved->json('data.plan.phase.id'));
+        $this->assertNotNull($f->phase->cycle->fresh()->deferred_at);
+        $this->assertDatabaseCount('exploration_events', 0);
         $this->assertSame($resolution['reason'], EvidenceExecution::findOrFail($id)->receipt->metadata['outcome']['reason']);
         $this->getJson($url.'/preparations/'.$id.'/reading')->assertConflict();
         $this->postJson($url.'/participate', ['phase_id' => $f->phase->id, 'contribution' => $resolution])->assertOk();
@@ -279,35 +280,31 @@ class PreparationJourneyTest extends TestCase
         });
     }
 
-    public function test_human_prepared_revision_uses_existing_ownership_and_structural_progression(): void
+    public function test_human_revision_remains_independent_and_existing_write_prevents_acquisition(): void
     {
         $this->postJson('/api/bootstrap', ['name' => 'Owner', 'email' => 'owner@example.test',
             'password' => 'test-password-1234', 'password_confirmation' => 'test-password-1234'])->assertCreated();
         $this->actingAs(User::firstOrFail());
-        $fixture = new PreparationFixture;
+        $fixture = new PreparationFixture(available: true);
         $f = $fixture->context;
         $head = $this->refutedWrite($fixture);
         $this->publishPotentialFixture($f->viewer);
         $encounters = DB::table('exploration_events')->count();
         $url = '/api/substrates/'.$f->substrate->slug.'/participants/'.$f->viewer->id;
-        $started = $this->postJson($url.'/participate', ['phase_id' => $f->phase->id,
-            'contribution' => ['action' => 'preparation.start', 'proposition_id' => $f->gate->id, ...$fixture->input()]])->assertOk();
-        $id = $started->json('data.plan.preparation.execution_id');
-        $delivery = $this->getJson($url.'/preparations/'.$id.'/reading')->assertOk()->json('data');
-        $this->postJson($url.'/preparations/'.$id.'/presented', ['presentation_token' => $delivery['presentation_token']])->assertOk();
-        $this->postJson($url.'/participate', ['phase_id' => $f->phase->id, 'contribution' => [
-            'action' => 'proposition.revise', 'proposition_id' => $head->id, 'execution_id' => $id,
-            'statement' => 'Reconsider this account after reading its source.']])->assertOk()->assertJsonPath('data.plan.phase.number', 5);
-        $execution = EvidenceExecution::findOrFail($id);
-        $this->assertSame([$head->id], $execution->resultingProposition->parents()->pluck('propositions.id')->all());
+        $this->postJson($url.'/participate', ['phase_id' => $f->phase->id,
+            'contribution' => ['action' => 'preparation.start', 'proposition_id' => $f->gate->id, ...$fixture->input()]])->assertConflict();
+        $result = $this->postJson($url.'/participate', ['phase_id' => $f->phase->id, 'contribution' => [
+            'action' => 'proposition.revise', 'proposition_id' => $head->id,
+            'statement' => 'Reconsider this owned account.']])->assertOk()->assertJsonPath('data.plan.phase.number', 5);
+        $revision = Proposition::findOrFail($result->json('data.current_proposition_id'));
+        $this->assertSame([$head->id], $revision->parents()->pluck('propositions.id')->all());
         $this->assertSame($encounters, DB::table('exploration_events')->count());
-        $this->assertSame('contributed', $execution->outcome);
-        $this->assertNull($execution->receipt->consumption);
+        $this->assertSame(0, EvidenceExecution::whereNotNull('attempt_admitted_at')->count());
     }
 
     public static function autonomousOutcomes(): array
     {
-        return [['contributed'], ['deferred'], ['failed'], ['revised'], ['rejected']];
+        return [['contributed'], ['deferred'], ['failed'], ['revision_rejected'], ['rejected']];
     }
 
     #[DataProvider('autonomousOutcomes')]
@@ -315,7 +312,7 @@ class PreparationJourneyTest extends TestCase
     {
         $fixture = new PreparationFixture;
         $f = $fixture->context;
-        $revision = $outcome === 'revised' ? $this->refutedWrite($fixture) : null;
+        $revision = null;
         $preparationInput = $fixture->input();
         if ($outcome === 'contributed') {
             $small = $fixture->receipt(str_repeat('a', 500));
@@ -360,6 +357,10 @@ class PreparationJourneyTest extends TestCase
                         ? ['action' => 'preparation.defer', 'execution_id' => $execution->id, 'reason' => 'Compare more sources.']
                         : ['action' => $revision ? 'proposition.revise' : 'proposition.variant', 'execution_id' => $execution->id,
                             ...($revision ? ['proposition_id' => $revision->id] : []), 'statement' => 'Prepared autonomous contribution.'];
+                    if ($outcome === 'revision_rejected') {
+                        $input = ['action' => 'proposition.revise', 'execution_id' => $execution->id,
+                            'proposition_id' => $f->gate->id, 'statement' => 'An attempt cannot expand Revision authority'];
+                    }
                     if ($outcome === 'rejected') {
                         $input = ['action' => 'proposition.variant', 'execution_id' => $execution->id, 'statement' => '', 'failure_reason' => 'Client-supplied invented failure'];
                     }
@@ -375,15 +376,15 @@ class PreparationJourneyTest extends TestCase
         });
         try {
             app()->call([new WakeParticipant($link->id), 'handle']);
-            $this->assertNotContains($outcome, ['failed', 'rejected']);
+            $this->assertNotContains($outcome, ['failed', 'rejected', 'revision_rejected']);
         } catch (\InvalidArgumentException) {
-            $this->assertSame('rejected', $outcome);
+            $this->assertContains($outcome, ['rejected', 'revision_rejected']);
         } catch (RequestException) {
             $this->assertSame('failed', $outcome);
         }
         $execution = EvidenceExecution::where('type', 'prepare')->sole();
         $this->assertSame($f->phase->id, $execution->phase_id);
-        if ($outcome === 'rejected') {
+        if (in_array($outcome, ['rejected', 'revision_rejected'], true)) {
             $this->assertSame('presented', $execution->status);
             $this->assertNull($execution->receipt);
             $this->assertNull($execution->outcome);
@@ -400,7 +401,7 @@ class PreparationJourneyTest extends TestCase
             $this->assertSame($outcome === 'revised' ? 'contributed' : $outcome, $execution->outcome);
             $this->assertNotNull($f->phase->fresh()->completed_at);
             $this->assertNull($execution->receipt->consumption);
-            $this->assertCount($outcome === 'deferred' ? 3 : 2, $requests);
+            $this->assertCount(2, $requests);
         }
         $this->assertStringNotContainsString('preserved artifact body', json_encode($execution->toArray()));
         if ($outcome !== 'revised' && ($path = getenv('COMMONS_PREPARATION_READING_EXAMPLES'))) {
@@ -408,7 +409,7 @@ class PreparationJourneyTest extends TestCase
             $examples[$outcome] = ['source' => 'Isolated automated journey, real application request with deterministic provider response',
                 'execution' => $execution->getAttributes(), 'receipt' => $execution->receipt?->getAttributes(),
                 'prepared_inference_request' => $requests[1],
-                'following_ordinary_request' => $outcome === 'deferred' ? $requests[2] : null];
+                'following_ordinary_request' => null];
             file_put_contents($path, json_encode($examples, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
         }
 

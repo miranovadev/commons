@@ -235,6 +235,9 @@ final readonly class ParticipationService
             if ($execution->type === 'instrument' || $execution->status === 'failed') {
                 app(AcquisitionAttemptService::class)->resolve($participant, $execution, $input);
             } elseif (($input['action'] ?? null) === 'preparation.defer') {
+                if (! $resolvedRetry && $execution->status !== 'presented') {
+                    throw new ConflictHttpException('Read and acknowledge this Preparation before resolving it.');
+                }
                 $schema = app(PreparationService::class)->resolutionSchema($participant, $observedPhase, $execution);
                 $this->contributions->validateSchema($schema, $input);
                 app(PreparationService::class)->defer($participant, $execution, $input['reason']);

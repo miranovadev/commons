@@ -91,10 +91,6 @@ class ParticipantContinuityTest extends TestCase
         $this->assertSame($value > 0 ? 'frontier' : 'stance', $first['plan']['phase']['write_register']);
         $this->classificationEvidenceFixture(Proposition::findOrFail($first['plan']['gate_id']));
         app(PotentialProjectionService::class)->refresh($participant->substrate_id);
-        $this->instrumentGateFixture(Phase::findOrFail($first['plan']['phase']['id']));
-        $second = $service->contribute($participant, $first['plan']['phase']['id'],
-            ['action' => 'proposition.variant', 'statement' => 'Develop the current structural position']);
-        $this->assertSame($value > 0 ? 'canon' : 'concord', $second['plan']['phase']['write_register']);
 
         // A participant still in the previous Horizon can choose the Committal
         // result, end Order there, and continue under its applicable entry rules.
@@ -117,6 +113,15 @@ class ParticipantContinuityTest extends TestCase
         $this->assertSame($owner->id, $continued['cycle']['context_horizon_id']);
         $this->assertSame($domain, $continued['domain']);
         $this->assertSame($register, $continued['plan']['phase']['write_register']);
+
+        // The slower participant explores the existing Distinction without
+        // acquisition, then uses its own Cycle's opportunity to develop Persist.
+        $persist = $service->contribute($other, $continued['plan']['phase']['id'],
+            ['action' => 'attestation.create', 'proposition_id' => $first['current_proposition_id'], 'direction' => 'support']);
+        $this->instrumentGateFixture(Phase::findOrFail($persist['plan']['phase']['id']));
+        $second = $service->contribute($other, $persist['plan']['phase']['id'],
+            ['action' => 'proposition.variant', 'statement' => 'Develop the current structural position']);
+        $this->assertSame($value > 0 ? 'canon' : 'concord', $second['plan']['phase']['write_register']);
 
     }
 

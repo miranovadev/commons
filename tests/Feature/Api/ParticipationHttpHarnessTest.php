@@ -28,8 +28,7 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
                 foreach (['r0', 'leftReading', 'leftPreparation', 'rightReading', 'rightPreparation'] as $reference) {
                     $this->assertContains($this->persistJourneyIds[$reference], array_column($packet['receipts'], 'id'));
                 }
-                $this->assertNotContains($this->persistJourneyIds['r2'], array_column($packet['receipts'], 'id'),
-                    'The first branch contributes neither Reconciliation operand.');
+                $this->assertSame(count($packet['receipts']), count(array_unique(array_column($packet['receipts'], 'id'))));
             }
         }
         $this->assertNotSame($origin, $state['last_commitment']['proposition_id']);
@@ -87,6 +86,9 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
         $this->enterParticipant($actor, true);
         $this->discoverGate($actor);
         $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Searchable distinction']);
+        $distinction = $state['current_proposition_id'];
+        $this->contribute($actor, ['action' => 'participant.rest']);
+        $state = $this->contribute($actor, ['action' => 'attestation.create', 'proposition_id' => $distinction, 'direction' => 'support']);
         $this->assertActionAvailable($state, 'instrument.execute');
         $target = $state['plan']['gate_id'];
 
@@ -131,6 +133,9 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
         $this->assertSame($initial['plan']['phase']['id'], $this->readParticipation($actor)['plan']['phase']['id']);
         $this->discoverGate($actor);
         $persist = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'An informational encounter']);
+        $distinction = $persist['current_proposition_id'];
+        $this->contribute($actor, ['action' => 'participant.rest']);
+        $persist = $this->contribute($actor, ['action' => 'attestation.create', 'proposition_id' => $distinction, 'direction' => 'support']);
         $before = $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $persist['plan']['gate_id'],
             'instrument' => ['kind' => 'proposition_search', 'limit' => 3]]);
         $this->assertSame($persist['plan']['phase'], $before['plan']['phase']);

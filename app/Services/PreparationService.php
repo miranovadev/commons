@@ -317,9 +317,9 @@ final class PreparationService
 
     public function resolutionSchema(Participant $participant, Phase $phase, EvidenceExecution $execution): array
     {
-        if ($execution->status !== 'presented') {
-            return app(InputSchemaService::class)->forPhase($phase->kind, []);
-        }
+        // The inference adapter receives this schema with the reading, then
+        // acknowledges successful delivery before dispatching its decision.
+        // assertPresented remains the authoritative resolution boundary.
         $actions = ['preparation.defer'];
         if (app(PhaseGenerationService::class)->available($phase, 'proposition.variant', prepared: true)) {
             $actions[] = 'proposition.variant';

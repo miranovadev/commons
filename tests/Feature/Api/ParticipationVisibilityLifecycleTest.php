@@ -70,6 +70,9 @@ class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
     private function observePersistGate(string $author, array $state): array
     {
         $this->assertSame('persist', $state['plan']['phase']['kind']);
+        $distinction = $state['plan']['gate_id'];
+        $this->contribute($author, ['action' => 'participant.rest']);
+        $state = $this->judge($author, $distinction);
         $next = $this->contribute($author, ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://evidence.example.test/'.$author]], $state);
         $this->assertSame($state['plan']['phase']['id'], $next['plan']['phase']['id']);

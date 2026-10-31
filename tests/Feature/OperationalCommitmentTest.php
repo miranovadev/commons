@@ -102,8 +102,9 @@ class OperationalCommitmentTest extends TestCase
     public function test_citation_resolves_attestations_and_verified_hyperlinks_have_signatures(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
-        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier'])->save();
-        $gate = $f->gate;
+        $gate = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier', 'gate_proposition_id' => $gate->id])->save();
+        $f->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
         $attestation = (new Attestation)->forceFill(['phase_id' => $gate->phase_id, 'proposition_id' => $gate->id, 'direction' => 'support']);
         $attestation->save();
         app(LedgerService::class)->record($attestation);
@@ -111,8 +112,9 @@ class OperationalCommitmentTest extends TestCase
         $receipt = $service->execute($f->phase, $gate, ['kind' => 'citation', 'reference' => $attestation->id]);
         $this->assertSame($attestation->id, $receipt->metadata['target_id']);
         $other = new ParticipantContextFixture(1, 0, false);
-        $other->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier'])->save();
-        $gate = $other->gate;
+        $gate = $other->node($other->seed, 'activity', position: PhaseKind::Distinguish);
+        $other->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier', 'gate_proposition_id' => $gate->id])->save();
+        $other->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
         $receipt = $service->execute($other->phase, $gate, ['kind' => 'hyperlink', 'reference' => ' https://example.test/evidence ']);
         $this->assertSame('https://example.test/evidence', $receipt->reference);
         $this->assertTrue($receipt->metadata['content_verified']);
@@ -149,6 +151,10 @@ class OperationalCommitmentTest extends TestCase
     public function test_invalid_and_unsupported_instruments_leave_no_partial_write(): void
     {
         $observing = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
+        $distinction = $observing['plan']['gate_id'];
+        $this->move($this->participant, ['action' => 'participant.rest']);
+        $observing = $this->move($this->participant, ['action' => 'attestation.create',
+            'proposition_id' => $distinction, 'direction' => 'support']);
         $this->move($this->participant, ['action' => 'instrument.execute', 'proposition_id' => $observing['plan']['gate_id'],
             'instrument' => ['kind' => 'citation', 'reference' => $this->origin->id]]);
         $state = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Persist the distinction']);
@@ -229,6 +235,10 @@ class OperationalCommitmentTest extends TestCase
     public function test_removed_reclassification_contracts_reject_payloads(): void
     {
         $observing = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
+        $distinction = $observing['plan']['gate_id'];
+        $this->move($this->participant, ['action' => 'participant.rest']);
+        $observing = $this->move($this->participant, ['action' => 'attestation.create',
+            'proposition_id' => $distinction, 'direction' => 'support']);
         $this->move($this->participant, ['action' => 'instrument.execute', 'proposition_id' => $observing['plan']['gate_id'],
             'instrument' => ['kind' => 'citation', 'reference' => $this->origin->id]]);
         $early = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Persist the distinction']);

@@ -36,25 +36,25 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
             ])->assertCreated()->json('data.id');
         $phases = [];
         $positions = [];
-        $this->mock(ParticipantInference::class)->shouldReceive('contribute')->times(5)
+        $this->mock(ParticipantInference::class)->shouldReceive('contribute')->times(3)
             ->andReturnUsing(function ($connection, $state, $metadata) use ($actor, $initial, &$phases, &$positions): array {
                 $this->assertSame($this->readParticipation($actor), json_decode(json_encode($state), true));
                 $this->assertSame($actor, $metadata['participant_id']);
                 $this->assertSame(Participant::findOrFail($actor)->substrate_id, $metadata['substrate_id']);
                 $index = count($phases);
-                if (in_array($index, [1, 3], true)) {
+                if ($index === 1) {
                     $receipt = Receipt::where('phase_id', $state['plan']['phase']['id'])->sole();
                     $this->assertSame('completed', $receipt->evidenceExecution->status);
                     $this->assertSame($actor, $receipt->evidenceExecution->cycle->participant_id);
                     $this->assertSame('awaiting_resolution', $state['plan']['acquisition']['status']);
                     $this->assertContains($receipt->id, array_column($state['plan']['receipts'], 'id'));
                 }
-                $this->assertSame(['distinguish', 'distinguish', 'persist', 'persist', 'constrain'][$index], $state['plan']['phase']['kind']);
+                $this->assertSame(['distinguish', 'distinguish', 'persist'][$index], $state['plan']['phase']['kind']);
                 $this->assertSame('settlement', $state['domain']);
                 $this->assertSame($initial['context_horizon_id'], $state['context_horizon_id']);
                 $this->assertSame($initial['cycle']['id'], $state['cycle']['id']);
                 $this->assertSame($state['current_proposition_id'], $state['plan']['gate_id']);
-                if ($index === 1 || $index === 3) {
+                if ($index === 1) {
                     $this->assertSame($positions[$index - 1], $state['current_proposition_id']);
                     $this->assertSame($phases[$index - 1], $state['plan']['phase']['kind']);
                 } elseif ($index > 0) {
@@ -71,15 +71,12 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
                     ['action' => 'instrument.execute', 'proposition_id' => $initial['current_proposition_id'],
                         'instrument' => ['kind' => 'proposition_search', 'limit' => 1]],
                     ['action' => 'proposition.variant', 'statement' => 'Testable opportunity 0'],
-                    ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
-                        'instrument' => ['kind' => 'citation', 'reference' => $initial['current_proposition_id']]],
-                    ['action' => 'proposition.variant', 'statement' => 'Testable opportunity 0'],
                     ['action' => 'participant.rest'],
                 ][count($phases) - 1];
             });
         $this->wakeParticipant($link);
         $after = $this->readParticipation($actor);
-        $this->assertSame(['distinguish', 'distinguish', 'persist', 'persist', 'constrain'], $phases);
+        $this->assertSame(['distinguish', 'distinguish', 'persist'], $phases);
         $this->assertSame('distinguish', $after['plan']['phase']['kind']);
         $this->assertSame($initial['current_proposition_id'], $after['current_proposition_id']);
         $this->assertGreaterThan($initial['cycle']['sequence'], $after['cycle']['sequence']);

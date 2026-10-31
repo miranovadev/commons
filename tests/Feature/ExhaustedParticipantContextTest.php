@@ -87,7 +87,7 @@ class ExhaustedParticipantContextTest extends TestCase
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
         $plan = app(InputPlanService::class)->forParticipant($phase->cycle->participant);
         $this->assertEqualsCanonicalizing([$explored->id, $healthy->id], array_column($plan['write_options'], 'id'));
-        $this->assertSame([$phase->gate_proposition_id], array_column($plan['instrument_options'], 'id'), 'Existing structure does not waive personal discovery');
+        $this->assertSame([], array_column($plan['instrument_options'], 'id'), 'Existing unexplored structure takes precedence');
         $this->assertArrayNotHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
     }
 
@@ -155,7 +155,7 @@ class ExhaustedParticipantContextTest extends TestCase
         [$terminal] = $this->exercise($commit, $tragedy);
         $this->rest($terminal);
         $phase = $this->phase($commit, PhaseKind::Distinguish);
-        $this->assertSame('required', app(AcquisitionAttemptService::class)->state($phase)['status']);
+        $this->assertSame('not_required', app(AcquisitionAttemptService::class)->state($phase)['status']);
         foreach ([null, new ParticipationContext($phase)] as $context) {
             $this->assertEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($phase, $context));
         }

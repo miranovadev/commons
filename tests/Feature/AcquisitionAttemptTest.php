@@ -196,11 +196,30 @@ class AcquisitionAttemptTest extends TestCase
         }
         $this->travel((int) config('preparation.unresolved_seconds') + 1)->seconds();
         $attempts->recover($phase);
-        $this->assertSame(['acquisition.defer'], array_keys($attempts->schema($phase, $execution)['$defs']['actions']));
+        $this->assertSame(['acquisition.defer'], array_keys($attempts->schema($phase, $execution->fresh())['$defs']['actions']));
         $this->assertNull($execution->fresh()->receipt);
         $attempts->resolve($f->viewer, $execution, ['action' => 'acquisition.defer', 'execution_id' => $execution->id, 'reason' => 'Reservation expired']);
         $this->assertNotNull($phase->cycle->fresh()->deferred_at);
         $this->assertDatabaseCount('exploration_events', 0);
+    }
+
+    public function test_reserved_invocation_identity_survives_database_json_key_order(): void
+    {
+        $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $phase = $this->at($f, PhaseKind::Distinguish, $f->seed);
+        $instrument = app(OperationalInstrumentService::class);
+        $input = ['kind' => 'proposition_search', 'query' => 'Existing evidence', 'limit' => 2];
+        $observed = $instrument->observeFor($phase, $phase->gate, $input);
+        $execution = app(AcquisitionAttemptService::class)->execution($phase);
+        // PostgreSQL JSONB orders object keys independently of the submitted
+        // PHP array. Simulate that loss of order on SQLite as well.
+        DB::table('evidence_executions')->where('id', $execution->id)
+            ->update(['input' => json_encode(array_reverse($execution->input, true), JSON_THROW_ON_ERROR)]);
+        $receipt = $instrument->execute($phase, $phase->gate, $input, observed: $observed);
+        $this->assertSame($execution->id, $receipt->evidence_execution_id);
+        $this->assertSame($phase->gate_proposition_id, $receipt->evidenceExecution->proposition_id);
+        $this->assertSame($input['query'], $receipt->evidenceExecution->input['query']);
+        $this->assertSame(1, EvidenceExecution::whereNotNull('attempt_admitted_at')->count());
     }
 
     public function test_independently_admitted_preparations_survive_a_competing_variant_but_cannot_resolve_twice(): void
@@ -234,9 +253,9 @@ class AcquisitionAttemptTest extends TestCase
         $f = $fixture->context;
         $receipt = $this->instrument($f->phase);
         $attempts = app(AcquisitionAttemptService::class);
-        $before = $receipt->getAttributes();
+        $before = $receipt->fresh()->getAttributes();
         // Isolated structural invalidation fixture, not an authored natural Revision.
-        $f->node($f->gate, 'canon', 'revise', position: PhaseKind::Constrain);
+        DB::transaction(fn () => $f->node($f->gate, 'canon', 'revise', position: PhaseKind::Constrain));
         $this->assertFalse(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant'));
         $this->assertSame(['acquisition.defer'], array_keys($attempts->schema($f->phase, $receipt->evidenceExecution)['$defs']['actions']));
         $attempts->resolve($f->viewer, $receipt->evidenceExecution, ['action' => 'acquisition.defer', 'execution_id' => $receipt->evidence_execution_id, 'reason' => 'The Gate is now historical']);

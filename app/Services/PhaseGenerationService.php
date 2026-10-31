@@ -122,7 +122,14 @@ final readonly class PhaseGenerationService
             return true; // Shared structural classification has no personal quota.
         }
 
-        // Admission bypasses only later competing Variants, never the safety checks above.
+        if ($action === 'proposition.variant' && ($context !== null
+            ? $context->children->get($gate->id, collect())->contains(fn ($edge) => $edge->type !== 'variant')
+            : $gate->children()->where('supersessions.type', '!=', 'variant')->exists())) {
+            return false;
+        }
+
+        // Admission bypasses only later competing Variants, never hard
+        // supersession or the terminal and canonical safety checks above.
         if ($action === 'proposition.variant' && app(AcquisitionAttemptService::class)->admitted($phase, $context)) {
             return true;
         }

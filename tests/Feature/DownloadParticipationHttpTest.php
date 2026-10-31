@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Cycle;
 use App\Models\Receipt;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Http;
@@ -20,6 +21,9 @@ class DownloadParticipationHttpTest extends ParticipationHttpTestCase
         $this->enterParticipant($actor, true);
         $this->discoverGate($actor);
         $persist = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'A distinction to investigate.']);
+        $distinction = $persist['current_proposition_id'];
+        $this->contribute($actor, ['action' => 'participant.rest']);
+        $persist = $this->judge($actor, $distinction);
         $instrument = ['kind' => 'load_file', 'method' => 'download', 'reference' => 'https://evidence.example.test/file.txt?edition=2'];
         $action = ['action' => 'instrument.execute', 'proposition_id' => $persist['plan']['gate_id'], 'instrument' => $instrument];
         $this->postContribution($actor, $persist['plan']['phase']['id'], [...$action,
@@ -55,6 +59,9 @@ class DownloadParticipationHttpTest extends ParticipationHttpTestCase
         $this->enterParticipant($actor, true);
         $this->discoverGate($actor);
         $persist = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Investigate the dataset.']);
+        $distinction = $persist['current_proposition_id'];
+        $this->contribute($actor, ['action' => 'participant.rest']);
+        $persist = $this->judge($actor, $distinction);
         $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $persist['plan']['gate_id'],
             'instrument' => ['kind' => 'load_file', 'method' => 'download', 'reference' => 'https://evidence.example.test/data.csv']]);
         $source = Receipt::where('type', 'load_file')->sole();
@@ -77,8 +84,10 @@ class DownloadParticipationHttpTest extends ParticipationHttpTestCase
         $this->assertSame('me,value'."\nr", $delivery['deliveries'][0]['content']);
         $this->postJson($url.'/presented', ['presentation_token' => $delivery['presentation_token']])->assertOk();
         $resolved = $this->contribute($actor, ['action' => 'preparation.defer', 'execution_id' => $id, 'reason' => 'Inspect the remaining rows later.']);
-        $this->assertSame($disperse['plan']['phase'], $resolved['plan']['phase']);
-        $this->assertSame($disperse['cycle']['id'], $resolved['cycle']['id']);
+        $this->assertNotSame($disperse['cycle']['id'], $resolved['cycle']['id']);
+        $this->assertDatabaseHas('cycles', ['id' => $disperse['cycle']['id'], 'rested_at' => null]);
+        $this->assertNotNull(Cycle::findOrFail($disperse['cycle']['id'])->deferred_at);
+        $this->assertDatabaseCount('exploration_events', 0);
         $receipt = Receipt::where('type', 'preparation')->sole();
         $this->assertNull($receipt->consumption);
         $this->assertSame('deferred', $receipt->metadata['outcome']['type']);

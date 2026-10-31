@@ -20,6 +20,7 @@ use App\Services\TragedyService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\Fixtures\ExhaustionFixture;
 use Tests\Fixtures\NaturalBoundaryHistory;
 use Tests\TestCase;
@@ -129,7 +130,16 @@ class ChargeBoundaryTragedyTest extends TestCase
         $this->instance(ParticipantExplorationService::class, $exploration);
         $this->publishPotentialFixture($this->substrate);
         $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($phase));
-        $second = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+        // This component isolates zero Potential, not Cycle entry. A completed
+        // attempt cannot generate twice; the second opportunity is a new Cycle.
+        $phase->forceFill(['completed_at' => now()])->save();
+        $phase->cycle->forceFill(['completed_at' => now()])->save();
+        $cycle = $phase->cycle->replicate();
+        $cycle->forceFill(['sequence' => $cycle->sequence + 1, 'completed_at' => null])->save();
+        $next = $phase->replicate();
+        $next->forceFill(['cycle_id' => $cycle->id, 'completed_at' => null])->save();
+        $this->instrumentGateFixture($next);
+        $second = app(ContributionDispatcher::class)->dispatch($next->cycle->participant, $next,
             ['action' => 'proposition.variant', 'statement' => 'Still structurally possible']);
         $this->assertNotSame($first->id, $second->id);
         $this->assertDatabaseCount('tragedies', 0);
@@ -299,7 +309,7 @@ class ChargeBoundaryTragedyTest extends TestCase
             app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
                 ['action' => 'proposition.reclassify', 'proposition_id' => $this->origin->id]);
             $this->fail('The ordinary phase/action validation must reject this contribution');
-        } catch (\DomainException) {
+        } catch (\DomainException|ConflictHttpException) {
             $this->assertDatabaseCount('tragedies', 0);
             $this->assertSame($before, Proposition::count());
         }

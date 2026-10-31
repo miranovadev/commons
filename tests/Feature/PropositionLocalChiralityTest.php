@@ -264,10 +264,9 @@ class PropositionLocalChiralityTest extends TestCase
         $dispatch = app(ContributionDispatcher::class);
         $this->instrumentGateFixture($phase);
         $node = $dispatch->dispatch($this->actor, $phase, ['action' => 'proposition.variant', 'statement' => 'Local source']);
-        $persist = $phase->replicate();
-        $persist->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $node->id, 'write_register' => $phase->cycle->contextHorizon->domain->registerFor(PhaseKind::Persist)])->save();
-        $dispatch->dispatch($this->actor, $persist, ['action' => 'instrument.execute', 'proposition_id' => $node->id,
-            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/local-evidence']]);
+        // Historical observation is a component prerequisite, not another Cycle attempt.
+        $this->observationFixture($node->phase, $node,
+            ['kind' => 'hyperlink', 'reference' => 'https://example.test/local-evidence']);
         $dispatch->dispatch($this->actor, $phase, ['action' => 'attestation.create', 'proposition_id' => $node->id, 'direction' => 'support']);
         $this->assertSame([.5, 0.0, .25], array_slice($this->components($node), 0, 3));
         $phase->forceFill(['completed_at' => now()])->save();
