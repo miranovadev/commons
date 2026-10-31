@@ -32,7 +32,7 @@ The evaluator never constructs an InputPlan or grants an operation. Consumption 
 | Active route gap | Missing lawful first judgment blocks completion, even with a historical event (§5) | Each producing position and recovery tests |
 | Multiple paths | Requested forward branch plus recorded arrival; no evidence-ancestry union (§§2,5) | Reconciliation and sibling boundary tests |
 | Revision | Same-position reconsideration retains completed first judgment; new publication needs actual head judgment (§§4,7) | Existing Revision/reversal reopening tests |
-| Acquisition (historical Stage 3) | Reuse Stage 2 completion; no exploration allowance (§9) | All three missing-role cases, returning-Gate and natural HTTP tests |
+| Acquisition | Independent from existing-route completion; current attempts authorize only fresh Variant | No-acquisition route completion and generative attempt journeys |
 | Actionless Rest | Stopping is not personal completion (§11) | Incomplete Rest publishes no event |
 | Concurrency | Stable field plus under-lock witness revalidation (§10) | Stale, duplicate, rollback and forged identity tests |
 
@@ -42,7 +42,7 @@ The evaluator never constructs an InputPlan or grants an operation. Consumption 
 
 This is a provenance comparison, not exact action-packet replay. It does not establish historical action lawfulness, nor retroactively apply Stage 2 acquisition to the old cook. Missing judgments in the final snapshot alone are not evidence of premature exploration.
 
-## Validation and performance
+## Historical Stage 3 validation and performance
 
 Final validation is recorded in the PR against merged main `5a24e05dca6f3f14c56101e26a5f00bb2890ae16`. Exploration reuses the hydrated graph and effective Attestations. Acquisition completion selects distinct Gate/role keys in one batched query; encounter arrivals are batched across relevant events. Context-local memoization avoids repeated history queries. The focused frontier fixture currently holds at 27 queries from two to eight personally judged heads; final PostgreSQL measurements and baseline failures are reported in the PR.
 

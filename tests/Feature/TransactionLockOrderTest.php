@@ -376,8 +376,9 @@ class TransactionLockOrderTest extends TestCase
         $clock = \Mockery::mock(WakeClock::class);
         $clock->shouldReceive('now')->andReturn(0, 0, 0, 0, 0, 0, 0, 601);
         [$substrate, $first, $phase] = $this->fixture();
+        $execution = app(AcquisitionAttemptService::class)->execution($phase);
         app(ParticipationService::class)->contribute($first, $phase->id,
-            ['action' => 'proposition.variant', 'statement' => 'Wake acquisition Gate']);
+            ['action' => 'acquisition.defer', 'execution_id' => $execution->id, 'reason' => 'Read further in the next Cycle.']);
         $phase = $this->activePhase($first);
         $second = new Participant;
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'between-actions'])->save();
@@ -399,7 +400,7 @@ class TransactionLockOrderTest extends TestCase
                 return ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
                     'instrument' => ['kind' => 'citation', 'reference' => $phase->cycle->entry_committal_id]];
             }
-            $this->assertSame('persist', $state['plan']['phase']['kind']);
+            $this->assertSame('distinguish', $state['plan']['phase']['kind']);
             $this->assertNull($phase->fresh()->completed_at);
             $process = new Process([PHP_BINARY, base_path('tests/Support/concurrent-commons-worker.php')], base_path(), null,
                 json_encode(['operation' => 'contribute', 'participant_id' => $second->id, 'phase_id' => $secondPhase->id,

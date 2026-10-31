@@ -177,6 +177,25 @@ class AcquisitionAttemptTest extends TestCase
         $migration->down();
     }
 
+    public function test_migration_preserves_multiple_historical_observations_without_retroactive_admission(): void
+    {
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        $this->observationFixture($f->phase, $f->gate, ['kind' => 'citation', 'reference' => $f->seed->id]);
+        $before = EvidenceExecution::orderBy('id')->get()->map->getAttributes()->all();
+        $receipts = Receipt::orderBy('id')->get()->map->getAttributes()->all();
+        $this->assertGreaterThanOrEqual(2, count($before));
+        $migration = require database_path('migrations/2026_10_31_000000_record_generative_attempt_resolution.php');
+        $migration->down();
+        $migration->up();
+        $this->assertEquals($before, EvidenceExecution::orderBy('id')->get()->map->getAttributes()->all());
+        $this->assertEquals($receipts, Receipt::orderBy('id')->get()->map->getAttributes()->all());
+        $this->assertSame('required', app(AcquisitionAttemptService::class)->state($f->phase)['status']);
+        $execution = app(PreparationService::class)->start($f->viewer, $f->phase, $fixture->input());
+        $this->assertNotNull($execution->attempt_admitted_at);
+        $this->assertSame(1, EvidenceExecution::whereNotNull('attempt_admitted_at')->count());
+    }
+
     public function test_pending_instrument_cannot_be_replaced_or_used_and_expiry_allows_only_defer(): void
     {
         $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
