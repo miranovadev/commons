@@ -120,7 +120,7 @@ final class ParticipantReceiptProjection
     }
 
     /** Batch the canonical association rules, including Commit's inherited history. */
-    private function referencesFor(Collection $ids): Collection
+    public function referencesFor(Collection $ids): Collection
     {
         if ($ids->isEmpty()) {
             return collect();

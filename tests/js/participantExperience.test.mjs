@@ -200,3 +200,29 @@ for (const surface of ['graph','participant']) test(`${surface} opens the shared
   assert.equal(document.querySelector('[data-location]').textContent,'/substrates/test?proposition=result&view=history');
  });
 });
+
+
+test('an observed Instrument offers a reasoned Defer without Rest or restarting after refresh', async () => {
+ await withPage('participant', async (h, page) => {
+  await until(() => button('Variant'));
+  h.plan.acquisition = { role:'disperse_acquisition', gate_id:'gate', status:'awaiting_resolution', execution_id:'admitted', outcome:null };
+  const defer = { title:'Defer', properties:{ action:{const:'acquisition.defer'}, execution_id:{const:'admitted',type:'string'}, reason:{type:'string',minLength:1,maxLength:2000} }, required:['action','execution_id','reason'] };
+  h.plan.schema.$defs.actions['acquisition.defer'] = defer;
+  h.plan.schema.oneOf.push({$ref:'#/$defs/actions/acquisition.defer'});
+  await act(async () => page.refresh());
+  await until(() => button('Defer'));
+  assert.match(document.body.textContent, /Choose Variant or Defer/);
+  assert.equal(button('Rest'), undefined);
+  await click(button('Defer'));
+  const field = await draft('The observation does not yet justify a new Variant.');
+  await act(async () => page.refresh());
+  await until(() => h.workspaceReads >= 3);
+  assert.equal(document.querySelector('textarea'), field);
+  assert.equal(button('Apply contribution').disabled, false);
+  await click(button('Apply contribution'));
+  await until(() => h.posts.length === 1);
+  assert.deepEqual(h.posts[0].contribution, {action:'acquisition.defer',execution_id:'admitted',reason:field.value});
+  h.state = {status:'ready',plan:{...h.plan,acquisition:{...h.plan.acquisition,status:'resolved',outcome:{action:'defer'}}}};
+  await act(async () => h.resolvePost(new Response(JSON.stringify({data:h.state}), {headers:{'Content-Type':'application/json'}})));
+ });
+});

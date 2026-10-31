@@ -28,7 +28,7 @@ final readonly class ReceiptReplayService
             throw new DomainException('Replay requires a replayable encountered Receipt on an Instrument-eligible Gate.');
         }
 
-        return $this->instruments->observeFor($phase, $context->propositions->get($option['proposition_id']), $receipt->replayInvocation());
+        return $this->instruments->observeFor($phase, $context->propositions->get($option['proposition_id']), $receipt->replayInvocation(), replayedFrom: $receipt);
     }
 
     public function replay(Participant $participant, Phase $phase, string $receiptId, ?InstrumentObservation $observed = null, ?string $propositionId = null): Receipt
@@ -46,7 +46,8 @@ final readonly class ReceiptReplayService
             $context = new ParticipationContext($phase);
             $option = $this->context->forPhase($phase, $context)->firstWhere('id', $receiptId);
             $receipt = $context->receipts->firstWhere('id', $receiptId);
-            if (! ($option['can_replay'] ?? false) || ($propositionId !== null && ($option['proposition_id'] ?? null) !== $propositionId)
+            $attempt = app(AcquisitionAttemptService::class)->execution($phase);
+            if (($attempt?->replayed_from_receipt_id !== $receiptId || ! app(AcquisitionAttemptService::class)->admitted($phase)) || ($propositionId !== null && ($option['proposition_id'] ?? null) !== $propositionId)
             || $receipt === null || ! $receipt->supports(ReceiptCapability::Replayable)) {
                 throw new DomainException('Replay requires a replayable encountered Receipt on an Instrument-eligible Gate.');
             }

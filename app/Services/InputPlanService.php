@@ -83,6 +83,9 @@ final readonly class InputPlanService
             $history = array_merge($history, $this->historicalContext->forPhase($phase));
         }
 
+        $attempts = app(AcquisitionAttemptService::class);
+        $resolution = $attempts->admitted($phase) ? $attempts->schema($phase, $attempts->execution($phase)) : null;
+
         return [
             'phase' => ['id' => $phase->id, 'number' => $phase->kind->value, 'kind' => $plan['name'],
                 'description' => $description,
@@ -94,9 +97,9 @@ final readonly class InputPlanService
             'gate_options' => [], 'revision_options' => [], 'traversal_options' => [],
             'attestation_options' => [], 'instrument_options' => [], 'receipts' => app(ParticipantContextSerializer::class)->receipts($this->receipts->forPhase($phase)->all()),
             'exhausted_alternatives' => $history,
-            'commitment' => null, 'commitment_options' => [], 'rest_available' => true, 'position_exhausted' => true,
+            'commitment' => null, 'commitment_options' => [], 'rest_available' => $resolution === null, 'position_exhausted' => true,
             'rest_reason' => RestReason::NoAvailableMove->value,
-            'schema' => $this->schemas->forPhase($phase->kind, ['participant.rest']),
+            'schema' => $resolution ?? $this->schemas->forPhase($phase->kind, ['participant.rest']),
         ];
     }
 
@@ -190,8 +193,8 @@ final readonly class InputPlanService
                 'started_at' => $phase->started_at,
             ],
             ...($includeWorkspace ? ['workspace' => $workspace] : []),
-            ...(app(PersonalAcquisitionService::class)->role($phase) !== null
-                ? ['acquisition' => app(PersonalAcquisitionService::class)->state($phase, $context)] : []),
+            ...(app(AcquisitionAttemptService::class)->role($phase) !== null
+                ? ['acquisition' => app(AcquisitionAttemptService::class)->state($phase, $context)] : []),
             'preparation' => $preparation === null ? null : [
                 'execution_id' => $preparation->id, 'status' => $preparation->status,
                 'purpose' => $preparation->input['purpose'], 'selections' => $preparation->input['artifacts'],

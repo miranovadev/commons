@@ -97,14 +97,14 @@ final readonly class ParticipationService
             $completed = $participant->cycles()->whereNotNull('completed_at')->latest('sequence')->first();
             $finalPhase = $completed?->phases()->whereNotNull('completed_at')->latest('id')->first();
 
-            $recovering = $completed?->rested_at !== null;
+            $recovering = ($completed?->rested_at !== null || $completed?->deferred_at !== null);
             $entry = $this->entryFor($participant);
             $recoveryReady = $recovering && ($entry['available'] ?? false);
 
             return [...$this->waiting(
                 $recovering ? ($recoveryReady ? 'recovery_pending' : 'recovery_unavailable') : 'cycle_not_started',
-                $recovering ? ($recoveryReady ? 'Rest completed; recovery is ready for the next entry attempt.'
-                    : 'Rest completed; no valid recovery basin entry can be established.') : 'The Participant is waiting for a Cycle to begin.',
+                $recovering ? ($recoveryReady ? 'The Cycle completed; recovery is ready for the next entry attempt.'
+                    : 'The Cycle completed; no valid recovery basin entry can be established.') : 'The Participant is waiting for a Cycle to begin.',
                 entry: $entry,
             ), 'completion' => $completed !== null && $completed->rested_at === null && $finalPhase?->kind === PhaseKind::Order ? [
                 'cycle_id' => $completed->id,
@@ -136,6 +136,7 @@ final readonly class ParticipationService
             );
         }
 
+        app(AcquisitionAttemptService::class)->recover($phase);
         app(PreparationService::class)->recover($participant, $phase);
         $version = app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id);
         $plan = $this->plans->forPhase($participant, $phase, $workspace);
@@ -212,7 +213,7 @@ final readonly class ParticipationService
 
         $observedPhase = Phase::with('cycle')->find($phaseId);
         $execution = isset($input['execution_id']) ? EvidenceExecution::findOrFail($input['execution_id']) : null;
-        $resolvedRetry = $execution !== null && $execution->phase_id === $phaseId && $execution->status === 'completed';
+        $resolvedRetry = $execution !== null && $execution->phase_id === $phaseId && ($execution->attempt_resolution !== null || ($execution->attempt_admitted_at === null && $execution->status === 'completed'));
         if ($observedPhase === null || $observedPhase->cycle->participant_id !== $participant->id
             || (! $resolvedRetry && ($observedPhase->completed_at !== null || $observedPhase->cycle->completed_at !== null))) {
             throw new ConflictHttpException('The participation state changed. Refresh before contributing.');
@@ -231,7 +232,12 @@ final readonly class ParticipationService
             if ($execution->phase_id !== $phaseId) {
                 throw new ConflictHttpException('The Preparation does not belong to this Phase.');
             }
-            if (($input['action'] ?? null) === 'preparation.defer') {
+            if ($execution->type === 'instrument' || $execution->status === 'failed') {
+                app(AcquisitionAttemptService::class)->resolve($participant, $execution, $input);
+            } elseif (($input['action'] ?? null) === 'preparation.defer') {
+                if (! $resolvedRetry && $execution->status !== 'presented') {
+                    throw new ConflictHttpException('Read and acknowledge this Preparation before resolving it.');
+                }
                 $schema = app(PreparationService::class)->resolutionSchema($participant, $observedPhase, $execution);
                 $this->contributions->validateSchema($schema, $input);
                 app(PreparationService::class)->defer($participant, $execution, $input['reason']);
@@ -278,7 +284,9 @@ final readonly class ParticipationService
             throw new ConflictHttpException('The observed Closure changed. Retry from fresh state.');
         }
         try {
-            $this->contributions->validateSchema($validationPlan['schema'], $input);
+            if (($input['action'] ?? null) !== 'instrument.execute') {
+                $this->contributions->validateSchema($validationPlan['schema'], $input);
+            }
         } catch (InvalidArgumentException $exception) {
             if ($expectedSchema !== null) {
                 throw new ConflictHttpException('The participation options changed. Rebuild state before contributing.', $exception);

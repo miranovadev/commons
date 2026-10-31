@@ -108,8 +108,9 @@ class PersistInstrumentTest extends TestCase
         // Completing the observation uses the only Instrument allowance.
         app(ParticipationService::class)->contribute($grounder, $plan['phase']['id'], $this->instrument($signal, $write));
         $plan = app(ParticipationService::class)->stateFor($grounder)['plan'];
-        $this->assertTrue($plan['rest_available']);
-        $this->assertSame(['participant.rest'], array_keys($plan['schema']['$defs']['actions']));
+        $this->assertFalse($plan['rest_available']);
+        $this->assertArrayHasKey('acquisition.defer', $plan['schema']['$defs']['actions']);
+        $this->assertArrayNotHasKey('instrument.execute', $plan['schema']['$defs']['actions']);
     }
 
     private function fixture(): array
@@ -118,7 +119,8 @@ class PersistInstrumentTest extends TestCase
         // by a separate Participant in a live Persist occurrence.
         $f = new ParticipantContextFixture(1, 0, false);
         $signal = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
-        $write = $f->node($signal, 'frontier', position: PhaseKind::Persist);
+        $ownerGate = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $write = $f->node($ownerGate, 'frontier', position: PhaseKind::Persist);
         $f->phase->forceFill(['kind' => PhaseKind::Constrain,
             'gate_proposition_id' => $write->id, 'write_register' => 'canon'])->save();
         $author = $f->viewer;

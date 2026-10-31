@@ -110,9 +110,8 @@ class WebSearchReceiptTest extends TestCase
         $this->assertStringNotContainsString('Observed resource content', json_encode($next));
         $this->assertDatabaseCount('participant_receipt_contexts', 1);
         $this->publishPotentialFixture($fixture->viewer);
-        $write = $fixture->node($subject, 'frontier', position: PhaseKind::Persist);
-        $this->publishPotentialFixture($fixture->viewer);
-        $read = $service->contribute($fixture->viewer, $next['plan']['phase']['id'], ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'support', 'receipt_options' => ['load' => [$receipt->id]]]);
+        $read = $service->contribute($fixture->viewer, $next['plan']['phase']['id'],
+            ['action' => 'proposition.variant', 'statement' => 'Develop the observed resource', 'receipt_options' => ['load' => [$receipt->id]]]);
         $this->assertNotSame($next['plan']['phase']['id'], $read['plan']['phase']['id']);
         $this->assertArrayNotHasKey('evidence', collect($read['plan']['receipts'])->firstWhere('id', $receipt->id));
         $this->assertSame(1, ParticipantReceiptContext::count());

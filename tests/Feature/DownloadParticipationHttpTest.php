@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Cycle;
 use App\Models\Receipt;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Http;
@@ -77,14 +78,18 @@ class DownloadParticipationHttpTest extends ParticipationHttpTestCase
         $this->assertSame('me,value'."\nr", $delivery['deliveries'][0]['content']);
         $this->postJson($url.'/presented', ['presentation_token' => $delivery['presentation_token']])->assertOk();
         $resolved = $this->contribute($actor, ['action' => 'preparation.defer', 'execution_id' => $id, 'reason' => 'Inspect the remaining rows later.']);
-        $this->assertSame($disperse['plan']['phase'], $resolved['plan']['phase']);
-        $this->assertSame($disperse['cycle']['id'], $resolved['cycle']['id']);
+        $this->assertNotSame($disperse['cycle']['id'], $resolved['cycle']['id']);
+        $this->assertDatabaseHas('cycles', ['id' => $disperse['cycle']['id'], 'rested_at' => null]);
+        $this->assertNotNull(Cycle::findOrFail($disperse['cycle']['id'])->deferred_at);
+        $this->assertDatabaseCount('exploration_events', 0);
         $receipt = Receipt::where('type', 'preparation')->sole();
         $this->assertNull($receipt->consumption);
         $this->assertSame('deferred', $receipt->metadata['outcome']['type']);
         $this->assertSame(31, array_sum(array_column(array_column($receipt->metadata['deliveries'], 'boundaries'), 'length')));
         $this->assertStringNotContainsString('research,42', json_encode($receipt->metadata));
-        $this->assertActionAvailable($resolved, 'proposition.variant');
+        $this->assertActionUnavailable($resolved, 'proposition.variant');
+        $this->assertSame('not_required', $resolved['plan']['acquisition']['status']);
+        $this->assertActionAvailable($resolved, 'proposition.traverse');
         Http::assertSentCount(1);
     }
 }

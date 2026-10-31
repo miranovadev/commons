@@ -15,7 +15,6 @@ use App\Services\ExhaustionService;
 use App\Services\InputPlanService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseGenerationService;
-use App\Services\PhaseProgressionService;
 use App\Services\PropositionOptionService;
 use App\Services\TerminalContinuationService;
 use App\Services\TragedyService;
@@ -24,6 +23,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\Fixtures\ExhaustionFixture;
 use Tests\Fixtures\GovernedExpressionFixture;
 use Tests\TestCase;
@@ -58,7 +58,7 @@ class DirectTragedyResolutionTest extends TestCase
     public function test_authorised_instrument_encounters_its_existing_zero_target(): void
     {
         $fixture = new GovernedExpressionFixture;
-        $fixture->phase = app(PhaseProgressionService::class)->advance($fixture->phase, $fixture->expression);
+        $fixture->enterPersist();
         $this->measure($fixture->expression, 1);
         $this->resolveExpressiveFieldFixture(1);
         app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,
@@ -91,11 +91,6 @@ class DirectTragedyResolutionTest extends TestCase
     {
         $fixture = new GovernedExpressionFixture;
         $dispatcher = app(ContributionDispatcher::class);
-        $persist = $fixture->phase->replicate();
-        $persist->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $fixture->expression->id, 'write_register' => $fixture->phase->cycle->contextHorizon->domain->registerFor(PhaseKind::Persist)])->save();
-        $dispatcher->dispatch($persist->cycle->participant, $persist,
-            ['action' => 'instrument.execute', 'proposition_id' => $fixture->expression->id,
-                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/traverse-terminal']]);
         $dispatcher->dispatch($fixture->actor, $fixture->phase,
             ['action' => 'attestation.create', 'proposition_id' => $fixture->expression->id, 'direction' => 'support']);
         // Structural revisit component: real Cycle ownership and earlier effective
@@ -164,21 +159,19 @@ class DirectTragedyResolutionTest extends TestCase
         $this->assertSame($receipt, Receipt::where('type', 'tragedy')->sole()->getAttributes());
     }
 
-    public function test_resolution_keeps_an_ordinary_instrument_on_a_nonterminal_sibling(): void
+    public function test_resolution_keeps_the_sibling_nonterminal_but_withholds_fresh_acquisition(): void
     {
         $first = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
         $sibling = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
         $this->encounter($first);
         $this->resolveExpressiveFieldFixture(.5);
         $persist = $this->phase($sibling, PhaseKind::Persist);
-        $this->assertContains($sibling->id, app(PropositionOptionService::class)
-            ->instrumentOptionsFor($persist)->pluck('id'));
-        app(ContributionDispatcher::class)->dispatch($persist->cycle->participant, $persist,
-            ['action' => 'instrument.execute', 'proposition_id' => $sibling->id,
-                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/surviving-route']]);
+        $this->assertFalse(app(TerminalContinuationService::class)->closed($sibling));
+        $this->assertFalse(app(PhaseGenerationService::class)->available($persist, 'proposition.variant', prepared: true));
+        $this->assertEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($persist));
         $this->assertDatabaseCount('terminal_encounters', 1);
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
-        $this->assertSame(1, $sibling->evidenceExecutions()->count());
+        $this->assertSame(0, $sibling->evidenceExecutions()->count());
     }
 
     public function test_later_terminal_encounter_cannot_close_a_third_surviving_branch(): void
@@ -288,7 +281,7 @@ class DirectTragedyResolutionTest extends TestCase
             app(ContributionDispatcher::class)->dispatch($sibling->phase->cycle->participant, $sibling->phase,
                 ['action' => 'proposition.variant', 'statement' => 'Stale client']);
             $this->fail('Resolution must reject a stale Variant.');
-        } catch (DomainException) {
+        } catch (DomainException|ConflictHttpException) {
             $this->assertSame($before, Proposition::count());
         }
     }

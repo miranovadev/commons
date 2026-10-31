@@ -94,9 +94,11 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                         <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconTool size={13} />}
                           onClick={() => onAction('instrument.execute', { proposition_id: item.id })}>Instrument</Button>
                       </Group>}
-                      {item.id === gate.id && allowed('proposition.variant') && <Group className="write-option-card__context-actions" gap={4}>
-                        <Button size="compact-xs" variant="subtle" color="gray" leftSection={<OperationIcon operation="variant" />}
-                          onClick={() => onAction('proposition.variant')}>Variant</Button>
+                      {item.id === gate.id && (allowed('proposition.variant') || allowed('acquisition.defer')) && <Group className="write-option-card__context-actions" gap={4}>
+                        {allowed('proposition.variant') && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<OperationIcon operation="variant" />}
+                          onClick={() => onAction('proposition.variant')}>Variant</Button>}
+                        {allowed('acquisition.defer') && <Button size="compact-xs" variant="subtle" color="gray"
+                          onClick={() => onAction('acquisition.defer')}>Defer</Button>}
                       </Group>}
                       {allowed('proposition.commit') && targets.get('proposition.commit')?.has(item.id) && <Group className="write-option-card__context-actions" gap={4}>
                         <Button size="compact-xs" color="indigo" leftSection={<OperationIcon operation="commit" />}

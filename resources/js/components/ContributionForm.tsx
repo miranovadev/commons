@@ -78,7 +78,7 @@ export function ContributionForm({
       direction: 'support',
       instrument: { kind: 'citation', reference: '' },
       ...(action === 'preparation.start' ? { proposition_id: plan.gate.id, artifacts: [] } : {}),
-      ...(plan.preparation ? { execution_id: plan.preparation.execution_id } : {}),
+      ...(properties.execution_id?.const ? { execution_id: properties.execution_id.const } : {}),
       ...initialValues,
     });
   }, [action, initialValues, opened]);

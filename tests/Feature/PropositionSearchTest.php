@@ -25,7 +25,6 @@ use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptLayout;
 use App\Services\ParticipantReceiptProjection;
 use App\Services\Participation\ParticipationContext;
-use App\Services\PhaseProgressionService;
 use App\Services\PropositionSearchService;
 use App\Services\ReceiptContextService;
 use App\Services\RelevantInstrumentService;
@@ -258,7 +257,7 @@ class PropositionSearchTest extends TestCase
 
         $older = $this->historyNode($s['fixture'], null, $s['root'], 'needle older history');
         $s['fixture']->edge($older, $s['oldest'], 'variant');
-        // A distinct Participant may acquire the changed collection; a new Cycle alone cannot renew completion.
+        // A new attempt may acquire a changed collection; historical observations retain their identities.
         $s['phase']->forceFill(['completed_at' => now()])->save();
         $s['phase']->cycle->forceFill(['completed_at' => now()])->save();
         $cycle = $s['phase']->cycle->replicate();
@@ -268,7 +267,7 @@ class PropositionSearchTest extends TestCase
         $phase = $s['phase']->replicate();
         $phase->forceFill(['cycle_id' => $cycle->id, 'completed_at' => null])->save();
         $s['fixture']->phase = $phase;
-        $this->consumeObservationFixture($s['fixture'], $first);
+
         $second = app(OperationalInstrumentService::class)->execute($phase->fresh(), $s['head'], $input);
         $this->assertNotSame($first->metadata['observation_identity'], $second->metadata['observation_identity']);
         $this->assertSame([3, 6, 9, 11],
@@ -280,7 +279,8 @@ class PropositionSearchTest extends TestCase
     {
         // The migration protects a real recorded search, including an empty result.
         $fixture = new GovernedExpressionFixture;
-        $s = ['head' => $fixture->expression, 'phase' => app(PhaseProgressionService::class)->advance($fixture->phase, $fixture->expression)];
+        $fixture->enterPersist();
+        $s = ['head' => $fixture->expression, 'phase' => $fixture->phase];
         app(OperationalInstrumentService::class)->execute($s['phase'], $s['head'], [
             'kind' => 'proposition_search', 'query' => 'needle',
         ]);
@@ -310,7 +310,7 @@ class PropositionSearchTest extends TestCase
 
         $committal = $fixture->projectedCommittal($a, 'canon');
         $visible = $fixture->node($committal, 'activity', position: PhaseKind::Distinguish);
-        $head = $fixture->node($visible, 'frontier', position: PhaseKind::Persist);
+        $head = $fixture->node($visible, 'activity', position: PhaseKind::Distinguish);
 
         $cycle = new Cycle;
         $cycle->forceFill([

@@ -107,7 +107,7 @@ class TragedyTest extends TestCase
     {
         if ($kind === PhaseKind::Persist && $action === 'instrument.execute') {
             $fixture = new GovernedExpressionFixture;
-            $fixture->phase = app(PhaseProgressionService::class)->advance($fixture->phase, $fixture->expression);
+            $fixture->enterPersist();
 
             return [$fixture->actor->fresh(), $fixture->phase];
         }
@@ -120,7 +120,6 @@ class TragedyTest extends TestCase
                 $result = app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,
                     ['action' => 'proposition.reclassify', 'proposition_id' => $fixture->expression->id, 'receipt_id' => $receipt->id]);
                 $fixture->phase = app(PhaseProgressionService::class)->advance($fixture->phase, $result);
-                // This case isolates action exhaustion with shared ordinary evidence available.
                 $this->instrumentGateFixture($fixture->phase);
             }
 

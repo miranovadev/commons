@@ -56,7 +56,7 @@ class TragedyWarrantSeparationTest extends TestCase
             $this->assertTrue($service->ordinaryAvailable($phase, $context)->isEmpty());
             $this->assertSame($receipt->id, $service->tragedyWarrant($phase, $context)->id);
             $this->assertTrue(app(PropositionStateService::class)->receipts($write, $context)->isEmpty());
-            $this->assertSame(in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Disperse], true) ? [$gate->id] : [], app(PropositionOptionService::class)->instrumentOptionsFor($phase, $context)->pluck('id')->all());
+            $this->assertSame([], app(PropositionOptionService::class)->instrumentOptionsFor($phase, $context)->pluck('id')->all());
             $this->assertNotContains($write->id, app(PropositionOptionService::class)->attestationOptionsFor($phase, $context)->pluck('id'));
         }
         $this->assertEmpty($service->instrumentedIds($phase, collect([$write->id])));
@@ -73,7 +73,7 @@ class TragedyWarrantSeparationTest extends TestCase
         DB::transaction(fn () => app(ReceiptContextService::class)->desired($phase->cycle->participant, $phase, ['load' => [$receipt->id]]));
         foreach ([null, new ParticipationContext($phase)] as $context) {
             $this->assertTrue($service->ordinaryAvailable($phase, $context)->isEmpty());
-            $this->assertSame(in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Disperse], true) ? [$gate->id] : [], app(PropositionOptionService::class)->instrumentOptionsFor($phase, $context)->pluck('id')->all());
+            $this->assertSame([], app(PropositionOptionService::class)->instrumentOptionsFor($phase, $context)->pluck('id')->all());
             $this->assertNotContains($write->id, app(PropositionOptionService::class)->attestationOptionsFor($phase, $context)->pluck('id'));
         }
         $this->assertEmpty($service->instrumentedIds($phase, collect([$write->id])));
@@ -84,7 +84,7 @@ class TragedyWarrantSeparationTest extends TestCase
         $this->assertContains($write->id, app(PropositionOptionService::class)->attestationOptionsFor($phase)->pluck('id'));
     }
 
-    public function test_tragedy_does_not_suppress_instrument_when_the_only_ordinary_receipt_was_consumed(): void
+    public function test_receipt_consumption_cannot_authorize_acquisition_in_a_terminal_region(): void
     {
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
         $write = $this->node($phase, $this->origin);
@@ -98,7 +98,7 @@ class TragedyWarrantSeparationTest extends TestCase
         $this->assertTrue(app(HorizonReceiptService::class)->ordinaryAvailable($phase)->isEmpty());
         $this->assertContains($write->id, app(HorizonReceiptService::class)->instrumentedIds($phase, collect([$write->id])));
         $persist = $this->phase($write, PhaseKind::Persist);
-        $this->assertContains($write->id, app(PropositionOptionService::class)->instrumentOptionsFor($persist)->pluck('id'));
+        $this->assertEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($persist), 'Acquisition needs a lawful fresh Variant, independently of Receipt consumption');
     }
 
     public function test_non_bias_schema_and_dispatcher_reject_tragedy_even_with_ordinary_evidence_available(): void

@@ -1,5 +1,10 @@
 # Evidence & Participatory Exploration: natural lifecycle validation
 
+Historical Stage 4 validation record. The subsequent [generative acquisition redesign](generative-acquisition.md) supersedes the permanent acquisition prerequisites and deferment lifecycle below. The current executable journeys have been updated; the original measurements and campaign results remain historical evidence.
+
+Historical Stage 4 validation. Acquisition sequencing and permanent completion expectations below are superseded by [generative acquisition](generative-acquisition.md); current tests admit one attempt per exact Phase. Measurement, cognition and movement contracts remain unchanged.
+
+
 Stage 4 validates the merged Stage 1–3 contract against main `dbf5bbfdafd19e8f09e7f80f8912e01127233da6`. Its tree is `15cdd8bc2f03639940370179c355f9cbd2023b41`, exactly the validated Stage 3 head `6d79f568cad5d10eceb00295fb51fdd306f6b0e1`. The implementation PR records final CI results, baseline comparisons and measured PostgreSQL timings.
 
 ## Complete lifecycle

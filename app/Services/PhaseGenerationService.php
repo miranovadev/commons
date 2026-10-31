@@ -26,15 +26,18 @@ final readonly class PhaseGenerationService
     /** Personal completion and shared structural evidence are independent prerequisites. */
     public function epistemicActionAvailable(Phase $phase, string $action, ?ParticipationContext $context = null): bool
     {
-        $acquisition = app(PersonalAcquisitionService::class);
+        $acquisition = app(AcquisitionAttemptService::class);
         if (in_array($action, ['instrument.execute', 'preparation.start'], true)) {
             return $acquisition->allows($phase, $action, $context);
         }
-        if (! in_array($action, ['proposition.variant', 'proposition.revise'], true)
+        if ($action === 'proposition.revise' && in_array($phase->kind, [PhaseKind::Persist, PhaseKind::Disperse], true)) {
+            return app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
+        }
+        if (! in_array($action, ['proposition.variant'], true)
             || $acquisition->role($phase) === null) {
             return true;
         }
-        if ($acquisition->state($phase, $context)['status'] !== 'completed') {
+        if (! $acquisition->ready($phase, $context)) {
             return false;
         }
 
@@ -117,6 +120,18 @@ final readonly class PhaseGenerationService
             }
 
             return true; // Shared structural classification has no personal quota.
+        }
+
+        if ($action === 'proposition.variant' && ($context !== null
+            ? $context->children->get($gate->id, collect())->contains(fn ($edge) => $edge->type !== 'variant')
+            : $gate->children()->where('supersessions.type', '!=', 'variant')->exists())) {
+            return false;
+        }
+
+        // Admission bypasses only later competing Variants, never hard
+        // supersession or the terminal and canonical safety checks above.
+        if ($action === 'proposition.variant' && app(AcquisitionAttemptService::class)->admitted($phase, $context)) {
+            return true;
         }
 
         $sources = in_array($phase->kind, [PhaseKind::Bias, PhaseKind::Order], true)

@@ -23,15 +23,15 @@ use Carbon\CarbonImmutable;
 
 trait HorizonCycleFixture
 {
-    /** Two readers enter between distinct births and supply real, independently consumable observations. */
-    protected function driveStaggeredCommit(bool $realClosure = true, ?callable $recordAction = null): Proposition
+    /** Two readers enter between distinct births and exercise their own first judgments. */
+    protected function driveStaggeredCommit(bool $realClosure = true, ?callable $recordAction = null, bool $readerEvidence = false): Proposition
     {
         $examined = [];
-        $admitReader = function (Participant $author, array $state) use (&$examined): void {
+        $admitReader = function (Participant $author, array $state) use (&$examined, $readerEvidence): void {
             $plan = $state['plan'];
             $gate = $plan['gate_id'];
             if (count($examined) === 2 || isset($examined[$gate]) || $plan['phase']['number'] !== 2
-                || ! isset($plan['schema']['$defs']['actions']['proposition.variant'])) {
+                || ! isset($plan['schema']['$defs']['actions']['preparation.start'])) {
                 return;
             }
             $examined[$gate] = true;
@@ -40,9 +40,23 @@ trait HorizonCycleFixture
             $reader->save();
             $service = app(ParticipationService::class);
             $entry = $service->enter($reader);
-            $service->contribute($reader, $entry['plan']['phase']['id'], ['action' => 'instrument.execute',
-                'proposition_id' => $entry['plan']['gate_id'], 'instrument' => ['kind' => 'proposition_search',
-                    'query' => 'Shared observation '.count($examined), 'limit' => 1]]);
+            $entry = $service->contribute($reader, $entry['plan']['phase']['id'], ['action' => 'attestation.create',
+                'proposition_id' => $gate, 'direction' => 'support']);
+            if ($readerEvidence) {
+                // The reader has no remaining continuation at this Persist Gate.
+                // Its own admitted read/defer leaves shareable ordinary evidence.
+                $option = $entry['plan']['preparation_options'][0];
+                $entry = $service->contribute($reader, $entry['plan']['phase']['id'], [
+                    'action' => 'preparation.start', 'proposition_id' => $gate, 'purpose' => 'Contribute a bounded shared observation.',
+                    'artifacts' => [['receipt_id' => $option['receipt_id'], 'artifact_id' => $option['artifact_id'], 'read_type' => 'text']],
+                ]);
+                $execution = EvidenceExecution::findOrFail($entry['plan']['preparation']['execution_id']);
+                $preparation = app(PreparationService::class);
+                $delivery = $preparation->delivery($reader, $execution, 'inline-text');
+                $preparation->acknowledge($reader, $execution, $delivery['presentation_token']);
+                $service->contribute($reader, $entry['plan']['phase']['id'], [
+                    'action' => 'preparation.defer', 'execution_id' => $execution->id, 'reason' => 'Preserve examination without generating.']);
+            }
         };
 
         return $this->driveHorizonCycle(realClosure: $realClosure, observe: $admitReader, additionalEntrants: 2,

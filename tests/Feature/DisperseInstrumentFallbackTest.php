@@ -12,6 +12,7 @@ use App\Models\Participant;
 use App\Models\ParticipantConnection;
 use App\Models\Phase;
 use App\Models\Receipt;
+use App\Services\AcquisitionAttemptService;
 use App\Services\ContributionDispatcher;
 use App\Services\Evidence\ArtifactStore;
 use App\Services\Evidence\HyperlinkVerifier;
@@ -22,7 +23,6 @@ use App\Services\LedgerService;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
-use App\Services\PersonalAcquisitionService;
 use App\Services\PhaseGenerationService;
 use App\Services\PotentialProjectionService;
 use App\Services\PreparationService;
@@ -135,7 +135,7 @@ class DisperseInstrumentFallbackTest extends TestCase
     }
 
     #[DataProvider('spentPhases')]
-    public function test_consumed_completed_observation_satisfies_only_its_role_even_after_failed_verification(PhaseKind $kind): void
+    public function test_consumed_observation_reserves_only_its_exact_phase_even_after_failed_verification(PhaseKind $kind): void
     {
         $f = $this->fixture();
         $phase = $f->phase;
@@ -153,7 +153,7 @@ class DisperseInstrumentFallbackTest extends TestCase
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/missing']);
         $this->assertSame('completed', $receipt->evidenceExecution->status);
         if ($kind === PhaseKind::Persist) {
-            // Position the separate role only after the real Persist attempt completed.
+            // Isolated service fixture: position a separate Phase after the recorded Persist observation.
             $phase->forceFill(['completed_at' => now()])->save();
             $next = $phase->replicate();
             $next->forceFill(['kind' => PhaseKind::Disperse, 'gate_proposition_id' => $f->gate->id, 'write_register' => 'activity', 'completed_at' => null])->save();
@@ -167,10 +167,11 @@ class DisperseInstrumentFallbackTest extends TestCase
         $this->assertArrayNotHasKey('proposition.variant', $actions);
         if ($kind === PhaseKind::Persist) {
             $this->assertArrayHasKey('instrument.execute', $actions);
-            $this->assertSame('required', app(PersonalAcquisitionService::class)->state($f->phase)['status']);
+            $this->assertSame('required', app(AcquisitionAttemptService::class)->state($f->phase)['status']);
+            $this->assertNull(app(AcquisitionAttemptService::class)->execution($f->phase));
         } else {
             $this->assertArrayNotHasKey('instrument.execute', $actions);
-            $this->assertArrayHasKey('participant.rest', $actions);
+            $this->assertArrayHasKey('acquisition.defer', $actions);
             $this->expectException(ConflictHttpException::class);
             app(OperationalInstrumentService::class)->execute($f->phase, $f->gate, $this->input($f)['instrument']);
         }
@@ -187,11 +188,12 @@ class DisperseInstrumentFallbackTest extends TestCase
         $execution = $service->start($f->viewer, $f->phase, $fixture->input());
         $service->fail($f->viewer, $execution, 'test-reader', '1', 'expired', 'Unattempted Preparation expired.');
         $this->assertNull($execution->fresh()->receipt);
-        $this->assertTrue($service->eligible($f->phase));
-        $this->assertArrayHasKey('preparation.start', $this->actions($f));
-        $this->assertArrayHasKey('instrument.execute', $this->actions($f));
-        app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase, $this->input($f));
         $this->assertFalse($service->eligible($f->phase));
+        $this->assertSame(['acquisition.defer'], array_keys($this->actions($f)));
+        app(AcquisitionAttemptService::class)->resolve($f->viewer, $execution,
+            ['action' => 'acquisition.defer', 'execution_id' => $execution->id, 'reason' => 'End the abandoned attempt']);
+        $this->assertNotNull($f->phase->cycle->fresh()->deferred_at);
+
     }
 
     private function historicalReceipt(ParticipantContextFixture $f, ?string $body = null): Receipt
@@ -268,7 +270,7 @@ class DisperseInstrumentFallbackTest extends TestCase
         if ($used) {
             app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase, $this->input($f));
             $this->consume($f, EvidenceExecution::where('cycle_id', $f->phase->cycle_id)->sole()->receipt);
-            $this->assertArrayHasKey('participant.rest', $this->actions($f));
+            $this->assertArrayHasKey('acquisition.defer', $this->actions($f));
         }
         $other = (new Participant)->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'observer', 'current_proposition_id' => $f->gate->id]);
         $other->save();
@@ -293,9 +295,9 @@ class DisperseInstrumentFallbackTest extends TestCase
         $vote->save();
         app(LedgerService::class)->record($vote);
         $this->assertArrayHasKey('proposition.traverse', $this->actions($f));
-        $this->assertArrayHasKey('instrument.execute', $this->actions($f));
+        $this->assertArrayNotHasKey('instrument.execute', $this->actions($f));
         $this->assertArrayNotHasKey('attestation.create', $this->actions($f));
-        app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase, $this->input($f));
+        $this->historicalReceipt($f);
         $this->assertArrayHasKey('proposition.traverse', $this->actions($f));
         $this->assertArrayHasKey('attestation.create', $this->actions($f));
         $this->assertArrayNotHasKey('proposition.variant', $this->actions($f), 'A viable continuation still prevents redundant generation.');

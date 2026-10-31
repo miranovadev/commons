@@ -101,7 +101,7 @@ class SoloFailedPreparationFrontierTest extends ParticipationHttpTestCase
         $after = $this->readParticipation($actor);
         $this->assertSame($before['plan']['phase'], $after['plan']['phase']);
         $this->assertSame($before['cycle'], $after['cycle']);
-        $this->assertSame('completed', $after['plan']['acquisition']['status']);
+        $this->assertSame('awaiting_resolution', $after['plan']['acquisition']['status']);
         $execution = EvidenceExecution::findOrFail($id);
         $this->assertSame('failed', $execution->status);
         $this->assertFalse($execution->receipt->metadata['content_verified']);

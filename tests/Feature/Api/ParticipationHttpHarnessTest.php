@@ -28,8 +28,7 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
                 foreach (['r0', 'leftReading', 'leftPreparation', 'rightReading', 'rightPreparation'] as $reference) {
                     $this->assertContains($this->persistJourneyIds[$reference], array_column($packet['receipts'], 'id'));
                 }
-                $this->assertNotContains($this->persistJourneyIds['r2'], array_column($packet['receipts'], 'id'),
-                    'The first branch contributes neither Reconciliation operand.');
+                $this->assertSame(count($packet['receipts']), count(array_unique(array_column($packet['receipts'], 'id'))));
             }
         }
         $this->assertNotSame($origin, $state['last_commitment']['proposition_id']);

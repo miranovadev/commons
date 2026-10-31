@@ -35,7 +35,7 @@ class EvidenceFirstInteractionTest extends TestCase
 
             return $service->stateFor($f->viewer)['plan']['schema']['$defs']['actions'][$action]['properties']['proposition_id']['enum'] ?? [];
         };
-        $this->assertSame($kind === PhaseKind::Persist ? [$gate->id] : [], $targets('instrument.execute'), 'Shared evidence does not waive personal Persist acquisition');
+        $this->assertSame([], $targets('instrument.execute'), 'Existing unexplored Writes take precedence over acquisition');
         $this->assertContains($write->id, $targets('attestation.create'), 'Shared same-Horizon evidence is sufficient');
         $this->assertContains($other->id, $targets('attestation.create'));
         $this->assertNotContains($write->id, $targets('proposition.traverse'));

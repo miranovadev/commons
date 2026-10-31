@@ -46,7 +46,7 @@ class EpistemicInstrumentationBoundaryTest extends TestCase
         foreach ([null, new ParticipationContext($phase)] as $context) {
             $this->assertSame($withEvidence, $options->attestationOptionsFor($phase, $context)->contains('id', $write->id));
         }
-        $this->assertTrue($options->instrumentOptionsFor($phase)->contains('id', $disperseGate->id));
+        $this->assertFalse($options->instrumentOptionsFor($phase)->contains('id', $disperseGate->id), 'Explore the existing Write first.');
         $this->assertNotContains($write->id, $options->instrumentOptionsFor($phase)->pluck('id')->all());
         $this->assertEmpty(app(HorizonReceiptService::class)->instrumentedIds($phase, collect([$write->id])));
         // Another Participant can use the shared observation without originating it.

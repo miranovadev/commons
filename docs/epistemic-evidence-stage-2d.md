@@ -1,6 +1,6 @@
 # Epistemic evidence Stage 2D
 
-> Acquisition eligibility and allowances are superseded by [Personal Gate Acquisition](personal-gate-acquisition.md): Preparation now also serves Persist, and completion belongs to Participant × Gate × role. The reader, immutable observation and transient delivery contracts below remain applicable.
+> Acquisition admission, Variant/Defer resolution and causal Artifact accessibility now follow [generative acquisition](generative-acquisition.md). Preparation serves Persist and Disperse only when fresh Variant is lawful; Defer closes the Cycle. The reader, immutable observation and transient delivery contracts below remain applicable.
 
 
 > The [Evidence Resilience contract](evidence-preparation-resilience.md) supersedes the historical no-Receipt failure rule: genuinely attempted technical failures now produce ordinary failure Receipts while execution status remains failed. Invalid and stale requests do not mint evidence. Explicit reading lengths are preferences within unchanged budgets.
@@ -16,10 +16,7 @@ measurement, C3, Tragedy and consumption contracts remain authoritative.
 
 Claire's Stage 2D clarification supersedes Stage 2C's restriction against selecting
 Artifacts from consumed Receipts. Preparation selects preserved resources for reading.
-`HorizonReceiptService::accessibleOrdinary()` uses the same ordinary Commit Region,
-Horizon and completed-execution provenance as the available evidence catalogue, but
-includes consumed Receipts. `catalogue()` and `ordinaryAvailable()` retain the
-unconsumed filter. Tragedy remains special and grants no Artifact-reading shortcut.
+`PreparationService::accessibleArtifacts()` uses the Gate-causal cognitive evidence horizon and the same recorded Receipt associations as the cognitive catalogue. Consumed observations and authorised secondary Reconciliation ancestry can provide readable Artifacts. Consumption eligibility and movement authority remain independent. Tragedy remains special and grants no Artifact-reading shortcut.
 
 A selection must name both an accessible Receipt and an Artifact actually preserved
 in that Receipt's immutable metadata. An arbitrary hash, a loaded foreign Receipt,

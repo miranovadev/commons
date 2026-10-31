@@ -181,7 +181,7 @@ final readonly class CycleEntryService
     public function continuationFor(Participant $participant): ?Proposition
     {
         $latest = $participant->cycles()->latest('sequence')->first();
-        if ($participant->current_proposition_id === null || $latest?->rested_at !== null) {
+        if ($participant->current_proposition_id === null || ($latest?->rested_at !== null || $latest?->deferred_at !== null)) {
             return null;
         }
         $position = $participant->position()->firstOrFail();

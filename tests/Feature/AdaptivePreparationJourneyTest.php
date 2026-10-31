@@ -70,7 +70,8 @@ class AdaptivePreparationJourneyTest extends TestCase
             $this->assertSame($this->canonical($delivery), $this->canonical($receipt->metadata['deliveries'][$index]));
         }
         $this->assertNull($receipt->consumption);
-        $this->assertNull($f->phase->fresh()->completed_at);
+        $this->assertNotNull($f->phase->fresh()->completed_at);
+        $this->assertNotNull($f->phase->cycle->fresh()->deferred_at);
         $original = $receipt->fresh()->metadata;
         $fixture->consume($receipt);
         $this->assertSame($original, $receipt->fresh()->metadata);

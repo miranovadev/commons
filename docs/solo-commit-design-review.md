@@ -1,12 +1,22 @@
 # Solo first-Commit design review
 
+## Acquisition redesign follow-up
+
+The Cycle-wide restriction in the first PR #291 implementation was a misunderstanding and has been removed. Attempts belong to the exact Phase. The bounded diagnostic now acquires at Distinguish and Persist in the same Cycle: Persist/Constrain/Disperse birth intervals are `0, 1, 0`, with unchanged Phase Profile `+1/7`, which conflicts with negative Shape Topology. Choosing a genuine Disperse Defer and acquiring again on return changes that tested sequence to `0, 1, 1`, with Phase Profile `-1/7` and coherent Correspondence. Delays are explicit Participant choices, not mandatory Cycle quotas.
+
+These bounded cases describe first-Mediate admissibility only. They do not prove that all solo histories are impossible, or establish a complete solo Commit. The failed-Preparation Revision diagnostic is updated to the same immediate Persist chronology. The positive `HorizonProofCycleTest` retains its original assertions and accepted narrow skip until a complete lawful solo transcript is available. No broad solo search or change to measurement formulas or thresholds is part of this correction. Earlier Cycle-wide results and their first-Mediate conclusions are superseded.
+
+The current multi-Participant transcript reaches natural Reconciliation, Bias and Commit with real measurements. The old solo diagnostic source and original transcript remain available at [the merged PR #290 revision](https://github.com/miranovadev/commons/tree/d52fcc43bb1e4c034db625ae86f7f76cabb4ebc9/tests/Diagnostics).
+
+## Historical PR #290 findings
+
 Accepted limitation: the positive `HorizonProofCycleTest` retains its journey and assertions behind an explicit PHPUnit skip. Re-enable it after the upcoming acquisition and recovery corrections establish a lawful fresh-Origin solo path without weakening measurement gates or bypassing explored status. The diagnostic tests remain enabled. This investigation is deliberately deferred and does not block the explored-Write correction.
 
 The explored-Write restriction blocks first Commit from a fresh Origin with one Participant and the current seven-Phase lifecycle. The blocker occurs before Bias. A healthy route can complete personal exploration, but the Participant cannot develop the pair of coherent Signals needed for its first Reconciliation. This finding concerns a fresh substrate with one Participant throughout. It does not establish a restriction on one Participant continuing a previously developed population history.
 
 ## Smallest healthy reproduction
 
-Use the first 16 author actions of `tests/Fixtures/participation/persist-skeptical-commit.json`. The HTTP harness creates Origin and exercises each acquisition, Attestation, consumption and Rest through application endpoints.
+Use the first 16 author actions of [the PR #290 transcript](https://github.com/miranovadev/commons/blob/d52fcc43bb1e4c034db625ae86f7f76cabb4ebc9/tests/Fixtures/participation/persist-skeptical-commit.json). The HTTP harness creates Origin and exercises each acquisition, Attestation, consumption and Rest through application endpoints.
 
 | Live Cycle | Actions | Result |
 | --- | --- | --- |

@@ -84,33 +84,35 @@ class EpistemicInstrumentationTest extends TestCase
     {
         $f = $this->fixture();
         foreach (PhaseKind::cases() as $kind) {
-            $f->phase->kind = $kind;
+            $gate = $kind === PhaseKind::Disperse
+                ? $f->node($f->seed, 'canon', position: PhaseKind::Constrain) : $f->gate;
+            $f->phase->forceFill(['kind' => $kind, 'write_register' => $f->phase->cycle->contextHorizon->domain->registerFor($kind),
+                'gate_proposition_id' => $gate->id])->save();
             $ids = app(PropositionOptionService::class)->instrumentOptionsFor($f->phase)->pluck('id')->all();
-            $this->assertSame(in_array($kind, [PhaseKind::Persist, PhaseKind::Disperse], true) ? [$f->gate->id] : [], $ids);
+            $this->assertSame(in_array($kind, [PhaseKind::Persist, PhaseKind::Disperse], true) ? [$gate->id] : [], $ids);
             $this->assertSame(in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Disperse], true), in_array('instrument.execute', config("phases.{$kind->value}.actions"), true));
         }
     }
 
-    public function test_second_completed_request_is_rejected_under_dispatch_lock(): void
+    public function test_second_reservation_is_rejected_before_external_observation(): void
     {
         $f = $this->fixture();
         $dispatcher = app(ContributionDispatcher::class);
         $input = $this->input($f);
-        // Both requests observed the same unused allowance before either persisted.
         $first = $dispatcher->observeInstrument($f->viewer, $f->phase, $input);
-        $second = $dispatcher->observeInstrument($f->viewer, $f->phase, $input);
-        $dispatcher->dispatch($f->viewer, $f->phase, $input, $first);
-        $count = Receipt::count();
         try {
-            $dispatcher->dispatch($f->viewer, $f->phase, $input, $second);
-            $this->fail('The stale prepared request must conflict.');
+            $dispatcher->observeInstrument($f->viewer, $f->phase, $input);
+            $this->fail('A concurrent reservation must conflict before observation.');
         } catch (ConflictHttpException) {
-            $this->assertSame($count, Receipt::count());
-            $this->assertSame(1, EvidenceExecution::where('phase_id', $f->phase->id)->where('status', 'completed')->count());
+            $this->assertSame(0, Receipt::count());
+            $this->assertSame(1, EvidenceExecution::where('phase_id', $f->phase->id)->where('status', 'pending')->count());
         }
+        $dispatcher->dispatch($f->viewer, $f->phase, $input, $first);
+        $this->assertSame(1, Receipt::count());
+        $this->assertSame(1, EvidenceExecution::where('phase_id', $f->phase->id)->where('status', 'completed')->count());
     }
 
-    public function test_failed_verification_consumes_allowance_but_infrastructure_failure_does_not(): void
+    public function test_failed_verification_records_an_observation_but_infrastructure_failure_only_reserves(): void
     {
         $f = $this->fixture();
         $input = [...$this->input($f), 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/failure']];
@@ -120,9 +122,12 @@ class EpistemicInstrumentationTest extends TestCase
             app(ParticipationService::class)->contribute($f->viewer, $f->phase->id, $input);
             $this->fail('Infrastructure failure must abort.');
         } catch (ArtifactStorageException) {
-            $this->assertSame(0, EvidenceExecution::where('phase_id', $f->phase->id)->count());
-            $this->assertCount(1, app(PropositionOptionService::class)->instrumentOptionsFor($f->phase));
+            $this->assertSame('pending', EvidenceExecution::where('phase_id', $f->phase->id)->sole()->status);
+            $this->assertCount(0, app(PropositionOptionService::class)->instrumentOptionsFor($f->phase));
+            $this->assertDatabaseCount('receipts', 0);
         }
+        $f = $this->fixture();
+        $input = [...$this->input($f), 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/failure']];
         $this->mock(HyperlinkVerifier::class, fn ($mock) => $mock->shouldReceive('verify')->once()
             ->andThrow(new \DomainException('Verification failed')));
         $state = app(ParticipationService::class)->contribute($f->viewer, $f->phase->id, $input);
@@ -132,7 +137,7 @@ class EpistemicInstrumentationTest extends TestCase
         $this->assertArrayNotHasKey('instrument.execute', $state['plan']['schema']['$defs']['actions']);
     }
 
-    public function test_completion_is_personal_gate_owned_across_cycles_and_independent_of_loading(): void
+    public function test_completion_is_cycle_owned_and_independent_of_loading(): void
     {
         $f = $this->fixture();
         app(ParticipationService::class)->contribute($f->viewer, $f->phase->id, $this->input($f));
@@ -155,8 +160,9 @@ class EpistemicInstrumentationTest extends TestCase
         $nextPhase = $f->phase->replicate();
         $nextPhase->cycle_id = $next->id;
         $nextPhase->save();
-        $this->assertCount(0, app(PropositionOptionService::class)->instrumentOptionsFor($nextPhase->fresh()));
-        // A new Cycle does not reset durable personal completion.
+        $this->assertCount(1, app(PropositionOptionService::class)->instrumentOptionsFor($nextPhase->fresh()));
+        // Historical observations do not authorize this new Cycle's Variant.
+        $this->assertFalse(app(PhaseGenerationService::class)->available($nextPhase->fresh(), 'proposition.variant'));
         $this->assertFalse(EvidenceExecution::whereHas('phase', fn ($q) => $q->where('cycle_id', $next->id))->exists());
     }
 

@@ -18,6 +18,7 @@ use App\Services\Evidence\ArtifactStore;
 use App\Services\Evidence\PreparationAllocation;
 use App\Services\Participation\ParticipationContext;
 use DomainException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -52,10 +53,10 @@ final class PreparationService
 
         return DB::transaction(function () use ($participant, $phase, $input): EvidenceExecution {
             $phase = $this->lockPhase($participant, $phase->id, $phase->gate_proposition_id);
-            if (! app(PersonalAcquisitionService::class)->allows($phase, 'preparation.start')) {
+            if (! app(AcquisitionAttemptService::class)->allows($phase, 'preparation.start')) {
                 throw new ConflictHttpException('Personal acquisition at this Gate is already resolved, reserved or unavailable.');
             }
-            $catalogue = app(HorizonReceiptService::class)->accessibleOrdinary($phase)->keyBy('id');
+            $catalogue = $this->causalReceipts($phase)->keyBy('id');
             foreach ($input->artifacts as $selection) {
                 $receipt = $catalogue->get($selection['receipt_id']);
                 if ($receipt === null || $this->artifact($receipt, $selection['artifact_id']) === null) {
@@ -116,8 +117,8 @@ final class PreparationService
 
     public function contribute(Participant $participant, EvidenceExecution $execution, array $input): Receipt
     {
-        if (! in_array($input['action'] ?? null, ['proposition.variant', 'proposition.revise'], true)) {
-            throw new DomainException('Preparation can contribute only a lawful Disperse Variant or Revise.');
+        if (! in_array($input['action'] ?? null, ['proposition.variant'], true)) {
+            throw new DomainException('Preparation can contribute only its admitted lawful Variant.');
         }
 
         return DB::transaction(function () use ($participant, $execution, $input): Receipt {
@@ -133,6 +134,7 @@ final class PreparationService
             app(ContributionService::class)->validateSchema($schema, $input);
             $result = app(ContributionDispatcher::class)->dispatch($participant, $phase, $input, preparation: $execution);
             $receipt = $this->executions->completePreparation($execution, $result, null, $hash);
+            app(AcquisitionAttemptService::class)->finish($execution, $result, null);
             app(PhaseProgressionService::class)->advance($phase, $result);
 
             return $receipt;
@@ -153,7 +155,10 @@ final class PreparationService
             [, $execution] = $this->lockExecution($participant, $execution);
             $this->assertPresented($execution);
 
-            return $this->executions->completePreparation($execution, null, $reason, $hash);
+            $receipt = $this->executions->completePreparation($execution, null, $reason, $hash);
+            app(AcquisitionAttemptService::class)->finish($execution, null, $reason);
+
+            return $receipt;
         });
     }
 
@@ -207,7 +212,7 @@ final class PreparationService
 
     public function active(Phase $phase): ?EvidenceExecution
     {
-        return EvidenceExecution::where('cycle_id', $phase->cycle_id)->where('type', 'prepare')
+        return EvidenceExecution::where('phase_id', $phase->id)->where('type', 'prepare')
             ->whereIn('status', ['pending', 'presented'])->first();
     }
 
@@ -215,7 +220,7 @@ final class PreparationService
     {
         return in_array($phase->kind, [PhaseKind::Persist, PhaseKind::Disperse], true)
             && $phase->completed_at === null && $phase->cycle->completed_at === null
-            && app(PersonalAcquisitionService::class)->allows($phase, 'preparation.start', $context)
+            && app(AcquisitionAttemptService::class)->allows($phase, 'preparation.start', $context)
             && $this->options($phase, $context) !== [];
     }
 
@@ -250,12 +255,28 @@ final class PreparationService
         return $result;
     }
 
+    private function causalReceipts(Phase $phase, ?ParticipationContext $context = null): Collection
+    {
+        $select = function () use ($phase, $context) {
+            $plan = ['gate_id' => $phase->gate_proposition_id,
+                'phase' => ['kind' => config("phases.{$phase->kind->value}.name")]];
+            $ids = app(CognitiveEvidenceHorizon::class)->propositionIds($plan)
+                ->merge(app(CausalWriteService::class)->forPhase($phase, $context)->pluck('id'));
+            $references = app(ParticipantReceiptProjection::class)->referencesFor($ids->unique())->flatten(1)->pluck('id')->unique();
+
+            return Receipt::whereKey($references)->whereHas('evidenceExecution.phase.cycle.participant',
+                fn ($q) => $q->where('substrate_id', $phase->cycle->participant->substrate_id))->get();
+        };
+
+        return $context === null ? $select() : $context->remember('preparation-causal-receipts:'.$phase->id, $select);
+    }
+
     private function accessibleArtifacts(Phase $phase, ?ParticipationContext $context): iterable
     {
         if (! in_array($phase->kind, [PhaseKind::Persist, PhaseKind::Disperse], true)) {
             return;
         }
-        foreach (app(HorizonReceiptService::class)->accessibleOrdinary($phase, $context) as $receipt) {
+        foreach ($this->causalReceipts($phase, $context) as $receipt) {
             foreach ($receipt->metadata['artifacts'] ?? [] as $artifact) {
                 if (is_array($artifact) && $this->artifact($receipt, $artifact['hash'] ?? '') !== null) {
                     yield [$receipt, $artifact];
@@ -296,25 +317,21 @@ final class PreparationService
 
     public function resolutionSchema(Participant $participant, Phase $phase, EvidenceExecution $execution): array
     {
-        $revisions = app(PropositionOptionService::class)->revisionOptionsFor($phase, $participant, prepared: true)->pluck('id')->all();
+        // The inference adapter receives this schema with the reading, then
+        // acknowledges successful delivery before dispatching its decision.
+        // assertPresented remains the authoritative resolution boundary.
         $actions = ['preparation.defer'];
-        foreach ($phase->kind === PhaseKind::Disperse ? ['proposition.variant', 'proposition.revise'] : [] as $action) {
-            if (app(PhaseGenerationService::class)->available($phase, $action, prepared: true)
-                && ($action !== 'proposition.revise' || $revisions !== [])) {
-                $actions[] = $action;
-            }
+        if (app(PhaseGenerationService::class)->available($phase, 'proposition.variant', prepared: true)) {
+            $actions[] = 'proposition.variant';
         }
         $schema = app(InputSchemaService::class)->forPhase($phase->kind, $actions);
         foreach ($schema['$defs']['actions'] as $action => &$definition) {
             $definition['properties']['execution_id'] = ['type' => 'string', 'const' => $execution->id];
             $definition['required'][] = 'execution_id';
-            if ($action === 'proposition.revise') {
-                $definition['properties']['proposition_id']['enum'] = $revisions;
-            }
         }
         unset($definition);
 
-        return $schema;
+        return app(InputSchemaService::class)->withReceiptOptions($schema, $phase, null);
     }
 
     /** The dispatcher requires this explicit execution, never an ambient bypass flag. */
@@ -463,7 +480,7 @@ final class PreparationService
         $stored = EvidenceExecution::findOrFail($execution->id);
         $phase = $this->lockPhase($participant, $stored->phase_id, $stored->proposition_id);
         $stored = EvidenceExecution::lockForUpdate()->findOrFail($stored->id);
-        if ($stored->type !== 'prepare' || $stored->cycle_id !== $phase->cycle_id) {
+        if ($stored->type !== 'prepare' || $stored->phase_id !== $phase->id) {
             throw new DomainException('The execution must be this Participant’s Preparation.');
         }
 

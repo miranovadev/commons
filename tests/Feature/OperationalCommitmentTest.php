@@ -102,8 +102,9 @@ class OperationalCommitmentTest extends TestCase
     public function test_citation_resolves_attestations_and_verified_hyperlinks_have_signatures(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
-        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier'])->save();
-        $gate = $f->gate;
+        $gate = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier', 'gate_proposition_id' => $gate->id])->save();
+        $f->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
         $attestation = (new Attestation)->forceFill(['phase_id' => $gate->phase_id, 'proposition_id' => $gate->id, 'direction' => 'support']);
         $attestation->save();
         app(LedgerService::class)->record($attestation);
@@ -111,8 +112,9 @@ class OperationalCommitmentTest extends TestCase
         $receipt = $service->execute($f->phase, $gate, ['kind' => 'citation', 'reference' => $attestation->id]);
         $this->assertSame($attestation->id, $receipt->metadata['target_id']);
         $other = new ParticipantContextFixture(1, 0, false);
-        $other->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier'])->save();
-        $gate = $other->gate;
+        $gate = $other->node($other->seed, 'activity', position: PhaseKind::Distinguish);
+        $other->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier', 'gate_proposition_id' => $gate->id])->save();
+        $other->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
         $receipt = $service->execute($other->phase, $gate, ['kind' => 'hyperlink', 'reference' => ' https://example.test/evidence ']);
         $this->assertSame('https://example.test/evidence', $receipt->reference);
         $this->assertTrue($receipt->metadata['content_verified']);

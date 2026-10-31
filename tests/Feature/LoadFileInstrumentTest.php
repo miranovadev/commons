@@ -184,7 +184,8 @@ class LoadFileInstrumentTest extends TestCase
         $result = $service->defer($f->viewer, $execution, 'Need another comparison.');
         $this->assertTrue($result->isEvidence());
         $this->assertNull($result->consumption);
-        $this->assertNull($f->phase->fresh()->completed_at);
+        $this->assertNotNull($f->phase->fresh()->completed_at);
+        $this->assertNotNull($f->phase->cycle->fresh()->deferred_at);
         $this->assertStringNotContainsString('Downloaded preparation body sentinel', json_encode($result->metadata));
         $this->assertDatabaseMissing('participant_receipt_contexts', ['receipt_id' => $receipt->id]);
     }
@@ -217,13 +218,14 @@ class LoadFileInstrumentTest extends TestCase
         $this->assertSame($body, app(ArtifactStore::class)->read($receipt->metadata['artifacts'][0]));
         $this->assertSame([$receipt->id], $prepared->metadata['deliveries'][0]['receipt_ids']);
         $this->assertNull($prepared->consumption);
-        $this->assertNull($f->phase->fresh()->completed_at);
+        $this->assertNotNull($f->phase->fresh()->completed_at);
+        $this->assertNotNull($f->phase->cycle->fresh()->deferred_at);
         $this->assertDatabaseMissing('participant_receipt_contexts', ['receipt_id' => $receipt->id]);
         $this->assertStringNotContainsString($expected, json_encode($prepared->metadata));
         Http::assertSentCount(1);
     }
 
-    public function test_failed_download_completes_observation_but_storage_failure_does_not_spend_allowance(): void
+    public function test_failed_download_records_observation_but_storage_failure_retains_only_pending_reservation(): void
     {
         $f = $this->fixture();
         Http::fake(['*' => Http::sequence()->push('', 404)->push('bytes')]);
@@ -239,7 +241,8 @@ class LoadFileInstrumentTest extends TestCase
             app(OperationalInstrumentService::class)->execute($other->phase, $other->gate, $this->input());
             $this->fail('Infrastructure failure recorded as observation');
         } catch (ArtifactStorageException) {
-            $this->assertSame(0, EvidenceExecution::where('phase_id', $other->phase->id)->count());
+            $this->assertSame('pending', EvidenceExecution::where('phase_id', $other->phase->id)->sole()->status);
+            $this->assertNull(EvidenceExecution::where('phase_id', $other->phase->id)->sole()->receipt);
             $this->assertSame(1, Receipt::count());
         }
     }
