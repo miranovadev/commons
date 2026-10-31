@@ -95,7 +95,13 @@ trait PersistCommitHttpFixture
             $this->persistJourneyIds[$step['result']] = $after['current_proposition_id'];
         }
         $this->assertSame($this->persistJourneyIds[$step['result']], $after['current_proposition_id']);
-        if (isset($step['receipt'])) {
+        if (isset($step['deferred_receipt'])) {
+            $receipt = Receipt::whereHas('evidenceExecution', fn ($q) => $q->where('phase_id', $before['plan']['phase']['id']))->sole();
+            $this->assertSame($before['plan']['gate_id'], $receipt->evidenceExecution->proposition_id);
+            $this->assertNotNull($receipt->evidenceExecution->cycle->deferred_at);
+            $this->assertNull($receipt->evidenceExecution->cycle->rested_at);
+            $this->persistJourneyIds[$step['deferred_receipt']] = $receipt->id;
+        } elseif (isset($step['receipt'])) {
             $instrument = $step['input']['action'] === 'instrument.execute';
             $this->assertContains($step['phase'], $instrument ? [1, 2, 4] : [2, 4]);
             if ($instrument || $step['input']['action'] === 'preparation.defer') {

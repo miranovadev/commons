@@ -86,9 +86,6 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
         $this->enterParticipant($actor, true);
         $this->discoverGate($actor);
         $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Searchable distinction']);
-        $distinction = $state['current_proposition_id'];
-        $this->contribute($actor, ['action' => 'participant.rest']);
-        $state = $this->contribute($actor, ['action' => 'attestation.create', 'proposition_id' => $distinction, 'direction' => 'support']);
         $this->assertActionAvailable($state, 'instrument.execute');
         $target = $state['plan']['gate_id'];
 
@@ -133,9 +130,6 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
         $this->assertSame($initial['plan']['phase']['id'], $this->readParticipation($actor)['plan']['phase']['id']);
         $this->discoverGate($actor);
         $persist = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'An informational encounter']);
-        $distinction = $persist['current_proposition_id'];
-        $this->contribute($actor, ['action' => 'participant.rest']);
-        $persist = $this->contribute($actor, ['action' => 'attestation.create', 'proposition_id' => $distinction, 'direction' => 'support']);
         $before = $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $persist['plan']['gate_id'],
             'instrument' => ['kind' => 'proposition_search', 'limit' => 3]]);
         $this->assertSame($persist['plan']['phase'], $before['plan']['phase']);

@@ -103,7 +103,7 @@ final readonly class ContributionDispatcher
             // advanced since another Instrument request completed.
             if ($action === 'instrument.execute'
                 && (! app(AcquisitionAttemptService::class)->admitted($phase) || $input['proposition_id'] !== $phase->gate_proposition_id)) {
-                throw new ConflictHttpException('Instrumentation requires the exact active Gate and an admitted current-Cycle acquisition attempt.');
+                throw new ConflictHttpException('Instrumentation requires the exact active Gate and an admitted current-Phase acquisition attempt.');
             }
             $targets = match ($action) {
                 'attestation.create' => $this->options->attestationOptionsFor($phase),
@@ -201,7 +201,7 @@ final readonly class ContributionDispatcher
         if ($phase->cycle->participant_id !== $participant->id
             || ! in_array('instrument.execute', config("phases.{$phase->kind->value}.actions", []), true)
             || ! $this->options->instrumentOptionsFor($phase)->contains('id', $input['proposition_id'] ?? null)) {
-            throw new DomainException('Instrumentation requires the exact active Gate and an admitted current-Cycle acquisition attempt.');
+            throw new DomainException('Instrumentation requires the exact active Gate and an admitted current-Phase acquisition attempt.');
         }
 
         if (array_key_exists('replay_receipt_id', $input['instrument'])) {

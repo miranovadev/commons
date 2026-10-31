@@ -76,7 +76,7 @@ class AcquisitionAttemptTest extends TestCase
         $this->assertDatabaseCount('receipt_consumptions', 0);
     }
 
-    public function test_one_cycle_reservation_covers_both_disperse_mechanisms(): void
+    public function test_one_phase_reservation_covers_both_disperse_mechanisms(): void
     {
         $fixture = new PreparationFixture(true);
         $f = $fixture->context;
@@ -151,7 +151,7 @@ class AcquisitionAttemptTest extends TestCase
     }
 
     #[Group('query')]
-    public function test_attempt_lookup_is_cycle_scoped_and_memoized_and_downgrade_preserves_history(): void
+    public function test_attempt_lookup_is_phase_scoped_and_memoized_and_downgrade_preserves_history(): void
     {
         $fixture = new PreparationFixture;
         $f = $fixture->context;
@@ -164,7 +164,7 @@ class AcquisitionAttemptTest extends TestCase
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
         $this->assertCount(1, $queries);
-        $this->assertStringContainsString('cycle_id', $queries[0]['query']);
+        $this->assertStringContainsString('phase_id', $queries[0]['query']);
         $context = new ParticipationContext($phase);
         $service->state($phase, $context);
         DB::flushQueryLog();

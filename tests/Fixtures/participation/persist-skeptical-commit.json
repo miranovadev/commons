@@ -32,10 +32,44 @@
       "cycle": 2,
       "phase": 2,
       "gate": "leftDistinction",
+      "result": "leftDistinction",
+      "execution": "delayed2",
       "input": {
-        "action": "participant.rest"
+        "action": "preparation.start",
+        "proposition_id": {
+          "ref": "leftDistinction"
+        },
+        "purpose": "Examine before developing this distinction in a later Cycle",
+        "artifacts": [
+          {
+            "receipt_id": {
+              "ref": "r0"
+            },
+            "artifact_id": {
+              "artifact_of": "r0"
+            },
+            "read_type": "text",
+            "parameters": {
+              "offset": 0,
+              "max_chars": 4000
+            }
+          }
+        ]
+      }
+    },
+    {
+      "cycle": 2,
+      "phase": 2,
+      "gate": "leftDistinction",
+      "input": {
+        "action": "preparation.defer",
+        "execution_id": {
+          "ref": "delayed2"
+        },
+        "reason": "Preserve this reading and reconsider development next Cycle."
       },
-      "result": "origin"
+      "result": "origin",
+      "deferred_receipt": "delayed2Receipt"
     },
     {
       "cycle": 3,
@@ -291,10 +325,44 @@
       "cycle": 6,
       "phase": 2,
       "gate": "rightDistinction",
+      "result": "rightDistinction",
+      "execution": "delayed20",
       "input": {
-        "action": "participant.rest"
+        "action": "preparation.start",
+        "proposition_id": {
+          "ref": "rightDistinction"
+        },
+        "purpose": "Examine before developing this distinction in a later Cycle",
+        "artifacts": [
+          {
+            "receipt_id": {
+              "ref": "rightDiscovery"
+            },
+            "artifact_id": {
+              "artifact_of": "rightDiscovery"
+            },
+            "read_type": "text",
+            "parameters": {
+              "offset": 0,
+              "max_chars": 4000
+            }
+          }
+        ]
+      }
+    },
+    {
+      "cycle": 6,
+      "phase": 2,
+      "gate": "rightDistinction",
+      "input": {
+        "action": "preparation.defer",
+        "execution_id": {
+          "ref": "delayed20"
+        },
+        "reason": "Preserve this reading and reconsider development next Cycle."
       },
-      "result": "origin"
+      "result": "origin",
+      "deferred_receipt": "delayed20Receipt"
     },
     {
       "cycle": 7,
@@ -812,10 +880,44 @@
       "cycle": 13,
       "phase": 2,
       "gate": "p13",
+      "result": "p13",
+      "execution": "delayed60",
       "input": {
-        "action": "participant.rest"
+        "action": "preparation.start",
+        "proposition_id": {
+          "ref": "p13"
+        },
+        "purpose": "Examine before developing this distinction in a later Cycle",
+        "artifacts": [
+          {
+            "receipt_id": {
+              "ref": "r2"
+            },
+            "artifact_id": {
+              "artifact_of": "r2"
+            },
+            "read_type": "text",
+            "parameters": {
+              "offset": 0,
+              "max_chars": 4000
+            }
+          }
+        ]
+      }
+    },
+    {
+      "cycle": 13,
+      "phase": 2,
+      "gate": "p13",
+      "input": {
+        "action": "preparation.defer",
+        "execution_id": {
+          "ref": "delayed60"
+        },
+        "reason": "Preserve this reading and reconsider development next Cycle."
       },
-      "result": "origin"
+      "result": "origin",
+      "deferred_receipt": "delayed60Receipt"
     },
     {
       "cycle": 14,

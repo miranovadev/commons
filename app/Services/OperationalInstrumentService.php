@@ -79,7 +79,7 @@ final readonly class OperationalInstrumentService
                 $this->reserve($phase, $proposition, $input, $replayedFrom);
             }
             if (! $origin && ! app(AcquisitionAttemptService::class)->admitted($phase)) {
-                throw new ConflictHttpException('Instrumentation requires the exact active Gate and an admitted current-Cycle acquisition attempt.');
+                throw new ConflictHttpException('Instrumentation requires the exact active Gate and an admitted current-Phase acquisition attempt.');
             }
 
             $metadata = match ($input['kind']) {
@@ -117,7 +117,7 @@ final readonly class OperationalInstrumentService
             throw new DomainException('Committed sources and Committal results cannot receive instruments. Develop a Variant from the Committal instead.');
         }
         if (! $bootstrap && ! app(PropositionOptionService::class)->instrumentOptionsFor($phase->fresh())->contains('id', $proposition->id)) {
-            throw new ConflictHttpException('Instrumentation requires the exact active Gate and an admitted current-Cycle acquisition attempt.');
+            throw new ConflictHttpException('Instrumentation requires the exact active Gate and an admitted current-Phase acquisition attempt.');
         }
         app(RelevantInstrumentService::class)->assertAvailable($proposition, $input);
         $normalized = $this->normalize($input);
@@ -149,7 +149,7 @@ final readonly class OperationalInstrumentService
                 throw new ConflictHttpException('The acquisition Phase is no longer active.');
             }
             if (! app(AcquisitionAttemptService::class)->allows($phase, 'instrument.execute')) {
-                throw new ConflictHttpException('This Cycle already has an acquisition attempt or exploration is outstanding.');
+                throw new ConflictHttpException('This Phase already has an acquisition attempt or exploration is outstanding.');
             }
             $execution = new EvidenceExecution;
             $execution->forceFill(['phase_id' => $phase->id, 'proposition_id' => $proposition->id,

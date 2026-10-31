@@ -21,9 +21,6 @@ class DownloadParticipationHttpTest extends ParticipationHttpTestCase
         $this->enterParticipant($actor, true);
         $this->discoverGate($actor);
         $persist = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'A distinction to investigate.']);
-        $distinction = $persist['current_proposition_id'];
-        $this->contribute($actor, ['action' => 'participant.rest']);
-        $persist = $this->judge($actor, $distinction);
         $instrument = ['kind' => 'load_file', 'method' => 'download', 'reference' => 'https://evidence.example.test/file.txt?edition=2'];
         $action = ['action' => 'instrument.execute', 'proposition_id' => $persist['plan']['gate_id'], 'instrument' => $instrument];
         $this->postContribution($actor, $persist['plan']['phase']['id'], [...$action,
@@ -59,9 +56,6 @@ class DownloadParticipationHttpTest extends ParticipationHttpTestCase
         $this->enterParticipant($actor, true);
         $this->discoverGate($actor);
         $persist = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Investigate the dataset.']);
-        $distinction = $persist['current_proposition_id'];
-        $this->contribute($actor, ['action' => 'participant.rest']);
-        $persist = $this->judge($actor, $distinction);
         $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $persist['plan']['gate_id'],
             'instrument' => ['kind' => 'load_file', 'method' => 'download', 'reference' => 'https://evidence.example.test/data.csv']]);
         $source = Receipt::where('type', 'load_file')->sole();

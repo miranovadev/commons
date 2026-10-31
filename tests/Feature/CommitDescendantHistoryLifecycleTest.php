@@ -97,7 +97,7 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
         $this->assertSame('settlement', $search->domain);
         // The real search was recorded against the Committal before this
         // descendant existed. Moving its results into personal memory grants no
-        // evidence ownership to the descendant and cannot reuse the Cycle's attempt.
+        // evidence ownership to the descendant and requires its own Phase's attempt.
         $edges = Supersession::count();
         $memory = $discovery;
         // At initial entry the two loaded subjects are already cognitively visible.

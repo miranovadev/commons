@@ -23,9 +23,6 @@ abstract class ParticipationHttpTestCase extends TestCase
         $initial = $this->enterParticipant($actor, true);
         $this->discoverGate($actor);
         $first = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'First distinction']);
-        $this->contribute($actor, ['action' => 'participant.rest']);
-        $first = $this->contribute($actor, ['action' => 'attestation.create',
-            'proposition_id' => $first['current_proposition_id'], 'direction' => 'support']);
         $observed = $this->contribute($actor, ['action' => 'instrument.execute',
             'proposition_id' => $first['plan']['gate_id'],
             'instrument' => ['kind' => 'citation', 'reference' => $initial['current_proposition_id']]]);

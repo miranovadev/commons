@@ -43,7 +43,7 @@ class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
         $originCard = $this->visibleProposition($state, $origin);
         $signalCard = $this->visibleProposition($state, $signal);
         $this->assertSame(1, $originCard['attestation_summary']['positive']);
-        $this->assertSame(1, $signalCard['attestation_summary']['positive']); // The author's real return judgment.
+        $this->assertSame(0, $signalCard['attestation_summary']['positive']); // Fresh generation does not fabricate a judgment.
         $this->assertSame([$origin], $signalCard['parent_ids']);
         $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $origin, 'target_proposition_id' => $signal]);
         $localReceipt = DB::table('receipts')->where('receiptable_id', $signal)->sole()->id;
@@ -70,9 +70,6 @@ class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
     private function observePersistGate(string $author, array $state): array
     {
         $this->assertSame('persist', $state['plan']['phase']['kind']);
-        $distinction = $state['plan']['gate_id'];
-        $this->contribute($author, ['action' => 'participant.rest']);
-        $state = $this->judge($author, $distinction);
         $next = $this->contribute($author, ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://evidence.example.test/'.$author]], $state);
         $this->assertSame($state['plan']['phase']['id'], $next['plan']['phase']['id']);

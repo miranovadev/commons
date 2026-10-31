@@ -1,5 +1,13 @@
 # Generative acquisition validation
 
+## Phase-scoped correction
+
+The current correction replaces the mistaken Cycle quota with one admission and resolution per exact Phase. Earlier Phase completion cannot satisfy or block a later Phase. The progressive HTTP journey reproduces the old failure (Persist Preparation unavailable after Distinguish), then passes with two independent executions in the same Cycle and rejects reuse of the earlier execution. The natural Commit transcript preserves deliberate birth staggering through real Preparation/Defer choices instead of unlawful quota-induced Rest. The bounded solo diagnostics now distinguish immediate Persist birth from voluntary Defer; see the updated design review.
+
+Validation results for this correction are recorded below after execution. The previous campaign below is historical and is not evidence that the corrected revision has passed.
+
+## Previous Cycle-scoped checkpoint (superseded contract)
+
 This report accompanies [the acquisition contract](generative-acquisition.md) and PR #291. Validation uses isolated Laravel databases, deterministic Instrument/reader adapters and GitHub's PostgreSQL 18 runners. No production/shared database or autonomous cook was used.
 
 ## Revisions and comparison
@@ -61,7 +69,7 @@ Measurements below come from the paired PostgreSQL query jobs, using unchanged r
 
 | Measurement | Merged main | Proposed |
 | --- | --- | --- |
-| Acquisition state lookup | 2 queries, 0 on warm memoized repeat | 1 Cycle-scoped query, 0 on warm repeat |
+| Acquisition state lookup | 2 queries, 0 on warm memoized repeat | 1 Cycle-scoped query (superseded lookup), 0 on warm repeat |
 | Active frontier, 2 → 8 heads | 27 → 27 queries; 25.02 / 42.34 ms | 26 → 26 queries; 29.93 / 54.97 ms |
 | Overlapping causal Receipt ancestry, 1 → 21 Receipts | 26 → 26 queries; 608 → 13,174 bytes | Identical; no duplicate catalogue entries |
 | Constrain / Bias context | 33,762 / 34,132 bytes; 29 objects | Identical |
@@ -71,6 +79,6 @@ The revised natural Reconciliation fixture records 23 cold acquisition/explorati
 
 ## Remaining limits
 
-One attempt is allowed per whole Cycle, as specified in the handoff. An early Variant therefore spends that Cycle's opportunity; later Phase generation may require return in another Cycle. Defer uses existing recovery and does not guarantee re-entry to a Gate that has become unavailable. Prepared Revision is retired because it conflicts with a Variant-or-Defer attempt; ordinary lawful Revision remains available independently.
+The superseded checkpoint incorrectly allowed one attempt per whole Cycle. An early Variant therefore spends that Cycle's opportunity; later Phase generation may require return in another Cycle. Defer uses existing recovery and does not guarantee re-entry to a Gate that has become unavailable. Prepared Revision is retired because it conflicts with a Variant-or-Defer attempt; ordinary lawful Revision remains available independently.
 
 The acquisition chronology removes the earlier solo diagnostic's first-Mediate component contradiction: its unchanged Phase Profile is now `-1/7`, or `-3/7` after a Defer Cycle, coherent with negative Shape Topology. A full solo Commit remains unproven by the retained bounded driver. [The design review](solo-commit-design-review.md) distinguishes the old historical proof from this result. No separate solo search, recovery redesign or mathematical change is included.

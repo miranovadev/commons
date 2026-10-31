@@ -17,9 +17,6 @@ class DisperseFallbackHttpTest extends ParticipationHttpTestCase
         $initial = $this->enterParticipant($observer, true);
         $this->discoverGate($observer);
         $persist = $this->contribute($observer, ['action' => 'proposition.variant', 'statement' => 'Investigate a shared distinction.']);
-        $distinction = $persist['plan']['gate_id'];
-        $this->contribute($observer, ['action' => 'participant.rest']);
-        $persist = $this->judge($observer, $distinction);
         $this->contribute($observer, ['action' => 'instrument.execute', 'proposition_id' => $persist['plan']['gate_id'],
             'instrument' => ['kind' => 'citation', 'reference' => $initial['current_proposition_id']]]);
         $source = Receipt::where('type', 'citation')->sole();

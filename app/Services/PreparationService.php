@@ -212,7 +212,7 @@ final class PreparationService
 
     public function active(Phase $phase): ?EvidenceExecution
     {
-        return EvidenceExecution::where('cycle_id', $phase->cycle_id)->where('type', 'prepare')
+        return EvidenceExecution::where('phase_id', $phase->id)->where('type', 'prepare')
             ->whereIn('status', ['pending', 'presented'])->first();
     }
 
@@ -480,7 +480,7 @@ final class PreparationService
         $stored = EvidenceExecution::findOrFail($execution->id);
         $phase = $this->lockPhase($participant, $stored->phase_id, $stored->proposition_id);
         $stored = EvidenceExecution::lockForUpdate()->findOrFail($stored->id);
-        if ($stored->type !== 'prepare' || $stored->cycle_id !== $phase->cycle_id) {
+        if ($stored->type !== 'prepare' || $stored->phase_id !== $phase->id) {
             throw new DomainException('The execution must be this Participant’s Preparation.');
         }
 

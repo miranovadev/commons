@@ -121,9 +121,6 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
         }
         $actor = $actors[0];
         $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Develop shared observations']);
-        $distinction = $state['plan']['gate_id'];
-        $this->contribute($actor, ['action' => 'participant.rest']);
-        $state = $this->judge($actor, $distinction);
         $this->assertActionUnavailable($state, 'preparation.start');
         $state = $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
             'instrument' => ['kind' => 'citation', 'reference' => $gate]]);
@@ -159,9 +156,6 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
         $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://evidence.example.test/source']]);
         $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Examine preserved source']);
-        $distinction = $state['plan']['gate_id'];
-        $this->contribute($actor, ['action' => 'participant.rest']);
-        $state = $this->judge($actor, $distinction);
         $this->assertActionUnavailable($state, 'instrument.execute');
         $source = $state['plan']['preparation_options'][0];
         $started = $this->contribute($actor, ['action' => 'preparation.start', 'proposition_id' => $state['plan']['gate_id'],

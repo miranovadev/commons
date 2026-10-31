@@ -12,7 +12,7 @@ use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
-/** One admitted generative opportunity per Cycle, independent of observation and Receipt consumption. */
+/** One admitted generative opportunity per Phase, independent of observation and Receipt consumption. */
 final class AcquisitionAttemptService
 {
     public function role(Phase $phase): ?string
@@ -27,9 +27,9 @@ final class AcquisitionAttemptService
 
     public function execution(Phase $phase, ?ParticipationContext $context = null): ?EvidenceExecution
     {
-        $read = fn () => EvidenceExecution::where('cycle_id', $phase->cycle_id)->whereNotNull('attempt_admitted_at')->first();
+        $read = fn () => EvidenceExecution::where('phase_id', $phase->id)->whereNotNull('attempt_admitted_at')->first();
 
-        return $context === null ? $read() : $context->remember('acquisition-execution:'.$phase->cycle_id, $read);
+        return $context === null ? $read() : $context->remember('acquisition-execution:'.$phase->id, $read);
     }
 
     public function state(Phase $phase, ?ParticipationContext $context = null): array

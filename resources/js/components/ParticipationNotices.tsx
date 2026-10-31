@@ -12,7 +12,7 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
   if (acquisition?.role && acquisition.status !== 'not_required') notices.push({ id: 'personal-acquisition', title: acquisition.status === 'resolved' ? 'Acquisition attempt completed' : acquisition.status === 'pending' ? 'Acquisition in progress' : acquisition.status === 'awaiting_resolution' ? 'Choose Variant or Defer' : 'Acquire before creating a Variant',
     color: acquisition.status === 'resolved' ? 'teal' : 'indigo', satisfied: acquisition.status === 'resolved', icon: IconRoute,
     content: <Stack gap="xs">
-      <Text size="sm">{acquisition.status === 'resolved' ? 'This Cycle’s attempt is complete. Later Cycles evaluate fresh opportunities independently.'
+      <Text size="sm">{acquisition.status === 'resolved' ? 'This Phase’s attempt is complete. Later Phases evaluate fresh opportunities independently.'
         : acquisition.status === 'awaiting_resolution' ? 'Choose Variant or Defer. Defer preserves your observation and completes this Cycle.'
         : acquisition.status === 'pending' ? 'Resolve the current execution before starting another acquisition.'
           : 'Explore existing structure first. Acquire for this fresh Variant opportunity, then choose Variant or Defer.'}</Text>

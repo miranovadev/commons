@@ -17,13 +17,11 @@ trait PersistExplorationHttpFixture
         $a = $state['current_proposition_id'];
         $originObserver = $this->joinParticipant('distinguish-observer');
         $this->enterParticipant($originObserver);
-        $this->contribute($actor, ['action' => 'participant.rest']);
-        $this->judge($actor, $a);
         $this->observePersist($actor, $a, 'first');
         $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Persist development']);
         $persist = $state['current_proposition_id'];
         $this->contribute($actor, ['action' => 'participant.rest']);
-        $this->contribute($actor, ['action' => 'proposition.traverse', 'proposition_id' => $a]);
+        $this->judge($actor, $a);
         // The first observation is still available until Constrain consumes it.
         $this->assertActionUnavailable($this->readParticipation($actor), 'instrument.execute');
         $state = $this->judge($actor, $persist);

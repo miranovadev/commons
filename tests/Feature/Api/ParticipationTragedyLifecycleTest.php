@@ -50,9 +50,9 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
             ->where('proposition_id', $boundary['proposition_id'])->value('cadence_interval'));
         $this->discoverGate($actor);
         $observing = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Develop the completed region']);
-        // This Cycle's attempt created the Distinction. It cannot also acquire
-        // in Persist. Rest from the unjudged fresh descendant is lawful.
-        $beforeRest = $observing;
+        // Persist has its own acquisition opportunity in this same Cycle.
+        // Develop it before testing lawful Rest at the unjudged Constrain Gate.
+        $beforeRest = $this->prepareVariant($actor, 'Examine the new region before evaluating it');
         $participant = Participant::findOrFail($actor);
         $cycle = $participant->cycles()->latest('sequence')->firstOrFail();
         $origin = $initial['current_proposition_id'];
@@ -85,8 +85,8 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
             fn ($id, $horizon) => DB::table('supersessions')->where('target_proposition_id', $id)->pluck('source_proposition_id')->all());
         $committals = Proposition::whereIn('id', array_keys($path))->where('tier', 'committal')->pluck('id')->all();
         $this->assertSame([$seed->id, $origin], array_values(array_intersect(array_keys($path), $committals)));
-        $this->assertSame(1, $path[$seed->id]);
-        $this->assertSame(8, $path[$origin]);
+        $this->assertSame(2, $path[$seed->id]);
+        $this->assertSame(9, $path[$origin]);
         $this->assertFalse(app(ExhaustionService::class)->unavailable($origin));
         $this->assertSame('no_available_move', $beforeRest['plan']['rest_reason']);
         $this->assertSame(['participant.rest'], array_keys($beforeRest['plan']['schema']['$defs']['actions']));

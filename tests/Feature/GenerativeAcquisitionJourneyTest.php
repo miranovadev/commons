@@ -78,11 +78,16 @@ class GenerativeAcquisitionJourneyTest extends ParticipationHttpTestCase
         $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Examine progressively',
             'execution_id' => $state['plan']['acquisition']['execution_id']]);
         $gate = $state['plan']['gate_id'];
-        $this->assertActionUnavailable($state, 'preparation.start');
-        $this->contribute($actor, ['action' => 'participant.rest']);
+        $first = EvidenceExecution::findOrFail($state['plan']['acquisition']['execution_id'] ?? EvidenceExecution::whereNotNull('attempt_admitted_at')->sole()->id);
+        $this->assertActionAvailable($state, 'preparation.start');
+        $this->assertActionUnavailable($state, 'proposition.variant');
+        $this->postContribution($actor, $state['plan']['phase']['id'], ['action' => 'proposition.variant',
+            'execution_id' => $first->id, 'statement' => 'Cannot reuse discovery for examination'])->assertConflict();
         for ($i = 0; $i < 3; $i++) {
-            $this->contribute($actor, $i === 0 ? ['action' => 'attestation.create', 'proposition_id' => $gate, 'direction' => 'support']
-                : ['action' => 'proposition.traverse', 'proposition_id' => $gate]);
+            if ($i > 0) {
+                $this->contribute($actor, $i === 1 ? ['action' => 'attestation.create', 'proposition_id' => $gate, 'direction' => 'support']
+                    : ['action' => 'proposition.traverse', 'proposition_id' => $gate]);
+            }
             $state = $this->readParticipation($actor);
             $this->assertActionUnavailable($state, 'instrument.execute');
             $source = $state['plan']['preparation_options'][0];
@@ -90,6 +95,14 @@ class GenerativeAcquisitionJourneyTest extends ParticipationHttpTestCase
                 'artifacts' => [['receipt_id' => $source['receipt_id'], 'artifact_id' => $source['artifact_id'],
                     'read_type' => 'text', 'parameters' => ['offset' => $i * 10, 'max_chars' => 10]]]]);
             $id = $state['plan']['preparation']['execution_id'];
+            if ($i === 0) {
+                $second = EvidenceExecution::findOrFail($id);
+                $this->assertSame($first->cycle_id, $second->cycle_id);
+                $this->assertNotSame($first->phase_id, $second->phase_id);
+                $this->assertNotSame($first->id, $second->id);
+                $this->assertSame('variant', $first->attempt_resolution['action']);
+                $this->assertNull($second->attempt_resolution);
+            }
             $this->readAndAcknowledgePreparation($actor, $id);
             $this->contribute($actor, $i < 2 ? ['action' => 'preparation.defer', 'execution_id' => $id, 'reason' => 'Read the next section first']
                 : ['action' => 'proposition.variant', 'execution_id' => $id, 'statement' => 'A considered persistence']);
