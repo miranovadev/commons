@@ -33,7 +33,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeExhaustionFixture();
+        $this->initializeExhaustionFixture(originOpensSettlement: true);
         // Isolate unchanged evidence and Potential prerequisites. Actual personal
         // event publication/frontier selection is covered in ParticipantExplorationTest.
         $mock = \Mockery::mock(new ParticipantExplorationService);

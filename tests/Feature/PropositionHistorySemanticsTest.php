@@ -145,6 +145,9 @@ class PropositionHistorySemanticsTest extends TestCase
             'gate_proposition_id' => $gate->id, 'started_at' => now(),
         ])->save();
 
+        if ($operation === 'variant') {
+            $this->variantMarginFixture($phase, closed: false);
+        }
         $this->instrumentGateFixture($phase);
 
         // Isolate history from Mediate/Bias candidate mathematics, covered separately.

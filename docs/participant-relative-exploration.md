@@ -46,6 +46,12 @@ See [validation and acceptance coverage](participant-relative-exploration-valida
 
 `ContinuationOpportunityService::nonVariantGenerationAvailable` evaluates base Reconcile, Reclassify and Commit lawfulness. Fresh Variant is deliberately excluded: it must never supply its own prerequisite for reopening or authorizing another Variant. Existing reachable Variants remain structural continuations in active-head discovery. Acquisition is required only for an admitted fresh Variant attempt; exploring an existing route no longer requires historical Gate acquisition. First effective personal judgment, active-route authority and forward-generation reopening remain required.
 
+A closed [Crossover Margin](rest-crossover-experiment.md) removes the fresh
+Variant opportunity for every Participant in the governing Region. Existing
+Writes still use each Participant's own frontier, effective judgments and
+eligible reconsiderations. Closing the margin cannot publish or invalidate a
+personal Exploration Event.
+
 `ParticipantExplorationService::canGenerateFromHead` uses that non-recursive predicate for each historical active head. Traverse destinations still use ordinary authority and personal exploration filtering, including the existing Commit traversal rules. Traversal through an ancestor remains available when an authorized head beyond it is unexplored. Base Traverse back toward an explored destination does not undo that destination's personal history. Region, Horizon and recorded arrival restrictions remain unchanged.
 
 `ExplorationEventService::completionWitness` independently qualifies an actual tested arrival without calling InputPlan. Schema construction may offer Rest alongside forward movement and reconsideration when all relevant option targets are already explored or the current encounter qualifies. Traversal destinations are included in that target check, so a remaining unexplored reachable head still prevents an ancestor from treating its exploration as complete. An authorized homologous Order Traverse can coexist with a qualified local completion: visibility or navigation across that boundary does not make the foreign position a local causal continuation.

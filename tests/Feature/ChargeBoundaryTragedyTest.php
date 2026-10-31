@@ -32,7 +32,7 @@ class ChargeBoundaryTragedyTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeExhaustionFixture();
+        $this->initializeExhaustionFixture(originOpensSettlement: true);
     }
 
     public static function fields(): array

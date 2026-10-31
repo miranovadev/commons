@@ -197,10 +197,12 @@ final readonly class ReferencePotentialChargeService
                     : $node->phase->cycle->context_horizon_id;
             });
         $excluded = app(ExhaustionService::class)->unavailable($position) ? $position->id : null;
+        $restedHere = app(BackwardRecoveryLineage::class)->restedAtEntry($position, $startingBasin, $observer);
         $result = $this->basins->resolve($startingBasin, $horizons,
-            function (ContextHorizon $basin) use ($excluded, $members, $entries, $outgoing, $distances): Collection {
+            function (ContextHorizon $basin) use ($excluded, $members, $entries, $outgoing, $distances, $restedHere): Collection {
                 $candidates = $entries->get($basin->id, collect())
-                    ->filter(fn (Proposition $node) => $node->id !== $excluded && isset($distances[$node->id]))
+                    ->filter(fn (Proposition $node) => $node->id !== $excluded && isset($distances[$node->id])
+                        && ($distances[$node->id] !== 0 || ! $restedHere))
                     ->sortBy(fn (Proposition $node) => $distances[$node->id])->take(1);
                 if ($candidates->isEmpty()) {
                     return collect();
@@ -333,4 +335,3 @@ final readonly class ReferencePotentialChargeService
         return round(max(0, abs($committalTension) - abs($expressiveTension)), 7);
     }
 }
-

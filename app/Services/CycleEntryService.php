@@ -15,6 +15,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\SubstrateLedgerEntry;
+use App\Services\Participation\ParticipationContext;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -77,9 +78,7 @@ final readonly class CycleEntryService
         $positionId = $participant->current_proposition_id;
         $gate = null;
         if ($positionId !== null) {
-            $gate = $this->continuationFor($participant)
-                ?? ($this->potential->recoverFrom($participant->position()->firstOrFail(),
-                    $participant->cycles()->latest('sequence')->first()?->contextHorizon, $participant)['proposition'] ?? null);
+            $gate = $this->positionedEntryFor($participant)['proposition'] ?? null;
         } elseif ($this->hasPropositionHistory($participant->substrate)
             && CommitmentSnapshot::where('substrate_id', $participant->substrate_id)->exists()) {
             $gate = $this->potential->selectFor($participant->substrate)['proposition'];
@@ -194,6 +193,34 @@ final readonly class CycleEntryService
         $seed = $this->regions->seedFor($position);
 
         return $seed?->commitmentSnapshot !== null ? $seed : null;
+    }
+
+    /** Ordinary continuation, then structural recovery. Only a stranded Participant can resume locally. */
+    public function positionedEntryFor(Participant $participant): ?array
+    {
+        if ($continuation = $this->continuationFor($participant)) {
+            return ['proposition' => $continuation, 'reason' => 'continuity'];
+        }
+        $position = $participant->position()->firstOrFail();
+        $latest = $participant->cycles()->latest('sequence')->first();
+        $selection = $this->potential->recoverFrom($position, $latest?->contextHorizon, $participant);
+        if ($selection !== null) {
+            return $selection;
+        }
+        $rest = $latest?->restedEntryPhase($position);
+        if ($rest === null || app(ExhaustionService::class)->unavailable($position)) {
+            return null;
+        }
+        // No ancestor is reachable. Preview local Distinguish on read-only copies
+        // so a later opportunity can wake the Participant without an empty Cycle.
+        $preview = clone $rest;
+        $cycle = clone $latest;
+        $preview->completed_at = $cycle->completed_at = $cycle->rested_at = null;
+        $preview->setRelation('cycle', $cycle);
+        $schema = app(InputSchemaService::class)->forParticipant($participant, [], [], context: new ParticipationContext($preview));
+
+        return array_diff(array_keys($schema['$defs']['actions']), ['participant.rest']) !== []
+            ? ['proposition' => $position, 'reason' => 'continuity'] : null;
     }
 
     private function createLiveCycle(

@@ -266,6 +266,37 @@ class AcquisitionAttemptTest extends TestCase
         $service->defer($other, $b, 'Cannot change a contributed decision');
     }
 
+    public function test_closed_margin_blocks_preparation_admission_and_a_presented_variant_but_preserves_defer(): void
+    {
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        $service = app(PreparationService::class);
+        $execution = $service->start($f->viewer, $f->phase, $fixture->input());
+        $service->present($f->viewer, $execution, $fixture->presentation());
+        $this->variantMarginFixture($f->phase, closed: true);
+        $other = (new Participant)->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'later-reader']);
+        $other->save();
+        $phase = $this->visit($f->phase, $other);
+        try {
+            $service->start($other, $phase, $fixture->input());
+            $this->fail('Closed Crossover cannot reserve a readable Preparation.');
+        } catch (ConflictHttpException|\DomainException) {
+            $this->assertSame(1, EvidenceExecution::where('type', 'prepare')->whereNotNull('attempt_admitted_at')->count());
+        }
+        $this->assertSame(['preparation.defer'], array_keys($service->resolutionSchema($f->viewer, $f->phase, $execution)['$defs']['actions']));
+        $count = Proposition::count();
+        try {
+            $service->contribute($f->viewer, $execution, ['action' => 'proposition.variant', 'statement' => 'A now-prohibited Variant']);
+            $this->fail('Closed Crossover cannot resolve through a Variant.');
+        } catch (\InvalidArgumentException) {
+            $this->assertNull($execution->fresh()->attempt_resolution);
+        }
+        $receipt = $service->defer($f->viewer, $execution, 'Keep the reading at its observed Gate');
+        $this->assertSame($execution->id, $receipt->evidence_execution_id);
+        $this->assertSame($count, Proposition::count());
+        $this->assertDatabaseCount('exploration_events', 0);
+    }
+
     public function test_hard_supersession_invalidates_variant_but_retains_safe_defer_and_observation(): void
     {
         $fixture = new PreparationFixture(true);
