@@ -617,7 +617,8 @@ class TransactionLockOrderTest extends TestCase
     #[Group('load')]
     public function test_concurrent_fresh_sibling_invalidates_exhaustion_proof(): void
     {
-        $this->initializeExhaustionFixture();
+        // The race requires a lawful Variant in the child's otherwise live Region.
+        $this->initializeExhaustionFixture(originOpensSettlement: true);
         [, $terminal, , $commit] = $this->exhaustedBranch();
         $generation = $this->phase($commit, PhaseKind::Distinguish);
         $this->instrumentGateFixture($generation);
