@@ -38,6 +38,8 @@ The HTTP journeys retain the write guard that rejects fabricated acquisition, At
 
 The acquisition-specific PostgreSQL race tests also pass in Core: duplicate Instrument reservations, Instrument/Preparation races, contributed/deferred outcome contention and duplicate failure recording. The final Load rerun passes concurrent Wake inference and both external-observation cases. Those two cases now preserve a pre-admitted opportunity instead of expecting the old post-observation rejection. Their unchanged safety assertions still require one outcome per execution and real persisted observation before subsequent inference.
 
+The final historical-migration regression also passed on PostgreSQL at `ebec579`: Core shard 1 ran 317 tests / 3,427 assertions, plus the 14-test migration preflight. It preserves multiple historical executions and their Receipts exactly across migration, leaves them unadmitted, and permits one real new attempt. [Final migration and fixture rerun](https://github.com/miranovadev/commons/actions/runs/41165155177). All 12 [Phase Profile jobs](https://github.com/miranovadev/commons/actions/runs/41165155321) passed again on this revision. The final documentation commits do not change tested production or test code.
+
 ### Baseline failures retained
 
 * `ChargeBoundaryTragedyTest::test_ordinary_unmocked_observables_can_reach_the_boundary` and Integration's `NaturalChargeBoundaryLifecycleTest` expect Settlement where their constructed natural history produces Emergence. This domain mismatch is present on merged main.
