@@ -117,7 +117,7 @@ final class ParticipantContextSerializer
         foreach ($registers as &$register) {
             $register['propositions'] = array_map(fn ($node) => [
                 ...Arr::except($this->proposition($node), [
-                    'observables', 'attestation_summary', 'reinforcement_count', 'structural_position', 'explored',
+                    'observables', 'attestation_summary', 'reinforcement_count', 'structural_position',
                 ]),
                 ...($authors->has($node['id']) ? ['participant' => $authors->get($node['id'])] : []),
                 ...Arr::only($node, ['relation', 'role', 'phase_number', 'statement_truncated',

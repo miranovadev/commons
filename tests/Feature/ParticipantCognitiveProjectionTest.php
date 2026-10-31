@@ -42,9 +42,10 @@ class ParticipantCognitiveProjectionTest extends TestCase
         $state = ['participant' => $f->viewer->only(['id', 'callsign', 'designation']), 'plan' => $plan];
         $packet = app(ParticipantContextSerializer::class)->inference($state);
         $gate = $packet['gate']['propositions'][0];
-        foreach (['observables', 'attestation_summary', 'reinforcement_count', 'structural_position', 'explored', 'commitment'] as $key) {
+        foreach (['observables', 'attestation_summary', 'reinforcement_count', 'structural_position', 'commitment'] as $key) {
             $this->assertArrayNotHasKey($key, $gate);
         }
+        $this->assertTrue($gate['explored']);
         $this->assertSame($node['attestation'], $gate['attestation']);
         $this->assertSame($f->viewer->only(['id', 'callsign']), $gate['participant']);
         $this->assertSame([], $gate['receipts']);

@@ -16,6 +16,7 @@ use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\MediationAnchorService;
 use App\Services\MediationReadService;
+use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantExplorationService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseGenerationService;
@@ -75,6 +76,16 @@ class ParticipantExplorationTest extends TestCase
         self::assertArrayNotHasKey('proposition.revise', $plan['schema']['$defs']['actions']);
         self::assertArrayNotHasKey('attestation.create', $plan['schema']['$defs']['actions']);
         self::assertArrayHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
+        $packet = app(ParticipantContextSerializer::class)->inference([
+            'participant' => $phase->cycle->participant->only(['id', 'callsign', 'designation']),
+            'plan' => app(ParticipantContextSerializer::class)->plan($plan),
+        ]);
+        $write = collect($packet['write']['propositions'])->firstWhere('id', $head->id);
+        self::assertNotNull($write, 'Explored Writes remain visible to autonomous Participants');
+        self::assertTrue($write['explored'] ?? false);
+        foreach (['attestation.create', 'proposition.revise', 'proposition.traverse'] as $action) {
+            self::assertArrayNotHasKey($action, $packet['actions']['$defs']['actions']);
+        }
     }
 
     public function test_rest_is_available_with_an_explored_write(): void
