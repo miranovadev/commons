@@ -121,6 +121,7 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
         }
         $actor = $actors[0];
         $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Develop shared observations']);
+        $distinction = $state['plan']['gate_id'];
         $this->assertActionUnavailable($state, 'preparation.start');
         $state = $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
             'instrument' => ['kind' => 'citation', 'reference' => $gate]]);
@@ -132,7 +133,7 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
         $this->assertActionUnavailable($returned, 'instrument.execute');
         $this->assertDatabaseCount('receipt_consumptions', 0);
         $this->assertDatabaseCount('exploration_events', 0);
-        $this->contribute($actor, ['action' => 'proposition.traverse', 'proposition_id' => $distinction]);
+        $this->judge($actor, $distinction);
         $state = $this->judge($actor, $persist);
         $receipt = $state['plan']['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'][0];
         $state = $this->contribute($actor, ['action' => 'proposition.reclassify', 'proposition_id' => $persist, 'receipt_id' => $receipt]);

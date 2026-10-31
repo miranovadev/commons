@@ -187,7 +187,7 @@ test('personal acquisition notices explain authoritative choices and current att
     assert.equal(notice.satisfied, false);
     assert.match(notice.html, wording);
     assert.doesNotMatch(notice.html, /<button/);
-    for (const [status, outcome, expected] of [['pending', null, /Resolve the current execution/], ['awaiting_resolution', null, /Choose Variant or Defer/], ['resolved', { action: 'defer' }, /Later Cycles evaluate fresh opportunities/]]) {
+    for (const [status, outcome, expected] of [['pending', null, /Resolve the current execution/], ['awaiting_resolution', null, /Choose Variant or Defer/], ['resolved', { action: 'defer' }, /Later Phases evaluate fresh opportunities/]]) {
       plan.acquisition = { role: 'role', status, outcome };
       const result = ui.nativeAdmissibility(plan).find(n => n.id === 'personal-acquisition');
       assert.equal(result.satisfied, status === 'resolved');
