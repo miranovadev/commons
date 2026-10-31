@@ -24,8 +24,7 @@ class CommitSourceHistoryLifecycleTest extends TestCase
     {
         $actions = [];
         $reconciles = 0;
-        $commit = $this->driveHorizonCycle(realClosure: true, originDirection: 'support',
-            actionBudget: 101, expressiveDirection: 'refute', mediateDirection: 'support',
+        $commit = $this->driveStaggeredCommit(
             recordAction: function ($participant, $state, $input, $result) use (&$actions, &$reconciles): void {
                 $actions[] = ['cycle' => $state['cycle']['sequence'], 'phase' => $state['plan']['phase']['number'],
                     'gate_id' => $state['plan']['gate_id'], 'input' => $input,

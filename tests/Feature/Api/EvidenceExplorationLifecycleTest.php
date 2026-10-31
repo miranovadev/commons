@@ -41,20 +41,20 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
         $late = $this->joinParticipant('late-operand-reader');
         $this->enterParticipant($late);
         $this->discoverGate($late);
-        $this->judge($late, $this->persistJourneyIds['p1']);
+        $this->judge($late, $this->persistJourneyIds['leftDistinction']);
         $this->resolvePersonalReading($late);
-        $this->judge($late, $this->persistJourneyIds['p12']);
-        $parked = $this->judge($late, $this->persistJourneyIds['p13']);
+        $this->judge($late, $this->persistJourneyIds['leftPersist']);
+        $parked = $this->judge($late, $this->persistJourneyIds['leftCanon']);
         $this->assertActionAvailable($parked, 'preparation.start');
         $this->assertActionAvailable($parked, 'instrument.execute');
         $this->contribute($late, ['action' => 'instrument.execute', 'proposition_id' => $parked['plan']['gate_id'],
-            'instrument' => ['kind' => 'citation', 'reference' => $this->persistJourneyIds['p1']]]);
+            'instrument' => ['kind' => 'citation', 'reference' => $this->persistJourneyIds['leftDistinction']]]);
         $receipt = EvidenceExecution::where('phase_id', $parked['plan']['phase']['id'])->sole()->receipt;
         $freshState = $this->readParticipation($author);
         $fresh = $this->auditEvidencePacket($freshState);
         $this->assertNotContains($receipt->id, array_column($before['receipts'], 'id'));
         $this->assertContains($receipt->id, array_column($fresh['receipts'], 'id'));
-        $this->assertSame($this->persistJourneyIds['p13'], collect($fresh['receipts'])->firstWhere('id', $receipt->id)['originating_gate_id']);
+        $this->assertSame($this->persistJourneyIds['leftCanon'], collect($fresh['receipts'])->firstWhere('id', $receipt->id)['originating_gate_id']);
         $this->assertSame($edges, DB::table('supersessions')->where('target_proposition_id', $head)->orderBy('id')->get()->toJson());
         $this->assertSame($consumptions, DB::table('receipt_consumptions')->orderBy('receipt_id')->get()->toJson());
         $phase = Phase::findOrFail($freshState['plan']['phase']['id']);
@@ -237,26 +237,15 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
         $judgment = DB::table('attestations')->join('phases', 'phases.id', '=', 'attestations.phase_id')
             ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')->where('attestations.id', $proof['attestation_id'])->sole();
         $this->assertSame($observer, $judgment->participant_id);
-        // A slower Participant develops new active structure after both personal encounters.
+        $this->assertTrue($this->visibleProposition($returned, $a)['explored']);
+        $this->assertActionUnavailable($returned, 'attestation.create');
+        $this->assertActionUnavailable($returned, 'proposition.traverse');
         $history = DB::table('exploration_events')->orderBy('phase_id')->get()->toJson();
-        $acquisitions = EvidenceExecution::count();
-        foreach ([$a, $persist, $gate] as $target) {
-            $state = $this->contribute($observer, ['action' => 'attestation.create', 'proposition_id' => $target, 'direction' => 'refute']);
+        foreach (['support', 'refute'] as $direction) {
+            $response = $this->postContribution($observer, $returned['plan']['phase']['id'],
+                ['action' => 'attestation.create', 'proposition_id' => $a, 'direction' => $direction]);
+            $this->assertContains($response->status(), [409, 422]);
         }
-        $this->assertActionUnavailable($state, 'instrument.execute');
-        $this->assertActionUnavailable($state, 'preparation.start');
-        $this->assertTrue($this->visibleProposition($this->readParticipation($actor), $a)['explored'],
-            'Reconsideration alone has not reopened the original Participant\'s route');
-        $newHead = $this->contribute($observer, ['action' => 'proposition.variant', 'statement' => 'A new continuation from completed participation'])['current_proposition_id'];
-        $return = $this->readParticipation($actor);
-        $this->assertFalse($this->visibleProposition($return, $a)['explored']);
-        foreach ([$a, $persist, $gate] as $target) {
-            $state = $this->contribute($actor, ['action' => 'proposition.traverse', 'proposition_id' => $target]);
-        }
-        $this->assertActionUnavailable($state, 'instrument.execute');
-        $this->assertActionUnavailable($state, 'preparation.start');
-        $this->judge($actor, $newHead);
-        $this->assertSame($acquisitions, EvidenceExecution::count());
         $this->assertSame($history, DB::table('exploration_events')->orderBy('phase_id')->get()->toJson());
     }
 }

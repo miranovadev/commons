@@ -39,9 +39,11 @@ final class PropositionOptionService
     public function traversalOptionsFor(Phase $phase, ?ParticipationContext $context = null, bool $base = false): Collection
     {
         if ($phase->kind === PhaseKind::Order) {
-            return $this->generation->committedWrites($phase, $context)
+            $options = $this->generation->committedWrites($phase, $context)
                 ->concat(app(HomologousOrderService::class)->forPhase($phase, $context))
                 ->unique('id')->sortBy('id')->values();
+
+            return $base ? $options : $this->unexplored($phase, $options, $context);
         }
 
         if ($phase->kind === PhaseKind::Bias) {
@@ -67,8 +69,9 @@ final class PropositionOptionService
         // Receipt consumption never erases the path established by an earlier vote.
         $options = $this->availableWrites($phase, $context);
         if (! $base) {
-            $explored = app(ParticipantExplorationService::class)->exploredIds($phase, $options->pluck('id'), $context);
-            $options = $options->reject(fn ($node) => $explored->has($node->id));
+            $actionable = $this->unexplored($phase, $options->concat($committed), $context)->pluck('id')->flip();
+            $options = $options->filter(fn ($node) => $actionable->has($node->id));
+            $committed = $committed->filter(fn ($node) => $actionable->has($node->id));
         }
         if ($context !== null) {
             $attested = $context->effectiveAttestations($options->pluck('id'))
@@ -161,6 +164,16 @@ final class PropositionOptionService
         return $this->writeDescendants($phase, $context)->orderBy('id')->get();
     }
 
+    private function unexplored(Phase $phase, Collection $options, ?ParticipationContext $context): Collection
+    {
+        if ($options->isEmpty()) {
+            return $options;
+        }
+        $explored = app(ParticipantExplorationService::class)->exploredIds($phase, $options->pluck('id'), $context);
+
+        return $options->reject(fn ($node) => $explored->has($node->id))->values();
+    }
+
     /** Every valid Write descendant offers the as-yet-unattested direction(s). */
     public function attestationOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
@@ -172,7 +185,9 @@ final class PropositionOptionService
 
         $writes = $this->availableWrites($phase, $context);
 
-        return $writes->filter(fn (Proposition $node): bool => $this->attestationEvidenceAvailable($node, $phase->kind, $shared, $context))->values();
+        $eligible = $writes->filter(fn (Proposition $node): bool => $this->attestationEvidenceAvailable($node, $phase->kind, $shared, $context));
+
+        return $this->unexplored($phase, $eligible, $context);
     }
 
     /** Base evidence/mutability predicate; caller still owns Write and movement selection. */
@@ -210,11 +225,13 @@ final class PropositionOptionService
                     && $attestation->phase->cycle->sequence < $phase->cycle->sequence)->pluck('proposition_id')->flip();
             $terminal = app(ExhaustedContinuationService::class)->ids($phase, $context);
 
-            return $context->nodes($this->descendantIds($phase, $context))->filter(fn ($node) => $context->activeIds->has($node->id)
+            $eligible = $context->nodes($this->descendantIds($phase, $context))->filter(fn ($node) => $context->activeIds->has($node->id)
                 && ! $parents->has($node->id) && ! $terminal->has($node->id) && $refuted->has($node->id)
                 && $node->id !== $phase->gate_proposition_id && $node->register === $phase->write_register
                 && $node->tier === 'expressive' && $node->phase->cycle->participant_id === $participant->id)
                 ->sortByDesc('created_at')->values();
+
+            return $this->unexplored($phase, $eligible, $context);
         }
 
         $query = Proposition::query()->active()->whereDoesntHave('children')
@@ -232,8 +249,10 @@ final class PropositionOptionService
                 ->whereBelongsTo($participant)
                 ->where('sequence', '<', $phase->cycle->sequence)));
 
-        return $query->latest('created_at')
+        $eligible = $query->latest('created_at')
             ->get()->reject(fn (Proposition $node) => app(ExhaustedContinuationService::class)->ids($phase, $context)->has($node->id))->values();
+
+        return $this->unexplored($phase, $eligible, $context);
     }
 
     /**

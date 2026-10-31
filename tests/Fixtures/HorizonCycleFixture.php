@@ -23,6 +23,32 @@ use Carbon\CarbonImmutable;
 
 trait HorizonCycleFixture
 {
+    /** Two readers enter between distinct births and supply real, independently consumable observations. */
+    protected function driveStaggeredCommit(bool $realClosure = true, ?callable $recordAction = null): Proposition
+    {
+        $examined = [];
+        $admitReader = function (Participant $author, array $state) use (&$examined): void {
+            $plan = $state['plan'];
+            $gate = $plan['gate_id'];
+            if (count($examined) === 2 || isset($examined[$gate]) || $plan['phase']['number'] !== 2
+                || ! isset($plan['schema']['$defs']['actions']['proposition.variant'])) {
+                return;
+            }
+            $examined[$gate] = true;
+            $reader = (new Participant)->forceFill(['substrate_id' => $author->substrate_id,
+                'callsign' => 'reader-'.count($examined), 'max_read_count' => 25]);
+            $reader->save();
+            $service = app(ParticipationService::class);
+            $entry = $service->enter($reader);
+            $service->contribute($reader, $entry['plan']['phase']['id'], ['action' => 'instrument.execute',
+                'proposition_id' => $entry['plan']['gate_id'], 'instrument' => ['kind' => 'proposition_search',
+                    'query' => 'Shared observation '.count($examined), 'limit' => 1]]);
+        };
+
+        return $this->driveHorizonCycle(realClosure: $realClosure, observe: $admitReader, additionalEntrants: 2,
+            expressiveDirection: 'refute', recordAction: $recordAction, mediateDirection: 'support');
+    }
+
     protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0, int $actionBudget = 100, ?string $expressiveDirection = null, ?callable $recordAction = null, ?string $mediateDirection = null): Proposition
     {
         // Preserve real immutable material for the activated reading workflow.
@@ -108,10 +134,19 @@ trait HorizonCycleFixture
             // every new synthesis immature. Revisit an offered classification route
             // before judging another Mediate branch; eligibility is unchanged.
             // The original aligned driver retains its entry-only reconsideration.
-            $action = collect(['preparation.start', 'instrument.execute', 'proposition.commit', 'proposition.reclassify', 'attestation.create',
-                'proposition.variant', 'proposition.reconcile', 'proposition.traverse', 'participant.rest'])
+            // On the staggered route, create both directed syntheses while available.
+            // Traverse judged Writes until a fresh judgment or a Mediate decision is due.
+            $staggered = $additionalEntrants > 0;
+            $judgmentDue = ! $staggered || ! isset($actions['proposition.traverse'])
+                || $choices->flatMap(fn ($choice) => $choice['properties']['proposition_id']['enum'])->duplicates()->isNotEmpty();
+            $structural = $staggered
+                ? ['proposition.reconcile', 'attestation.create', 'proposition.variant']
+                : ['attestation.create', 'proposition.variant', 'proposition.reconcile'];
+            $action = collect(['preparation.start', 'instrument.execute', 'proposition.commit', 'proposition.reclassify',
+                ...$structural, 'proposition.traverse', 'participant.rest'])
                 ->first(fn ($candidate) => isset($actions[$candidate])
                     && ($candidate !== 'instrument.execute' || ($plan['acquisition']['status'] ?? null) === 'required' || $needsEvidence || count($actions) === 1)
+                    && ($candidate !== 'attestation.create' || $judgmentDue)
                     && ($candidate !== 'attestation.create' || $preferredJudgment
                         || ($plan['phase']['number'] === 1 && ! isset($actions['proposition.variant']))))
                 ?? 'attestation.create';

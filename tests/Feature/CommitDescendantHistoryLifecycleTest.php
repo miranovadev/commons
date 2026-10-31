@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -32,11 +31,11 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
     public function test_real_commit_descendant_resets_evidence_and_searches_selected_history_without_authority(): void
     {
         $gates = [];
-        $commit = $this->driveHorizonCycle(realClosure: true, actionBudget: 101, expressiveDirection: 'refute', mediateDirection: 'support',
+        $commit = $this->driveStaggeredCommit(
             recordAction: function ($participant, $state, $input, $result) use (&$gates): void {
                 $gates[$state['plan']['phase']['number']] = $state['plan']['gate_id'];
             });
-        $actor = Participant::sole();
+        $actor = $commit->phase->cycle->participant;
         $source = $commit->commitSources()->sole();
         $origin = Proposition::findOrFail($commit->phase->cycle->entry_committal_id);
         $closure = app(ProspectiveClosureService::class);

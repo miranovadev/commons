@@ -88,3 +88,11 @@ Chirality v2 recalibrates the recorded intermediate Rest reasons where live Pote
 Origin now requires an explicit Attestation and creates no bootstrap Receipt.
 The archived expected packets and declared bindings omit that former observation;
 authored actions and ordinary evidence observations remain unchanged.
+
+## Explored Writes and the natural Commit transcript
+
+The first branch in `persist-skeptical-commit.json` closes at Mediate. On its return to Origin the author creates a fresh Distinction. Two further branches receive a Participant entry between their Distinction and Persist births. The resulting Persist, Constrain and Disperse Cycle intervals are 1, 1 and 0. Both Signals have negative Shape Topology and Phase Profile directions. Mediate offers both directed Reconciliations across successive Cycles. Bias reclassifies the mediated synthesis using the other branch’s Preparation Receipt. Order offers Commit after the author judges that classification. All 70 author actions and both staggered entries go through HTTP.
+
+The single-Participant bootstrap has a separate limitation. Use `vendor/bin/phpunit tests/Diagnostics/SoloCommitFrontierTest.php` to replay two completed branches in isolation. Both have intervals of 0, 1 and 0. Persist and Disperse generate within their source Gate’s Cycle. Constrain follows a Rest and first judgment in the next Cycle. Both Signals have negative Shape Topology and positive Phase Profile, so neither qualifies for Reconciliation. The author can create a fresh Distinction at Origin. Each prior route remains visible and personally explored. The original positive solo Commit test remains enabled. This reproduction covers healthy, sequential first-Commit participation.
+
+The focused follow-up is documented in [Solo first-Commit design review](../../../docs/solo-commit-design-review.md). It checks alternative judgment and acquisition choices, and a failed-Preparation route whose later Revisions acquire coherent Correspondence but still lack another Reconciliation operand.
