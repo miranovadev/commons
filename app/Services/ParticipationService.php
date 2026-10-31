@@ -422,20 +422,15 @@ final readonly class ParticipationService
     {
         $participant = $participant->fresh();
         if ($participant->current_proposition_id !== null) {
-            $continuation = $this->cycleEntry->continuationFor($participant);
-            if ($continuation !== null) {
+            $selection = $this->cycleEntry->positionedEntryFor($participant);
+            if (($selection['reason'] ?? null) === 'continuity') {
                 return [
                     'mode' => 'continuity',
                     'available' => true,
-                    'proposition_id' => $continuation->id,
+                    'proposition_id' => $selection['proposition']->id,
                     'message' => 'Continue the next Cycle from the local Committal Proposition.',
                 ];
             }
-            $selection = $this->potential->recoverFrom(
-                $participant->position()->firstOrFail(),
-                $participant->cycles()->latest('sequence')->first()?->contextHorizon,
-                $participant,
-            );
 
             return [
                 'mode' => 'potential',

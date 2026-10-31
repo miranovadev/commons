@@ -19,7 +19,7 @@ trait ParticipantExplorationFixture
     private function personalJourney(string $headDirection = 'support', ?int $omitJudgment = null, ?int $omitAcquisition = null): array
     {
         $this->resolveExpressiveFieldFixture(.8);
-        $this->initializeExhaustionFixture();
+        $this->initializeExhaustionFixture(originOpensSettlement: true);
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
         $nodes = [];
         for ($kind = 1; $kind <= 4; $kind++) {

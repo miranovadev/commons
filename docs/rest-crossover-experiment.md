@@ -48,3 +48,26 @@ the Participant waits. Origin follows both the ordinary Variant rule and this
 structural backward boundary.
 
 Crossover creates no Tragedy, Exhaustion, Exploration Event or movement edge.
+
+## Historical comparison
+
+The October 30 extended export records eight Commit edges. Vela's Cycles 120–131
+alternate between Origin and the eighth Commit, with Rest recorded on each of
+the six visits to the newer Committal. The export records the entries and Rests.
+It does not establish which actions a corrected planner would have offered.
+
+On merged main (`ad7bf8e`), the controlled expressive-Rest fixture selected
+the parent when the governor's margin was closed and the governor when it was
+open. The same inputs now select the governor in both cases. The sibling fixture
+starts with pre-existing expressive structure in a closed Region and then uses
+the ordinary contribution path for three Participants. Two personal exploration
+histories diverge while the third Participant can still make a first judgment.
+
+The natural HTTP transcript preserves its Settlement Commit's measured margin
+of `-0.1950613`. Its empty Distinguish entry offers Rest, and the backward path
+from that entry reaches Origin in seven edges. The separate historical
+post-Commit Receipt/search fixture preserves descendant evidence and exact
+lineage distances for Writes created under the former rule.
+
+Run the focused regressions with
+`vendor/bin/phpunit tests/Feature/CrossoverRecoveryTest.php tests/Feature/Api/ParticipationTragedyLifecycleTest.php`.

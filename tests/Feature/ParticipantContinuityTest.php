@@ -45,7 +45,7 @@ class ParticipantContinuityTest extends TestCase
         $otherPosition = $other->fresh()->current_proposition_id;
         $otherCycle = $other->cycles()->whereNull('completed_at')->sole();
         $service = app(ParticipationService::class);
-        $this->closeVariantMarginFixture($cycle->currentPhase);
+        $this->variantMarginFixture($cycle->currentPhase, closed: true);
         $completed = $service->contribute($participant, $cycle->currentPhase->id,
             ['action' => 'proposition.commit', 'proposition_id' => $candidate->id]);
         $commit = $participant->fresh()->position;

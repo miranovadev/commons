@@ -21,9 +21,7 @@ final class BackwardRecoveryLineage
         }
         $latest = $observer->cycles()->latest('sequence')->first();
 
-        return $latest?->rested_at !== null && $latest->completed_at !== null
-            && $latest->entry_committal_id === $position->id && $latest->context_horizon_id === $horizon->id
-            && $latest->phases()->orderByDesc('kind')->value('gate_proposition_id') === $position->id;
+        return $latest?->context_horizon_id === $horizon->id && $latest->restedEntryPhase($position) !== null;
     }
 
     /**

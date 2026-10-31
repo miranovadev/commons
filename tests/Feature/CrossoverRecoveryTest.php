@@ -13,6 +13,7 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\AcquisitionAttemptService;
 use App\Services\ContextHorizonProjector;
+use App\Services\ContributionDispatcher;
 use App\Services\CrossoverMarginService;
 use App\Services\CycleEntryService;
 use App\Services\ExhaustionService;
@@ -20,6 +21,8 @@ use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\ReinforcementService;
+use App\Services\OperationalInstrumentService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PhaseGenerationService;
 use App\Services\PotentialChargeService;
@@ -28,6 +31,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
@@ -171,6 +175,26 @@ class CrossoverRecoveryTest extends TestCase
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
     }
 
+    public function test_a_new_opportunity_after_rest_cannot_displace_an_authorised_backward_destination(): void
+    {
+        $parent = $this->commit(null, boundary: true);
+        $seed = $this->commit($parent, -0.8);
+        $phase = $this->phase($seed, PhaseKind::Distinguish);
+        $actor = $phase->cycle->participant;
+        $this->publishPotentialFixture($this->substrate);
+        $this->assertSame(['participant.rest'], array_keys(app(InputPlanService::class)->forPhase($actor, $phase)['schema']['$defs']['actions']));
+
+        // Isolate the interval between completed Rest and the next entry attempt.
+        $phase->forceFill(['completed_at' => now()])->save();
+        $phase->cycle->forceFill(['completed_at' => now(), 'rested_at' => now()])->save();
+        $write = $this->node($this->phase($seed, PhaseKind::Distinguish));
+        $this->receiptFixture($write);
+        $this->publishPotentialFixture($this->substrate);
+        $state = app(ParticipationService::class)->prepare($actor);
+        $this->assertSame($parent->id, $state['current_proposition_id']);
+        $this->assertSame($seed->id, $phase->cycle->fresh()->entry_committal_id);
+    }
+
     public function test_closed_boundary_and_origin_retain_their_horizon_and_wait_after_rest_at_entry(): void
     {
         $origin = $this->commit(null, boundary: true);
@@ -221,10 +245,15 @@ class CrossoverRecoveryTest extends TestCase
         // onward every judgment, Traverse, Rest and recovery uses participation.
         $route = [];
         $gate = $seed;
-        foreach ([PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain] as $kind) {
+        foreach ([PhaseKind::Distinguish, PhaseKind::Persist] as $kind) {
             $gate = $this->node($this->phase($seed, $kind, $gate));
             $route[] = $gate;
         }
+        $this->classificationEvidenceFixture($gate);
+        $classify = $this->phase($seed, PhaseKind::Constrain, $gate);
+        $gate = app(ContributionDispatcher::class)->dispatch($classify->cycle->participant, $classify,
+            $this->reclassificationInputFixture($classify));
+        $route[] = $gate;
         $left = $this->node($this->phase($seed, PhaseKind::Disperse, $gate));
         $right = $this->node($this->phase($seed, PhaseKind::Disperse, $gate));
         $this->receiptFixture($left);
@@ -233,6 +262,7 @@ class CrossoverRecoveryTest extends TestCase
         $nova = $this->phase($seed, PhaseKind::Distinguish)->cycle->participant;
         $this->assertTrue(app(CrossoverMarginService::class)->inspect($luna->cycles()->sole())['closed']);
         $this->publishPotentialFixture($this->substrate);
+        $this->assertTrue(app(PotentialChargeService::class)->hasRemainingInRegion($luna->cycles()->sole()->currentPhase));
         $service = app(ParticipationService::class);
         $act = function (Participant $participant, string $action, ?Proposition $target = null) use ($service): array {
             $state = $service->stateFor($participant->fresh());
@@ -309,14 +339,47 @@ class CrossoverRecoveryTest extends TestCase
         $this->assertSame('not_required', $attempts->state($other)['status']);
         $this->assertFalse($attempts->allows($other, 'instrument.execute'));
         $this->assertFalse($attempts->allows($other, 'preparation.start'));
+        try {
+            app(OperationalInstrumentService::class)->execute($other, $gate, ['kind' => 'citation', 'reference' => $seed->id]);
+            $this->fail('A closed Region must reject admission before reserving an Instrument.');
+        } catch (ConflictHttpException) {
+            $this->assertNull($attempts->execution($other));
+        }
         $this->assertFalse($generation->available($phase, 'proposition.variant', prepared: true));
         $this->assertSame(['acquisition.defer'], array_keys($attempts->schema($phase, $execution)['$defs']['actions']));
         $count = Proposition::count();
+        try {
+            $attempts->resolve($phase->cycle->participant, $execution, ['action' => 'proposition.variant', 'statement' => 'A stale resolution']);
+            $this->fail('Previously admitted Instrument cannot generate through a closed margin.');
+        } catch (\InvalidArgumentException) {
+            $this->assertNull($execution->fresh()->attempt_resolution);
+        }
         $attempts->resolve($phase->cycle->participant, $execution, ['action' => 'acquisition.defer',
             'execution_id' => $execution->id, 'reason' => 'The committed geometry now precludes another Variant.']);
         $this->assertSame($count, Proposition::count());
         $this->assertNotNull($phase->cycle->fresh()->deferred_at);
         $this->assertDatabaseCount('exploration_events', 0);
+    }
+
+    #[Group('query')]
+    public function test_a_repeated_variant_probe_uses_the_current_plans_geometry(): void
+    {
+        $seed = $this->commit($this->commit(null, boundary: true));
+        $phase = $this->phase($seed, PhaseKind::Distinguish);
+        $context = new ParticipationContext($phase);
+        $probe = fn () => app(PhaseGenerationService::class)->available($phase, 'proposition.variant', $context, prepared: true);
+        DB::enableQueryLog();
+        try {
+            DB::flushQueryLog();
+            $this->assertTrue($probe());
+            $cold = count(DB::getQueryLog());
+            DB::flushQueryLog();
+            $this->assertTrue($probe());
+            $this->assertCount(0, DB::getQueryLog());
+            fwrite(STDERR, "\nVARIANT eligibility: {$cold} cold queries, 0 on repeat\n");
+        } finally {
+            DB::disableQueryLog();
+        }
     }
 
     public function test_missing_geometry_or_birth_history_cannot_close_variant_admission(): void

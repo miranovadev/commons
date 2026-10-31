@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PhaseKind;
 use App\Enums\RestReason;
 use App\Services\ChiralityPopulationHistoryService;
 use App\Services\ContextHorizonProjector;
@@ -120,6 +121,17 @@ class Cycle extends Model
     public function phases(): HasMany
     {
         return $this->hasMany(Phase::class);
+    }
+
+    /** A Rest at another Phase or Gate says nothing about starting Distinguish here. */
+    public function restedEntryPhase(Proposition $position): ?Phase
+    {
+        if ($this->rested_at === null || $this->completed_at === null || $this->entry_committal_id !== $position->id) {
+            return null;
+        }
+        $phase = $this->currentPhase;
+
+        return $phase?->kind === PhaseKind::Distinguish && $phase->gate_proposition_id === $position->id ? $phase : null;
     }
 
     public function currentPhase(): HasOne

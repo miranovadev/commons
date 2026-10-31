@@ -306,12 +306,15 @@ abstract class TestCase extends BaseTestCase
         $this->publishPotentialFixture($phase->cycle->participant);
     }
 
-    /** Supply a closed governor to a component fixture without changing the acting Gate's observables. */
-    protected function closeVariantMarginFixture(Phase $phase): void
+    /** Supply the governing margin to a component fixture without changing the acting Gate's observables. */
+    protected function variantMarginFixture(Phase $phase, bool $closed): void
     {
-        $value = $phase->cycle->contextHorizon->domain === ContextDomain::Settlement ? -1 : 1;
+        $value = $phase->cycle->contextHorizon->domain === ContextDomain::Settlement ? 1 : -1;
+        if ($closed) {
+            $value = -$value;
+        }
         $phase->cycle->entryCommittal->commitmentSnapshot->forceFill(['correspondence' => $value, 'chirality' => $value])->save();
-        $this->assertTrue(app(CrossoverMarginService::class)->inspect($phase->cycle)['closed']);
+        $this->assertSame($closed, app(CrossoverMarginService::class)->inspect($phase->cycle)['closed']);
     }
 
     /** Fixture authors supply the governor before creating immutable history. */

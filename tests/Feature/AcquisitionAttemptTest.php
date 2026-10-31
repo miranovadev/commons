@@ -273,7 +273,7 @@ class AcquisitionAttemptTest extends TestCase
         $service = app(PreparationService::class);
         $execution = $service->start($f->viewer, $f->phase, $fixture->input());
         $service->present($f->viewer, $execution, $fixture->presentation());
-        $this->closeVariantMarginFixture($f->phase);
+        $this->variantMarginFixture($f->phase, closed: true);
         $other = (new Participant)->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'later-reader']);
         $other->save();
         $phase = $this->visit($f->phase, $other);

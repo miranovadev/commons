@@ -31,7 +31,7 @@ The first eligible, non-exhausted Committal on the recorded path is the sole
 recovery destination. Higher Potential or Charge at an older ancestor cannot
 skip it, even when the nearer basin has zero Potential and zero Charge. An
 eligible retained Committal is itself the distance-zero boundary. Once a
-Participant actually Rests at that entry, returning to the same position is no
+Participant actually Rests in Distinguish at that entry, returning to the same position is no
 backward movement. Recovery starts with the next ancestor, preserving the
 Horizon boundary. Rest at an expressive Gate still allows return to its
 governing Committal. A Participant waiting at an entry can resume there when a
