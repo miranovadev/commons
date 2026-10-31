@@ -175,7 +175,7 @@ test('snap viewport has a zero horizontal origin and hides controls at the bound
 });
 
 
-test('personal acquisition notices explain authoritative choices and durable completion without blocking', () => {
+test('personal acquisition notices explain authoritative choices and current attempt resolution without blocking', () => {
   for (const [kind, actions, wording] of [
     ['distinguish', ['instrument.execute'], /Choose an available Instrument/],
     ['persist', ['preparation.start'], /Prepare an accessible Artifact/],
@@ -187,12 +187,12 @@ test('personal acquisition notices explain authoritative choices and durable com
     assert.equal(notice.satisfied, false);
     assert.match(notice.html, wording);
     assert.doesNotMatch(notice.html, /<button/);
-    for (const [status, outcome, expected] of [['pending', null, /Resolve the current execution/], ['completed', 'deferred', /remains complete on later visits/]]) {
+    for (const [status, outcome, expected] of [['pending', null, /Resolve the current execution/], ['awaiting_resolution', null, /Choose Variant or Defer/], ['resolved', { action: 'defer' }, /Later Cycles evaluate fresh opportunities/]]) {
       plan.acquisition = { role: 'role', status, outcome };
       const result = ui.nativeAdmissibility(plan).find(n => n.id === 'personal-acquisition');
-      assert.equal(result.satisfied, status === 'completed');
+      assert.equal(result.satisfied, status === 'resolved');
       assert.match(result.html, expected);
-      if (outcome) assert.match(result.html, /Recorded outcome: deferred/);
+      if (outcome) assert.match(result.html, /Recorded outcome: defer/);
     }
   }
 });

@@ -12,6 +12,7 @@ use App\Models\Participant;
 use App\Models\ParticipantConnection;
 use App\Models\Phase;
 use App\Models\Receipt;
+use App\Services\AcquisitionAttemptService;
 use App\Services\ContributionDispatcher;
 use App\Services\Evidence\ArtifactStore;
 use App\Services\Evidence\HyperlinkVerifier;
@@ -22,7 +23,6 @@ use App\Services\LedgerService;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
-use App\Services\PersonalAcquisitionService;
 use App\Services\PhaseGenerationService;
 use App\Services\PotentialProjectionService;
 use App\Services\PreparationService;
@@ -167,7 +167,7 @@ class DisperseInstrumentFallbackTest extends TestCase
         $this->assertArrayNotHasKey('proposition.variant', $actions);
         if ($kind === PhaseKind::Persist) {
             $this->assertArrayHasKey('instrument.execute', $actions);
-            $this->assertSame('required', app(PersonalAcquisitionService::class)->state($f->phase)['status']);
+            $this->assertSame('required', app(AcquisitionAttemptService::class)->state($f->phase)['status']);
         } else {
             $this->assertArrayNotHasKey('instrument.execute', $actions);
             $this->assertArrayHasKey('participant.rest', $actions);

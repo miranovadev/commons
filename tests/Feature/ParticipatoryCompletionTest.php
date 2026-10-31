@@ -68,15 +68,14 @@ class ParticipatoryCompletionTest extends TestCase
     }
 
     #[DataProvider('acquisitionRoles')]
-    public function test_shared_observations_do_not_complete_personal_route_acquisition(int $role): void
+    public function test_route_completion_does_not_require_personal_acquisition(int $role): void
     {
         [, , , $head, $terminal] = $this->personalJourney(omitAcquisition: $role);
-        ExplorationHistory::record($head, $terminal);
-        self::assertNull(app(ExplorationEventService::class)->completionWitness($terminal, new ParticipationContext($terminal)));
-        self::assertFalse(app(ParticipantExplorationService::class)->explored($head, $terminal));
-        $before = DB::table('exploration_events')->count();
+        self::assertTrue(app(ParticipantExplorationService::class)->participationComplete($head, $terminal, new ParticipationContext($terminal)));
+        self::assertNotNull(app(ExplorationEventService::class)->completionWitness($terminal, new ParticipationContext($terminal)));
         $this->rest($terminal);
-        self::assertSame($before, DB::table('exploration_events')->count(), 'Actionless Rest is not completed exploration');
+        self::assertDatabaseCount('exploration_events', 1);
+
     }
 
     public function test_incomplete_rest_recovers_to_existing_first_judgment_without_reacquiring(): void

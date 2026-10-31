@@ -6,10 +6,10 @@ use App\Contracts\WebSearchProvider;
 use App\Models\EvidenceExecution;
 use App\Models\Phase;
 use App\Models\Receipt;
+use App\Services\AcquisitionAttemptService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantExplorationService;
 use App\Services\Participation\ParticipationContext;
-use App\Services\PersonalAcquisitionService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Group;
@@ -59,7 +59,7 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
         $this->assertSame($consumptions, DB::table('receipt_consumptions')->orderBy('receipt_id')->get()->toJson());
         $phase = Phase::findOrFail($freshState['plan']['phase']['id']);
         $context = new ParticipationContext($phase);
-        $acquisition = app(PersonalAcquisitionService::class);
+        $acquisition = app(AcquisitionAttemptService::class);
         $exploration = app(ParticipantExplorationService::class);
         $evaluate = function () use ($acquisition, $exploration, $phase, $context, $head): void {
             $acquisition->completedInContext($phase, $context);

@@ -6,6 +6,7 @@ use App\Enums\RestReason;
 use App\Services\ChiralityPopulationHistoryService;
 use App\Services\ContextHorizonProjector;
 use App\Services\FieldMutationService;
+use App\Services\Observables\ProspectiveClosureService;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -74,7 +75,7 @@ class Cycle extends Model
             }
             $saved = parent::save($options);
             if ($saved && $entry && $changesParticipation) {
-                app(\App\Services\Observables\ProspectiveClosureService::class)->entered($this);
+                app(ProspectiveClosureService::class)->entered($this);
             }
             if ($saved && $changesParticipation) {
                 // Dirty only Horizons containing Cycles entered at this basin.
@@ -106,6 +107,7 @@ class Cycle extends Model
         return [
             'completed_at' => 'immutable_datetime',
             'rested_at' => 'immutable_datetime',
+            'deferred_at' => 'immutable_datetime',
             'rest_reason' => RestReason::class,
         ];
     }

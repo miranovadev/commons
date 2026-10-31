@@ -149,7 +149,6 @@ final class ParticipantExplorationService
             if (! $this->judgedPosition($head, $personal, $context)) {
                 return false;
             }
-            $completed = app(PersonalAcquisitionService::class)->completedInContext($phase, $context);
             $shared = app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
             $terminal = app(ExhaustedContinuationService::class)->ids($phase, $context);
             $seen = [];
@@ -178,14 +177,7 @@ final class ParticipantExplorationService
                         && ! $this->judgedPosition($node, $personal, $context)) {
                         return false;
                     }
-                    $role = $node->tier === 'committal' ? 1 : match ($node->phase->kind) {
-                        PhaseKind::Distinguish => 2,
-                        PhaseKind::Constrain => 4,
-                        default => null,
-                    };
-                    if ($role !== null && ! $completed->has($role.':'.$node->id)) {
-                        return false;
-                    }
+
                 }
                 if ($node->tier === 'committal') {
                     continue;

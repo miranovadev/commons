@@ -46,6 +46,10 @@ final readonly class InputSchemaService
         if ($execution = app(PreparationService::class)->active($occurrence)) {
             return app(PreparationService::class)->resolutionSchema($participant, $occurrence, $execution);
         }
+        $attempts = app(AcquisitionAttemptService::class);
+        if ($attempts->admitted($occurrence)) {
+            return $attempts->schema($occurrence, $attempts->execution($occurrence));
+        }
         $plan = $this->phases->plan($kind);
         $gate = $context?->propositions->get($occurrence->gate_proposition_id) ?? $this->gates->forPhase($occurrence);
         if (app(ExhaustionService::class)->unavailable($gate)) {

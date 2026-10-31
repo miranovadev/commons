@@ -67,7 +67,7 @@ class ParticipantExplorationTest extends TestCase
         $exploration = app(ParticipantExplorationService::class);
         self::assertTrue($exploration->explored($head, $return));
         self::assertTrue($exploration->explored($signal, $return));
-        self::assertTrue(app(PhaseGenerationService::class)->available($return, 'proposition.variant'));
+        self::assertTrue(app(PhaseGenerationService::class)->available($return, 'proposition.variant', prepared: true));
         $phase = $return;
         foreach ([$signal, $persist, $constrain] as $node) {
             $phase = app(PhaseProgressionService::class)->advance($phase, $node);
@@ -75,7 +75,7 @@ class ParticipantExplorationTest extends TestCase
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);
         self::assertArrayNotHasKey('proposition.revise', $plan['schema']['$defs']['actions']);
         self::assertArrayNotHasKey('attestation.create', $plan['schema']['$defs']['actions']);
-        self::assertArrayHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
+        self::assertArrayHasKey('instrument.execute', $plan['schema']['$defs']['actions']);
         $packet = app(ParticipantContextSerializer::class)->inference([
             'participant' => $phase->cycle->participant->only(['id', 'callsign', 'designation']),
             'plan' => app(ParticipantContextSerializer::class)->plan($plan),
@@ -125,7 +125,8 @@ class ParticipantExplorationTest extends TestCase
         $generation = app(PhaseGenerationService::class);
         $this->assertFalse($generation->available($luna, 'proposition.variant'));
         $return = $this->returnAfterRest($terminal);
-        $this->assertTrue($generation->available($return, 'proposition.variant'));
+        $this->assertTrue($generation->available($return, 'proposition.variant', prepared: true));
+        $this->instrumentGateFixture($return);
         $history = DB::table('exploration_events')->get()->toJson();
         $fresh = app(ContributionDispatcher::class)->dispatch($return->cycle->participant, $return,
             ['action' => 'proposition.variant', 'statement' => 'A personally earned alternative']);

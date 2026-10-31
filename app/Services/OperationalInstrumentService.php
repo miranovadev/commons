@@ -10,6 +10,7 @@ use App\Enums\PhaseKind;
 use App\Exceptions\ArtifactStorageException;
 use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
+use App\Models\EvidenceExecution;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
@@ -38,7 +39,7 @@ final readonly class OperationalInstrumentService
     /** @param array{kind: string, reference?: string, query?: string, limit?: int} $input */
     public function execute(Phase $phase, Proposition $proposition, array $input, ?Receipt $replayedFrom = null, bool $bootstrap = false, ?InstrumentObservation $observed = null): Receipt
     {
-        $observed ??= $this->observeFor($phase, $proposition, $input, $bootstrap);
+        $observed ??= $this->observeFor($phase, $proposition, $input, $bootstrap, $replayedFrom);
         if ($observed->input !== $this->normalize($input)) {
             throw new DomainException('The observed Instrument must match the contribution invocation.');
         }
@@ -73,7 +74,7 @@ final readonly class OperationalInstrumentService
             if (! $origin && $phase->kind !== PhaseKind::Distinguish && ! $this->availability->mutable($proposition)) {
                 throw new DomainException('Committed sources and Committal results cannot receive instruments. Develop a Variant from the Committal instead.');
             }
-            if (! $origin && ! app(PropositionOptionService::class)->instrumentOptionsFor($phase->fresh())->contains('id', $proposition->id)) {
+            if (! $origin && ! app(AcquisitionAttemptService::class)->admitted($phase)) {
                 throw new ConflictHttpException('Instrumentation requires the exact active Gate and an unfulfilled personal acquisition role.');
             }
 
@@ -86,9 +87,14 @@ final readonly class OperationalInstrumentService
             // The world may have changed during observation. Recheck before persisting anything.
             app(RelevantInstrumentService::class)->assertAvailable($proposition, $input, $observed->propositions, $observed->download);
 
-            $execution = $this->executions->start(
-                $phase, $proposition, $input['kind'], $reference, $input, $replayedFrom,
-            );
+            $execution = $origin ? $this->executions->start($phase, $proposition, $input['kind'], $reference, $input, $replayedFrom)
+                : app(AcquisitionAttemptService::class)->execution($phase);
+            if ($execution->status !== 'pending' || $execution->input !== $input) {
+                throw new ConflictHttpException('This acquisition is already observed or has a different invocation.');
+            }
+            if (! $origin && ! app(PhaseGenerationService::class)->available($phase, 'proposition.variant', prepared: true)) {
+                throw new ConflictHttpException('The admitted acquisition Gate is no longer safe.');
+            }
 
             return $this->executions->complete(
                 $execution, $proposition, metadata: [...$metadata, ...$observed->metadata],
@@ -98,7 +104,7 @@ final readonly class OperationalInstrumentService
         });
     }
 
-    public function observeFor(Phase $phase, Proposition $proposition, array $input, bool $bootstrap = false): InstrumentObservation
+    public function observeFor(Phase $phase, Proposition $proposition, array $input, bool $bootstrap = false, ?Receipt $replayedFrom = null): InstrumentObservation
     {
         if ($phase->cycle->participant->substrate_id !== $proposition->phase->cycle->participant->substrate_id) {
             throw new DomainException('An instrument cannot cross substrate boundaries.');
@@ -111,6 +117,19 @@ final readonly class OperationalInstrumentService
         }
         app(RelevantInstrumentService::class)->assertAvailable($proposition, $input);
         $normalized = $this->normalize($input);
+        if (! $bootstrap) {
+            DB::transaction(function () use ($phase, $proposition, $normalized, $replayedFrom): void {
+                Substrate::lockForUpdate()->findOrFail($phase->cycle->participant->substrate_id);
+                $phase = $phase->fresh(['cycle.participant']);
+                if (! app(AcquisitionAttemptService::class)->allows($phase, 'instrument.execute')) {
+                    throw new ConflictHttpException('This Cycle already has an acquisition attempt or exploration is outstanding.');
+                }
+                $execution = new EvidenceExecution;
+                $execution->forceFill(['phase_id' => $phase->id, 'proposition_id' => $proposition->id,
+                    'kind' => $normalized['kind'], 'reference' => $this->reference($normalized),
+                    'replayed_from_receipt_id' => $replayedFrom?->id, 'input' => $normalized, 'started_at' => now(), 'attempt_admitted_at' => now()])->save();
+            });
+        }
         if ($normalized['kind'] === 'proposition_search') {
             $substrateId = $phase->cycle->participant->substrate_id;
             $before = $this->ledgerSequence($substrateId);

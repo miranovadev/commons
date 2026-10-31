@@ -88,7 +88,7 @@ final readonly class ContributionDispatcher
                 && $preparation === null && ! $this->generation->epistemicActionAvailable($phase, $action)) {
                 throw new ConflictHttpException('Personal acquisition or ordinary evidence prerequisites are not satisfied. Refresh before generating.');
             }
-            if (! $this->generation->available($phase, $action, prepared: $preparation !== null)) {
+            if ($action !== 'instrument.execute' && ! $this->generation->available($phase, $action, prepared: $preparation !== null)) {
                 if ($action === 'instrument.execute') {
                     throw new ConflictHttpException('Instrumentation requires the exact active Gate and an unfulfilled personal acquisition role.');
                 }
@@ -101,12 +101,12 @@ final readonly class ContributionDispatcher
             // Recheck under the shared root lock, including when the Phase has not
             // advanced since another Instrument request completed.
             if ($action === 'instrument.execute'
-                && ! $this->options->instrumentOptionsFor($phase)->contains('id', $input['proposition_id'] ?? null)) {
+                && (! app(AcquisitionAttemptService::class)->admitted($phase) || $input['proposition_id'] !== $phase->gate_proposition_id)) {
                 throw new ConflictHttpException('Instrumentation requires the exact active Gate and an unfulfilled personal acquisition role.');
             }
             $targets = match ($action) {
                 'attestation.create' => $this->options->attestationOptionsFor($phase),
-                'instrument.execute' => $this->options->instrumentOptionsFor($phase),
+                'instrument.execute' => collect([$gate]),
                 'proposition.traverse' => $this->options->traversalOptionsFor($phase),
                 'proposition.revise' => $this->options->revisionOptionsFor($phase, $participant, prepared: $preparation !== null),
                 default => null,
@@ -156,6 +156,9 @@ final readonly class ContributionDispatcher
                     'The selected contribution action is not supported.'
                 ),
             };
+            if ($action === 'proposition.variant' && $preparation === null) {
+                app(AcquisitionAttemptService::class)->finish(app(AcquisitionAttemptService::class)->execution($phase), $result, null);
+            }
             if ($receiptOptions !== null) {
                 $this->receipts->desired($participant, $phase, $receiptOptions);
             }

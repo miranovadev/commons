@@ -21,6 +21,8 @@ class EvidenceExecution extends Model
     protected function casts(): array
     {
         return [
+            'attempt_admitted_at' => 'immutable_datetime',
+            'attempt_resolution' => 'array',
             'input' => 'array',
             'metadata' => 'array',
             'presentation' => 'array',
@@ -63,11 +65,19 @@ class EvidenceExecution extends Model
             }
         });
         static::updating(function (self $execution): void {
+            if ($execution->isDirty('attempt_resolution')) {
+                if ($execution->getRawOriginal('attempt_resolution') !== null || $execution->attempt_admitted_at === null
+                    || array_diff(array_keys($execution->getDirty()), ['attempt_resolution', 'updated_at']) !== []) {
+                    throw new \DomainException('Attempt resolution is write-once and separate from observation history.');
+                }
+
+                return;
+            }
             $before = $execution->getRawOriginal('status');
             $allowed = $execution->type === 'instrument'
                 ? ['pending' => ['completed', 'failed']]
                 : ['pending' => ['presented', 'failed'], 'presented' => ['completed', 'failed']];
-            if ($execution->isDirty(['cycle_id', 'type', 'phase_id', 'proposition_id', 'kind', 'reference', 'input', 'replayed_from_receipt_id', 'started_at'])
+            if ($execution->isDirty(['attempt_admitted_at', 'cycle_id', 'type', 'phase_id', 'proposition_id', 'kind', 'reference', 'input', 'replayed_from_receipt_id', 'started_at'])
                 || ! in_array($execution->status, $allowed[$before] ?? [], true)
                 || ($before === 'presented' && $execution->isDirty(['presentation', 'presented_at']))) {
                 throw new \DomainException('Evidence invocation, presentation and terminal execution history are immutable.');

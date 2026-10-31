@@ -152,6 +152,7 @@ function isActionName(value?: string): value is ActionName {
     'instrument.execute',
     'preparation.start',
     'preparation.defer',
+    'acquisition.defer',
     'proposition.commit',
     'proposition.reclassify',
     'proposition.reconcile',

@@ -8,6 +8,7 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
+use App\Services\AcquisitionAttemptService;
 use App\Services\CycleEntryService;
 use App\Services\Evidence\HyperlinkVerifier;
 use App\Services\Evidence\PublicResourceAddress;
@@ -15,7 +16,6 @@ use App\Services\EvidenceExecutionService;
 use App\Services\OperationalInstrumentService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
-use App\Services\PersonalAcquisitionService;
 use App\Services\PhaseGenerationService;
 use App\Services\PreparationService;
 use App\Services\PropositionOptionService;
@@ -60,7 +60,7 @@ class PersonalGateAcquisitionTest extends TestCase
     {
         $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
         $phase = $this->at($f, PhaseKind::Distinguish, $f->seed);
-        $service = app(PersonalAcquisitionService::class);
+        $service = app(AcquisitionAttemptService::class);
         $generation = app(PhaseGenerationService::class);
         $this->assertSame('required', $service->state($phase)['status']);
         $this->assertFalse($generation->epistemicActionAvailable($phase, 'proposition.variant'));
@@ -90,13 +90,13 @@ class PersonalGateAcquisitionTest extends TestCase
         $this->instrument($phase);
         $different = DB::transaction(fn () => $f->node($f->gate, 'canon', 'commit', 'committal'));
         $phase->forceFill(['gate_proposition_id' => $different->id])->save();
-        $this->assertSame('required', app(PersonalAcquisitionService::class)->state($phase)['status']);
+        $this->assertSame('required', app(AcquisitionAttemptService::class)->state($phase)['status']);
         $phase->forceFill(['gate_proposition_id' => $f->seed->id])->save();
         // Isolated identity probe: another role at the same ID is independent,
         // even when structural gate checks would reject this role/position pair.
         $new = $this->visit($phase, $f->viewer);
         $new->forceFill(['kind' => PhaseKind::Disperse])->save();
-        $this->assertSame('required', app(PersonalAcquisitionService::class)->state($new)['status']);
+        $this->assertSame('required', app(AcquisitionAttemptService::class)->state($new)['status']);
     }
 
     public function test_disperse_choice_ignores_shared_unconsumed_evidence_and_instrument_excludes_preparation(): void
@@ -112,7 +112,7 @@ class PersonalGateAcquisitionTest extends TestCase
         $this->assertEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($f->phase));
         $fixture->consume($receipt);
         $return = $this->visit($f->phase, $f->viewer);
-        $this->assertSame('completed', app(PersonalAcquisitionService::class)->state($return)['status']);
+        $this->assertSame('completed', app(AcquisitionAttemptService::class)->state($return)['status']);
         $this->assertFalse($prep->eligible($return));
     }
 
@@ -126,7 +126,7 @@ class PersonalGateAcquisitionTest extends TestCase
         $this->assertTrue($service->eligible($phase));
         $this->assertEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($phase));
         $execution = $service->start($f->viewer, $phase, $fixture->input());
-        $this->assertSame('pending', app(PersonalAcquisitionService::class)->state($phase)['status']);
+        $this->assertSame('pending', app(AcquisitionAttemptService::class)->state($phase)['status']);
         $this->assertSame(['preparation.defer'], array_keys($service->resolutionSchema($f->viewer, $phase, $execution)['$defs']['actions']));
         $delivery = $service->delivery($f->viewer, $execution, 'inline-text');
         $service->acknowledge($f->viewer, $execution, $delivery['presentation_token']);
@@ -135,7 +135,7 @@ class PersonalGateAcquisitionTest extends TestCase
         $this->assertSame($receipt->id, $service->defer($f->viewer, $execution, 'Reading completed; structural contribution follows.')->id);
         $this->assertSame($count, Proposition::count());
         $this->assertNull($phase->fresh()->completed_at);
-        $this->assertSame('completed', app(PersonalAcquisitionService::class)->state($phase)['status']);
+        $this->assertSame('completed', app(AcquisitionAttemptService::class)->state($phase)['status']);
         $this->assertTrue(app(PhaseGenerationService::class)->epistemicActionAvailable($phase, 'proposition.variant'));
         $this->assertSame($gate->id, $receipt->receiptable_id);
         $this->assertEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($phase));
@@ -157,8 +157,8 @@ class PersonalGateAcquisitionTest extends TestCase
         $execution = $service->start($f->viewer, $f->phase, $fixture->input());
         $this->assertFalse($service->eligible($f->phase));
         $service->fail($f->viewer, $execution, 'reader', '1', $stage, 'Recorded failure', ['classification' => $classification]);
-        $this->assertSame($counts ? 'completed' : 'required', app(PersonalAcquisitionService::class)->state($f->phase)['status']);
-        $this->assertSame($counts, app(PersonalAcquisitionService::class)->completedInContext($f->phase, new ParticipationContext($f->phase))->has('4:'.$f->gate->id),
+        $this->assertSame($counts ? 'completed' : 'required', app(AcquisitionAttemptService::class)->state($f->phase)['status']);
+        $this->assertSame($counts, app(AcquisitionAttemptService::class)->completedInContext($f->phase, new ParticipationContext($f->phase))->has('4:'.$f->gate->id),
             'Exploration uses the same failure completion contract');
         $this->assertSame($counts, $execution->fresh()->receipt !== null);
         if ($counts) {
@@ -178,7 +178,7 @@ class PersonalGateAcquisitionTest extends TestCase
         $receipt = $this->instrument($phase);
         $this->assertFalse($receipt->metadata['content_verified']);
         $this->assertNull($receipt->signature);
-        $this->assertSame('completed', app(PersonalAcquisitionService::class)->state($phase)['status']);
+        $this->assertSame('completed', app(AcquisitionAttemptService::class)->state($phase)['status']);
         $this->assertSame($receipt->id, app(EvidenceExecutionService::class)->complete($receipt->evidenceExecution, $phase->gate)->id);
     }
 
@@ -229,8 +229,8 @@ class PersonalGateAcquisitionTest extends TestCase
         $old = $f->phase;
         $current = $this->visit($old, $f->viewer);
         $preparation = app(PreparationService::class)->start($f->viewer, $current, $fixture->input());
-        $this->assertSame('pending', app(PersonalAcquisitionService::class)->state($current)['status']);
-        $this->assertSame('required', app(PersonalAcquisitionService::class)->state($old)['status']);
+        $this->assertSame('pending', app(AcquisitionAttemptService::class)->state($current)['status']);
+        $this->assertSame('required', app(AcquisitionAttemptService::class)->state($old)['status']);
         try {
             $this->instrument($old);
             $this->fail('An obsolete open Phase must not bypass the current reservation.');
@@ -248,7 +248,7 @@ class PersonalGateAcquisitionTest extends TestCase
         $f = $fixture->context;
         $phase = $f->phase->load('cycle');
         $preparation = app(PreparationService::class);
-        $acquisition = app(PersonalAcquisitionService::class);
+        $acquisition = app(AcquisitionAttemptService::class);
         $counts = [];
         for ($i = 0; $i < 12; $i++) {
             $execution = $preparation->start($f->viewer, $phase, $fixture->input());
