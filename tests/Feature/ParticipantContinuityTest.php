@@ -45,6 +45,7 @@ class ParticipantContinuityTest extends TestCase
         $otherPosition = $other->fresh()->current_proposition_id;
         $otherCycle = $other->cycles()->whereNull('completed_at')->sole();
         $service = app(ParticipationService::class);
+        $this->closeVariantMarginFixture($cycle->currentPhase);
         $completed = $service->contribute($participant, $cycle->currentPhase->id,
             ['action' => 'proposition.commit', 'proposition_id' => $candidate->id]);
         $commit = $participant->fresh()->position;
@@ -84,13 +85,10 @@ class ParticipantContinuityTest extends TestCase
         $this->assertNull($otherCycle->fresh()->completed_at);
         $this->assertSame($cycle->context_horizon_id, $otherCycle->fresh()->context_horizon_id);
 
-        // The continuation uses the owning Domain's full register sequence.
-        $this->instrumentGateFixture(Phase::findOrFail($next['plan']['phase']['id']));
-        $first = $service->contribute($participant, $next['plan']['phase']['id'],
-            ['action' => 'proposition.variant', 'statement' => 'Continue locally']);
-        $this->assertSame($value > 0 ? 'frontier' : 'stance', $first['plan']['phase']['write_register']);
-        $this->classificationEvidenceFixture(Proposition::findOrFail($first['plan']['gate_id']));
-        app(PotentialProjectionService::class)->refresh($participant->substrate_id);
+        // Both controlled Commits lead to a closed child Region. Its entry
+        // and Domain remain valid even though its first Variant is unavailable.
+        $this->assertTrue(app(CrossoverMarginService::class)->inspect($participant->cycles()->whereNull('completed_at')->sole())['closed']);
+        $this->assertSame(['participant.rest'], array_keys($next['plan']['schema']['$defs']['actions']));
 
         // A participant still in the previous Horizon can choose the Committal
         // result, end Order there, and continue under its applicable entry rules.
@@ -114,18 +112,10 @@ class ParticipantContinuityTest extends TestCase
         $this->assertSame($domain, $continued['domain']);
         $this->assertSame($register, $continued['plan']['phase']['write_register']);
 
-        // The slower participant explores the existing Distinction without
-        // acquisition, then uses its own Persist opportunity to develop Persist.
-        $persist = $service->contribute($other, $continued['plan']['phase']['id'],
-            ['action' => 'attestation.create', 'proposition_id' => $first['current_proposition_id'], 'direction' => 'support']);
-        $this->instrumentGateFixture(Phase::findOrFail($persist['plan']['phase']['id']));
-        $second = $service->contribute($other, $persist['plan']['phase']['id'],
-            ['action' => 'proposition.variant', 'statement' => 'Develop the current structural position']);
-        $this->assertSame($value > 0 ? 'canon' : 'concord', $second['plan']['phase']['write_register']);
-
+        $this->assertSame(['participant.rest'], array_keys($continued['plan']['schema']['$defs']['actions']));
     }
 
-    public function test_rest_skips_closed_crossover_without_reopening_or_exhausting_tragedy_history(): void
+    public function test_rest_crosses_the_exhausted_boundary_without_reopening_tragedy_history(): void
     {
         [$participant, , $cycle, $origin, $candidate] = $this->prepareCommit(.6);
         $service = app(ParticipationService::class);

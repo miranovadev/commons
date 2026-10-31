@@ -15,6 +15,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\SubstrateLedgerEntry;
+use App\Services\Participation\ParticipationContext;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -181,7 +182,7 @@ final readonly class CycleEntryService
     public function continuationFor(Participant $participant): ?Proposition
     {
         $latest = $participant->cycles()->latest('sequence')->first();
-        if ($participant->current_proposition_id === null || ($latest?->rested_at !== null || $latest?->deferred_at !== null)) {
+        if ($participant->current_proposition_id === null || $latest?->deferred_at !== null) {
             return null;
         }
         $position = $participant->position()->firstOrFail();
@@ -190,6 +191,23 @@ final readonly class CycleEntryService
         }
         if (app(ExhaustionService::class)->unavailable($position)) {
             return null;
+        }
+        if ($latest?->rested_at !== null) {
+            if ($position->id !== $latest->entry_committal_id) {
+                return null;
+            }
+            $rest = $latest->phases()->orderByDesc('kind')->first();
+            if ($rest?->kind !== PhaseKind::Distinguish || $rest->gate_proposition_id !== $position->id) {
+                return null;
+            }
+            // A Participant waiting at an entry may resume if a real action has
+            // appeared there. Preview Distinguish without creating an empty Cycle.
+            $rest->completed_at = null;
+            $latest->completed_at = $latest->rested_at = null;
+            $rest->setRelation('cycle', $latest);
+            $schema = app(InputSchemaService::class)->forParticipant($participant, [], [], context: new ParticipationContext($rest));
+
+            return array_diff(array_keys($schema['$defs']['actions']), ['participant.rest']) !== [] ? $position : null;
         }
         $seed = $this->regions->seedFor($position);
 

@@ -75,6 +75,7 @@ class RevisionAdmissibilityTest extends TestCase
         }
 
         $this->attest($owned->phase, $owned, 'refute');
+        $this->closeVariantMarginFixture($phase);
         $plan = app(InputPlanService::class)->forParticipant($participant);
 
         $this->assertEqualsCanonicalizing(

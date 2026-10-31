@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
+use App\Models\ContextHorizon;
 use App\Models\Participant;
 use App\Models\Proposition;
 use Closure;
@@ -12,6 +13,19 @@ use Illuminate\Support\Facades\DB;
 /** Raw causal hops, including revisions and historical nodes, never display ancestry. */
 final class BackwardRecoveryLineage
 {
+    /** Rest at the entry itself requires a backward hop. Rest at an expressive Gate does not exclude its governor. */
+    public function restedAtEntry(Proposition $position, ContextHorizon $horizon, ?Participant $observer): bool
+    {
+        if ($position->tier !== 'committal' || $observer?->current_proposition_id !== $position->id) {
+            return false;
+        }
+        $latest = $observer->cycles()->latest('sequence')->first();
+
+        return $latest?->rested_at !== null && $latest->completed_at !== null
+            && $latest->entry_committal_id === $position->id && $latest->context_horizon_id === $horizon->id
+            && $latest->phases()->orderByDesc('kind')->value('gate_proposition_id') === $position->id;
+    }
+
     /**
      * Consecutive participant Phases disambiguate arrivals at shared Writes.
      * At inherited history, resume the creating participant's recorded provenance.

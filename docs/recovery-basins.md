@@ -30,7 +30,12 @@ committed basin must be resolved before an older committed basin becomes eligibl
 The first eligible, non-exhausted Committal on the recorded path is the sole
 recovery destination. Higher Potential or Charge at an older ancestor cannot
 skip it, even when the nearer basin has zero Potential and zero Charge. An
-eligible retained Committal is itself the distance-zero boundary.
+eligible retained Committal is itself the distance-zero boundary. Once a
+Participant actually Rests at that entry, returning to the same position is no
+backward movement. Recovery starts with the next ancestor, preserving the
+Horizon boundary. Rest at an expressive Gate still allows return to its
+governing Committal. A Participant waiting at an entry can resume there when a
+new lawful Distinguish action appears. Recovery never consults [Crossover Margin](rest-crossover-experiment.md).
 
 A Commit Region is the recovery basin governed by its Committal. Same-Horizon
 non-boundary Commits govern distinct basins. `commit_region_exhaustions` is the

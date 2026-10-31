@@ -43,21 +43,11 @@ frontier rank or action availability.
 - `staggered-epochs.json`: 30 steps. The same failed continuation spends A and B
   at step 27; A alone reopens at 28; B alone reopens at 29. Semantic assertions
   inspect parked observers between those final steps.
-- `tragedy-lifecycle.json`: the original first 51 authored actions, with explicit live-field diagnostic expectations. The API test
-  then submits the authored step-51 Rest and checks its semantic recovery contract.
-  The entry Emergence Region is naturally crossover-closed (margin -0.2463462):
-  recovery passes its Committal at backward distance 2 and selects the ancestral
-  Settlement Origin at distance 9. Receipt loading/consumption, Reinforcement and
-  the boundary Commit's frozen interval 10 retain their explicit prefix assertions.
-  No geometry is overridden to keep this participant inside the Emergence Region.
-
-The committed-lineage Closure replacement changes the natural C1 crossover in
-the revisit/epoch/source-equivalence scripts. Their expected topology follows that
-result. The former tragedy transcript's steps 52–102 depended on repeated local
-re-entry after the now-closed crossover Rest, including twelve rhythm-building
-Cycles. Those steps are retired rather than regenerated onto a different branch.
-The step-51 reason is `no_available_move`; it is not re-labelled as a no-Potential
-proof. The former 103-step test already asserted *no* Tragedy or exhaustion.
+- `tragedy-lifecycle.json` retains the historical transcript. The current
+  `ParticipationTragedyLifecycleTest` uses the skeptical Persist Commit journey.
+  Its Settlement Committal has a measured margin of -0.1950613. Distinguish
+  has no existing Write and cannot acquire. Rest at that entry moves seven
+  recorded edges back to Origin without changing the Horizon or any proof.
 
 Coverage is deliberately separated:
 
@@ -71,8 +61,7 @@ Coverage is deliberately separated:
   remains the catastrophe authority. Bias/warrant suites independently cover
   consumption authority and exact-once use.
 
-These are separate routing and catastrophe contracts. Crossover recovery is
-neither a catastrophe event nor a warrant-consumption or exhaustion condition.
+Crossover governs fresh Variants. Rest and backward recovery preserve the independent catastrophe and exhaustion proofs.
 
 An unexpected state fails at that step. Do not regenerate expected output to
 make a failing test pass: determine whether it exposes a regression or an explicitly

@@ -166,6 +166,7 @@ class ReconciliationTest extends TestCase
         $this->resolveExpressiveFieldFixture(.8);
         $this->fixture();
         $sibling = $this->readSibling('Different Read parent', -0.5, 1)[1];
+        $this->closeVariantMarginFixture($this->phase);
         $this->attest($sibling, 'support');
         $this->attest($this->gate, 'support');
         foreach ([$this->gate, $sibling] as $source) {

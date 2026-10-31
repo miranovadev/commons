@@ -128,6 +128,15 @@ final readonly class PhaseGenerationService
             return false;
         }
 
+        // Every fresh Variant probe, including resolution of an admitted attempt,
+        // uses the governing Cycle's geometry. Unavailable history cannot close it.
+        if ($action === 'proposition.variant') {
+            $closed = fn () => app(CrossoverMarginService::class)->inspect($phase->cycle)['closed'];
+            if ($context === null ? $closed() : $context->remember('variant-crossover:'.$phase->cycle_id, $closed)) {
+                return false;
+            }
+        }
+
         // Admission bypasses only later competing Variants, never hard
         // supersession or the terminal and canonical safety checks above.
         if ($action === 'proposition.variant' && app(AcquisitionAttemptService::class)->admitted($phase, $context)) {

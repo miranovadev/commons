@@ -6,6 +6,7 @@ use App\Domain\Evidence\VerifiedHyperlink;
 use App\Domain\Observables\ChiralityValues;
 use App\Domain\Observables\CorrespondenceValues;
 use App\Domain\Observables\LocalMeasurements;
+use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Enums\RegisterPosition;
 use App\Models\Attestation;
@@ -23,6 +24,7 @@ use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Services\AcquisitionAttemptService;
 use App\Services\ContextHorizonProjector;
+use App\Services\CrossoverMarginService;
 use App\Services\Evidence\ArtifactStore;
 use App\Services\Evidence\HyperlinkIdentity;
 use App\Services\Evidence\HyperlinkMetadataExtractor;
@@ -302,6 +304,14 @@ abstract class TestCase extends BaseTestCase
         app(OperationalInstrumentService::class)->execute($phase, $phase->gate,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/personal-acquisition/'.str()->ulid()]);
         $this->publishPotentialFixture($phase->cycle->participant);
+    }
+
+    /** Supply a closed governor to a component fixture without changing the acting Gate's observables. */
+    protected function closeVariantMarginFixture(Phase $phase): void
+    {
+        $value = $phase->cycle->contextHorizon->domain === ContextDomain::Settlement ? -1 : 1;
+        $phase->cycle->entryCommittal->commitmentSnapshot->forceFill(['correspondence' => $value, 'chirality' => $value])->save();
+        $this->assertTrue(app(CrossoverMarginService::class)->inspect($phase->cycle)['closed']);
     }
 
     /** Fixture authors supply the governor before creating immutable history. */
