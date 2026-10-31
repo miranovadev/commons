@@ -93,9 +93,16 @@ return [
                     'items' => ['type' => 'object']],
             ],
         ],
+        'acquisition.defer' => [
+            'description' => 'Complete this Preparation without a Proposition, recording your reason and completing the current Cycle.',
+            'title' => 'Defer this attempt', 'type' => 'object', 'additionalProperties' => false,
+            'required' => ['action', 'reason'],
+            'properties' => ['action' => ['const' => 'acquisition.defer'],
+                'reason' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 400]],
+        ],
         'preparation.defer' => [
-            'description' => 'Complete this Preparation without a Proposition, recording your reason and preserving the current Phase.',
-            'title' => 'Defer after Preparation', 'type' => 'object', 'additionalProperties' => false,
+            'description' => 'Complete this Preparation without a Proposition, recording your reason and completing the current Cycle.',
+            'title' => 'Defer this attempt', 'type' => 'object', 'additionalProperties' => false,
             'required' => ['action', 'reason'],
             'properties' => ['action' => ['const' => 'preparation.defer'],
                 'reason' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 400]],

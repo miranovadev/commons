@@ -205,6 +205,7 @@ export interface ConnectionOptions {
 export type ActionName =
   | 'preparation.start'
   | 'preparation.defer'
+  | 'acquisition.defer'
   | 'attestation.create'
   | 'instrument.execute'
   | 'proposition.commit'
@@ -398,7 +399,7 @@ interface GateAdmissibility {
 }
 
 export interface ParticipantPlan {
-  acquisition?: { role: string | null; gate_id?: string; status: 'not_required' | 'required' | 'pending' | 'completed'; execution_id?: string | null; outcome?: string | null } | null;
+  acquisition?: { role: string | null; gate_id?: string; status: 'not_required' | 'required' | 'pending' | 'awaiting_resolution' | 'resolved'; execution_id?: string | null; outcome?: { action: string; reason?: string | null } | null } | null;
   receipt_cognition?: ReceiptCognition;
   preparation?: { execution_id: string; status: string; purpose: string; selections: PreparationSelection[] } | null;
   preparation_options?: PreparationOption[];

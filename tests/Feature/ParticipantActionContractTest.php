@@ -54,9 +54,10 @@ class ParticipantActionContractTest extends TestCase
     #[DataProvider('executionPhases')]
     public function test_every_advertised_action_round_trips_through_inference_validation_and_execution(PhaseKind $kind, bool $foreignGate = false, bool $acquired = false): void
     {
-        [$participant, $phase, $seed] = $this->fixture($kind, foreignGate: $foreignGate);
+        [$participant, $phase, $seed] = $this->fixture($kind, empty: $acquired, foreignGate: $foreignGate);
         if ($acquired) {
             $this->instrumentGateFixture($phase);
+            $this->publishPotentialFixture($participant);
         }
         $state = app(ParticipationService::class)->stateFor($participant);
         $schema = $state['plan']['schema'];
@@ -72,10 +73,11 @@ class ParticipantActionContractTest extends TestCase
             PhaseKind::Constrain, PhaseKind::Bias => [],
             default => [],
         };
-        if (in_array($kind, [PhaseKind::Persist, PhaseKind::Disperse], true)) {
-            $spent[] = $acquired ? 'instrument.execute' : 'proposition.revise';
+        if (in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Disperse], true)) {
+            $spent[] = 'instrument.execute'; // Existing unexplored Writes take precedence.
         }
-        $expected = array_values(array_diff($expected, $spent));
+        $expected = $acquired ? ['acquisition.defer', 'proposition.variant']
+            : array_values(array_diff($expected, $spent));
         $this->assertEqualsCanonicalizing($expected, array_keys($schema['$defs']['actions']), json_encode($state['plan']));
         // A valid action in another phase/state must also be rejected here when
         // it is absent from this participant's published contract.

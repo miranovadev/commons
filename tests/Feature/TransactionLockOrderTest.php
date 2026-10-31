@@ -25,6 +25,7 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Models\User;
+use App\Services\AcquisitionAttemptService;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
@@ -117,10 +118,6 @@ class TransactionLockOrderTest extends TestCase
             app(ParticipationService::class)->contribute($second, $secondPhase->id, [
                 'action' => 'proposition.variant', 'statement' => 'Another distinction',
             ]);
-            $persist = $this->activePhase($second);
-            app(ParticipationService::class)->contribute($second, $persist->id, ['action' => 'instrument.execute',
-                'proposition_id' => $persist->gate_proposition_id,
-                'instrument' => ['kind' => 'citation', 'reference' => $persist->cycle->entry_committal_id]]);
         });
         foreach ([$firstPhase, $secondPhase] as $phase) {
             $this->assertNotNull($phase->fresh()->completed_at);
@@ -129,7 +126,7 @@ class TransactionLockOrderTest extends TestCase
         $sequences = DB::table('substrate_ledger_entries')->where('substrate_id', $substrate->id)
             ->orderBy('sequence')->pluck('sequence')->all();
         $this->assertSame(range(1, count($sequences)), $sequences);
-        $this->assertSame(1, Proposition::where('tier', 'expressive')->count(), 'The second action develops shared evidence rather than a redundant sibling');
+        $this->assertSame(2, Proposition::where('tier', 'expressive')->count(), 'Both independently admitted attempts retain their Variant opportunity.');
         $this->assertSame((int) $substrate->fresh()->field_version,
             app(PotentialProjectionService::class)->assertCurrent($substrate->id));
         foreach ([$first, $second] as $participant) {
@@ -251,7 +248,7 @@ class TransactionLockOrderTest extends TestCase
         $input = ['action' => 'proposition.variant', 'statement' => 'One distinction'];
         $this->whileWorkerWaits($substrate, [
             'operation' => 'dispatch-rejected', 'participant_id' => $participant->id, 'phase_id' => $phase->id,
-            'contribution' => $input, 'expected_message' => 'generation opportunity is unavailable',
+            'contribution' => $input, 'expected_message' => 'Personal acquisition or ordinary evidence prerequisites',
         ], function () use ($participant, $phase, $input): void {
             app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
         });
@@ -374,8 +371,9 @@ class TransactionLockOrderTest extends TestCase
         $clock = \Mockery::mock(WakeClock::class);
         $clock->shouldReceive('now')->andReturn(0, 0, 0, 0, 0, 0, 0, 601);
         [$substrate, $first, $phase] = $this->fixture();
+        $execution = app(AcquisitionAttemptService::class)->execution($phase);
         app(ParticipationService::class)->contribute($first, $phase->id,
-            ['action' => 'proposition.variant', 'statement' => 'Wake acquisition Gate']);
+            ['action' => 'acquisition.defer', 'execution_id' => $execution->id, 'reason' => 'Read further in the next Cycle.']);
         $phase = $this->activePhase($first);
         $second = new Participant;
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'between-actions'])->save();
@@ -397,7 +395,7 @@ class TransactionLockOrderTest extends TestCase
                 return ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
                     'instrument' => ['kind' => 'citation', 'reference' => $phase->cycle->entry_committal_id]];
             }
-            $this->assertSame('persist', $state['plan']['phase']['kind']);
+            $this->assertSame('distinguish', $state['plan']['phase']['kind']);
             $this->assertNull($phase->fresh()->completed_at);
             $process = new Process([PHP_BINARY, base_path('tests/Support/concurrent-commons-worker.php')], base_path(), null,
                 json_encode(['operation' => 'contribute', 'participant_id' => $second->id, 'phase_id' => $secondPhase->id,
@@ -448,32 +446,22 @@ class TransactionLockOrderTest extends TestCase
 
     #[DataProvider('externalInstruments')]
     #[Group('load')]
-    public function test_external_instrument_observation_allows_another_writer_and_discards_a_stale_result(string $kind): void
+    public function test_external_observation_preserves_an_admitted_attempt_when_another_writer_generates(string $kind): void
     {
         [$substrate, $first, $initial] = $this->fixture();
+        $execution = app(AcquisitionAttemptService::class)->execution($initial);
         app(ParticipationService::class)->contribute($first, $initial->id,
-            ['action' => 'proposition.variant', 'statement' => 'Instrument lineage']);
+            ['action' => 'acquisition.defer', 'execution_id' => $execution->id, 'reason' => 'Continue examination in a later Cycle.']);
         $initial = $this->activePhase($first);
         $target = $initial->gate;
-        app(PotentialProjectionService::class)->refresh($substrate->id);
         $second = new Participant;
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'during-observation'])->save();
         app(CycleEntryService::class)->enter($second);
         $secondPhase = $this->activePhase($second);
         $this->instrumentGateFixture($secondPhase);
-        // Concurrency component: two active Persist acquisition contexts share
-        // a Gate. Full entry/Attestation histories are covered by lifecycle tests.
-        $secondPhase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => $initial->write_register,
-            'gate_proposition_id' => $target->id])->save();
-        $second->forceFill(['current_proposition_id' => $target->id])->save();
-        app(PotentialProjectionService::class)->refresh($substrate->id);
         $input = ['action' => 'instrument.execute', 'proposition_id' => $target->id,
             'instrument' => $kind === 'hyperlink' ? ['kind' => $kind, 'reference' => 'https://example.test/outside-lock']
                 : ['kind' => $kind, 'query' => 'Observe outside the write lock']];
-        // The other Participant may legitimately generate its own citation.
-        // Only the stale invocation's Phase must retain exactly its old evidence.
-        $beforeExecutions = EvidenceExecution::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all();
-        $beforeReceipts = Receipt::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all();
         $observed = false;
         $this->mock($kind === 'hyperlink' ? HyperlinkVerifier::class : WebSearchProvider::class, function ($mock) use ($kind, &$observed, $second, $secondPhase): void {
             $mock->shouldReceive($kind === 'hyperlink' ? 'verify' : 'search')->once()->andReturnUsing(function ($reference) use ($kind, &$observed, $second, $secondPhase) {
@@ -487,20 +475,20 @@ class TransactionLockOrderTest extends TestCase
                     : new SearchObservation($reference, CarbonImmutable::now(), [], 'fixture');
             });
         });
-        try {
-            app(ParticipationService::class)->contribute($first, $initial->id, $input);
-            $this->fail('A stale Instrument result was accepted after shared evidence appeared.');
-        } catch (ConflictHttpException $exception) {
-            $this->assertSame(409, $exception->getStatusCode());
-        }
+        $state = app(ParticipationService::class)->contribute($first, $initial->id, $input);
         $this->assertTrue($observed, 'External observation must run without a transaction.');
-        $this->assertNull($secondPhase->fresh()->completed_at);
+        $this->assertNotNull($secondPhase->fresh()->completed_at);
         $this->assertSame(1, EvidenceExecution::where('phase_id', $secondPhase->id)->where('status', 'completed')->count());
-        $this->assertSame($beforeExecutions, EvidenceExecution::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all(),
-            'The stale observation must not persist an execution.');
-        $this->assertSame($beforeReceipts, Receipt::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all(),
-            'The stale observation must not persist a Receipt.');
-        $this->assertDatabaseMissing('evidence_executions', ['proposition_id' => $target->id, 'kind' => $kind]);
+        $attempt = EvidenceExecution::where('phase_id', $initial->id)->sole();
+        $this->assertSame('completed', $attempt->status);
+        $this->assertSame($target->id, $attempt->receipt->evidenceExecution->proposition_id);
+        $this->assertNull($attempt->attempt_resolution);
+        $this->assertArrayHasKey('proposition.variant', $state['plan']['schema']['$defs']['actions']);
+        $this->assertArrayHasKey('acquisition.defer', $state['plan']['schema']['$defs']['actions']);
+        app(ParticipationService::class)->contribute($first, $initial->id,
+            ['action' => 'proposition.variant', 'execution_id' => $attempt->id, 'statement' => 'Independent acquired continuation']);
+        $this->assertSame(2, Proposition::where('tier', 'expressive')->count());
+        $this->assertSame('variant', $attempt->fresh()->attempt_resolution['action']);
     }
 
     #[Group('load')]
@@ -629,7 +617,8 @@ class TransactionLockOrderTest extends TestCase
     #[Group('load')]
     public function test_concurrent_fresh_sibling_invalidates_exhaustion_proof(): void
     {
-        $this->initializeExhaustionFixture();
+        // The race requires a lawful Variant in the child's otherwise live Region.
+        $this->initializeExhaustionFixture(originOpensSettlement: true);
         [, $terminal, , $commit] = $this->exhaustedBranch();
         $generation = $this->phase($commit, PhaseKind::Distinguish);
         $this->instrumentGateFixture($generation);

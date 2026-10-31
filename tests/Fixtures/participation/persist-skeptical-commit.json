@@ -1,129 +1,106 @@
 {
-  "description": "Fixed lawful HTTP journey with durable personal Gate acquisition, first judgments on both authorised Reconciliation routes, and an additional reconsideration Cycle before Bias and Commit; no renewed acquisition.",
+  "description": "One acquisition per Cycle. Two readers enter and judge at Persist acquisition boundaries. Fixed authorised actions progress through Reconciliation, Bias and real Commit without changing measurement gates.",
   "steps": [
     {
       "cycle": 2,
       "phase": 1,
       "gate": "origin",
-      "receipt": "r0",
       "input": {
         "action": "instrument.execute",
         "proposition_id": {
           "ref": "origin"
         },
         "instrument": {
-          "kind": "proposition_search",
-          "limit": 1,
-          "query": "Origin discovery"
-        }
-      },
-      "result": "origin"
-    },
-    {
-      "cycle": 2,
-      "phase": 1,
-      "gate": "origin",
-      "input": {
-        "action": "proposition.variant",
-        "statement": "Opportunity 0"
-      },
-      "result": "p1"
-    },
-    {
-      "cycle": 2,
-      "phase": 2,
-      "gate": "p1",
-      "receipt": "r1",
-      "input": {
-        "action": "instrument.execute",
-        "proposition_id": {
-          "ref": "p1"
-        },
-        "instrument": {
           "kind": "hyperlink",
-          "reference": "https://evidence.example.test/evidence/1"
+          "reference": "https://evidence.example.test/evidence/0"
         }
       },
-      "result": "p1"
+      "result": "origin",
+      "receipt": "r0"
     },
     {
       "cycle": 2,
-      "phase": 2,
-      "gate": "p1",
-      "input": {
-        "action": "proposition.variant",
-        "statement": "Opportunity 2"
-      },
-      "result": "p2"
-    },
-    {
-      "cycle": 2,
-      "phase": 3,
-      "gate": "p2",
-      "input": {
-        "action": "participant.rest"
-      },
-      "result": "origin"
-    },
-    {
-      "cycle": 3,
       "phase": 1,
       "gate": "origin",
       "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p1"
-        },
-        "direction": "refute"
+        "action": "proposition.variant",
+        "statement": "Opportunity 1"
       },
-      "result": "p1"
+      "result": "leftDistinction"
     },
     {
-      "cycle": 3,
+      "cycle": 2,
       "phase": 2,
-      "gate": "p1",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p2"
-        },
-        "direction": "refute"
-      },
-      "result": "p2"
-    },
-    {
-      "cycle": 3,
-      "phase": 3,
-      "gate": "p2",
-      "input": {
-        "action": "proposition.reclassify",
-        "proposition_id": {
-          "ref": "p2"
-        },
-        "receipt_id": {
-          "ref": "r1"
-        }
-      },
-      "result": "p3"
-    },
-    {
-      "cycle": 3,
-      "phase": 4,
-      "gate": "p3",
-      "execution": "e1",
+      "gate": "leftDistinction",
+      "result": "leftDistinction",
+      "execution": "delayed2",
       "input": {
         "action": "preparation.start",
         "proposition_id": {
-          "ref": "p3"
+          "ref": "leftDistinction"
+        },
+        "purpose": "Examine before developing this distinction in a later Cycle",
+        "artifacts": [
+          {
+            "receipt_id": {
+              "ref": "r0"
+            },
+            "artifact_id": {
+              "artifact_of": "r0"
+            },
+            "read_type": "text",
+            "parameters": {
+              "offset": 0,
+              "max_chars": 4000
+            }
+          }
+        ]
+      }
+    },
+    {
+      "cycle": 2,
+      "phase": 2,
+      "gate": "leftDistinction",
+      "input": {
+        "action": "preparation.defer",
+        "execution_id": {
+          "ref": "delayed2"
+        },
+        "reason": "Preserve this reading and reconsider development next Cycle."
+      },
+      "result": "origin",
+      "deferred_receipt": "delayed2Receipt"
+    },
+    {
+      "cycle": 3,
+      "phase": 1,
+      "gate": "origin",
+      "input": {
+        "action": "attestation.create",
+        "proposition_id": {
+          "ref": "leftDistinction"
+        },
+        "direction": "refute"
+      },
+      "result": "leftDistinction"
+    },
+    {
+      "cycle": 3,
+      "phase": 2,
+      "gate": "leftDistinction",
+      "input": {
+        "action": "preparation.start",
+        "proposition_id": {
+          "ref": "leftDistinction"
         },
         "purpose": "Examine the evidence before developing this continuation.",
         "artifacts": [
           {
             "receipt_id": {
-              "ref": "r1"
+              "ref": "r0"
             },
             "artifact_id": {
-              "artifact_of": "r1"
+              "artifact_of": "r0"
             },
             "read_type": "text",
             "parameters": {
@@ -133,26 +110,34 @@
           }
         ]
       },
-      "result": "p3"
+      "result": "leftDistinction",
+      "execution": "execution4",
+      "entrant": "reader-4",
+      "entrant_judgment": {
+        "proposition_id": {
+          "ref": "leftDistinction"
+        },
+        "direction": "support"
+      }
     },
     {
       "cycle": 3,
-      "phase": 4,
-      "gate": "p3",
-      "receipt": "r2",
+      "phase": 2,
+      "gate": "leftDistinction",
       "input": {
         "action": "proposition.variant",
-        "statement": "Prepared opportunity 7",
+        "statement": "Prepared opportunity 4",
         "execution_id": {
-          "ref": "e1"
+          "ref": "execution4"
         }
       },
-      "result": "p4"
+      "result": "leftPersist",
+      "receipt": "leftReading"
     },
     {
       "cycle": 3,
-      "phase": 5,
-      "gate": "p4",
+      "phase": 3,
+      "gate": "leftPersist",
       "input": {
         "action": "participant.rest"
       },
@@ -162,153 +147,59 @@
       "cycle": 4,
       "phase": 1,
       "gate": "origin",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p1"
-        },
-        "direction": "support"
-      },
-      "result": "p1"
-    },
-    {
-      "cycle": 4,
-      "phase": 2,
-      "gate": "p1",
       "input": {
         "action": "proposition.traverse",
         "proposition_id": {
-          "ref": "p2"
+          "ref": "leftDistinction"
         }
       },
-      "result": "p2"
+      "result": "leftDistinction"
     },
     {
       "cycle": 4,
-      "phase": 3,
-      "gate": "p2",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p3"
-        },
-        "direction": "refute"
-      },
-      "result": "p3"
-    },
-    {
-      "cycle": 4,
-      "phase": 4,
-      "gate": "p3",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p4"
-        },
-        "direction": "refute"
-      },
-      "result": "p4"
-    },
-    {
-      "cycle": 4,
-      "phase": 5,
-      "gate": "p4",
-      "input": {
-        "action": "participant.rest"
-      },
-      "result": "origin"
-    },
-    {
-      "cycle": 5,
-      "phase": 1,
-      "gate": "origin",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p1"
-        },
-        "direction": "refute"
-      },
-      "result": "p1"
-    },
-    {
-      "cycle": 5,
       "phase": 2,
-      "gate": "p1",
-      "input": {
-        "action": "proposition.variant",
-        "statement": "Opportunity 15"
-      },
-      "result": "p5"
-    },
-    {
-      "cycle": 5,
-      "phase": 3,
-      "gate": "p5",
-      "input": {
-        "action": "participant.rest"
-      },
-      "result": "origin"
-    },
-    {
-      "cycle": 6,
-      "phase": 1,
-      "gate": "origin",
+      "gate": "leftDistinction",
       "input": {
         "action": "attestation.create",
         "proposition_id": {
-          "ref": "p1"
-        },
-        "direction": "support"
-      },
-      "result": "p1"
-    },
-    {
-      "cycle": 6,
-      "phase": 2,
-      "gate": "p1",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p5"
+          "ref": "leftPersist"
         },
         "direction": "refute"
       },
-      "result": "p5"
+      "result": "leftPersist"
     },
     {
-      "cycle": 6,
+      "cycle": 4,
       "phase": 3,
-      "gate": "p5",
+      "gate": "leftPersist",
       "input": {
         "action": "proposition.reclassify",
         "proposition_id": {
-          "ref": "p5"
+          "ref": "leftPersist"
         },
         "receipt_id": {
-          "ref": "r2"
+          "ref": "r0"
         }
       },
-      "result": "p6"
+      "result": "leftCanon"
     },
     {
-      "cycle": 6,
+      "cycle": 4,
       "phase": 4,
-      "gate": "p6",
-      "execution": "e2",
+      "gate": "leftCanon",
       "input": {
         "action": "preparation.start",
         "proposition_id": {
-          "ref": "p6"
+          "ref": "leftCanon"
         },
         "purpose": "Examine the evidence before developing this continuation.",
         "artifacts": [
           {
             "receipt_id": {
-              "ref": "r1"
+              "ref": "r0"
             },
             "artifact_id": {
-              "artifact_of": "r1"
+              "artifact_of": "r0"
             },
             "read_type": "text",
             "parameters": {
@@ -318,222 +209,290 @@
           }
         ]
       },
-      "result": "p6"
+      "result": "leftCanon",
+      "execution": "execution10"
+    },
+    {
+      "cycle": 4,
+      "phase": 4,
+      "gate": "leftCanon",
+      "input": {
+        "action": "proposition.variant",
+        "statement": "Prepared opportunity 9",
+        "execution_id": {
+          "ref": "execution10"
+        }
+      },
+      "result": "leftSignal",
+      "receipt": "leftPreparation"
+    },
+    {
+      "cycle": 4,
+      "phase": 5,
+      "gate": "leftSignal",
+      "input": {
+        "action": "participant.rest"
+      },
+      "result": "origin"
+    },
+    {
+      "cycle": 5,
+      "phase": 1,
+      "gate": "origin",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftDistinction"
+        }
+      },
+      "result": "leftDistinction"
+    },
+    {
+      "cycle": 5,
+      "phase": 2,
+      "gate": "leftDistinction",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftPersist"
+        }
+      },
+      "result": "leftPersist"
+    },
+    {
+      "cycle": 5,
+      "phase": 3,
+      "gate": "leftPersist",
+      "input": {
+        "action": "attestation.create",
+        "proposition_id": {
+          "ref": "leftCanon"
+        },
+        "direction": "refute"
+      },
+      "result": "leftCanon"
+    },
+    {
+      "cycle": 5,
+      "phase": 4,
+      "gate": "leftCanon",
+      "input": {
+        "action": "attestation.create",
+        "proposition_id": {
+          "ref": "leftSignal"
+        },
+        "direction": "refute"
+      },
+      "result": "leftSignal"
+    },
+    {
+      "cycle": 5,
+      "phase": 5,
+      "gate": "leftSignal",
+      "input": {
+        "action": "participant.rest"
+      },
+      "result": "origin"
     },
     {
       "cycle": 6,
-      "phase": 4,
-      "gate": "p6",
-      "receipt": "r3",
+      "phase": 1,
+      "gate": "origin",
+      "input": {
+        "action": "instrument.execute",
+        "proposition_id": {
+          "ref": "origin"
+        },
+        "instrument": {
+          "kind": "hyperlink",
+          "reference": "https://evidence.example.test/evidence/16"
+        }
+      },
+      "result": "origin",
+      "receipt": "rightDiscovery"
+    },
+    {
+      "cycle": 6,
+      "phase": 1,
+      "gate": "origin",
+      "input": {
+        "action": "proposition.variant",
+        "statement": "Opportunity 17"
+      },
+      "result": "rightDistinction"
+    },
+    {
+      "cycle": 6,
+      "phase": 2,
+      "gate": "rightDistinction",
+      "result": "rightDistinction",
+      "execution": "delayed20",
+      "input": {
+        "action": "preparation.start",
+        "proposition_id": {
+          "ref": "rightDistinction"
+        },
+        "purpose": "Examine before developing this distinction in a later Cycle",
+        "artifacts": [
+          {
+            "receipt_id": {
+              "ref": "rightDiscovery"
+            },
+            "artifact_id": {
+              "artifact_of": "rightDiscovery"
+            },
+            "read_type": "text",
+            "parameters": {
+              "offset": 0,
+              "max_chars": 4000
+            }
+          }
+        ]
+      }
+    },
+    {
+      "cycle": 6,
+      "phase": 2,
+      "gate": "rightDistinction",
+      "input": {
+        "action": "preparation.defer",
+        "execution_id": {
+          "ref": "delayed20"
+        },
+        "reason": "Preserve this reading and reconsider development next Cycle."
+      },
+      "result": "origin",
+      "deferred_receipt": "delayed20Receipt"
+    },
+    {
+      "cycle": 7,
+      "phase": 1,
+      "gate": "origin",
+      "input": {
+        "action": "attestation.create",
+        "proposition_id": {
+          "ref": "rightDistinction"
+        },
+        "direction": "refute"
+      },
+      "result": "rightDistinction"
+    },
+    {
+      "cycle": 7,
+      "phase": 2,
+      "gate": "rightDistinction",
+      "input": {
+        "action": "preparation.start",
+        "proposition_id": {
+          "ref": "rightDistinction"
+        },
+        "purpose": "Examine the evidence before developing this continuation.",
+        "artifacts": [
+          {
+            "receipt_id": {
+              "ref": "r0"
+            },
+            "artifact_id": {
+              "artifact_of": "r0"
+            },
+            "read_type": "text",
+            "parameters": {
+              "max_chars": 4000,
+              "offset": 0
+            }
+          }
+        ]
+      },
+      "result": "rightDistinction",
+      "execution": "execution22",
+      "entrant": "reader-22",
+      "entrant_judgment": {
+        "proposition_id": {
+          "ref": "rightDistinction"
+        },
+        "direction": "support"
+      }
+    },
+    {
+      "cycle": 7,
+      "phase": 2,
+      "gate": "rightDistinction",
       "input": {
         "action": "proposition.variant",
         "statement": "Prepared opportunity 20",
         "execution_id": {
-          "ref": "e2"
+          "ref": "execution22"
         }
       },
-      "result": "p7"
+      "result": "rightPersist",
+      "receipt": "rightReading"
     },
     {
-      "cycle": 6,
-      "phase": 5,
-      "gate": "p7",
+      "cycle": 7,
+      "phase": 3,
+      "gate": "rightPersist",
       "input": {
         "action": "participant.rest"
       },
       "result": "origin"
     },
     {
-      "cycle": 7,
+      "cycle": 8,
       "phase": 1,
       "gate": "origin",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p1"
-        },
-        "direction": "refute"
-      },
-      "result": "p1"
-    },
-    {
-      "cycle": 7,
-      "phase": 2,
-      "gate": "p1",
       "input": {
         "action": "proposition.traverse",
         "proposition_id": {
-          "ref": "p5"
+          "ref": "rightDistinction"
         }
       },
-      "result": "p5"
+      "result": "rightDistinction"
     },
     {
-      "cycle": 7,
-      "phase": 3,
-      "gate": "p5",
+      "cycle": 8,
+      "phase": 2,
+      "gate": "rightDistinction",
       "input": {
         "action": "attestation.create",
         "proposition_id": {
-          "ref": "p6"
+          "ref": "rightPersist"
         },
         "direction": "refute"
       },
-      "result": "p6"
-    },
-    {
-      "cycle": 7,
-      "phase": 4,
-      "gate": "p6",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p7"
-        },
-        "direction": "refute"
-      },
-      "result": "p7"
-    },
-    {
-      "cycle": 7,
-      "phase": 5,
-      "gate": "p7",
-      "input": {
-        "action": "participant.rest"
-      },
-      "result": "origin"
-    },
-    {
-      "cycle": 8,
-      "phase": 1,
-      "gate": "origin",
-      "input": {
-        "action": "proposition.variant",
-        "statement": "Opportunity 27"
-      },
-      "result": "p8"
-    },
-    {
-      "cycle": 8,
-      "phase": 2,
-      "gate": "p8",
-      "execution": "ep8",
-      "input": {
-        "action": "preparation.start",
-        "proposition_id": {
-          "ref": "p8"
-        },
-        "purpose": "Examine the new distinction.",
-        "artifacts": [
-          {
-            "receipt_id": {
-              "ref": "r1"
-            },
-            "artifact_id": {
-              "artifact_of": "r1"
-            },
-            "read_type": "text",
-            "parameters": {
-              "max_chars": 4000,
-              "offset": 0
-            }
-          }
-        ]
-      },
-      "result": "p8"
-    },
-    {
-      "cycle": 8,
-      "phase": 2,
-      "gate": "p8",
-      "receipt": "rp8",
-      "input": {
-        "action": "preparation.defer",
-        "execution_id": {
-          "ref": "ep8"
-        },
-        "reason": "Reading resolved; develop the distinction next."
-      },
-      "result": "p8"
-    },
-    {
-      "cycle": 8,
-      "phase": 2,
-      "gate": "p8",
-      "input": {
-        "action": "proposition.variant",
-        "statement": "Opportunity 28"
-      },
-      "result": "p9"
+      "result": "rightPersist"
     },
     {
       "cycle": 8,
       "phase": 3,
-      "gate": "p9",
-      "input": {
-        "action": "participant.rest"
-      },
-      "result": "origin"
-    },
-    {
-      "cycle": 9,
-      "phase": 1,
-      "gate": "origin",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p8"
-        },
-        "direction": "refute"
-      },
-      "result": "p8"
-    },
-    {
-      "cycle": 9,
-      "phase": 2,
-      "gate": "p8",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p9"
-        },
-        "direction": "refute"
-      },
-      "result": "p9"
-    },
-    {
-      "cycle": 9,
-      "phase": 3,
-      "gate": "p9",
+      "gate": "rightPersist",
       "input": {
         "action": "proposition.reclassify",
         "proposition_id": {
-          "ref": "p9"
+          "ref": "rightPersist"
         },
         "receipt_id": {
-          "ref": "r3"
+          "ref": "leftReading"
         }
       },
-      "result": "p10"
+      "result": "rightCanon"
     },
     {
-      "cycle": 9,
+      "cycle": 8,
       "phase": 4,
-      "gate": "p10",
-      "execution": "e3",
+      "gate": "rightCanon",
       "input": {
         "action": "preparation.start",
         "proposition_id": {
-          "ref": "p10"
+          "ref": "rightCanon"
         },
         "purpose": "Examine the evidence before developing this continuation.",
         "artifacts": [
           {
             "receipt_id": {
-              "ref": "r1"
+              "ref": "r0"
             },
             "artifact_id": {
-              "artifact_of": "r1"
+              "artifact_of": "r0"
             },
             "read_type": "text",
             "parameters": {
@@ -543,25 +502,262 @@
           }
         ]
       },
-      "result": "p10"
+      "result": "rightCanon",
+      "execution": "execution28"
+    },
+    {
+      "cycle": 8,
+      "phase": 4,
+      "gate": "rightCanon",
+      "input": {
+        "action": "proposition.variant",
+        "statement": "Prepared opportunity 25",
+        "execution_id": {
+          "ref": "execution28"
+        }
+      },
+      "result": "rightSignal",
+      "receipt": "rightPreparation"
+    },
+    {
+      "cycle": 8,
+      "phase": 5,
+      "gate": "rightSignal",
+      "input": {
+        "action": "proposition.reconcile",
+        "other_proposition_id": {
+          "ref": "leftSignal"
+        }
+      },
+      "result": "leftSynthesis"
+    },
+    {
+      "cycle": 8,
+      "phase": 6,
+      "gate": "leftSynthesis",
+      "input": {
+        "action": "participant.rest"
+      },
+      "result": "origin"
+    },
+    {
+      "cycle": 9,
+      "phase": 1,
+      "gate": "origin",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftDistinction"
+        }
+      },
+      "result": "leftDistinction"
+    },
+    {
+      "cycle": 9,
+      "phase": 2,
+      "gate": "leftDistinction",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftPersist"
+        }
+      },
+      "result": "leftPersist"
+    },
+    {
+      "cycle": 9,
+      "phase": 3,
+      "gate": "leftPersist",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftCanon"
+        }
+      },
+      "result": "leftCanon"
     },
     {
       "cycle": 9,
       "phase": 4,
-      "gate": "p10",
-      "receipt": "r4",
+      "gate": "leftCanon",
       "input": {
-        "action": "proposition.variant",
-        "statement": "Prepared opportunity 33",
-        "execution_id": {
-          "ref": "e3"
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftSignal"
+        }
+      },
+      "result": "leftSignal"
+    },
+    {
+      "cycle": 9,
+      "phase": 5,
+      "gate": "leftSignal",
+      "input": {
+        "action": "proposition.reconcile",
+        "other_proposition_id": {
+          "ref": "rightSignal"
+        }
+      },
+      "result": "rightSynthesis"
+    },
+    {
+      "cycle": 9,
+      "phase": 6,
+      "gate": "rightSynthesis",
+      "input": {
+        "action": "participant.rest"
+      },
+      "result": "origin"
+    },
+    {
+      "cycle": 10,
+      "phase": 1,
+      "gate": "origin",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftDistinction"
+        }
+      },
+      "result": "leftDistinction"
+    },
+    {
+      "cycle": 10,
+      "phase": 2,
+      "gate": "leftDistinction",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftPersist"
+        }
+      },
+      "result": "leftPersist"
+    },
+    {
+      "cycle": 10,
+      "phase": 3,
+      "gate": "leftPersist",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftCanon"
+        }
+      },
+      "result": "leftCanon"
+    },
+    {
+      "cycle": 10,
+      "phase": 4,
+      "gate": "leftCanon",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftSignal"
+        }
+      },
+      "result": "leftSignal"
+    },
+    {
+      "cycle": 10,
+      "phase": 5,
+      "gate": "leftSignal",
+      "input": {
+        "action": "attestation.create",
+        "proposition_id": {
+          "ref": "leftSynthesis"
+        },
+        "direction": "support"
+      },
+      "result": "leftSynthesis"
+    },
+    {
+      "cycle": 10,
+      "phase": 6,
+      "gate": "leftSynthesis",
+      "input": {
+        "action": "participant.rest"
+      },
+      "result": "origin"
+    },
+    {
+      "cycle": 11,
+      "phase": 1,
+      "gate": "origin",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftDistinction"
+        }
+      },
+      "result": "leftDistinction"
+    },
+    {
+      "cycle": 11,
+      "phase": 2,
+      "gate": "leftDistinction",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftPersist"
+        }
+      },
+      "result": "leftPersist"
+    },
+    {
+      "cycle": 11,
+      "phase": 3,
+      "gate": "leftPersist",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftCanon"
+        }
+      },
+      "result": "leftCanon"
+    },
+    {
+      "cycle": 11,
+      "phase": 4,
+      "gate": "leftCanon",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftSignal"
+        }
+      },
+      "result": "leftSignal"
+    },
+    {
+      "cycle": 11,
+      "phase": 5,
+      "gate": "leftSignal",
+      "input": {
+        "action": "attestation.create",
+        "proposition_id": {
+          "ref": "rightSynthesis"
+        },
+        "direction": "support"
+      },
+      "result": "rightSynthesis"
+    },
+    {
+      "cycle": 11,
+      "phase": 6,
+      "gate": "rightSynthesis",
+      "input": {
+        "action": "proposition.reclassify",
+        "proposition_id": {
+          "ref": "leftSynthesis"
+        },
+        "receipt_id": {
+          "ref": "leftPreparation"
         }
       },
       "result": "p11"
     },
     {
-      "cycle": 9,
-      "phase": 5,
+      "cycle": 11,
+      "phase": 7,
       "gate": "p11",
       "input": {
         "action": "participant.rest"
@@ -569,83 +765,177 @@
       "result": "origin"
     },
     {
-      "cycle": 10,
+      "cycle": 12,
       "phase": 1,
       "gate": "origin",
       "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftDistinction"
+        }
+      },
+      "result": "leftDistinction"
+    },
+    {
+      "cycle": 12,
+      "phase": 2,
+      "gate": "leftDistinction",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftPersist"
+        }
+      },
+      "result": "leftPersist"
+    },
+    {
+      "cycle": 12,
+      "phase": 3,
+      "gate": "leftPersist",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftCanon"
+        }
+      },
+      "result": "leftCanon"
+    },
+    {
+      "cycle": 12,
+      "phase": 4,
+      "gate": "leftCanon",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftSignal"
+        }
+      },
+      "result": "leftSignal"
+    },
+    {
+      "cycle": 12,
+      "phase": 5,
+      "gate": "leftSignal",
+      "input": {
         "action": "attestation.create",
         "proposition_id": {
-          "ref": "p1"
+          "ref": "leftSynthesis"
         },
-        "direction": "support"
+        "direction": "refute"
       },
-      "result": "p1"
+      "result": "leftSynthesis"
     },
     {
-      "cycle": 10,
-      "phase": 2,
-      "gate": "p1",
+      "cycle": 12,
+      "phase": 6,
+      "gate": "leftSynthesis",
       "input": {
-        "action": "proposition.variant",
-        "statement": "Opportunity 36"
+        "action": "proposition.reclassify",
+        "proposition_id": {
+          "ref": "rightSynthesis"
+        },
+        "receipt_id": {
+          "ref": "rightDiscovery"
+        }
       },
-      "result": "p12"
+      "result": "classification"
     },
     {
-      "cycle": 10,
-      "phase": 3,
-      "gate": "p12",
+      "cycle": 12,
+      "phase": 7,
+      "gate": "classification",
       "input": {
         "action": "participant.rest"
       },
       "result": "origin"
     },
     {
-      "cycle": 11,
+      "cycle": 13,
+      "phase": 1,
+      "gate": "origin",
+      "input": {
+        "action": "instrument.execute",
+        "proposition_id": {
+          "ref": "origin"
+        },
+        "instrument": {
+          "kind": "hyperlink",
+          "reference": "https://evidence.example.test/evidence/54"
+        }
+      },
+      "result": "origin",
+      "receipt": "r2"
+    },
+    {
+      "cycle": 13,
+      "phase": 1,
+      "gate": "origin",
+      "input": {
+        "action": "proposition.variant",
+        "statement": "Opportunity 55"
+      },
+      "result": "p13"
+    },
+    {
+      "cycle": 13,
+      "phase": 2,
+      "gate": "p13",
+      "result": "p13",
+      "execution": "delayed60",
+      "input": {
+        "action": "preparation.start",
+        "proposition_id": {
+          "ref": "p13"
+        },
+        "purpose": "Examine before developing this distinction in a later Cycle",
+        "artifacts": [
+          {
+            "receipt_id": {
+              "ref": "r2"
+            },
+            "artifact_id": {
+              "artifact_of": "r2"
+            },
+            "read_type": "text",
+            "parameters": {
+              "offset": 0,
+              "max_chars": 4000
+            }
+          }
+        ]
+      }
+    },
+    {
+      "cycle": 13,
+      "phase": 2,
+      "gate": "p13",
+      "input": {
+        "action": "preparation.defer",
+        "execution_id": {
+          "ref": "delayed60"
+        },
+        "reason": "Preserve this reading and reconsider development next Cycle."
+      },
+      "result": "origin",
+      "deferred_receipt": "delayed60Receipt"
+    },
+    {
+      "cycle": 14,
       "phase": 1,
       "gate": "origin",
       "input": {
         "action": "attestation.create",
         "proposition_id": {
-          "ref": "p1"
+          "ref": "p13"
         },
         "direction": "refute"
-      },
-      "result": "p1"
-    },
-    {
-      "cycle": 11,
-      "phase": 2,
-      "gate": "p1",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p12"
-        },
-        "direction": "refute"
-      },
-      "result": "p12"
-    },
-    {
-      "cycle": 11,
-      "phase": 3,
-      "gate": "p12",
-      "input": {
-        "action": "proposition.reclassify",
-        "proposition_id": {
-          "ref": "p12"
-        },
-        "receipt_id": {
-          "ref": "r4"
-        }
       },
       "result": "p13"
     },
     {
-      "cycle": 11,
-      "phase": 4,
+      "cycle": 14,
+      "phase": 2,
       "gate": "p13",
-      "execution": "e4",
       "input": {
         "action": "preparation.start",
         "proposition_id": {
@@ -655,10 +945,10 @@
         "artifacts": [
           {
             "receipt_id": {
-              "ref": "r1"
+              "ref": "r0"
             },
             "artifact_id": {
-              "artifact_of": "r1"
+              "artifact_of": "r0"
             },
             "read_type": "text",
             "parameters": {
@@ -668,37 +958,90 @@
           }
         ]
       },
-      "result": "p13"
+      "result": "p13",
+      "execution": "execution62"
     },
     {
-      "cycle": 11,
-      "phase": 4,
+      "cycle": 14,
+      "phase": 2,
       "gate": "p13",
-      "receipt": "r5",
       "input": {
         "action": "proposition.variant",
-        "statement": "Prepared opportunity 41",
+        "statement": "Prepared opportunity 58",
         "execution_id": {
-          "ref": "e4"
+          "ref": "execution62"
         }
       },
-      "result": "p14"
+      "result": "p14",
+      "receipt": "extraReading"
     },
     {
-      "cycle": 11,
-      "phase": 5,
+      "cycle": 14,
+      "phase": 3,
       "gate": "p14",
       "input": {
-        "action": "proposition.reconcile",
-        "other_proposition_id": {
-          "ref": "p7"
-        }
+        "action": "participant.rest"
       },
-      "result": "p15"
+      "result": "origin"
     },
     {
-      "cycle": 11,
-      "phase": 6,
+      "cycle": 15,
+      "phase": 1,
+      "gate": "origin",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftDistinction"
+        }
+      },
+      "result": "leftDistinction"
+    },
+    {
+      "cycle": 15,
+      "phase": 2,
+      "gate": "leftDistinction",
+      "input": {
+        "action": "preparation.start",
+        "proposition_id": {
+          "ref": "leftDistinction"
+        },
+        "purpose": "Examine the evidence before developing this continuation.",
+        "artifacts": [
+          {
+            "receipt_id": {
+              "ref": "r0"
+            },
+            "artifact_id": {
+              "artifact_of": "r0"
+            },
+            "read_type": "text",
+            "parameters": {
+              "max_chars": 4000,
+              "offset": 0
+            }
+          }
+        ]
+      },
+      "result": "leftDistinction",
+      "execution": "execution66"
+    },
+    {
+      "cycle": 15,
+      "phase": 2,
+      "gate": "leftDistinction",
+      "input": {
+        "action": "proposition.variant",
+        "statement": "Prepared opportunity 61",
+        "execution_id": {
+          "ref": "execution66"
+        }
+      },
+      "result": "p15",
+      "receipt": "reopenedReading"
+    },
+    {
+      "cycle": 15,
+      "phase": 3,
       "gate": "p15",
       "input": {
         "action": "participant.rest"
@@ -706,169 +1049,62 @@
       "result": "origin"
     },
     {
-      "cycle": 12,
+      "cycle": 16,
       "phase": 1,
       "gate": "origin",
       "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p1"
-        },
-        "direction": "support"
-      },
-      "result": "p1"
-    },
-    {
-      "cycle": 12,
-      "phase": 2,
-      "gate": "p1",
-      "input": {
         "action": "proposition.traverse",
         "proposition_id": {
-          "ref": "p12"
+          "ref": "leftDistinction"
         }
       },
-      "result": "p12"
+      "result": "leftDistinction"
     },
     {
-      "cycle": 12,
-      "phase": 3,
-      "gate": "p12",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p13"
-        },
-        "direction": "refute"
-      },
-      "result": "p13"
-    },
-    {
-      "cycle": 12,
-      "phase": 4,
-      "gate": "p13",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p14"
-        },
-        "direction": "refute"
-      },
-      "result": "p14"
-    },
-    {
-      "cycle": 12,
-      "phase": 5,
-      "gate": "p14",
+      "cycle": 16,
+      "phase": 2,
+      "gate": "leftDistinction",
       "input": {
         "action": "attestation.create",
         "proposition_id": {
           "ref": "p15"
         },
-        "direction": "support"
+        "direction": "refute"
       },
       "result": "p15"
     },
     {
-      "cycle": 12,
-      "phase": 6,
+      "cycle": 16,
+      "phase": 3,
       "gate": "p15",
-      "input": {
-        "action": "participant.rest"
-      },
-      "result": "origin"
-    },
-    {
-      "cycle": 13,
-      "phase": 1,
-      "gate": "origin",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p1"
-        },
-        "direction": "refute"
-      },
-      "result": "p1"
-    },
-    {
-      "cycle": 13,
-      "phase": 2,
-      "gate": "p1",
-      "input": {
-        "action": "proposition.variant",
-        "statement": "Opportunity 51"
-      },
-      "result": "p16"
-    },
-    {
-      "cycle": 13,
-      "phase": 3,
-      "gate": "p16",
-      "input": {
-        "action": "participant.rest"
-      },
-      "result": "origin"
-    },
-    {
-      "cycle": 14,
-      "phase": 1,
-      "gate": "origin",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p1"
-        },
-        "direction": "support"
-      },
-      "result": "p1"
-    },
-    {
-      "cycle": 14,
-      "phase": 2,
-      "gate": "p1",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p16"
-        },
-        "direction": "refute"
-      },
-      "result": "p16"
-    },
-    {
-      "cycle": 14,
-      "phase": 3,
-      "gate": "p16",
       "input": {
         "action": "proposition.reclassify",
         "proposition_id": {
-          "ref": "p16"
+          "ref": "p15"
         },
         "receipt_id": {
-          "ref": "r5"
+          "ref": "rightReading"
         }
       },
-      "result": "p17"
+      "result": "p16"
     },
     {
-      "cycle": 14,
+      "cycle": 16,
       "phase": 4,
-      "gate": "p17",
-      "execution": "e5",
+      "gate": "p16",
       "input": {
         "action": "preparation.start",
         "proposition_id": {
-          "ref": "p17"
+          "ref": "p16"
         },
         "purpose": "Examine the evidence before developing this continuation.",
         "artifacts": [
           {
             "receipt_id": {
-              "ref": "r1"
+              "ref": "r0"
             },
             "artifact_id": {
-              "artifact_of": "r1"
+              "artifact_of": "r0"
             },
             "read_type": "text",
             "parameters": {
@@ -878,36 +1114,106 @@
           }
         ]
       },
-      "result": "p17"
+      "result": "p16",
+      "execution": "execution72"
     },
     {
-      "cycle": 14,
+      "cycle": 16,
       "phase": 4,
-      "gate": "p17",
-      "receipt": "r6",
+      "gate": "p16",
       "input": {
         "action": "proposition.variant",
-        "statement": "Prepared opportunity 56",
+        "statement": "Prepared opportunity 66",
         "execution_id": {
-          "ref": "e5"
+          "ref": "execution72"
+        }
+      },
+      "result": "p17",
+      "receipt": "reopenedPreparation"
+    },
+    {
+      "cycle": 16,
+      "phase": 5,
+      "gate": "p17",
+      "input": {
+        "action": "proposition.reconcile",
+        "other_proposition_id": {
+          "ref": "leftSignal"
         }
       },
       "result": "p18"
     },
     {
-      "cycle": 14,
-      "phase": 5,
+      "cycle": 16,
+      "phase": 6,
       "gate": "p18",
+      "input": {
+        "action": "participant.rest"
+      },
+      "result": "origin"
+    },
+    {
+      "cycle": 17,
+      "phase": 1,
+      "gate": "origin",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftDistinction"
+        }
+      },
+      "result": "leftDistinction"
+    },
+    {
+      "cycle": 17,
+      "phase": 2,
+      "gate": "leftDistinction",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftPersist"
+        }
+      },
+      "result": "leftPersist"
+    },
+    {
+      "cycle": 17,
+      "phase": 3,
+      "gate": "leftPersist",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftCanon"
+        }
+      },
+      "result": "leftCanon"
+    },
+    {
+      "cycle": 17,
+      "phase": 4,
+      "gate": "leftCanon",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftSignal"
+        }
+      },
+      "result": "leftSignal"
+    },
+    {
+      "cycle": 17,
+      "phase": 5,
+      "gate": "leftSignal",
       "input": {
         "action": "proposition.reconcile",
         "other_proposition_id": {
-          "ref": "p7"
+          "ref": "p17"
         }
       },
       "result": "p19"
     },
     {
-      "cycle": 14,
+      "cycle": 17,
       "phase": 6,
       "gate": "p19",
       "input": {
@@ -916,175 +1222,90 @@
       "result": "origin"
     },
     {
-      "cycle": 15,
+      "cycle": 18,
       "phase": 1,
       "gate": "origin",
       "input": {
         "action": "proposition.traverse",
         "proposition_id": {
-          "ref": "p1"
+          "ref": "leftDistinction"
         }
       },
-      "result": "p1"
+      "result": "leftDistinction"
     },
     {
-      "cycle": 15,
+      "cycle": 18,
       "phase": 2,
-      "gate": "p1",
+      "gate": "leftDistinction",
       "input": {
         "action": "proposition.traverse",
         "proposition_id": {
-          "ref": "p5"
+          "ref": "leftPersist"
         }
       },
-      "result": "p5"
+      "result": "leftPersist"
     },
     {
-      "cycle": 15,
+      "cycle": 18,
       "phase": 3,
-      "gate": "p5",
+      "gate": "leftPersist",
       "input": {
         "action": "proposition.traverse",
         "proposition_id": {
-          "ref": "p6"
+          "ref": "leftCanon"
         }
       },
-      "result": "p6"
+      "result": "leftCanon"
     },
     {
-      "cycle": 15,
+      "cycle": 18,
       "phase": 4,
-      "gate": "p6",
+      "gate": "leftCanon",
       "input": {
         "action": "proposition.traverse",
         "proposition_id": {
-          "ref": "p7"
+          "ref": "leftSignal"
         }
       },
-      "result": "p7"
+      "result": "leftSignal"
     },
     {
-      "cycle": 15,
+      "cycle": 18,
       "phase": 5,
-      "gate": "p7",
+      "gate": "leftSignal",
       "input": {
         "action": "attestation.create",
         "proposition_id": {
-          "ref": "p15"
+          "ref": "rightSynthesis"
         },
         "direction": "refute"
       },
-      "result": "p15"
+      "result": "rightSynthesis"
     },
     {
-      "cycle": 15,
+      "cycle": 18,
       "phase": 6,
-      "gate": "p15",
-      "input": {
-        "action": "proposition.reclassify",
-        "proposition_id": {
-          "ref": "p15"
-        },
-        "receipt_id": {
-          "ref": "r6"
-        }
-      },
-      "result": "p20"
-    },
-    {
-      "cycle": 15,
-      "phase": 7,
-      "gate": "p20",
-      "input": {
-        "action": "participant.rest"
-      },
-      "result": "origin"
-    },
-    {
-      "cycle": 16,
-      "phase": 1,
-      "gate": "origin",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "p1"
-        }
-      },
-      "result": "p1"
-    },
-    {
-      "cycle": 16,
-      "phase": 2,
-      "gate": "p1",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "p5"
-        }
-      },
-      "result": "p5"
-    },
-    {
-      "cycle": 16,
-      "phase": 3,
-      "gate": "p5",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "p6"
-        }
-      },
-      "result": "p6"
-    },
-    {
-      "cycle": 16,
-      "phase": 4,
-      "gate": "p6",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "p7"
-        }
-      },
-      "result": "p7"
-    },
-    {
-      "cycle": 16,
-      "phase": 5,
-      "gate": "p7",
+      "gate": "rightSynthesis",
       "input": {
         "action": "attestation.create",
         "proposition_id": {
-          "ref": "p15"
-        },
-        "direction": "support"
-      },
-      "result": "p15"
-    },
-    {
-      "cycle": 16,
-      "phase": 6,
-      "gate": "p15",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p20"
+          "ref": "classification"
         },
         "direction": "refute"
       },
-      "result": "p20"
+      "result": "classification"
     },
     {
-      "cycle": 16,
+      "cycle": 18,
       "phase": 7,
-      "gate": "p20",
+      "gate": "classification",
       "input": {
         "action": "proposition.commit",
         "proposition_id": {
-          "ref": "p20"
+          "ref": "classification"
         }
       },
-      "result": "p21"
+      "result": "commit"
     }
   ]
 }

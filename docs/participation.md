@@ -168,12 +168,12 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 
 | Position/state | Available progression |
 | --- | --- |
-| Empty Phase 1 or Phase 4 opportunity | Variant |
+| Fresh lawful Variant opportunity in Phase 1, 2 or 4 | Acquire in this Cycle, then Variant or Defer |
 | Existing Proposition without available shared ordinary evidence | No Attest |
 | Available shared ordinary Commit Region Receipt | Attest, subject to ordinary eligibility |
 | Personal Attestation from an earlier Cycle | Same-side Traverse |
-| Phase 2, no eligible unattached ordinary Receipt | Phase-neutral Instrument on current Gate if Cycle allowance remains; no Variant/Revise |
-| Phase 2, eligible unattached ordinary Receipt | Structurally lawful Variant/Revise; no Instrument |
+| Phase 2 fresh Variant, readable causal Artifact | Preparation, then Variant or Defer |
+| Phase 2 fresh Variant, no readable causal Artifact | Instrument fallback, then Variant or Defer |
 | Phase 3 | Reclassify an attested Phase-2 source with an available Receipt |
 | Phase 5 | Existing directed reconciliation and Correspondence rules |
 | Phase 6 | Reclassify an attested Phase-5 source with Receipt and lineage agreement |
@@ -181,7 +181,7 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 
 During Exploration, Variant eligibility does not depend on Potential Charge or Participant count. Discover existing lawful continuations first; a further Variant requires the acting Participant to have explored all relevant reachable active heads, with the existing evidence and Attestation prerequisites. A new reachable head or a newly lawful advancing move releases the corresponding personal restriction. A repeated Attestation reversal alone does not reopen exploration. Variant adds shared structure without erasing personal history. See [Participant-relative exploration](participant-relative-exploration.md).
 
-[Personal Gate Acquisition](personal-gate-acquisition.md) requires each Participant's own resolved acquisition at the exact Gate before fresh generation in Distinguish, Persist and Disperse. Distinguish offers Instrument at its governing Committal. Persist offers Preparation when readable Artifacts are accessible, otherwise Instrument. Disperse offers both lawful choices and completing either satisfies the same role. Completion persists across Cycles, consumption and exploration reopening. Shared Receipt availability still independently governs ordinary evidence requirements for generation and Attestation. Traverse remains independently authorized. Transactional execution rechecks acquisition and evidence prerequisites advertised in the shared human/autonomous schema.
+[Generative acquisition](generative-acquisition.md) admits one evidence execution per exact Phase/generative opportunity when prospective fresh Variant is lawful. The exact Gate owns its Receipt. An admitted attempt survives an ordinary competing Variant but still respects terminal, hard Supersession and canonical boundaries. Variant requires that attempt and its independent evidence prerequisites; Defer preserves evidence and completes the Cycle without an Exploration Event. Later Cycles may acquire again. Ordinary Revision, Attestation, Traverse and Reclassification have no acquisition prerequisite.
 
 ## Traverse and authoritative Rest
 
@@ -542,7 +542,7 @@ unchanged.
 
 ## Bias grounding
 
-Reclassification is separate from Instrument execution. Distinguish, Persist fallback and Disperse expose Instruments on the exact Gate according to the personal acquisition role, independently of Cycle count. Shared ordinary Receipt availability permits Attestation subject to its remaining eligibility rules; Receipt and effective Attestation are required for reclassification. Reclassify attaches the selected regional Receipt and resets judgments. New Writes do not require a new Instrument execution on that Write.
+Reclassification is separate from Instrument execution. Distinguish, Persist fallback and Disperse expose Instruments on the exact Gate for a prospective fresh Variant, once per exact Phase/generative opportunity. Multiple Phases may acquire independently within one Cycle. Shared ordinary Receipt availability permits Attestation subject to its remaining eligibility rules; Receipt and effective Attestation are required for reclassification. Reclassify attaches the selected regional Receipt and resets judgments. New Writes do not require a new Instrument execution on that Write.
 
 A fresh Bias classification may reach Order before anyone attests it. If neither a qualifying Commit Gate nor an established Committal Write exists, Rest is valid. Another Participant can later attest the classification through Bias or an earlier eligible Write encounter. Receipt loading remains optional before Order and never advances a Phase.
 
@@ -578,7 +578,7 @@ Proposition references remain metadata without standalone Load controls.
 `instrument: {"replay_receipt_id": "R"}` and the exact schema-authorized
 `proposition_id`. It restores the stored invocation, preserves ordinary eligibility
 and equivalent-evidence exclusions, and creates a new Proposition-grounded Receipt
-with replay provenance. Fresh execution and replay automatically load readable results for their performer under C2. Load File / Download instead exposes lightweight acquisition metadata and preserves an Artifact without persistent loading. Instrumentation occurs in Distinguish, Persist fallback or Disperse, targets the exact Gate, completes the personal acquisition role, and refreshes cognition without advancing the Phase. There are no standalone Receipt Read or Replay action families.
+with replay provenance. Fresh execution and replay automatically load readable results for their performer under C2. Load File / Download instead exposes lightweight acquisition metadata and preserves an Artifact without persistent loading. Instrumentation occurs in Distinguish, Persist fallback or Disperse, targets the exact Gate, records the current attempt’s observation, and refreshes cognition without advancing the Phase. There are no standalone Receipt Read or Replay action families.
 
 A qualifying direct expressive Write encounter with resulting canonical Charge zero establishes the Region’s unique Tragedy and Receipt and permanently terminates that continuation. Resolution prohibits Variant and Revise throughout the Region while preserving ordinary authority on viable routes. Exhaustion follows atomically only when no lawful continuation remains; viable siblings and live committed descendants prevent it. Descendant Exhaustion closes only its corresponding route. No second catastrophe, Rest or Receipt consumption is required. Passive measurements and reads establish neither event. Recovery follows actual recorded backward lineage. See the approved [Tragedy/Resolution lifecycle](tragedy-resolution-target.md). Qualifying encounters include expressive birth, Attestation, Instrument and lawful expressive Traverse, including already-zero targets. An Exhausted Region offers Rest only. Historical alternatives remain visible and non-actionable.
 

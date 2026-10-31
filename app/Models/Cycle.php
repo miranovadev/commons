@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\PhaseKind;
 use App\Enums\RestReason;
 use App\Services\ChiralityPopulationHistoryService;
 use App\Services\ContextHorizonProjector;
 use App\Services\FieldMutationService;
+use App\Services\Observables\ProspectiveClosureService;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -74,7 +76,7 @@ class Cycle extends Model
             }
             $saved = parent::save($options);
             if ($saved && $entry && $changesParticipation) {
-                app(\App\Services\Observables\ProspectiveClosureService::class)->entered($this);
+                app(ProspectiveClosureService::class)->entered($this);
             }
             if ($saved && $changesParticipation) {
                 // Dirty only Horizons containing Cycles entered at this basin.
@@ -106,6 +108,7 @@ class Cycle extends Model
         return [
             'completed_at' => 'immutable_datetime',
             'rested_at' => 'immutable_datetime',
+            'deferred_at' => 'immutable_datetime',
             'rest_reason' => RestReason::class,
         ];
     }
@@ -118,6 +121,17 @@ class Cycle extends Model
     public function phases(): HasMany
     {
         return $this->hasMany(Phase::class);
+    }
+
+    /** A Rest at another Phase or Gate says nothing about starting Distinguish here. */
+    public function restedEntryPhase(Proposition $position): ?Phase
+    {
+        if ($this->rested_at === null || $this->completed_at === null || $this->entry_committal_id !== $position->id) {
+            return null;
+        }
+        $phase = $this->currentPhase;
+
+        return $phase?->kind === PhaseKind::Distinguish && $phase->gate_proposition_id === $position->id ? $phase : null;
     }
 
     public function currentPhase(): HasOne

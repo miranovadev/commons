@@ -151,6 +151,7 @@ class BiasGateTest extends TestCase
         // Isolate structural rules from a new Charge-boundary event.
         $this->resolveExpressiveFieldFixture(.8);
         $this->fixture($register, $write);
+        $this->variantMarginFixture($this->phase, closed: true);
         $selected = $this->sibling("  Selected statement\nexactly as written.  \n");
         $opposite = $this->sibling('Opposite');
         foreach ([$this->gate, $selected] as $source) {

@@ -6,7 +6,7 @@ This implements Claire's Stage 3 handoff after Personal Gate Acquisition. Explor
 
 An Exploration Event retains its existing late-Phase terminal-head, recorded arrival, evidence and no-forward-generation prerequisites. Its witness now selects the acting Participant's effective Attestation on the exact head. Both Support and Refute qualify. Contract 2 records the Participant and successful personal-route evaluation alongside the existing head, arrival, Attestation and Receipt IDs. Publication rechecks the witness under the existing Substrate lock and field-version guard. The Phase uniqueness constraint and append-only history remain authoritative.
 
-The route must have no outstanding lawful first personal judgment at an active Write and no outstanding personal acquisition at an available Gate in Distinguish, Persist or Disperse. Acquisition uses Stage 2's recorded-observation predicate and Receipt requirement, with the exact Participant, Gate and creating Phase role. Pending and abandoned records do not count; recorded failed observations do. Consumption does not remove completion.
+The route must have no outstanding lawful first personal judgment at an active Write. The [generative acquisition redesign](generative-acquisition.md) retires the original Stage 3 historical acquisition prerequisite: exploring existing structure requires no personal acquisition. The event's independent evidence-witness authority is unchanged. Acquisition, pending delivery and Defer never establish personal exploration completion.
 
 Current explored status requires a qualifying personal head encounter, complete personal participation on the selected route, and no newly lawful non-Variant generation at each active head. An old event cannot waive an outstanding lawful first judgment. Historical witnesses are not rewritten, including the older witnesses which selected another Participant's Attestation.
 
@@ -20,7 +20,7 @@ Existing first-Attestation options remain reachable through ordinary forward par
 
 ## Reopening and separation
 
-New active structure and newly lawful Reconcile, Reclassify or Commit can reopen a route. Fresh Variant does not satisfy its own prerequisite. Traverse, Revise and Attestation reversal alone do not reopen it. Reconsideration may indirectly make forward generation lawful. Completion records, prior acquisition, immutable events and first judgments are retained.
+New active structure and newly lawful Reconcile, Reclassify or Commit can reopen a route. Fresh Variant does not satisfy its own prerequisite. Traverse, Revise and Attestation reversal alone do not reopen it. Reconsideration may indirectly make forward generation lawful. Completion records, immutable observations, events and first judgments are retained. A newly admitted Variant attempt requires its own acquisition; historical acquisition does not authorize it.
 
 The evaluator never constructs an InputPlan or grants an operation. Consumption remains Constrain/Bias only. Measurement thresholds, Closure, canonical Commit, Stage 1 cognition and human/autonomous backend parity remain unchanged.
 
@@ -32,7 +32,7 @@ The evaluator never constructs an InputPlan or grants an operation. Consumption 
 | Active route gap | Missing lawful first judgment blocks completion, even with a historical event (§5) | Each producing position and recovery tests |
 | Multiple paths | Requested forward branch plus recorded arrival; no evidence-ancestry union (§§2,5) | Reconciliation and sibling boundary tests |
 | Revision | Same-position reconsideration retains completed first judgment; new publication needs actual head judgment (§§4,7) | Existing Revision/reversal reopening tests |
-| Acquisition | Reuse Stage 2 completion; no exploration allowance (§9) | All three missing-role cases, returning-Gate and natural HTTP tests |
+| Acquisition | Independent from existing-route completion; current attempts authorize only fresh Variant | No-acquisition route completion and generative attempt journeys |
 | Actionless Rest | Stopping is not personal completion (§11) | Incomplete Rest publishes no event |
 | Concurrency | Stable field plus under-lock witness revalidation (§10) | Stale, duplicate, rollback and forged identity tests |
 
@@ -42,7 +42,7 @@ The evaluator never constructs an InputPlan or grants an operation. Consumption 
 
 This is a provenance comparison, not exact action-packet replay. It does not establish historical action lawfulness, nor retroactively apply Stage 2 acquisition to the old cook. Missing judgments in the final snapshot alone are not evidence of premature exploration.
 
-## Validation and performance
+## Historical Stage 3 validation and performance
 
 Final validation is recorded in the PR against merged main `5a24e05dca6f3f14c56101e26a5f00bb2890ae16`. Exploration reuses the hydrated graph and effective Attestations. Acquisition completion selects distinct Gate/role keys in one batched query; encounter arrivals are batched across relevant events. Context-local memoization avoids repeated history queries. The focused frontier fixture currently holds at 27 queries from two to eight personally judged heads; final PostgreSQL measurements and baseline failures are reported in the PR.
 

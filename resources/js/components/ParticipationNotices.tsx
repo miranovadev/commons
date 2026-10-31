@@ -9,16 +9,17 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
 }): WorkspaceNotice[] {
   const notices: WorkspaceNotice[] = [];
   const acquisition = plan?.acquisition;
-  if (acquisition?.role) notices.push({ id: 'personal-acquisition', title: acquisition.status === 'completed' ? 'Personal acquisition completed' : acquisition.status === 'pending' ? 'Acquisition in progress' : 'Personal acquisition required',
-    color: acquisition.status === 'completed' ? 'teal' : 'indigo', satisfied: acquisition.status === 'completed', icon: IconRoute,
+  if (acquisition?.role && acquisition.status !== 'not_required') notices.push({ id: 'personal-acquisition', title: acquisition.status === 'resolved' ? 'Acquisition attempt completed' : acquisition.status === 'pending' ? 'Acquisition in progress' : acquisition.status === 'awaiting_resolution' ? 'Choose Variant or Defer' : 'Acquire before creating a Variant',
+    color: acquisition.status === 'resolved' ? 'teal' : 'indigo', satisfied: acquisition.status === 'resolved', icon: IconRoute,
     content: <Stack gap="xs">
-      <Text size="sm">{acquisition.status === 'completed' ? 'Your acquisition at this Gate is recorded and remains complete on later visits.'
+      <Text size="sm">{acquisition.status === 'resolved' ? 'This Phase’s attempt is complete. Later Phases evaluate fresh opportunities independently.'
+        : acquisition.status === 'awaiting_resolution' ? 'Choose Variant or Defer. Defer preserves your observation and completes this Cycle.'
         : acquisition.status === 'pending' ? 'Resolve the current execution before starting another acquisition.'
-          : 'Complete your own acquisition at this Gate before fresh generation. Existing evidence does not replace your participation.'}</Text>
+          : 'Explore existing structure first. Acquire for this fresh Variant opportunity, then choose Variant or Defer.'}</Text>
       {acquisition.status === 'required' && <Text size="xs">{plan?.phase.kind === 'persist' && plan.schema?.$defs?.actions?.['preparation.start']
         ? 'Prepare an accessible Artifact, then resolve the reading before continuing.'
-        : plan?.phase.kind === 'disperse' ? 'Choose Instrument or an available Preparation; either satisfies this Gate’s acquisition.' : 'Choose an available Instrument.'}</Text>}
-      {acquisition.outcome && <Text size="xs">Recorded outcome: {acquisition.outcome}</Text>}
+        : plan?.phase.kind === 'disperse' ? 'Choose Instrument or an available Preparation; either admits this Cycle’s generative attempt.' : 'Choose an available Instrument.'}</Text>}
+      {acquisition.outcome && <Text size="xs">Recorded outcome: {acquisition.outcome.action}</Text>}
     </Stack> });
   const correspondence = plan?.correspondence_admissibility;
   const chirality = plan?.chirality_admissibility;

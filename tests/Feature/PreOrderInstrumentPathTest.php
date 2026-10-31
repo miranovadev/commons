@@ -32,9 +32,9 @@ class PreOrderInstrumentPathTest extends TestCase
         $service = app(ParticipationService::class);
         $this->publishPotentialFixture($f->viewer);
         $before = $service->stateFor($f->viewer)['plan'];
-        $this->assertSame(in_array($kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true), isset($before['schema']['$defs']['actions']['instrument.execute']));
-        $this->assertSame(in_array($kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true) ? [$gate->id] : [], app(PropositionOptionService::class)->instrumentOptionsFor($f->phase)->pluck('id')->all());
-        $this->expectException(in_array($kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true) ? \DomainException::class : ConflictHttpException::class);
+        $this->assertArrayNotHasKey('instrument.execute', $before['schema']['$defs']['actions'], 'Existing unexplored Writes take precedence');
+        $this->assertSame([], app(PropositionOptionService::class)->instrumentOptionsFor($f->phase)->pluck('id')->all());
+        $this->expectException(ConflictHttpException::class);
         app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase,
             ['action' => 'instrument.execute', 'proposition_id' => $write->id,
                 'instrument' => ['kind' => 'citation', 'reference' => $gate->id]]);

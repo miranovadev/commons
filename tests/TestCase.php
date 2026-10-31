@@ -6,6 +6,7 @@ use App\Domain\Evidence\VerifiedHyperlink;
 use App\Domain\Observables\ChiralityValues;
 use App\Domain\Observables\CorrespondenceValues;
 use App\Domain\Observables\LocalMeasurements;
+use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Enums\RegisterPosition;
 use App\Models\Attestation;
@@ -21,7 +22,9 @@ use App\Models\Substrate;
 use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
 use App\Models\Tragedy;
+use App\Services\AcquisitionAttemptService;
 use App\Services\ContextHorizonProjector;
+use App\Services\CrossoverMarginService;
 use App\Services\Evidence\ArtifactStore;
 use App\Services\Evidence\HyperlinkIdentity;
 use App\Services\Evidence\HyperlinkMetadataExtractor;
@@ -34,7 +37,6 @@ use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ProspectiveClosureService;
 use App\Services\OperationalInstrumentService;
-use App\Services\PersonalAcquisitionService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
@@ -296,12 +298,23 @@ abstract class TestCase extends BaseTestCase
     /** Complete an isolated fixture's acquisition through the real Instrument boundary. */
     protected function instrumentGateFixture(Phase $phase): void
     {
-        if (app(PersonalAcquisitionService::class)->state($phase)['status'] !== 'required') {
+        if (app(AcquisitionAttemptService::class)->state($phase)['status'] !== 'required') {
             return;
         }
         app(OperationalInstrumentService::class)->execute($phase, $phase->gate,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/personal-acquisition/'.str()->ulid()]);
         $this->publishPotentialFixture($phase->cycle->participant);
+    }
+
+    /** Supply the governing margin to a component fixture without changing the acting Gate's observables. */
+    protected function variantMarginFixture(Phase $phase, bool $closed): void
+    {
+        $value = $phase->cycle->contextHorizon->domain === ContextDomain::Settlement ? 1 : -1;
+        if ($closed) {
+            $value = -$value;
+        }
+        $phase->cycle->entryCommittal->commitmentSnapshot->forceFill(['correspondence' => $value, 'chirality' => $value])->save();
+        $this->assertSame($closed, app(CrossoverMarginService::class)->inspect($phase->cycle)['closed']);
     }
 
     /** Fixture authors supply the governor before creating immutable history. */
@@ -541,7 +554,7 @@ abstract class TestCase extends BaseTestCase
     /** Attach a catalogue observation through the existing one-use consumption operation. */
     protected function consumeObservationFixture(ParticipantContextFixture $fixture, Receipt $receipt): void
     {
-        $source = $fixture->node($fixture->phase->gate, 'frontier', position: PhaseKind::Persist);
+        $source = $fixture->node($fixture->seed, 'frontier', position: PhaseKind::Persist);
         $target = $fixture->node($source, 'canon', 'reclassify', position: PhaseKind::Constrain);
         DB::transaction(fn () => app(HorizonReceiptService::class)->consume($target->phase, $source, $target, $receipt->id));
     }

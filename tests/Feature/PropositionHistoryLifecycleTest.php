@@ -43,7 +43,8 @@ class PropositionHistoryLifecycleTest extends TestCase
             $phase = $fixture->phase;
         } else {
             $source = $fixture->expression;
-            $phase = $progression->advance($fixture->phase, $source);
+            $fixture->enterPersist();
+            $phase = $fixture->phase;
             $dispatcher->dispatch($fixture->actor, $phase,
                 ['action' => 'instrument.execute', 'proposition_id' => $source->id,
                     'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/fresh-history']]);
@@ -64,7 +65,7 @@ class PropositionHistoryLifecycleTest extends TestCase
         $sourceTouches = $state->touchCount($source);
         $votes = $state->attestations(collect([$source]))->pluck('id')->all();
         $receipts = $state->receipts($source)->pluck('id')->all();
-        $this->assertCount(1, $votes);
+        $this->assertCount(1, $votes); // Only the actual judging Participant supplies a vote.
         $this->assertCount($operation === 'variant' ? 2 : 0, $receipts);
         $availableReceipt = app(HorizonReceiptService::class)->ordinaryAvailable($phase)->firstOrFail();
         $this->assertGreaterThan(0, $sourceTouches);

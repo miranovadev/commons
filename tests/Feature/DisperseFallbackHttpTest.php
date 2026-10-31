@@ -23,7 +23,6 @@ class DisperseFallbackHttpTest extends ParticipationHttpTestCase
 
         $actor = $this->joinParticipant('Shared evidence developer');
         $this->enterParticipant($actor);
-        $this->discoverGate($actor);
         $sharedPersist = $this->contribute($actor, ['action' => 'attestation.create',
             'proposition_id' => $persist['plan']['gate_id'], 'direction' => 'support']);
         $this->assertSame('persist', $sharedPersist['plan']['phase']['kind']);

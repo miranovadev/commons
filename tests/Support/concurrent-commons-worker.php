@@ -97,7 +97,8 @@ try {
                     ) : null,
                 );
             } catch (ConflictHttpException $exception) {
-                if (str_contains($exception->getMessage(), 'acquisition') || str_contains($exception->getMessage(), 'Resolve the unfinished Preparation')) {
+                if (str_contains($exception->getMessage(), 'acquisition') || str_contains($exception->getMessage(), 'Resolve the unfinished Preparation')
+                    || str_contains($exception->getMessage(), 'An equivalent Instrument observation is already relevant')) {
                     return;
                 }
                 throw $exception;
@@ -111,7 +112,7 @@ try {
                     Phase::findOrFail($input['phase_id']),
                     $input['contribution'],
                 );
-            } catch (DomainException $exception) {
+            } catch (DomainException|ConflictHttpException $exception) {
                 if (str_contains($exception->getMessage(), $input['expected_message'])) {
                     return;
                 }

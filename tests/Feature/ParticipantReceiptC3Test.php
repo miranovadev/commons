@@ -15,7 +15,6 @@ use App\Services\InputPlanService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptLayout;
 use App\Services\ParticipantReceiptProjection;
-use App\Services\PhaseProgressionService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\TerminalContinuationService;
@@ -150,7 +149,7 @@ class ParticipantReceiptC3Test extends TestCase
         // Real Origin entry, dispatched Variant/Persist and dispatched Instrument.
         // Only the numerical boundary is isolated, as in DirectTragedyResolutionTest.
         $f = new GovernedExpressionFixture;
-        $f->phase = app(PhaseProgressionService::class)->advance($f->phase, $f->expression);
+        $f->enterPersist();
         $this->controlledBirthClosureFixture(1, $f->expression->id);
         app(PropositionMeasurementService::class)->project($f->expression, 1, 1, 1);
         app(PotentialProjectionService::class)->rebuild($f->actor->substrate_id, false);

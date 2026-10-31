@@ -31,6 +31,9 @@ class ClosureBirthTest extends TestCase
         $fixture = new GovernedExpressionFixture;
         $first = $fixture->expression;
         $states = app(ProspectiveClosureService::class);
+        // Capture the baseline after Phase entry, then isolate the subsequent
+        // structural birth within the same Cycle.
+        $fixture->enterPersist();
         $before = $states->stored($first);
         $interval = app(PhaseProfileObservationService::class)->stored($first->id);
         $fixture->writePersist();

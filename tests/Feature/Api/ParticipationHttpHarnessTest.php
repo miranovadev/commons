@@ -23,13 +23,12 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
         foreach (array_keys($this->persistJourneySteps) as $index) {
             $state = $this->executePersistJourneyStep($actor, $index);
             $packet = $this->auditEvidencePacket($state);
-            if ($this->persistJourneySteps[$index]['result'] === 'p15'
+            if ($this->persistJourneySteps[$index]['result'] === 'rightSynthesis'
                 && $this->persistJourneySteps[$index]['input']['action'] === 'proposition.reconcile') {
-                foreach (['r0', 'r1', 'r3', 'r4', 'r5'] as $reference) {
+                foreach (['r0', 'leftReading', 'leftPreparation', 'rightReading', 'rightPreparation'] as $reference) {
                     $this->assertContains($this->persistJourneyIds[$reference], array_column($packet['receipts'], 'id'));
                 }
-                $this->assertNotContains($this->persistJourneyIds['rp8'], array_column($packet['receipts'], 'id'),
-                    'Unattached sibling examination is excluded; r4 qualifies through its actual consumption by p13');
+                $this->assertSame(count($packet['receipts']), count(array_unique(array_column($packet['receipts'], 'id'))));
             }
         }
         $this->assertNotSame($origin, $state['last_commitment']['proposition_id']);

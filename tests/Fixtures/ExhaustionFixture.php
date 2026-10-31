@@ -27,7 +27,7 @@ trait ExhaustionFixture
 
     private Proposition $origin;
 
-    private function initializeExhaustionFixture(): void
+    private function initializeExhaustionFixture(bool $originOpensSettlement = false): void
     {
         $this->controlledClosureFixture(-1);
         $this->substrate = (new Substrate)->forceFill(['slug' => 'exhaustion', 'title' => 'Exhaustion', 'visibility' => 'public', 'configuration' => []]);
@@ -35,6 +35,13 @@ trait ExhaustionFixture
         $phase = $this->phase();
         $this->origin = $this->node($phase, null, 'committal');
         $this->snapshot($this->origin, .8, 'origin-bootstrap-v1');
+        if ($originOpensSettlement) {
+            // Keep the authored positive geometry while admitting fresh Variants
+            // in the Settlement Region used by these generation fixtures.
+            $snapshot = $this->origin->commitmentSnapshot;
+            $snapshot->forceFill(['direction_after' => $snapshot->direction_before->opposite()])->save();
+            app(ContextHorizonProjector::class)->apply($snapshot);
+        }
         $phase->forceFill(['completed_at' => now()])->save();
         $phase->cycle->forceFill(['completed_at' => now()])->save();
         $this->measure($this->origin, .8);

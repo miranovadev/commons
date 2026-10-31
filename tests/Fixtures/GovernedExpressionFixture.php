@@ -10,6 +10,7 @@ use App\Models\Substrate;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\PhaseProgressionService;
+use App\Services\PotentialProjectionService;
 
 /** Real constitutional entry and authorised first expressive birth; no Commit double. */
 final class GovernedExpressionFixture
@@ -41,10 +42,19 @@ final class GovernedExpressionFixture
             ['action' => 'proposition.variant', 'statement' => 'An independently authored first distinction.']);
     }
 
+    /** A later Phase is a distinct generative opportunity in the same Cycle. */
+    public function enterPersist(): void
+    {
+        $this->phase = app(PhaseProgressionService::class)->advance($this->phase, $this->expression);
+        app(PotentialProjectionService::class)->refresh($this->actor->substrate_id);
+    }
+
     /** Acquire shared evidence, then produce the real Persist Write. */
     public function writePersist(): void
     {
-        $this->phase = app(PhaseProgressionService::class)->advance($this->phase, $this->expression);
+        if ($this->phase->kind !== PhaseKind::Persist) {
+            $this->enterPersist();
+        }
         app(ContributionDispatcher::class)->dispatch($this->actor, $this->phase,
             ['action' => 'instrument.execute', 'proposition_id' => $this->phase->gate_proposition_id,
                 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/grounded-development']]);

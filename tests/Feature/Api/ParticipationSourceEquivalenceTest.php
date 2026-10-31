@@ -42,11 +42,11 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
                 $this->assertSame($actor, $metadata['participant_id']);
                 $this->assertSame(Participant::findOrFail($actor)->substrate_id, $metadata['substrate_id']);
                 $index = count($phases);
-                if (in_array($index, [1, 3], true)) {
+                if ($index === 1 || $index === 3) {
                     $receipt = Receipt::where('phase_id', $state['plan']['phase']['id'])->sole();
                     $this->assertSame('completed', $receipt->evidenceExecution->status);
                     $this->assertSame($actor, $receipt->evidenceExecution->cycle->participant_id);
-                    $this->assertSame('completed', $state['plan']['acquisition']['status']);
+                    $this->assertSame('awaiting_resolution', $state['plan']['acquisition']['status']);
                     $this->assertContains($receipt->id, array_column($state['plan']['receipts'], 'id'));
                 }
                 $this->assertSame(['distinguish', 'distinguish', 'persist', 'persist', 'constrain'][$index], $state['plan']['phase']['kind']);
@@ -73,7 +73,7 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
                     ['action' => 'proposition.variant', 'statement' => 'Testable opportunity 0'],
                     ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
                         'instrument' => ['kind' => 'citation', 'reference' => $initial['current_proposition_id']]],
-                    ['action' => 'proposition.variant', 'statement' => 'Testable opportunity 0'],
+                    ['action' => 'proposition.variant', 'statement' => 'Develop through an independent Persist attempt'],
                     ['action' => 'participant.rest'],
                 ][count($phases) - 1];
             });

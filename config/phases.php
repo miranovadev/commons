@@ -3,7 +3,7 @@
 return [
     1 => [
         'name' => 'distinguish',
-        'description' => 'Instrument once personally at this Committal before creating a new distinction. Existing lawful Traverse remains available.',
+        'description' => 'Explore existing Distinctions first. When a fresh Variant is lawful, Instrument and choose Variant or Defer.',
         'gate' => 'participant-position',
         'actions' => [
             'instrument.execute',
@@ -14,7 +14,7 @@ return [
     ],
     2 => [
         'name' => 'persist',
-        'description' => 'Examine this Gate once personally: Prepare a readable Artifact, or Instrument when none is readable. Resolve the acquisition before fresh generation.',
+        'description' => 'Explore existing persistence first. For a fresh Variant, Prepare a readable Artifact or Instrument when none is readable, then Variant or Defer.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'instrument.execute',
@@ -45,7 +45,7 @@ return [
     ],
     4 => [
         'name' => 'disperse',
-        'description' => 'Acquire once personally at this Gate: choose Instrument or an available Preparation. Then develop a lawful Variant or Revise with ordinary evidence; Traverse and Attestation remain independent.',
+        'description' => 'Explore existing structure first. For a fresh Variant choose Instrument or Preparation, then Variant or Defer. Revision remains independent.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'preparation.start',

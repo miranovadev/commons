@@ -43,7 +43,7 @@ class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
         $originCard = $this->visibleProposition($state, $origin);
         $signalCard = $this->visibleProposition($state, $signal);
         $this->assertSame(1, $originCard['attestation_summary']['positive']);
-        $this->assertSame(0, $signalCard['attestation_summary']['positive']);
+        $this->assertSame(0, $signalCard['attestation_summary']['positive']); // Fresh generation does not fabricate a judgment.
         $this->assertSame([$origin], $signalCard['parent_ids']);
         $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $origin, 'target_proposition_id' => $signal]);
         $localReceipt = DB::table('receipts')->where('receiptable_id', $signal)->sole()->id;

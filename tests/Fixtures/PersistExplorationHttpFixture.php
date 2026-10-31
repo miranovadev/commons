@@ -28,24 +28,34 @@ trait PersistExplorationHttpFixture
         $receipt = $state['plan']['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'][0];
         $slot = $this->contribute($actor, ['action' => 'proposition.reclassify', 'proposition_id' => $persist, 'receipt_id' => $receipt]);
         $constrain = $slot['current_proposition_id'];
-        $state = $this->prepareVariant($actor, 'Disperse opportunity B');
-        $b = $state['current_proposition_id'];
-        $this->contribute($actor, ['action' => 'participant.rest']);
-        $this->contribute($actor, ['action' => 'proposition.traverse', 'proposition_id' => $a]);
-        $this->assertActionUnavailable($this->readParticipation($actor), 'instrument.execute');
-        // The completed Preparation supplies shared evidence for both observers;
-        // its source Instrument Receipt remains consumed.
+        // Admit the author's Preparation before another Participant reaches the same empty position.
+        $source = $slot['plan']['preparation_options'][0];
+        $started = $this->contribute($actor, ['action' => 'preparation.start', 'proposition_id' => $constrain,
+            'purpose' => 'Examine this fresh continuation', 'artifacts' => [['receipt_id' => $source['receipt_id'],
+                'artifact_id' => $source['artifact_id'], 'read_type' => 'text', 'parameters' => ['max_chars' => 4000]]]]);
+        $execution = $started['plan']['preparation']['execution_id'];
+        $this->readAndAcknowledgePreparation($actor, $execution);
         $observer = $this->joinParticipant('disperse-observer');
         $this->enterParticipant($observer);
-        $this->discoverGate($observer);
         $this->judge($observer, $a);
-        $this->resolvePersonalReading($observer);
         $this->judge($observer, $persist);
         $this->judge($observer, $constrain);
-        $parked = $observerInstrument
-            ? $this->contribute($observer, ['action' => 'instrument.execute', 'proposition_id' => $constrain,
-                'instrument' => ['kind' => 'citation', 'reference' => $a]])
-            : $this->resolvePersonalReading($observer);
+        if ($observerInstrument) {
+            $observed = $this->contribute($observer, ['action' => 'instrument.execute', 'proposition_id' => $constrain,
+                'instrument' => ['kind' => 'citation', 'reference' => $a]]);
+            $this->contribute($observer, ['action' => 'acquisition.defer',
+                'execution_id' => $observed['plan']['acquisition']['execution_id'], 'reason' => 'Preserve observation without a new claim']);
+        } else {
+            $this->resolvePersonalReading($observer);
+        }
+        $state = $this->contribute($actor, ['action' => 'proposition.variant', 'execution_id' => $execution,
+            'statement' => 'Disperse opportunity B']);
+        $b = $state['current_proposition_id'];
+        $this->contribute($actor, ['action' => 'participant.rest']);
+        foreach ([$a, $persist, $constrain] as $visited) {
+            $parked = $this->contribute($observer, ['action' => 'proposition.traverse', 'proposition_id' => $visited]);
+        }
+        $this->contribute($actor, ['action' => 'proposition.traverse', 'proposition_id' => $a]);
         $witness = $this->joinParticipant('disperse-witness');
         $this->enterParticipant($witness);
         $this->judge($witness, $a);
@@ -74,11 +84,6 @@ trait PersistExplorationHttpFixture
 
         return $this->contribute($participant, ['action' => 'preparation.defer', 'execution_id' => $id,
             'reason' => 'Observation complete; continue through existing structure.']);
-    }
-
-    private function judge(string $participant, string $proposition): array
-    {
-        return $this->contribute($participant, ['action' => 'attestation.create', 'proposition_id' => $proposition, 'direction' => 'support']);
     }
 
     private function observePersist(string $participant, string $gate, string $reference): void

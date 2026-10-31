@@ -2,24 +2,26 @@
 
 namespace Tests\Feature;
 
-use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Models\Receipt;
 use App\Models\Supersession;
 use App\Services\CommitmentAdmissibilityService;
-use App\Services\ContributionDispatcher;
+use App\Services\CrossoverMarginService;
+use App\Services\EvidenceExecutionService;
 use App\Services\HomologousPositionService;
+use App\Services\LedgerService;
 use App\Services\Observables\CommittalLineageService;
 use App\Services\Observables\ProspectiveClosureService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\ParticipationService;
+use App\Services\PhaseProgressionService;
 use App\Services\PropositionSearchService;
 use App\Services\PropositionStateService;
 use App\Services\ReceiptContextService;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\HorizonCycleFixture;
+use Tests\Fixtures\PropositionBirth;
 use Tests\Support\RefreshEvidenceDatabase as RefreshDatabase;
 use Tests\TestCase;
 
@@ -29,14 +31,14 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
 {
     use HorizonCycleFixture, RefreshDatabase;
 
-    public function test_real_commit_descendant_resets_evidence_and_searches_selected_history_without_authority(): void
+    public function test_historical_descendant_of_a_real_closed_commit_retains_its_own_evidence_and_selected_search_history(): void
     {
         $gates = [];
-        $commit = $this->driveHorizonCycle(realClosure: true, actionBudget: 101, expressiveDirection: 'refute', mediateDirection: 'support',
+        $commit = $this->driveStaggeredCommit(
             recordAction: function ($participant, $state, $input, $result) use (&$gates): void {
                 $gates[$state['plan']['phase']['number']] = $state['plan']['gate_id'];
             });
-        $actor = Participant::sole();
+        $actor = $commit->phase->cycle->participant;
         $source = $commit->commitSources()->sole();
         $origin = Proposition::findOrFail($commit->phase->cycle->entry_committal_id);
         $closure = app(ProspectiveClosureService::class);
@@ -53,16 +55,30 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
             app(HomologousPositionService::class)->committedCoordinatesFor($commit, collect([$origin, $commit])));
         $service = app(ParticipationService::class);
         $before = $service->stateFor($actor);
-        $before = $service->contribute($actor, $before['plan']['phase']['id'],
-            ['action' => 'instrument.execute', 'proposition_id' => $commit->id,
-                'instrument' => ['kind' => 'proposition_search', 'limit' => 1]]);
-        $discovery = Receipt::whereHas('evidenceExecution', fn ($q) => $q->where('phase_id', $before['plan']['phase']['id']))->sole();
+        $entry = Phase::findOrFail($before['plan']['phase']['id']);
+        $this->assertTrue(app(CrossoverMarginService::class)->inspect($entry->cycle)['closed']);
+        $this->assertSame(['participant.rest'], array_keys($before['plan']['schema']['$defs']['actions']));
+
+        // Read-model input from the former admission contract. Today neither
+        // this search nor this Variant can be submitted at this closed entry.
+        $input = ['kind' => 'proposition_search', 'limit' => 10];
+        $collection = app(PropositionSearchService::class)->search($entry, $commit, $input);
+        $executions = app(EvidenceExecutionService::class);
+        $record = $executions->start($entry, $commit, 'proposition_search', 'nearest-history', $input);
+        $discovery = $executions->complete($record, $commit, propositionCollection: $collection);
         $this->assertSame($commit->id, $discovery->evidenceExecution->proposition_id);
         $receiptsAfterDiscovery = [...$receipts, $discovery->id];
-        $next = $service->contribute($actor, $before['plan']['phase']['id'],
-            ['action' => 'proposition.variant', 'statement' => 'A fresh post-Commit question.']);
-        $head = $actor->fresh()->position;
-        $phase = Phase::findOrFail($next['plan']['phase']['id']);
+        $head = (new Proposition)->forceFill(['phase_id' => $entry->id, 'register' => $entry->write_register,
+            'tier' => 'expressive', 'statement' => 'A historical post-Commit question.']);
+        $head->save();
+        app(LedgerService::class)->record($head, $commit);
+        $edge = (new Supersession)->forceFill(['phase_id' => $entry->id, 'source_proposition_id' => $commit->id,
+            'target_proposition_id' => $head->id, 'type' => 'variant']);
+        $edge->save();
+        app(LedgerService::class)->record($edge);
+        PropositionBirth::complete($head);
+        $phase = app(PhaseProgressionService::class)->advance($entry, $head);
+        $this->publishPotentialFixture($actor);
         $this->assertSame('expressive', $head->tier);
         $this->assertSame([$commit->id], $head->parents()->pluck('propositions.id')->all());
         $this->assertSame($commit->id, $head->phase->cycle->entry_committal_id);
@@ -97,22 +113,22 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
         $this->assertNotContains($otherOperand, $expected, 'Reconcile does not import the other branch into selected history.');
         $this->assertNotContains($origin->id, array_column($search->results, 'proposition_id'));
         $this->assertSame('settlement', $search->domain);
-        // Persist observes its current Gate. The ordinary Receipt supplies evidence,
-        // while its result collection grants no structural authority.
+        // The real search was recorded against the Committal before this
+        // descendant existed. Moving its results into personal memory grants no
+        // evidence ownership to the descendant and requires its own Phase's attempt.
         $edges = Supersession::count();
-        app(ContributionDispatcher::class)->dispatch($actor, $phase,
-            ['action' => 'instrument.execute', 'proposition_id' => $head->id,
-                'instrument' => ['kind' => 'proposition_search', 'limit' => 10]]);
-        $memory = Receipt::where('type', 'proposition_search')->whereHas('evidenceExecution', fn ($q) => $q->where('phase_id', $phase->id))->sole();
-        $this->assertSame($expected, array_column($memory->metadata['proposition_collection']['results'], 'proposition_id'));
-        $this->assertSame([2, 3, 4, 5, 6, 7], array_column($memory->metadata['proposition_collection']['results'], 'lineage_distance'));
-        $this->assertSame($head->id, $memory->evidenceExecution->proposition_id);
-        $this->assertSame(1, $head->evidenceExecutions()->count());
+        $memory = $discovery;
+        // At initial entry the two loaded subjects are already cognitively visible.
+        $this->assertSame([$gates[7], $gates[6], $gates[5], $gates[3]],
+            array_column($memory->metadata['proposition_collection']['results'], 'proposition_id'));
+        $this->assertSame([1, 2, 3, 5], array_column($memory->metadata['proposition_collection']['results'], 'lineage_distance'));
+        $this->assertSame($commit->id, $memory->evidenceExecution->proposition_id);
+        $this->assertSame(0, $head->evidenceExecutions()->count());
         $this->assertSame($memory->metadata['observation_identity'], $memory->signature);
-        $this->assertTrue(app(CommitmentAdmissibilityService::class)->grounding($head)['requirements']['receipt']);
-        $this->assertSame(1, app(ReinforcementService::class)->count($head));
+        $this->assertFalse(app(CommitmentAdmissibilityService::class)->grounding($head)['requirements']['receipt']);
+        $this->assertSame(0, app(ReinforcementService::class)->count($head));
         $this->publishPotentialFixture($actor);
-        $this->assertArrayHasKey('proposition.variant', $service->stateFor($actor)['plan']['schema']['$defs']['actions']);
+        $this->assertArrayNotHasKey('proposition.variant', $service->stateFor($actor)['plan']['schema']['$defs']['actions']);
         $load = app(ReceiptContextService::class)->read($actor, $phase, $memory->id);
         $this->assertSame($memory->signature, $load->evidence_signature);
         $this->assertSame($edges, Supersession::count());

@@ -8,7 +8,7 @@ An immutable Exploration Event records one Participant's completed Rest encounte
 
 Current status is derived. Follow the complete authorized forward frontier within the acting Cycle's Region and Horizon; stop at Committal boundaries. Hard-superseded inputs are history, not independent heads. Local Reconcile results retain their existing Attestation routes through either local operand. Foreign Reconcile operands, homologous comparison members and foreign selected sources do not grant movement. An ancestor is explored only when every reachable active head has an applicable personal encounter and no newly lawful forward-generating operation. A new Cycle or field version is not an exploration reset. A retired input with no active authorized head does not require an invented encounter and does not independently block Variant.
 
-Base action lawfulness precedes personal selection. Ordinary Attestation reversals and Revise remain lawful reconsideration. Neither availability nor execution alone renews exploration or prevents Variant. Revision replaces the same position: applicable personal encounters follow that exact revision ancestry without mutating the events, and the resulting head is checked for forward-generating admissibility. Existing traversal opportunities use personal exploration; concrete Revise, Reconcile, Reclassify and Commit opportunities retain their existing structural, measurement, evidence and lifecycle authority. Fresh Variant is excluded from its own prerequisite frontier and is considered only after existing relevant heads are explored.
+Base action lawfulness precedes personal selection. Ordinary Attestation reversals and Revise require a personally unexplored Write. Neither availability nor execution alone renews exploration or prevents Variant. Revision replaces the same position: applicable personal encounters follow that exact revision ancestry without mutating the events, and the resulting head is checked for forward-generating admissibility. Existing traversal opportunities use personal exploration; concrete Revise, Reconcile, Reclassify and Commit opportunities retain their existing structural, measurement, evidence and lifecycle authority. Fresh Variant is excluded from its own prerequisite frontier and is considered only after existing relevant heads are explored.
 
 Rest publication is atomic with its existing completion transaction and unique by Rest Phase. Stale, rolled-back, incomplete, untested, evidence-starved or Preparation-only encounters do not establish exploration. An event remains immutable after a later continuation releases its current restriction. Personal state notifications refresh the actor; existing structural and evidentiary notifications still refresh their ordinary consumers.
 
@@ -42,9 +42,15 @@ See [validation and acceptance coverage](participant-relative-exploration-valida
 | --- | --- | --- |
 | Forward generation | Variant, Reconcile, Reclassify, Commit | New authorized active structure or newly lawful generation can reopen the relevant frontier |
 | Forward movement | Traverse | Accesses existing unexplored structure; availability alone never reopens a head |
-| Reconsideration | Attestation, Revise | Remains independently lawful; only resulting changes to generating eligibility can reopen exploration |
+| Reconsideration | Attestation, Revise | Available on unexplored Writes. Personally explored Writes stay visible with their explored badge and have no reconsideration actions. |
 
-`ContinuationOpportunityService::nonVariantGenerationAvailable` evaluates base Reconcile, Reclassify and Commit lawfulness. Fresh Variant is deliberately excluded: it must never supply its own prerequisite for reopening or authorizing another Variant. Existing reachable Variants remain structural continuations in active-head discovery. Evidence acquisition retains its separate completion safeguards.
+`ContinuationOpportunityService::nonVariantGenerationAvailable` evaluates base Reconcile, Reclassify and Commit lawfulness. Fresh Variant is deliberately excluded: it must never supply its own prerequisite for reopening or authorizing another Variant. Existing reachable Variants remain structural continuations in active-head discovery. Acquisition is required only for an admitted fresh Variant attempt; exploring an existing route no longer requires historical Gate acquisition. First effective personal judgment, active-route authority and forward-generation reopening remain required.
+
+A closed [Crossover Margin](rest-crossover-experiment.md) removes the fresh
+Variant opportunity for every Participant in the governing Region. Existing
+Writes still use each Participant's own frontier, effective judgments and
+eligible reconsiderations. Closing the margin cannot publish or invalidate a
+personal Exploration Event.
 
 `ParticipantExplorationService::canGenerateFromHead` uses that non-recursive predicate for each historical active head. Traverse destinations still use ordinary authority and personal exploration filtering, including the existing Commit traversal rules. Traversal through an ancestor remains available when an authorized head beyond it is unexplored. Base Traverse back toward an explored destination does not undo that destination's personal history. Region, Horizon and recorded arrival restrictions remain unchanged.
 

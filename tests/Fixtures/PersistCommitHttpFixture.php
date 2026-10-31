@@ -48,9 +48,13 @@ trait PersistCommitHttpFixture
     private function persistCommitWithObserver(string $authorName, string $observerName): array
     {
         [$actor, $initial] = $this->beginPersistJourney($authorName);
-        $observer = $this->joinParticipant($observerName);
-        $this->enterParticipant($observer);
         foreach (array_keys($this->persistJourneySteps) as $index) {
+            // Enter before the actual Commit, retaining the Origin route without
+            // changing the earlier measured participation population.
+            if ($this->persistJourneySteps[$index]['input']['action'] === 'proposition.commit') {
+                $observer = $this->joinParticipant($observerName);
+                $this->enterParticipant($observer);
+            }
             $committed = $this->executePersistJourneyStep($actor, $index);
         }
 
@@ -60,7 +64,7 @@ trait PersistCommitHttpFixture
     private function revisitPersistCommit(string $observer): array
     {
         // The fixed final Cycle supplies the selected path, not all Reconcile parents.
-        foreach (['p1', 'p5', 'p6', 'p7', 'p15'] as $reference) {
+        foreach (['leftDistinction', 'leftPersist', 'leftCanon', 'leftSignal', 'rightSynthesis'] as $reference) {
             $target = $this->persistJourneyIds[$reference];
             $state = $this->contribute($observer, ['action' => 'attestation.create',
                 'proposition_id' => $target, 'direction' => 'refute']);
@@ -72,6 +76,15 @@ trait PersistCommitHttpFixture
     private function executePersistJourneyStep(string $actor, int $index): array
     {
         $step = $this->persistJourneySteps[$index];
+        if (isset($step['entrant'])) {
+            $entrant = $this->joinParticipant($step['entrant']);
+            $this->enterParticipant($entrant);
+            if (isset($step['entrant_judgment'])) {
+                $this->contribute($entrant, ['action' => 'attestation.create',
+                    'proposition_id' => $this->persistJourneyIds[$step['entrant_judgment']['proposition_id']['ref']],
+                    'direction' => $step['entrant_judgment']['direction']]);
+            }
+        }
         $before = $this->readParticipation($actor);
         $this->assertSame($step['phase'], $before['plan']['phase']['number'], 'Fixed Phase at step '.$index);
         $this->assertSame($step['cycle'], $before['cycle']['sequence'], 'Fixed Cycle at step '.$index);
@@ -82,7 +95,13 @@ trait PersistCommitHttpFixture
             $this->persistJourneyIds[$step['result']] = $after['current_proposition_id'];
         }
         $this->assertSame($this->persistJourneyIds[$step['result']], $after['current_proposition_id']);
-        if (isset($step['receipt'])) {
+        if (isset($step['deferred_receipt'])) {
+            $receipt = Receipt::whereHas('evidenceExecution', fn ($q) => $q->where('phase_id', $before['plan']['phase']['id']))->sole();
+            $this->assertSame($before['plan']['gate_id'], $receipt->evidenceExecution->proposition_id);
+            $this->assertNotNull($receipt->evidenceExecution->cycle->deferred_at);
+            $this->assertNull($receipt->evidenceExecution->cycle->rested_at);
+            $this->persistJourneyIds[$step['deferred_receipt']] = $receipt->id;
+        } elseif (isset($step['receipt'])) {
             $instrument = $step['input']['action'] === 'instrument.execute';
             $this->assertContains($step['phase'], $instrument ? [1, 2, 4] : [2, 4]);
             if ($instrument || $step['input']['action'] === 'preparation.defer') {

@@ -2,22 +2,13 @@
 
 > See [Stage 3C readers and adaptive Preparation](artifact-readers-stage-3c.md) for PDF text, CSV/HTML tables, HTML lists and shared reading budgets. Instrument acquisition and allowances remain unchanged.
 
-## Personal acquisition at an exact Gate
+## Acquisition for a fresh Variant
 
-[Personal Gate Acquisition](personal-gate-acquisition.md) defines durable completion
-per Participant, exact Gate and Phase-specific role. Distinguish requires Instrument;
-Persist requires Preparation when readable Artifacts are accessible and Instrument
-otherwise; Disperse offers either lawful mechanism. Completing either Disperse choice
-closes that role. A new Cycle, Receipt consumption or exploration reopening never
-renews a completed role. Shared evidence does not complete another Participant's role.
+[Generative acquisition](generative-acquisition.md) requires a current admitted attempt only when fresh Variant generation is lawful. Existing personally unexplored structure comes first: Attestation and Traverse do not require acquisition. Distinguish offers Instrument; Persist offers readable Preparation or Instrument fallback; Disperse permits either lawful mechanism.
 
-Instrumentation leaves Phase, Cycle and position unchanged. Readable results load
-under the existing personal memory rules; Load File preserves an Artifact without
-loading source bytes. Completed unsuccessful observations count without fabricating
-verified evidence. Invalid invocations and failures without a recorded observation
-do not count. Preparation contributed, deferred and genuine recorded failure outcomes
-count; abandoned reservations do not. Generation still checks its independent
-structural and ordinary Receipt prerequisites. Acquisition never consumes a Receipt.
+Instrumentation preserves an observation and leaves the Phase unchanged. The next decision is Variant or Defer. Preparation resolves its delivered reading atomically through Variant or Defer. Either decision consumes the attempt, never the Receipt. Defer completes the Cycle without a Proposition or Exploration Event. A later Cycle may acquire again at the same Gate; history cannot satisfy the new attempt.
+
+Readable results follow existing personal loading rules. Load File preserves an Artifact without loading its bytes. Genuine unsuccessful observations remain explicitly unverified; abandoned reservations create no Receipt and can only Defer. Ordinary evidence prerequisites still apply to Variant. Revision remains independent. Artifacts referenced by causally visible Receipts are readable through supported Preparation capabilities, including consumed Receipts and qualifying Reconciliation ancestry.
 
 ## Hyperlink Artifact preservation (Stage 1)
 
@@ -77,7 +68,7 @@ The forms are mutually exclusive. The schema enumerates replay IDs for each exac
 eligible Instrument target. Catalogue visibility or replay capability alone grants
 no execution authority. The server restores the immutable originating invocation;
 the Participant does not restate its URL or query. Replay follows ordinary Instrument
-Gate acquisition eligibility and the once-per-Cycle allowance, without Phase progression.
+Gate acquisition eligibility and the one-attempt-per-Phase invariant, without Phase progression.
 
 Loading is separate: optional Gate `receipt_options.load/unload` accompanies a
 successful forward contribution atomically. There is no standalone Receipt Read

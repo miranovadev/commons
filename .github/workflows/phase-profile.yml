@@ -80,6 +80,9 @@ jobs:
       - name: Final review contracts
         if: always() && matrix.validation == 'final-review'
         run: php artisan test tests/Feature/ChiralityPopulationHistoryTest.php tests/Feature/HomologousBiasTest.php tests/Feature/ObservableServiceTest.php --display-warnings
+      - name: Solo Commit design boundary
+        if: always() && matrix.validation == 'final-review'
+        run: vendor/bin/phpunit tests/Diagnostics/SoloCommitFrontierTest.php tests/Diagnostics/SoloFailedPreparationFrontierTest.php
       - name: Genuine Commit source lifecycle
         if: always() && matrix.validation == 'lifecycle'
         run: php artisan test tests/Feature/CommitSourceHistoryLifecycleTest.php --display-warnings

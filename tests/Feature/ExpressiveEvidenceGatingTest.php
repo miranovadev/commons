@@ -20,6 +20,7 @@ use App\Services\PotentialChargeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\Fixtures\ExhaustionFixture;
 use Tests\TestCase;
 
@@ -32,7 +33,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeExhaustionFixture();
+        $this->initializeExhaustionFixture(originOpensSettlement: true);
         // Isolate unchanged evidence and Potential prerequisites. Actual personal
         // event publication/frontier selection is covered in ParticipantExplorationTest.
         $mock = \Mockery::mock(new ParticipantExplorationService);
@@ -133,8 +134,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $actions = $this->actions($next);
         $this->assertSame([$write->id], $actions['proposition.traverse']['properties']['proposition_id']['enum']);
         $this->assertArrayNotHasKey('proposition.variant', $actions);
-        $this->assertSame([$next->gate_proposition_id],
-            $actions['instrument.execute']['properties']['proposition_id']['enum'] ?? []);
+        $this->assertArrayNotHasKey('instrument.execute', $actions, 'Existing exploration needs no acquisition');
     }
 
     #[DataProvider('expressivePhases')]
@@ -159,12 +159,17 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $this->measure($first, 0);
         $this->assertFalse($generation->available($phase, 'proposition.variant'), 'A healthy evidenced route remains viable');
         $this->recordExplored($first, $phase);
+        $this->assertTrue($generation->available($phase, 'proposition.variant', prepared: true));
+        $this->assertFalse($generation->available($phase, 'proposition.variant'));
+        $this->instrumentGateFixture($phase);
         $this->assertTrue(app(PotentialChargeService::class)->hasRemainingInRegion($phase));
         $this->assertTrue($generation->available($phase, 'proposition.variant'));
         $this->assertTrue($generation->available($phase, 'proposition.variant', new ParticipationContext($phase)));
         $this->assertArrayHasKey('proposition.variant', $this->actions($phase));
         // Only the measured field changes: causal structure, evidence and personal exploration stay identical.
-        $this->measure($first, 1);
+        foreach (Proposition::where('tier', 'expressive')->get() as $node) {
+            $this->measure($node, 1);
+        }
         $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($phase));
         $this->assertTrue($generation->available($phase, 'proposition.variant'));
         $this->assertTrue($generation->available($phase, 'proposition.variant', new ParticipationContext($phase)));
@@ -185,7 +190,8 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $this->assertFalse($generation->available($phase, 'proposition.variant'), 'New and reopened routes must be tested');
         $this->recordExplored($first, $phase);
         $this->recordExplored($second, $phase);
-        $this->assertTrue($generation->available($phase, 'proposition.variant'), 'The rule repeats after all current routes fail');
+        $this->assertTrue($generation->available($phase, 'proposition.variant', prepared: true), 'The prospective opportunity reopens after all routes are explored');
+        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'The resolved attempt cannot authorize another Variant in this Cycle');
         $this->assertNull($receipt->fresh()->consumption, 'Variant eligibility never consumes evidence');
     }
 
@@ -234,6 +240,8 @@ class ExpressiveEvidenceGatingTest extends TestCase
         app(LedgerService::class)->record($vote);
         $this->publishPotentialFixture($this->substrate);
         $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($phase));
+        $this->assertTrue($generation->available($phase, 'proposition.variant', prepared: true));
+        $this->instrumentGateFixture($phase);
         $this->assertTrue($generation->available($phase, 'proposition.variant'));
 
         // Another Participant has no completed encounter, despite identical evidence.
@@ -241,7 +249,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $this->instrumentGateFixture($phase);
         $this->assertFalse($generation->available($phase, 'proposition.variant'));
         $this->assertArrayNotHasKey('proposition.variant', $this->actions($phase));
-        $this->expectException(\DomainException::class);
+        $this->expectException(ConflictHttpException::class);
         app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'A stale plan must not bypass exploredness']);
     }

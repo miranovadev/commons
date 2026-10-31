@@ -15,7 +15,7 @@ class FullEvidenceFlowTest extends TestCase
 
     public function test_three_participants_share_receipts_and_commit_without_redundant_healthy_lineages(): void
     {
-        $this->driveHorizonCycle(3, expressiveDirection: 'refute');
+        $this->driveStaggeredCommit(realClosure: false, readerEvidence: true);
         $shared = DB::table('receipt_consumptions as attachment')
             ->join('phases as consuming', 'consuming.id', '=', 'attachment.phase_id')
             ->join('cycles as consumer', 'consumer.id', '=', 'consuming.cycle_id')

@@ -160,7 +160,7 @@ final readonly class EvidenceExecutionService
         }
         $execution = new EvidenceExecution;
         $execution->forceFill(['type' => 'prepare', 'phase_id' => $phase->id,
-            'proposition_id' => $phase->gate_proposition_id, 'status' => 'pending',
+            'proposition_id' => $phase->gate_proposition_id, 'status' => 'pending', 'attempt_admitted_at' => now(),
             'input' => $input->payload(), 'started_at' => now()])->save();
 
         return $execution;

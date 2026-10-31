@@ -72,7 +72,7 @@ class ReceiptGovernedGenerationTest extends TestCase
     {
         $consumer = (new Participant)->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'consumer-'.str()->ulid()]);
         $consumer->save();
-        $source = $f->node($f->gate, 'frontier', position: PhaseKind::Persist, participant: $consumer);
+        $source = $f->node($f->seed, 'frontier', position: PhaseKind::Persist, participant: $consumer);
         $target = $f->node($source, 'canon', 'reclassify', position: PhaseKind::Constrain, participant: $consumer);
         $this->assertNotSame($f->viewer->id, $target->phase->cycle->participant_id);
         DB::transaction(fn () => app(HorizonReceiptService::class)->consume($target->phase, $source, $target, $receipt->id));
@@ -96,7 +96,7 @@ class ReceiptGovernedGenerationTest extends TestCase
         }
         $policy = app(PhaseGenerationService::class);
         $this->assertSame($available && $used, $policy->epistemicActionAvailable($f->phase, 'proposition.variant'));
-        $this->assertSame($available && $used, $policy->epistemicActionAvailable($f->phase, 'proposition.revise'));
+        $this->assertSame($available, $policy->epistemicActionAvailable($f->phase, 'proposition.revise'));
         $this->assertSame(! $used, app(PropositionOptionService::class)->instrumentOptionsFor($f->phase)->isNotEmpty());
         $this->assertSame($available, app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->isNotEmpty());
         app(PotentialProjectionService::class)->refresh($f->substrate->id);
@@ -175,14 +175,10 @@ class ReceiptGovernedGenerationTest extends TestCase
         $input = ['kind' => 'citation', 'reference' => $f->seed->id];
         $service = app(OperationalInstrumentService::class);
         $observed = $service->observeFor($f->phase, $f->gate, $input);
-        $this->observe($f, $this->observer($f));
+        $this->observe($f, $this->observer($f), 'proposition_search');
         $count = Receipt::count();
-        try {
-            $service->execute($f->phase, $f->gate, $input, observed: $observed);
-            $this->fail('Prepared Instrument ignored a newly shared Receipt.');
-        } catch (ConflictHttpException) {
-            $this->assertSame($count, Receipt::count());
-        }
+        $service->execute($f->phase, $f->gate, $input, observed: $observed);
+        $this->assertSame($count + 1, Receipt::count(), 'Independent shared evidence must not invalidate an admitted attempt.');
         $this->expectException(ConflictHttpException::class);
         $service->observeFor($f->phase, $f->gate, $input);
     }
@@ -196,12 +192,11 @@ class ReceiptGovernedGenerationTest extends TestCase
         app(LedgerService::class)->record($vote);
         $this->assertEmpty(app(PropositionOptionService::class)->revisionOptionsFor($f->phase, $f->viewer));
         $observer = $this->observer($f);
-        app(OperationalInstrumentService::class)->execute($observer, $f->gate, ['kind' => 'proposition_search']);
+        $this->observationFixture($observer, $f->gate, ['kind' => 'citation', 'reference' => $f->seed->id]);
         $this->assertFalse(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant'));
-        $this->assertEmpty(app(PropositionOptionService::class)->revisionOptionsFor($f->phase, $f->viewer));
+        $this->assertSame([$head->id], app(PropositionOptionService::class)->revisionOptionsFor($f->phase, $f->viewer)->modelKeys());
         $other = $this->observer($f);
         $this->assertEmpty(app(PropositionOptionService::class)->revisionOptionsFor($other, $other->cycle->participant));
-        $this->observe($f, $f->phase);
         $this->assertSame([$head->id], app(PropositionOptionService::class)->revisionOptionsFor($f->phase, $f->viewer)->modelKeys());
         $count = Receipt::count();
         $revised = app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase,
@@ -264,7 +259,8 @@ class ReceiptGovernedGenerationTest extends TestCase
         foreach (PhaseKind::cases() as $kind) {
             $f->phase->kind = $kind;
             foreach (['proposition.variant', 'proposition.revise'] as $action) {
-                $this->assertSame(! in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Disperse], true), app(PhaseGenerationService::class)->epistemicActionAvailable($f->phase, $action));
+                $requiresEvidence = $action === 'proposition.variant' ? [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Disperse] : [PhaseKind::Persist, PhaseKind::Disperse];
+                $this->assertSame(! in_array($kind, $requiresEvidence, true), app(PhaseGenerationService::class)->epistemicActionAvailable($f->phase, $action));
             }
             foreach (['attestation.create', 'proposition.traverse', 'proposition.reclassify', 'participant.rest'] as $action) {
                 $this->assertTrue(app(PhaseGenerationService::class)->epistemicActionAvailable($f->phase, $action));
@@ -273,14 +269,14 @@ class ReceiptGovernedGenerationTest extends TestCase
         }
     }
 
-    public function test_spent_allowance_and_consumed_evidence_preserve_independent_attestation_and_traverse(): void
+    public function test_consumed_shared_evidence_preserves_independent_attestation_and_traverse(): void
     {
         $f = $this->fixture();
         $head = $f->node($f->gate, 'frontier', position: PhaseKind::Persist);
         $vote = (new Attestation)->forceFill(['phase_id' => $head->phase_id, 'proposition_id' => $head->id, 'direction' => 'refute']);
         $vote->save();
         app(LedgerService::class)->record($vote);
-        $receipt = $this->observe($f, $f->phase);
+        $receipt = $this->observationFixture($f->phase, $f->gate, ['kind' => 'citation', 'reference' => $f->seed->id]);
         // An existing Write's own historical evidence remains eligible for
         // judgment after consumption; generic structural parents do not inherit it.
         $this->receiptFixture($head);
