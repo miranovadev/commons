@@ -147,7 +147,7 @@ class OperationalCommitmentTest extends TestCase
         $this->assertFalse($state['plan']['commitment']['admissible']);
         $this->assertSame('failed', $this->workspaceCard($committer, $gate)['instruments'][0]['status']);
         $this->assertSame('Instrument unavailable.', $this->workspaceCard($committer, $gate)['instruments'][0]['failure_reason']);
-        $this->assertFalse($state['plan']['commitment']['requirements']['receipt']);
+        $this->assertTrue($state['plan']['commitment']['requirements']['receipt']);
     }
 
     public function test_invalid_and_unsupported_instruments_leave_no_partial_write(): void

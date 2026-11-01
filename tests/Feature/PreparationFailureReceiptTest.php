@@ -65,7 +65,7 @@ class PreparationFailureReceiptTest extends TestCase
         $this->assertNull($execution->completed_at);
         $this->assertNotNull($execution->failed_at);
         $this->assertNull($execution->presentation);
-        $this->assertSame('preparation', $receipt->type);
+        $this->assertSame('failure', $receipt->type);
         $this->assertTrue($receipt->isEvidence());
         $this->assertNull($receipt->signature);
         $this->assertNull($receipt->consumption);
@@ -134,6 +134,12 @@ class PreparationFailureReceiptTest extends TestCase
         $this->assertFalse(app(HorizonReceiptService::class)->ordinaryAvailable($other->context->phase)->contains('id', $receipt->id));
         $classification = $fixture->consume($receipt);
         $this->assertSame($classification->id, $receipt->fresh()->consumption->proposition_id);
+        $catalogue = app(ParticipantReceiptProjection::class)->normalize($registers, [
+            'participant' => ['id' => $f->viewer->id], 'plan' => ['phase' => ['id' => $f->phase->id, 'kind' => 'disperse'], 'gate_id' => $f->gate->id],
+        ]);
+        $seen = collect($catalogue)->firstWhere('id', $receipt->id);
+        $this->assertSame($classification->id, $seen['consumed_by_proposition_id']);
+        $this->assertSame('failed', $seen['summary']['outcome']);
         $this->assertSame('failed', $execution->fresh()->status);
         $this->assertFalse(app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->contains('id', $receipt->id));
     }
@@ -167,7 +173,7 @@ class PreparationFailureReceiptTest extends TestCase
         $f = $fixture->context;
         $execution = $service->start($f->viewer, $f->phase, $fixture->input());
         Receipt::creating(function (Receipt $receipt): void {
-            if ($receipt->type === 'preparation') {
+            if ($receipt->type === 'failure') {
                 throw new RuntimeException('Injected failure Receipt persistence error.');
             }
         });

@@ -8,6 +8,7 @@ use App\Domain\Evidence\PropositionCollection;
 use App\Domain\Evidence\SearchObservation;
 use App\Enums\PhaseKind;
 use App\Exceptions\ArtifactStorageException;
+use App\Exceptions\InvalidCitationSubject;
 use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
 use App\Models\EvidenceExecution;
@@ -44,7 +45,30 @@ final readonly class OperationalInstrumentService
             throw new DomainException('The observed Instrument must match the contribution invocation.');
         }
 
-        return DB::transaction(function () use ($phase, $proposition, $input, $replayedFrom, $bootstrap, $observed): Receipt {
+        try {
+            return $this->persist($phase, $proposition, $replayedFrom, $bootstrap, $observed);
+        } catch (\Throwable $exception) {
+            $this->resultFailed($phase, $observed);
+            throw $exception;
+        }
+    }
+
+    public function resultFailed(Phase $phase, InstrumentObservation $observed): void
+    {
+        if ($observed->reservationId === null) {
+            return;
+        }
+        $execution = EvidenceExecution::where('phase_id', $phase->id)->where('proposition_id', $phase->gate_proposition_id)
+            ->where('status', 'pending')->find($observed->reservationId);
+        if ($execution !== null && $this->normalize($execution->input) === $observed->input) {
+            $this->executions->fail($execution,
+                'The observed Instrument result could not be recorded.', ['stage' => 'result', 'classification' => 'result_not_recorded']);
+        }
+    }
+
+    private function persist(Phase $phase, Proposition $proposition, ?Receipt $replayedFrom, bool $bootstrap, InstrumentObservation $observed): Receipt
+    {
+        return DB::transaction(function () use ($phase, $proposition, $replayedFrom, $bootstrap, $observed): Receipt {
             $input = $observed->input;
             $kind = $input['kind'];
             $reference = $this->reference($input);
@@ -100,6 +124,12 @@ final readonly class OperationalInstrumentService
                 throw new ConflictHttpException('The admitted acquisition Gate is no longer safe.');
             }
 
+            $error = $observed->metadata['verification_error'] ?? $observed->metadata['observation_error'] ?? $observed->download?->metadata['observation_error'] ?? null;
+            if ($error !== null) {
+                return $this->executions->fail($execution, $error, ['stage' => 'observation',
+                    'classification' => $observed->metadata['validation'] ?? $observed->download->metadata['validation']], variantObservation: true);
+            }
+
             return $this->executions->complete(
                 $execution, $proposition, metadata: [...$metadata, ...$observed->metadata],
                 verification: $observed->verification, observation: $observed->search,
@@ -121,9 +151,29 @@ final readonly class OperationalInstrumentService
         }
         app(RelevantInstrumentService::class)->assertAvailable($proposition, $input);
         $normalized = $this->normalize($input);
-        if (! $bootstrap) {
-            $this->reserve($phase, $proposition, $normalized, $replayedFrom);
+        $reservation = $bootstrap ? null : $this->reserve($phase, $proposition, $normalized, $replayedFrom);
+        try {
+            if ($normalized['kind'] === 'citation') {
+                $this->citation($normalized['reference'], $phase->cycle->participant->substrate_id);
+            }
+
+            return $this->observeAtGate($phase, $proposition, $normalized, $reservation?->id);
+        } catch (\Throwable $exception) {
+            if ($reservation !== null) {
+                [$stage, $classification, $reason] = match (true) {
+                    $exception instanceof InvalidCitationSubject => ['validation', 'invalid_subject', $exception->getMessage()],
+                    $exception instanceof ArtifactStorageException => ['storage', 'storage_failure', 'The acquired resource could not be preserved.'],
+                    $exception instanceof ConflictHttpException => ['observation', 'changed_context', 'The observation context changed during acquisition.'],
+                    default => ['observation', 'adapter_failure', 'The Instrument adapter could not complete the observation.'],
+                };
+                $this->executions->fail($reservation, $reason, compact('stage', 'classification'));
+            }
+            throw $exception;
         }
+    }
+
+    private function observeAtGate(Phase $phase, Proposition $proposition, array $normalized, ?string $reservationId): InstrumentObservation
+    {
         if ($normalized['kind'] === 'proposition_search') {
             $substrateId = $phase->cycle->participant->substrate_id;
             $before = $this->ledgerSequence($substrateId);
@@ -134,15 +184,15 @@ final readonly class OperationalInstrumentService
             }
             app(RelevantInstrumentService::class)->assertAvailable($proposition, $normalized, $collection);
 
-            return new InstrumentObservation($normalized, ['observed_ledger_sequence' => $after], propositions: $collection);
+            return new InstrumentObservation($normalized, ['observed_ledger_sequence' => $after], propositions: $collection, reservationId: $reservationId);
         }
 
-        return $this->observe($normalized);
+        return $this->observe($normalized, $reservationId);
     }
 
-    private function reserve(Phase $phase, Proposition $proposition, array $normalized, ?Receipt $replayedFrom): void
+    private function reserve(Phase $phase, Proposition $proposition, array $normalized, ?Receipt $replayedFrom): EvidenceExecution
     {
-        DB::transaction(function () use ($phase, $proposition, $normalized, $replayedFrom): void {
+        return DB::transaction(function () use ($phase, $proposition, $normalized, $replayedFrom): EvidenceExecution {
             Substrate::lockForUpdate()->findOrFail($phase->cycle->participant->substrate_id);
             $phase = $phase->fresh(['cycle.participant']);
             if (app(PhaseService::class)->currentFor($phase->cycle->participant)->id !== $phase->id) {
@@ -155,11 +205,13 @@ final readonly class OperationalInstrumentService
             $execution->forceFill(['phase_id' => $phase->id, 'proposition_id' => $proposition->id,
                 'kind' => $normalized['kind'], 'reference' => $this->reference($normalized),
                 'replayed_from_receipt_id' => $replayedFrom?->id, 'input' => $normalized, 'started_at' => now(), 'attempt_admitted_at' => now()])->save();
+
+            return $execution;
         });
     }
 
     /** External I/O only: callers composing transactions must prepare this first. */
-    public function observe(array $input): InstrumentObservation
+    public function observe(array $input, ?string $reservationId = null): InstrumentObservation
     {
         $input = $this->normalize($input);
         $kind = $input['kind'];
@@ -168,7 +220,7 @@ final readonly class OperationalInstrumentService
         }
         $reference = $this->reference($input);
         if ($kind === 'load_file') {
-            return new InstrumentObservation($input, download: app(DownloadAcquisition::class)->acquire($reference));
+            return new InstrumentObservation($input, download: app(DownloadAcquisition::class)->acquire($reference), reservationId: $reservationId);
         }
         $metadata = [];
         $observation = null;
@@ -185,8 +237,7 @@ final readonly class OperationalInstrumentService
             try {
                 $verification = $this->verifier->verify($reference);
             } catch (ArtifactStorageException $exception) {
-                // Infrastructure failure is not a failed observation of the resource.
-                // Admission is retained without a Receipt; expiry permits explicit Defer. No write lock is held.
+                // The reservation owner records a storage failure outside the I/O path.
                 throw $exception;
             } catch (\Throwable $exception) {
                 // A failed verification is still an observable Instrument attempt.
@@ -196,7 +247,7 @@ final readonly class OperationalInstrumentService
             }
         }
 
-        return new InstrumentObservation($input, $metadata, $verification, $observation);
+        return new InstrumentObservation($input, $metadata, $verification, $observation, reservationId: $reservationId);
     }
 
     private function normalize(array $input): array
@@ -205,7 +256,7 @@ final readonly class OperationalInstrumentService
         if ($kind === 'proposition_search') {
             return PropositionCollection::normalizeInput($input);
         }
-        if ($kind === 'load_file') {
+        if (in_array($kind, ['citation', 'load_file'], true)) {
             return app(InstrumentInvocation::class)->normalize($input);
         }
         $keys = $kind === 'web_search' ? ['kind', 'query'] : ['kind', 'reference'];
@@ -242,7 +293,7 @@ final readonly class OperationalInstrumentService
         $target = Proposition::query()->find($reference)
             ?? Attestation::query()->find($reference);
         if ($target === null || $target->phase->cycle->participant->substrate_id !== $substrateId) {
-            throw new DomainException('A Citation requires an existing Proposition or Attestation ID in this substrate.');
+            throw new InvalidCitationSubject(InstrumentInvocation::CITATION_GUIDANCE);
         }
 
         return [

@@ -54,7 +54,7 @@ class Receipt extends Model
             $execution = $receipt->evidenceExecution;
             $receipt->phase_id ??= $execution?->phase_id;
             if ($receipt->type !== 'tragedy' && $execution !== null
-                && ($receipt->type !== ($execution->type === 'prepare' ? 'preparation' : $execution->kind)
+                && ($receipt->type !== ($execution->status === 'failed' ? 'failure' : ($execution->type === 'prepare' ? 'preparation' : $execution->kind))
                     || $receipt->phase_id !== $execution->phase_id
                     || $receipt->receiptable_type !== (new Proposition)->getMorphClass()
                     || $receipt->receiptable_id !== $execution->proposition_id)) {
@@ -133,11 +133,11 @@ class Receipt extends Model
         return $this->type !== 'tragedy' && ($this->evidenceExecution?->observationRecorded() ?? false);
     }
 
-    public function isPreparationFailure(): bool
+    public function isFailure(): bool
     {
-        return $this->type === 'preparation' && $this->evidenceExecution?->type === 'prepare'
+        return $this->type === 'failure' || ($this->type === 'preparation' && $this->evidenceExecution?->type === 'prepare'
             && $this->evidenceExecution->status === 'failed' && $this->evidenceExecution->outcome === 'failed'
-            && ($this->metadata['outcome']['type'] ?? null) === 'failed';
+            && ($this->metadata['outcome']['type'] ?? null) === 'failed');
     }
 
     public function consumption(): HasOne

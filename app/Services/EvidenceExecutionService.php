@@ -15,6 +15,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
+use App\Services\Evidence\ReceiptSummary;
 use App\Services\Evidence\ReinforcementSignatureService;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
@@ -90,7 +91,7 @@ final readonly class EvidenceExecutionService
                 ->lockForUpdate()
                 ->findOrFail($execution->getKey());
 
-            if ($locked->type === 'instrument' && $locked->status === 'completed'
+            if ($locked->type === 'instrument' && $locked->observationRecorded()
                 && ($receiptable instanceof Proposition ? $receiptable->id : ($receiptable instanceof Attestation ? $receiptable->proposition_id : null)) === $locked->proposition_id) {
                 return $locked->receipt()->firstOrFail();
             }
@@ -219,49 +220,56 @@ final readonly class EvidenceExecutionService
         }
         $receipt->setRelation('evidenceExecution', $execution);
         app(ReceiptContextService::class)->loadCreated($receipt);
-        if (! $receipt->isPreparationFailure()) {
+        if (! $receipt->isFailure()) {
             $this->measurements->recalculateIfMeasurable($execution->proposition);
         }
 
         return $receipt;
     }
 
-    /** Trusted Preparation adapter only; caller holds root, owner, Phase and execution locks. */
-    public function recordPreparationFailure(EvidenceExecution $execution, string $reason, array $diagnostic): Receipt
+    /** First terminal writer wins. Historical failures are never backfilled by retries. */
+    public function fail(EvidenceExecution $execution, string $reason = '', array $diagnostic = [], bool $variantObservation = false): ?Receipt
     {
-        if (DB::transactionLevel() === 0 || $execution->type !== 'prepare'
-            || ! in_array($execution->status, ['pending', 'presented'], true)) {
-            throw new DomainException('Failure observation requires a locked unresolved Preparation.');
-        }
-        $metadata = [
-            'execution_id' => $execution->id, 'originating_gate_id' => $execution->proposition_id,
-            'participant_id' => $execution->phase->cycle->participant_id,
-            'purpose' => $execution->input['purpose'], 'selections' => $execution->input['artifacts'],
-            'deliveries' => $execution->presentation ?? [],
-            'presented_at' => $execution->presented_at?->toISOString(),
-            'outcome' => ['type' => 'failed'], 'failure' => $diagnostic['failure'], 'failure_reason' => $reason,
-            'content_verified' => false, 'reinforcement_version' => 'preparation-failure',
-            'reinforcement_status' => 'not-loaded',
-        ];
-        $execution->forceFill(['status' => 'failed', 'outcome' => 'failed', 'failure_reason' => $reason,
-            'metadata' => $metadata, 'failed_at' => now()])->save();
-
-        // No signature: this records an operational failure, never source support/refutation.
-        return $this->receipt($execution, 'preparation', $execution->id, null, $metadata);
-    }
-
-    public function fail(
-        EvidenceExecution $execution,
-        string $reason,
-        array $diagnostic = [],
-    ): void {
-        // This transition never enters ledger/projection code; the execution is its whole invariant.
-        DB::transaction(function () use ($execution, $reason, $diagnostic): void {
-            $locked = EvidenceExecution::query()->lockForUpdate()->findOrFail($execution->id);
-            if (! in_array($locked->status, $locked->type === 'prepare' ? ['pending', 'presented'] : ['pending'], true)) {
-                throw new DomainException('Only an unresolved evidence execution can fail.');
+        return DB::transaction(function () use ($execution, $reason, $diagnostic, $variantObservation): ?Receipt {
+            $participant = $execution->phase->cycle->participant;
+            Substrate::lockForUpdate()->findOrFail($participant->substrate_id);
+            $locked = EvidenceExecution::lockForUpdate()->findOrFail($execution->id);
+            if (! in_array($locked->status, ['pending', 'presented'], true)) {
+                return $locked->status === 'failed' ? $locked->receipt()->first() : null;
             }
-            $locked->forceFill(['status' => 'failed', 'failure_reason' => $reason, 'metadata' => $diagnostic, 'failed_at' => now()])->save();
-        });
+
+            $at = now();
+            $kind = $locked->kind ?? 'preparation';
+            $reason = ReceiptSummary::text(trim(preg_replace('/[\x00-\x1F\x7F]/u', ' ', $reason) ?? ''));
+            $reason = $reason !== '' ? $reason : 'No diagnostic details were recorded.';
+            $failure = array_filter(array_map(ReceiptSummary::text(...), array_intersect_key($diagnostic,
+                array_flip(['stage', 'classification', 'method', 'version', 'source_type', 'read_type', 'artifact_id']))));
+            $failure += ['stage' => 'execution', 'classification' => 'unclassified'];
+            // URLs can contain credentials in the path, query or fragment. Retain
+            // only the host. The private execution still owns the exact invocation.
+            $input = $locked->input ?? [];
+            $attempted = match ($kind) {
+                'citation' => preg_match('/'.Evidence\InstrumentInvocation::CITATION_PATTERN.'/D', $locked->reference) ? ['subject' => $locked->reference] : [],
+                'hyperlink', 'load_file' => array_filter(['host' => parse_url($locked->reference, PHP_URL_HOST)]),
+                'web_search', 'proposition_search' => array_intersect_key($input, ['limit' => true]) + ['query_length' => mb_strlen($input['query'] ?? '')],
+                default => [],
+            };
+            $metadata = [
+                'execution_id' => $locked->id, 'originating_gate_id' => $locked->proposition_id, 'participant_id' => $participant->id,
+                'kind' => $kind, 'failed_at' => $at->toISOString(), 'failure' => $failure, 'failure_reason' => $reason,
+                'attempted_input' => $attempted, 'outcome' => ['type' => 'failed'], 'variant_observation' => $variantObservation,
+                'content_verified' => false, 'reinforcement_version' => 'acquisition-failure',
+            ];
+            if ($locked->type === 'prepare') {
+                $metadata += ['purpose' => ReceiptSummary::text($input['purpose'] ?? ''), 'selections' => $input['artifacts'] ?? [],
+                    'deliveries' => $locked->presentation ?? [], 'presented_at' => $locked->presented_at?->toISOString()];
+            }
+            $locked->forceFill(['status' => 'failed', 'outcome' => 'failed', 'failure_reason' => $reason,
+                'failed_at' => $at, 'metadata' => $metadata])->save();
+            $receipt = $this->receipt($locked, 'failure', $locked->id, null, $metadata);
+            DB::afterCommit(fn () => app(PotentialProjectionService::class)->refresh($participant->substrate_id));
+
+            return $receipt;
+        }, attempts: 3);
     }
 }

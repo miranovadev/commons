@@ -12,6 +12,19 @@ use GuzzleHttp\Psr7\UriResolver;
 /** Invocation identity is independent of content versions and Reinforcement count. */
 final class InstrumentInvocation
 {
+    public const CITATION_GUIDANCE = 'Citation requires the ULID of an existing Proposition or Attestation in this substrate. External URLs are invalid Citation subjects.';
+
+    public const CITATION_PATTERN = '^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$';
+
+    public static function citationSubject(mixed $reference): string
+    {
+        if (! is_string($reference) || ! preg_match('/'.self::CITATION_PATTERN.'/D', $reference)) {
+            throw new DomainException(self::CITATION_GUIDANCE);
+        }
+
+        return strtolower($reference);
+    }
+
     public function normalize(array $input): array
     {
         $kind = $input['kind'] ?? null;
@@ -34,7 +47,7 @@ final class InstrumentInvocation
 
         return ['kind' => $kind, $field => match ($kind) {
             'hyperlink' => $this->url($input[$field]),
-            'citation' => trim($input[$field]),
+            'citation' => self::citationSubject($input[$field]),
             'web_search' => SearchObservation::normalizeQuery($input[$field]),
         }];
     }

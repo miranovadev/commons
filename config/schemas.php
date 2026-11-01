@@ -1,5 +1,7 @@
 <?php
 
+use App\Services\Evidence\InstrumentInvocation;
+
 $ulid = [
     'type' => 'string',
     'pattern' => '^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$',
@@ -12,7 +14,7 @@ $statement = [
 ];
 
 $instrument = [
-    'description' => 'Citation references a substrate object; hyperlink retrieves a public URL; web_search finds external resources; proposition_search observes bounded historical lineage, including meaningful empty results. load_file with method download preserves a public HTTP(S) resource as an immutable Artifact. All produce ordinary Receipts. Load File Receipts contain acquisition metadata and are not loadable; other readable Instrument Receipts load for their creator. Loading does not grant action permission.',
+    'description' => InstrumentInvocation::CITATION_GUIDANCE.' A hyperlink retrieves a public URL; web_search finds external resources; proposition_search observes bounded historical lineage, including meaningful empty results. load_file with method download preserves a public HTTP(S) resource as an immutable Artifact. All produce ordinary Receipts. Load File Receipts contain acquisition metadata and are not loadable; other readable Instrument Receipts load for their creator. Loading does not grant action permission.',
     'anyOf' => [
         [
             'type' => 'object', 'additionalProperties' => false,
@@ -26,7 +28,16 @@ $instrument = [
             'type' => 'object', 'additionalProperties' => false,
             'required' => ['kind', 'reference'],
             'properties' => [
-                'kind' => ['type' => 'string', 'enum' => ['citation', 'hyperlink']],
+                'kind' => ['const' => 'citation'],
+                'reference' => ['type' => 'string', 'pattern' => InstrumentInvocation::CITATION_PATTERN,
+                    'minLength' => 26, 'maxLength' => 26, 'description' => InstrumentInvocation::CITATION_GUIDANCE],
+            ],
+        ],
+        [
+            'type' => 'object', 'additionalProperties' => false,
+            'required' => ['kind', 'reference'],
+            'properties' => [
+                'kind' => ['const' => 'hyperlink'],
                 'reference' => ['type' => 'string', 'minLength' => 1],
             ],
         ],
@@ -65,7 +76,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 32,
+    'version' => 33,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),

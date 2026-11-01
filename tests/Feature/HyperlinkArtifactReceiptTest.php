@@ -270,14 +270,14 @@ class HyperlinkArtifactReceiptTest extends TestCase
         }]);
         $receipt = app(OperationalInstrumentService::class)->execute($f->phase, $f->gate, $this->input());
         $this->assertFalse($receipt->metadata['content_verified']);
-        $this->assertSame('verification-failed', $receipt->metadata['validation']);
+        $this->assertSame('verification-failed', $receipt->metadata['failure']['classification']);
         $this->assertArrayNotHasKey('artifacts', $receipt->metadata);
         $this->assertNull($receipt->signature);
         $this->assertCount(0, Storage::disk('artifacts')->allFiles());
         $this->assertDatabaseHas('participant_receipt_contexts', ['receipt_id' => $receipt->id]);
     }
 
-    public function test_storage_failure_is_an_execution_error_without_receipt_or_auto_load(): void
+    public function test_storage_failure_records_one_loaded_failure_without_resource_content(): void
     {
         $f = $this->persistFixture();
         Http::fake(['*' => Http::response('Valid content', 200, ['Content-Type' => 'text/plain'])]);
@@ -286,10 +286,10 @@ class HyperlinkArtifactReceiptTest extends TestCase
             app(OperationalInstrumentService::class)->execute($f->phase, $f->gate, $this->input());
             $this->fail('Storage failure became an observation');
         } catch (ArtifactStorageException) {
-            $this->assertDatabaseCount('receipts', 0);
+            $this->assertDatabaseHas('receipts', ['type' => 'failure', 'signature' => null]);
             $this->assertDatabaseCount('evidence_executions', 1);
-            $this->assertDatabaseHas('evidence_executions', ['phase_id' => $f->phase->id, 'status' => 'pending']);
-            $this->assertDatabaseCount('participant_receipt_contexts', 0);
+            $this->assertDatabaseHas('evidence_executions', ['phase_id' => $f->phase->id, 'status' => 'failed']);
+            $this->assertDatabaseCount('participant_receipt_contexts', 1);
         }
     }
 
