@@ -30,6 +30,7 @@ test('Write renders only local cards and exactly the two schema-driven direction
               'instrument.execute': { properties: { proposition_id: { enum: [target.id] } } },
             } : {}),
           } : {};
+          if (explored) delete actions['attestation.create'];
           const unrelated = { ...target, id: 'unrelated', statement: 'Unrelated horizon proposition' };
           const plan = {
             gate, phase: { number: kind === 'persist' ? 2 : 4, kind, write_register: 'frontier' },
@@ -79,6 +80,10 @@ test('Write renders only local cards and exactly the two schema-driven direction
   assert.match(explored, /Historical target/);
   assert.match(explored, /Explored by you/);
   assert.doesNotMatch(explored, />(Support|Refute|Traverse|Instrument|Revise)<\/span>/);
+  const towardsGeneration = module.exports.render('support', true, false, 'constrain', true);
+  assert.match(towardsGeneration, /Explored by you/);
+  assert.match(towardsGeneration, />Traverse<\/span>/);
+  assert.doesNotMatch(towardsGeneration, />(Support|Refute|Instrument|Revise)<\/span>/);
   const reopened = module.exports.render('support', true, false, 'distinguish', false);
   assert.match(reopened, /Historical target/);
   assert.match(reopened, />Traverse<\/span>/);

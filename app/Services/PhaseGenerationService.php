@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
-use App\Models\Attestation;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Supersession;
@@ -147,32 +146,37 @@ final readonly class PhaseGenerationService
             ? $this->regions->membersFor($gate, $context)->pluck('id')
             : collect([$gate->id]);
 
-        // Sources are already resolved Propositions. Filtering the edge directly
-        // avoids a redundant parent join and global scans under stale statistics.
-        $results = Supersession::query()->select('target_proposition_id')
-            ->whereIn('source_proposition_id', $sources)
-            ->whereIn('type', ['variant', 'reclassify', 'commit']);
-        $viable = Proposition::query()->active()
-            ->whereNotIn('id', $exhausted->keys())
-            ->where('register', $phase->write_register)
-            ->where('tier', $phase->kind === PhaseKind::Order ? 'committal' : 'expressive')
-            ->whereHas('phase', fn ($query) => $query->where('kind', $phase->kind->value)
-                ->whereHas('cycle', fn ($query) => $query->where('context_horizon_id', $phase->cycle->context_horizon_id)))
-            ->whereIn('id', $results);
-        $check = function () use ($viable, $phase, $action, $context): bool {
-            $existing = $viable->pluck('id');
+        $check = function () use ($sources, $phase, $action, $context, $exhausted): bool {
+            // Projected arrivals at the same Phase position share the SQL selection
+            // over the request's working set. Retain the ordinary source-local query otherwise.
+            $batch = ! $phase->exists && $context !== null;
+            $load = fn () => Proposition::query()->active()
+                ->join('supersessions as result', 'result.target_proposition_id', '=', 'propositions.id')
+                ->whereIn('result.source_proposition_id', $batch ? $context->propositions->keys() : $sources)
+                ->whereIn('result.type', ['variant', 'reclassify', 'commit'])
+                ->whereNotIn('propositions.id', $exhausted->keys())
+                ->where('propositions.register', $phase->write_register)
+                ->where('propositions.tier', $phase->kind === PhaseKind::Order ? 'committal' : 'expressive')
+                ->whereHas('phase', fn ($query) => $query->where('kind', $phase->kind->value)
+                    ->whereHas('cycle', fn ($query) => $query->where('context_horizon_id', $phase->cycle->context_horizon_id)))
+                ->toBase()->get(['result.source_proposition_id', 'propositions.id'])->groupBy('source_proposition_id');
+            $writes = $batch ? $context->remember('prospective-writes:'.$phase->cycle_id.':'.$phase->kind->value.':'.$phase->write_register, $load) : $load();
+            $existing = $sources->flatMap(fn ($id) => $writes->get($id, collect())->pluck('id'))->unique();
             if ($existing->isEmpty()) {
                 return true;
             }
             $context ??= new ParticipationContext($phase);
-            $existing = $existing->filter(fn ($id) => app(ParticipantExplorationService::class)->heads($id, $phase, $context)->isNotEmpty());
+            // Personal completion belongs to this Cycle, including during a
+            // projected arrival. Reuse its actual Phase's batched encounter probes.
+            $acting = $batch && $context->phase->cycle_id === $phase->cycle_id ? $context->phase : $phase;
+            $existing = $existing->filter(fn ($id) => app(ParticipantExplorationService::class)->heads($id, $acting, $context)->isNotEmpty());
             if ($existing->isEmpty()) {
                 return true;
             }
             if ($action !== 'proposition.variant') {
                 return false;
             }
-            $explored = app(ParticipantExplorationService::class)->exploredIds($phase, $existing, $context)->keys();
+            $explored = app(ParticipantExplorationService::class)->exploredIds($acting, $existing, $context)->keys();
             if ($existing->diff($explored)->isNotEmpty()) {
                 // Every existing reachable active head must be personally explored
                 // before considering fresh generation. Variant is not its own prerequisite.
@@ -180,10 +184,9 @@ final readonly class PhaseGenerationService
             }
             if (in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)) {
                 $shared = app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
-                $evidenced = $shared ? $existing : Proposition::whereIn('id', $existing)->get()
+                $evidenced = $shared ? $existing : $context->nodes($existing)
                     ->filter(fn (Proposition $node) => $this->state->evidenceReceipts($node, $context)->isNotEmpty())->pluck('id');
-                $attested = Attestation::query()->effective()
-                    ->whereIn('proposition_id', $existing)->distinct()->pluck('proposition_id');
+                $attested = $context->effectiveAttestations($existing)->pluck('proposition_id');
                 if ($existing->diff($evidenced)->isNotEmpty() || $existing->diff($attested)->isNotEmpty()) {
                     return false;
                 }

@@ -1,6 +1,6 @@
 # Exploration-first generative acquisition
 
-Acquisition prepares one current generative attempt. It is not a permanent Participant × Gate × role allowance. Existing personally unexplored structure takes precedence: lawful Attestation, Traverse and ordinary Revision do not require acquisition. Explored Writes remain visible and non-actionable under the existing personal exploration evaluator.
+Acquisition prepares one current generative attempt. It is not a permanent Participant × Gate × role allowance. Existing personally unexplored structure takes precedence: lawful Attestation, Traverse and ordinary Revision do not require acquisition. Explored Writes retain their badges and suppress repeat judgments and Revision. The Participant can [Traverse through an explored Write](generative-traversal.md) toward a lawful generating opportunity.
 
 ## Admission and resolution
 

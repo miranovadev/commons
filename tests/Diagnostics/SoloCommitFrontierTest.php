@@ -110,7 +110,8 @@ class SoloCommitFrontierTest extends ScriptedParticipationTestCase
         $this->assertDatabaseHas('exploration_events', ['proposition_id' => $head->id]);
         $this->assertActionAvailable($state, 'instrument.execute');
         $this->assertActionUnavailable($state, 'proposition.variant');
-        $this->assertActionUnavailable($state, 'proposition.traverse');
+        $this->assertSame([$this->persistJourneyIds['leftDistinction']],
+            $state['plan']['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum']);
         $this->assertActionUnavailable($state, 'attestation.create');
         $this->assertDatabaseMissing('supersessions', ['type' => 'reconcile']);
     }
