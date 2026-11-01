@@ -206,7 +206,9 @@ final readonly class InputSchemaService
         if ($generationOrAcquisition === [] && $schema['$defs']['actions'] !== []) {
             $ids = collect($attestationOptionIds ?? $writeOptionIds)->merge($revisionOptionIds)->merge($traversalOptionIds)->unique();
             $explored = app(ParticipantExplorationService::class)->exploredIds($occurrence, $ids, $context);
-            if ($ids->diff($explored->keys())->isEmpty()
+            // An explored Traverse target now leads to actual generation. Its
+            // completion alone cannot justify an otherwise actionless Rest.
+            if (($traversalOptionIds === [] && $ids->diff($explored->keys())->isEmpty())
                 || app(ExplorationEventService::class)->completionWitness($occurrence, $context ?? new ParticipationContext($occurrence)) !== null) {
                 $rest = $this->forPhase($kind, ['participant.rest']);
                 $schema['$defs']['actions']['participant.rest'] = $rest['$defs']['actions']['participant.rest'];

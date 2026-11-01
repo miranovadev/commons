@@ -27,6 +27,9 @@ final class AcquisitionAttemptService
 
     public function execution(Phase $phase, ?ParticipationContext $context = null): ?EvidenceExecution
     {
+        if (! $phase->exists) {
+            return null; // A prospective arrival cannot already own an execution.
+        }
         $read = fn () => EvidenceExecution::where('phase_id', $phase->id)->whereNotNull('attempt_admitted_at')->first();
 
         return $context === null ? $read() : $context->remember('acquisition-execution:'.$phase->id, $read);
