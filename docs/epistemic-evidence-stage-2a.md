@@ -33,16 +33,7 @@ Origin bootstrap is unchanged and requires no Instrument.
 
 ## Resolved Attestation boundary (Claire / Chat Nova, 22 October 2026)
 
-Distinguish and Disperse Attestation require available shared ordinary Receipts,
-but no Instrument execution on the exact Write and no personal Instrument
-execution. The exact-Write requirement is obsolete under Persist-only Gate
-Instrumentation. All other Attestation scope, mutable/unspent target, direction,
-Reclassification, consumption, Tragedy and measurement rules remain unchanged.
-
-`EpistemicInstrumentationBoundaryTest` covers both phases, shared evidence from a
-different subject/Participant, absence of exact-Write executions, and rejection
-when shared ordinary evidence is unavailable. This resolves the previously
-reported unreachable Disperse prerequisite without implementing Stage 2B.
+Stage 2A removed the exact-Write Instrument prerequisite and retained shared ordinary evidence for Attestation. Under the current contract, a first lawful personal Attestation requires no Receipt. Reversals retain their Phase-specific evidence rules. `EpistemicInstrumentationBoundaryTest` exercises first judgment in both Distinguish and Disperse with and without shared evidence. See [participatory exploration completion](participatory-exploration-completion.md).
 
 ## Readiness register
 

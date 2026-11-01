@@ -17,6 +17,7 @@ use App\Services\ParticipantExplorationService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseGenerationService;
 use App\Services\PotentialChargeService;
+use App\Services\ReceiptContextService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -77,14 +78,14 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $phase = $this->position($kind);
         if ($kind === PhaseKind::Disperse) {
             $this->assertArrayNotHasKey('proposition.variant', $this->actions($phase));
-            $initialReceipt = $this->sharedObservation();
+            $this->sharedObservation();
         }
         $this->assertArrayNotHasKey('proposition.variant', $this->actions($phase), 'Shared evidence does not complete personal acquisition');
         $this->instrumentGateFixture($phase);
         $write = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'Explore this possibility']);
-        $actions = $this->actions($phase);
-        // Each completed observation remains visible in history after consumption.
+        $gateReceipt = Receipt::where('phase_id', $phase->id)->sole();
+        // The Gate observation remains visible after consumption.
         $consumerPhase = $this->phase($write, PhaseKind::Constrain);
         foreach (app(HorizonReceiptService::class)->ordinaryAvailable($consumerPhase) as $observation) {
             $consumer = $this->node($consumerPhase, $write);
@@ -94,6 +95,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $this->assertArrayNotHasKey('instrument.execute', $actions, 'Consumption does not reset personal acquisition');
         $this->assertArrayNotHasKey('proposition.variant', $actions);
         $this->assertEmpty(app(HorizonReceiptService::class)->ordinaryAvailable($phase));
+        $this->assertSame('consumed', app(ReceiptContextService::class)->forPhase($phase)->firstWhere('id', $gateReceipt->id)['availability']);
         $this->assertContains($write->id, $actions['attestation.create']['properties']['proposition_id']['enum']);
         $this->assertArrayNotHasKey('proposition.reclassify', $actions);
 

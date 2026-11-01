@@ -431,7 +431,9 @@ class ParticipantExplorationTest extends TestCase
         $return = $this->returnAfterRest($bias);
         $event = DB::table('exploration_events')->sole();
         self::assertSame($stance->id, $event->proposition_id);
-        self::assertSame($stance->effectiveAttestations()->sole()->id, json_decode($event->witness, true)['attestation_id']);
+        $witness = json_decode($event->witness, true);
+        self::assertSame($stance->effectiveAttestations()->sole()->id, $witness['attestation_id']);
+        self::assertArrayNotHasKey('receipt_id', $witness);
         $exploration = app(ParticipantExplorationService::class);
         self::assertTrue($exploration->explored($signal, $return));
         self::assertFalse($exploration->explored($constrain, $return), 'The other Signal still needs personal exploration');

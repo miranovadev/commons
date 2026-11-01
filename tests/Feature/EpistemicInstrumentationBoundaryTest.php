@@ -15,7 +15,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
-/** Shared evidence authorizes Attestation independently of exact-Write Instrument history. */
+/** First judgment is personal, with or without shared observations. */
 class EpistemicInstrumentationBoundaryTest extends TestCase
 {
     use RefreshDatabase;
@@ -26,7 +26,7 @@ class EpistemicInstrumentationBoundaryTest extends TestCase
     }
 
     #[DataProvider('phases')]
-    public function test_shared_persist_evidence_allows_attesting_an_uninstrumented_write(PhaseKind $kind, bool $withEvidence): void
+    public function test_participants_can_first_attest_an_uninstrumented_write_with_or_without_shared_evidence(PhaseKind $kind, bool $withEvidence): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
         $persistGate = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
@@ -44,12 +44,12 @@ class EpistemicInstrumentationBoundaryTest extends TestCase
         $this->assertSame($withEvidence, app(HorizonReceiptService::class)->ordinaryAvailable($phase)->isNotEmpty());
         $this->assertContains($write->id, $options->writeOptionsFor($phase)->pluck('id')->all());
         foreach ([null, new ParticipationContext($phase)] as $context) {
-            $this->assertSame($withEvidence, $options->attestationOptionsFor($phase, $context)->contains('id', $write->id));
+            $this->assertTrue($options->attestationOptionsFor($phase, $context)->contains('id', $write->id));
         }
         $this->assertFalse($options->instrumentOptionsFor($phase)->contains('id', $disperseGate->id), 'Explore the existing Write first.');
         $this->assertNotContains($write->id, $options->instrumentOptionsFor($phase)->pluck('id')->all());
         $this->assertEmpty(app(HorizonReceiptService::class)->instrumentedIds($phase, collect([$write->id])));
-        // Another Participant can use the shared observation without originating it.
+        // Each Participant may judge the Write without originating an observation.
         $other = (new Participant)->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'other']);
         $other->save();
         $cycle = (new Cycle)->forceFill(['participant_id' => $other->id, 'sequence' => 1,
@@ -59,14 +59,12 @@ class EpistemicInstrumentationBoundaryTest extends TestCase
         $otherPhase->forceFill(['cycle_id' => $cycle->id])->save();
         $otherPhase = $otherPhase->fresh();
         foreach ([null, new ParticipationContext($otherPhase)] as $context) {
-            $this->assertSame($withEvidence, $options->attestationOptionsFor($otherPhase, $context)->contains('id', $write->id));
+            $this->assertTrue($options->attestationOptionsFor($otherPhase, $context)->contains('id', $write->id));
         }
         $this->assertSame($f->viewer->id, $f->phase->cycle->fresh()->participant_id, 'Originating provenance stays unchanged');
-        if ($withEvidence) {
-            app(ContributionDispatcher::class)->dispatch($other, $otherPhase,
-                ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'support']);
-            $this->assertDatabaseHas('attestations', ['phase_id' => $otherPhase->id, 'proposition_id' => $write->id]);
-            $this->assertDatabaseMissing('evidence_executions', ['phase_id' => $otherPhase->id]);
-        }
+        app(ContributionDispatcher::class)->dispatch($other, $otherPhase,
+            ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'support']);
+        $this->assertDatabaseHas('attestations', ['phase_id' => $otherPhase->id, 'proposition_id' => $write->id]);
+        $this->assertDatabaseMissing('evidence_executions', ['phase_id' => $otherPhase->id]);
     }
 }
