@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
  */
 final class ExplorationHistory
 {
-    public static function record(Proposition $head, ?Phase $viewer = null): string
+    public static function record(Proposition $head, ?Phase $viewer = null, array $witness = []): string
     {
         $owner = $viewer ?? $head->phase;
         $cycle = (string) Str::ulid();
@@ -38,7 +38,7 @@ final class ExplorationHistory
         DB::table('exploration_events')->insert(['phase_id' => $rest, 'proposition_id' => $head->id,
             'arrival_phase_id' => $arrival, 'observed_field_version' => $head->phase->cycle->participant->substrate->field_version,
             'witness' => json_encode(['contract' => 1, 'fixture' => 'historical encounter input', 'head_id' => $head->id,
-                'arrival_phase_id' => $arrival, 'arrival_source_id' => $source, 'meaningful_continuation' => false]),
+                'arrival_phase_id' => $arrival, 'arrival_source_id' => $source, 'meaningful_continuation' => false, ...$witness]),
             'recorded_at' => now()]);
 
         return $rest;

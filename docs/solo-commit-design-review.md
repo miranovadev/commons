@@ -33,7 +33,7 @@ The diagnostic repeats the branch through a fresh Distinction and obtains the sa
 
 At a fresh Persist Gate, acquisition completes in the current Phase and Cycle. The first Variant is then available and Rest is withheld. A contributed Disperse Preparation creates its Variant in the same Cycle. Deferring it or choosing Instrument leaves the Participant in that Cycle with the first Variant available.
 
-Before the first Mediate Write exists, Constrain's initial visit requires Rest because the newly generated Persist Proposition has no Attestation. On the return, its first judgment makes Reclassification available. It consumes one ordinary Receipt, and Disperse acquisition supplies another observation. The tested paths retain completed evidence for the eventual Exploration witness.
+Before the first Mediate Write exists, Constrain's initial visit requires Rest because the newly generated Persist Proposition has no Attestation. On the return, its first judgment makes Reclassification available. It consumes one ordinary Receipt, and Disperse acquisition supplies another observation. The original tests used completed evidence in the exploration witness. Current publication uses the personal route and terminal judgment.
 
 Revision requires an owned leaf with an effective personal Refute from an earlier Cycle. Persist and Constrain nodes already have children by that time. A personally judged Signal reaches Mediate and its required Rest records completion before the Participant can return to revise it. The explored-Write filter then closes that action. Traverse and permitted earlier reversals change the route's judgments without changing its immutable birth intervals.
 
@@ -43,9 +43,11 @@ The previous positive transcript escaped this pattern at step 16 by reversing it
 
 ## Recorded failures provide a narrower exception
 
-A second HTTP diagnostic acquires one preserved source, experiences actual reading failures at Persist and Disperse, and consumes the source's completed Instrument Receipt at Constrain. The remaining available observations are failed Preparations. Acquisition is complete, but `ExplorationEventService::completionWitness()` cannot find a completed execution for its evidence witness. Rest publishes no Event.
+Under the historical receipt-bearing witness contract, a second HTTP diagnostic acquires one preserved source, experiences actual reading failures at Persist and Disperse, and consumes the source's completed Instrument Receipt at Constrain. The remaining available observations are failed Preparations. Acquisition is complete, but `ExplorationEventService::completionWitness()` cannot find a completed execution for its evidence witness. Rest publishes no Event.
 
-This route remains open for Revision. Two successive lawful Signal Revisions produce negative Phase Profile and coherent Correspondence. Neither obtains a second eligible operand. Earlier completed branches would still have their original positive Phase Profile, and the unfinished revised route prevents a fresh Origin Variant. Further Revision replaces the leaf of this same route. This exception changes the measurements, but cannot bootstrap the required pair.
+With the current witness, the judged terminal Rest publishes an Event, even after failed Preparations. The regression also exercises the historical Revision measurements with a deliberately stale field-version proof, which leaves the encounter incomplete.
+
+In the historical run, this route remained open for Revision. Two successive lawful Signal Revisions produce negative Phase Profile and coherent Correspondence. Neither obtains a second eligible operand. Earlier completed branches would still have their original positive Phase Profile, and the unfinished revised route prevents a fresh Origin Variant. Further Revision replaces the leaf of this same route. This exception changes the measurements, but cannot bootstrap the required pair.
 
 ## Executable investigation and design blocker
 

@@ -44,7 +44,7 @@ final readonly class PhaseGenerationService
             || app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
     }
 
-    public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null, bool $prepared = false, bool $withoutReceipt = false): bool
+    public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null, bool $prepared = false): bool
     {
         if (! $prepared && ! $this->epistemicActionAvailable($phase, $action, $context)) {
             return false;
@@ -73,7 +73,7 @@ final readonly class PhaseGenerationService
         }
         if ($action === 'proposition.reclassify' && $phase->kind === PhaseKind::Bias && $position === null) {
             return app(BiasGateService::class)->operationalFor($phase, $context)
-                ->contains(fn (Proposition $candidate) => $this->available($phase, $action, $context, $candidate, withoutReceipt: $withoutReceipt));
+                ->contains(fn (Proposition $candidate) => $this->available($phase, $action, $context, $candidate));
         }
         if (! in_array($action, ['proposition.variant', 'proposition.reclassify', 'proposition.commit'], true)) {
             // Mediate owns a directed relationship, rather than a personal quota.
@@ -111,9 +111,9 @@ final readonly class PhaseGenerationService
             $existing = $context !== null
                 ? $context->classifications->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->isNotEmpty()
                 : DB::table('reclassification_results')->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->exists();
-            if ($existing || (! $withoutReceipt && ($phase->kind === PhaseKind::Bias
+            if ($existing || ($phase->kind === PhaseKind::Bias
                 ? app(BiasReceiptAuthorityService::class)->receiptsFor($phase, $gate, $context)
-                : app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context))->isEmpty())
+                : app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context))->isEmpty()
                 || $this->state->attestations(collect([$gate]), $context)->isEmpty()) {
                 return false;
             }

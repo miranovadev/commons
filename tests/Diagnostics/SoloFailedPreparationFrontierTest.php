@@ -6,14 +6,22 @@ use App\Models\EvidenceExecution;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Services\CorrespondenceGateService;
+use App\Services\ExplorationEventService;
 use App\Services\Observables\PhaseProfileService;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\ParticipationHttpTestCase;
 
-/** A failed-observation route can revise its Signal, but still needs a second operand. */
+/** Completed failed Preparations remain observations in both publication outcomes. */
 class SoloFailedPreparationFrontierTest extends ParticipationHttpTestCase
 {
-    public function test_failure_enabled_revision_changes_correspondence_without_creating_another_operand(): void
+    public static function restProofs(): array
+    {
+        return ['current witness' => [false], 'stale witness' => [true]];
+    }
+
+    #[DataProvider('restProofs')]
+    public function test_judged_signal_after_failed_preparations(bool $stale): void
     {
         $this->startSubstrate();
         $actor = $this->joinParticipant('solo-failure');
@@ -46,7 +54,29 @@ class SoloFailedPreparationFrontierTest extends ParticipationHttpTestCase
         $move($persist);
         $judge($canon);
         $judge($signal);
-        $rest();
+        if ($stale) {
+            // Isolate the existing field-version race. A discarded proof leaves the
+            // same unfinished route used by the historical Revision measurement fixture.
+            $events = app(ExplorationEventService::class);
+            $probe = \Mockery::mock($events);
+            $probe->shouldReceive('inspect')->andReturnUsing(function ($phase) use ($events) {
+                $proof = $events->inspect($phase);
+                $proof['field_version']--;
+
+                return $proof;
+            });
+            $this->instance(ExplorationEventService::class, $probe);
+        }
+        $entry = $rest();
+        if (! $stale) {
+            $this->assertDatabaseHas('exploration_events', ['proposition_id' => $signal]);
+            $this->assertDatabaseCount('exploration_events', 1);
+            $this->assertTrue($this->visibleProposition($entry, $distinction)['explored']);
+            $this->assertActionAvailable($entry, 'instrument.execute');
+            $this->assertDatabaseMissing('supersessions', ['type' => 'reconcile']);
+
+            return;
+        }
         $this->assertDatabaseCount('exploration_events', 0);
 
         for ($revision = 1; $revision <= 2; $revision++) {

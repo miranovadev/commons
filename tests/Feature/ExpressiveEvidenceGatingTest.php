@@ -72,7 +72,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
     }
 
     #[DataProvider('expressivePhases')]
-    public function test_empty_position_then_shared_persist_evidence_then_attestation(PhaseKind $kind): void
+    public function test_consumption_preserves_first_attestation_without_resetting_acquisition(PhaseKind $kind): void
     {
         $phase = $this->position($kind);
         if ($kind === PhaseKind::Disperse) {
@@ -84,7 +84,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $write = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'Explore this possibility']);
         $actions = $this->actions($phase);
-        // Consume all ordinary observations to isolate the independent Attestation prerequisite.
+        // Each completed observation remains visible in history after consumption.
         $consumerPhase = $this->phase($write, PhaseKind::Constrain);
         foreach (app(HorizonReceiptService::class)->ordinaryAvailable($consumerPhase) as $observation) {
             $consumer = $this->node($consumerPhase, $write);
@@ -93,7 +93,8 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $actions = $this->actions($phase);
         $this->assertArrayNotHasKey('instrument.execute', $actions, 'Consumption does not reset personal acquisition');
         $this->assertArrayNotHasKey('proposition.variant', $actions);
-        $this->assertArrayNotHasKey('attestation.create', $actions);
+        $this->assertEmpty(app(HorizonReceiptService::class)->ordinaryAvailable($phase));
+        $this->assertContains($write->id, $actions['attestation.create']['properties']['proposition_id']['enum']);
         $this->assertArrayNotHasKey('proposition.reclassify', $actions);
 
         $instruments = app(EvidenceExecutionService::class);
@@ -115,13 +116,18 @@ class ExpressiveEvidenceGatingTest extends TestCase
     }
 
     #[DataProvider('expressivePhases')]
-    public function test_attestation_becomes_traverse_next_cycle_even_after_receipt_consumption(PhaseKind $kind): void
+    public function test_first_attestation_without_receipts_establishes_traverse_only_in_a_later_cycle(PhaseKind $kind): void
     {
         $phase = $this->position($kind);
         $write = $this->node($phase, $phase->gate);
-        $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $write->id, 'direction' => 'support']);
-        $vote->save();
-        app(LedgerService::class)->record($vote);
+        $this->assertDatabaseCount('receipts', 0);
+        $this->assertDatabaseCount('evidence_executions', 0);
+        $first = $this->actions($phase);
+        $this->assertContains($write->id, $first['attestation.create']['properties']['proposition_id']['enum']);
+        $this->assertArrayNotHasKey('proposition.traverse', $first);
+        app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+            ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'support']);
+        $this->assertArrayNotHasKey('attestation.create', $this->actions($phase), 'Reversal retains its evidence requirement');
         $this->assertArrayNotHasKey('proposition.traverse', $this->actions($phase));
         $phase->forceFill(['completed_at' => now()])->save();
         $phase->cycle->forceFill(['completed_at' => now()])->save();
