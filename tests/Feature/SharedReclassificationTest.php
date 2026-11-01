@@ -65,6 +65,8 @@ class SharedReclassificationTest extends TestCase
             $this->assertSame($before, Proposition::count());
         }
         app(ContributionDispatcher::class)->dispatch($other, $return, ['action' => 'attestation.create', 'proposition_id' => $target->id, 'direction' => 'refute']);
+        // Direct dispatch bypasses the field refresh that normally precedes the next plan.
+        $this->publishPotentialFixture($other);
         $plan = app(InputPlanService::class)->forParticipant($other);
         $this->assertArrayNotHasKey('proposition.traverse', $plan['schema']['$defs']['actions'], 'A same-cycle Attestation becomes traversal next cycle');
     }
