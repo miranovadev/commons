@@ -300,7 +300,7 @@ final class ParticipantExplorationService
                 && $this->heads($head->id, $phase, $context)->keys()->all() === [$head->id]);
             $probes = $heads->map(fn ($head) => $this->probe($head, $phase, $context));
 
-            return app(ContinuationOpportunityService::class)->comparisonContext($probes, $context);
+            return app(ContinuationOpportunityService::class)->comparisonContext($phase, $probes, $context);
         });
     }
 }

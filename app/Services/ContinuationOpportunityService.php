@@ -12,7 +12,7 @@ use Illuminate\Support\Collection;
 final class ContinuationOpportunityService
 {
     /** Batch comparison operands for projected Phases without granting movement to them. */
-    public function comparisonContext(Collection $probes, ParticipationContext $context): ParticipationContext
+    public function comparisonContext(Phase $acting, Collection $probes, ParticipationContext $context): ParticipationContext
     {
         $mediate = $probes->filter(fn ($probe) => $probe->kind === PhaseKind::Mediate
             && app(CorrespondenceGateService::class)->evaluate($probe->gate, $context)['admissible']);
@@ -40,7 +40,7 @@ final class ContinuationOpportunityService
             $pools[$key] = $pool;
         }
         $evaluation = $additional->diff($context->propositions->keys())->isEmpty()
-            ? $context : new ParticipationContext($context->phase, $additional->unique()->values());
+            ? $context : new ParticipationContext($acting, $additional->unique()->values());
         foreach ($pools as $key => $pool) {
             $evaluation->remember($key, fn () => $pool);
         }

@@ -239,7 +239,7 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
         $this->assertSame($observer, $judgment->participant_id);
         $this->assertTrue($this->visibleProposition($returned, $a)['explored']);
         $this->assertActionUnavailable($returned, 'attestation.create');
-        $this->assertActionUnavailable($returned, 'proposition.traverse');
+        $this->assertSame([$a], $returned['plan']['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum']);
         $history = DB::table('exploration_events')->orderBy('phase_id')->get()->toJson();
         foreach (['support', 'refute'] as $direction) {
             $response = $this->postContribution($observer, $returned['plan']['phase']['id'],

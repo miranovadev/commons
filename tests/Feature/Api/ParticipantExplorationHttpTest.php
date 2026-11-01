@@ -8,8 +8,8 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Services\AcquisitionAttemptService;
 use App\Services\CrossoverMarginService;
-use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipantPromptFactory;
+use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseGenerationService;
 use App\Services\PropositionOptionService;
 use Illuminate\Support\Facades\DB;
@@ -52,6 +52,9 @@ class ParticipantExplorationHttpTest extends ScriptedParticipationTestCase
             self::assertTrue($this->visibleProposition($state, $id)['explored']);
             $actions = $state['plan']['schema']['$defs']['actions'];
             self::assertContains($id, $actions['proposition.traverse']['properties']['proposition_id']['enum']);
+            if ($key === 'constrain') {
+                self::assertSame(['proposition.traverse'], array_keys($actions), 'P2 is already classified. Its only continuation leads to P3.');
+            }
             self::assertNotContains($id, $actions['attestation.create']['properties']['proposition_id']['enum'] ?? []);
             self::assertNotContains($id, $actions['proposition.revise']['properties']['proposition_id']['enum'] ?? []);
             self::assertSame($state['plan']['schema'], app(ParticipantPromptFactory::class)->make(new Connection, $state)['schema']);

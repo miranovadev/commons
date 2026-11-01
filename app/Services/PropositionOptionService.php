@@ -50,7 +50,7 @@ final class PropositionOptionService
             if ($explored->isEmpty()) {
                 return $candidates;
             }
-            $towardGeneration = app(GenerativeTraversalService::class)->destinations($phase, $candidates->whereIn('id', $explored->keys()), $context);
+            $towardGeneration = app(GenerativeTraversalService::class)->destinations($phase, $context->nodes($explored->keys()), $context);
 
             return $candidates->filter(fn ($node) => ! $explored->has($node->id) || $towardGeneration->has($node->id))->values();
         });

@@ -55,7 +55,7 @@ final readonly class GenerativeTraversalService
         if ($probes->isEmpty()) {
             return collect();
         }
-        $evaluation = $this->opportunities->comparisonContext($probes, $context);
+        $evaluation = $this->opportunities->comparisonContext($context->phase, $probes, $context);
         $direct = $probes->filter(function (Phase $phase) use ($evaluation): bool {
             // A projected Phase has no execution. Use the same pre-acquisition
             // decision as a real arrival, without reserving an attempt.
