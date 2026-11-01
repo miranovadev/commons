@@ -167,8 +167,8 @@ final class PreparationService
     {
         if (! in_array($stage, ['unsupported', 'read', 'delivery', 'inference', 'expired', 'stale'], true)
             || trim($method) === '' || mb_strlen($method) > 160 || trim($version) === '' || mb_strlen($version) > 160
-            || trim($reason) === '' || mb_strlen($reason) > 1000) {
-            throw new DomainException('Preparation failure requires bounded method, version, stage and diagnostic reason.');
+        ) {
+            throw new DomainException('Preparation failure requires a supported stage and bounded reader identity.');
         }
         DB::transaction(function () use ($participant, $execution, $method, $version, $stage, $reason, $details): void {
             Substrate::lockForUpdate()->findOrFail($participant->substrate_id);
@@ -347,8 +347,8 @@ final class PreparationService
         $bodies = [];
         $selection = [];
         $attempt = [];
-        $reader = app(ArtifactReaderRegistry::class);
         try {
+            $reader = app(ArtifactReaderRegistry::class);
             foreach ($execution->input['artifacts'] as $selection) {
                 $attempt = [];
                 $id = PreparationInput::requestId($selection);
@@ -392,10 +392,18 @@ final class PreparationService
             throw new DomainException('Preparation reading failed: '.$exception->getMessage(), previous: $exception);
         }
 
+        try {
+            $token = Crypt::encryptString(json_encode(['participant_id' => $participant->id, 'execution_id' => $execution->id,
+                'deliveries' => $acknowledgement->deliveries], JSON_THROW_ON_ERROR));
+        } catch (Throwable $exception) {
+            $this->fail($participant, $execution, $method, ArtifactReaderRegistry::VERSION, 'delivery',
+                'The presentation acknowledgement could not be issued.');
+            throw new DomainException('Preparation delivery failed.', previous: $exception);
+        }
+
         return ['execution_id' => $execution->id, 'gate_id' => $execution->proposition_id,
             'purpose' => $execution->input['purpose'], 'selections' => $execution->input['artifacts'], 'deliveries' => $deliveries,
-            'presentation_token' => Crypt::encryptString(json_encode(['participant_id' => $participant->id,
-                'execution_id' => $execution->id, 'deliveries' => $acknowledgement->deliveries], JSON_THROW_ON_ERROR))];
+            'presentation_token' => $token];
     }
 
     public function acknowledge(Participant $participant, EvidenceExecution $execution, string $token): void

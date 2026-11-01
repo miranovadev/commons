@@ -353,7 +353,7 @@ class AcquisitionAttemptTest extends TestCase
             app(OperationalInstrumentService::class)->execute($phase, $f->seed, $input);
             $this->fail('A nonexistent subject was cited.');
         } catch (InvalidCitationSubject $exception) {
-            $this->assertSame(InstrumentInvocation::CITATION_GUIDANCE, $exception->getMessage());
+            $this->assertStringContainsString('this ULID is available in this substrate', $exception->getMessage());
         }
         $execution = EvidenceExecution::where('phase_id', $phase->id)->sole();
         $receipt = $execution->receipt;
@@ -390,7 +390,27 @@ class AcquisitionAttemptTest extends TestCase
         $this->assertSame($created['summary'], $seen['summary']);
         $this->assertFalse($seen['loaded']);
         $this->assertSame($f->seed->id, $seen['originating_gate_id']);
+        $next = app(OperationalInstrumentService::class)->execute($at, $f->seed, ['kind' => 'citation', 'reference' => $f->seed->id]);
+        $this->assertSame('citation', $next->type);
+        $this->assertSame('completed', $next->evidenceExecution->status);
         $this->assertDatabaseCount('exploration_events', 0);
+    }
+
+    public function test_foreign_subject_has_the_same_failure_as_an_absent_subject_without_disclosing_its_content(): void
+    {
+        $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $foreign = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $phase = $this->at($f, PhaseKind::Distinguish, $f->seed);
+        try {
+            app(OperationalInstrumentService::class)->execute($phase, $f->seed, ['kind' => 'citation', 'reference' => $foreign->seed->id]);
+            $this->fail('Foreign Citation passed.');
+        } catch (InvalidCitationSubject $exception) {
+            $failure = EvidenceExecution::where('phase_id', $phase->id)->sole()->receipt;
+            $this->assertSame('invalid_subject', $failure->metadata['failure']['classification']);
+            $this->assertSame($exception->getMessage(), $failure->metadata['failure_reason']);
+            $this->assertArrayNotHasKey('target_type', $failure->metadata);
+            $this->assertFalse($failure->metadata['content_verified']);
+        }
     }
 
     public function test_missing_diagnostics_are_safe_and_historical_failures_are_never_backfilled(): void

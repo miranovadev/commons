@@ -96,7 +96,7 @@ class ParticipantReceiptC2Test extends TestCase
         $this->assertSame([], $this->catalogue($f, $empty, ['gate'])[0]['loaded_inline_content']['results']);
         $failure = collect($this->catalogue($f, $failed, ['read']))->firstWhere('id', $failed->id)['loaded_inline_content'];
         $this->assertFalse($failure['content_verified']);
-        $this->assertSame('Unavailable', $failure['observation_error']);
+        $this->assertSame('Unavailable', $failure['failure_reason']);
         $this->assertNull(ParticipantReceiptContext::where('receipt_id', $failed->id)->value('evidence_signature'));
         $this->assertArrayNotHasKey('loaded_inline_content', collect($this->catalogue($f, $missing, ['gate']))->firstWhere('id', $missing->id));
         $this->assertFalse($this->catalogue($f, $empty, ['gate'], $other)[0]['loaded']);
@@ -119,16 +119,16 @@ class ParticipantReceiptC2Test extends TestCase
         $this->assertDatabaseCount('evidence_executions', 0);
     }
 
-    public function test_instrument_failure_without_a_receipt_creates_no_load(): void
+    public function test_terminal_instrument_failure_creates_one_diagnostic_load(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
         $service = app(EvidenceExecutionService::class);
         $execution = $service->start($f->phase, $f->gate, 'hyperlink', 'https://example.test/unavailable');
         $service->fail($execution, 'Failed before an observation was recorded.');
         $this->assertSame('failed', $execution->fresh()->status);
-        $this->assertDatabaseCount('receipts', 0);
-        $this->assertDatabaseCount('participant_receipt_contexts', 0);
-        $this->assertDatabaseCount('receipt_context_events', 0);
+        $this->assertDatabaseCount('receipts', 1);
+        $this->assertDatabaseCount('participant_receipt_contexts', 1);
+        $this->assertDatabaseCount('receipt_context_events', 1);
     }
 
     public function test_hydrated_committal_read_preserves_recorded_receipt_inheritance(): void

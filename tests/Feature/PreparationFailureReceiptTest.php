@@ -13,6 +13,7 @@ use App\Services\PreparationService;
 use App\Services\PropositionStateService;
 use App\Services\ReceiptContextService;
 use DomainException;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -164,6 +165,27 @@ class PreparationFailureReceiptTest extends TestCase
         $this->assertNull($f->phase->fresh()->completed_at);
         $service->recover($f->viewer, $f->phase);
         $this->assertSame(1, Receipt::where('evidence_execution_id', $execution->id)->count());
+    }
+
+    public function test_failed_delivery_acknowledgement_issues_one_receipt_without_claiming_presentation(): void
+    {
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        $service = app(PreparationService::class);
+        $execution = $service->start($f->viewer, $f->phase, $fixture->input());
+        Crypt::shouldReceive('encryptString')->once()->andThrow(new RuntimeException('private adapter details'));
+        try {
+            $service->delivery($f->viewer, $execution, 'human-text');
+            $this->fail('Delivery succeeded without a token.');
+        } catch (DomainException $exception) {
+            $this->assertSame('Preparation delivery failed.', $exception->getMessage());
+        }
+        $receipt = $execution->refresh()->receipt;
+        $this->assertSame('failure', $receipt->type);
+        $this->assertSame('delivery', $receipt->metadata['failure']['stage']);
+        $this->assertSame([], $receipt->metadata['deliveries']);
+        $this->assertNull($execution->presented_at);
+        $this->assertStringNotContainsString('private adapter details', json_encode($receipt->metadata));
     }
 
     public function test_failure_and_receipt_creation_roll_back_together(): void

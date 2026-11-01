@@ -149,6 +149,12 @@ final readonly class EvidenceExecutionService
                     'content_verified' => true, 'reinforcement_version' => $resolution['status']];
             }
 
+            $error = $metadata['verification_error'] ?? $metadata['observation_error'] ?? null;
+            if (($metadata['content_verified'] ?? false) === false && ($error !== null || ($download !== null && ! $download->successful()))) {
+                return $this->fail($locked, $error ?? '', ['stage' => 'observation',
+                    'classification' => $metadata['validation'] ?? 'retrieval_failure'], variantObservation: true);
+            }
+
             return $this->receipt($locked, $locked->kind, $locked->reference, $resolution['signature'], $metadata);
         });
     }
@@ -267,7 +273,9 @@ final readonly class EvidenceExecutionService
             $locked->forceFill(['status' => 'failed', 'outcome' => 'failed', 'failure_reason' => $reason,
                 'failed_at' => $at, 'metadata' => $metadata])->save();
             $receipt = $this->receipt($locked, 'failure', $locked->id, null, $metadata);
-            DB::afterCommit(fn () => app(PotentialProjectionService::class)->refresh($participant->substrate_id));
+            // FieldMutationService persisted the dirty Horizon with the Receipt.
+            // Report publication errors for the scheduled sweep without masking the recorded outcome.
+            DB::afterCommit(fn () => rescue(fn () => app(PotentialProjectionService::class)->refresh($participant->substrate_id)));
 
             return $receipt;
         }, attempts: 3);

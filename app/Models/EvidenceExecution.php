@@ -48,12 +48,12 @@ class EvidenceExecution extends Model
         static::saving(function (self $execution): void {
             if (! in_array($execution->type, ['instrument', 'prepare'], true)
                 || ($execution->type === 'prepare' && ($execution->kind !== null || $execution->reference !== null || $execution->replayed_from_receipt_id !== null))
-                || ($execution->type === 'instrument' && ($execution->kind === null || $execution->reference === null || ($execution->outcome !== null && ! ($execution->status === 'failed' && $execution->outcome === 'failed'))))
-                || ($execution->type === 'prepare' && ! in_array($execution->outcome, match ($execution->status) {
-                    'completed' => ['contributed', 'deferred'],
+                || ($execution->type === 'instrument' && ($execution->kind === null || $execution->reference === null))
+                || ! in_array($execution->outcome, match ($execution->status) {
+                    'completed' => $execution->type === 'prepare' ? ['contributed', 'deferred'] : [null],
                     'failed' => [null, 'failed'],
                     default => [null],
-                }, true))
+                }, true)
                 || (($execution->outcome === 'contributed') !== ($execution->resulting_proposition_id !== null))
                 || (($execution->status === 'completed') !== ($execution->completed_at !== null))
                 || (($execution->status === 'failed') !== ($execution->failed_at !== null))

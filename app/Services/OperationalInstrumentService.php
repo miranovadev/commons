@@ -124,12 +124,6 @@ final readonly class OperationalInstrumentService
                 throw new ConflictHttpException('The admitted acquisition Gate is no longer safe.');
             }
 
-            $error = $observed->metadata['verification_error'] ?? $observed->metadata['observation_error'] ?? $observed->download?->metadata['observation_error'] ?? null;
-            if ($error !== null) {
-                return $this->executions->fail($execution, $error, ['stage' => 'observation',
-                    'classification' => $observed->metadata['validation'] ?? $observed->download->metadata['validation']], variantObservation: true);
-            }
-
             return $this->executions->complete(
                 $execution, $proposition, metadata: [...$metadata, ...$observed->metadata],
                 verification: $observed->verification, observation: $observed->search,
@@ -293,7 +287,7 @@ final readonly class OperationalInstrumentService
         $target = Proposition::query()->find($reference)
             ?? Attestation::query()->find($reference);
         if ($target === null || $target->phase->cycle->participant->substrate_id !== $substrateId) {
-            throw new InvalidCitationSubject(InstrumentInvocation::CITATION_GUIDANCE);
+            throw new InvalidCitationSubject('No Proposition or Attestation with this ULID is available in this substrate.');
         }
 
         return [

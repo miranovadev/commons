@@ -193,7 +193,7 @@ return [
             ],
         ],
         'instrument.execute' => [
-            'description' => 'Observe the current Gate in Persist or fallback Disperse once per Cycle. Record its Receipt without advancing the Phase.',
+            'description' => 'Acquire at the current Gate for this generative opportunity. Use Citation for a Proposition or Attestation ULID and Hyperlink for a public URL.',
             'title' => 'Observe the current eligible Gate',
             'type' => 'object',
             'additionalProperties' => false,

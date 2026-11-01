@@ -125,7 +125,7 @@ class OperationalCommitmentTest extends TestCase
         $this->assertSame($receipt->id, app(EvidenceExecutionService::class)->complete($receipt->evidenceExecution, $gate)->id);
     }
 
-    public function test_pending_and_failed_executions_are_visible_without_satisfying_grounding(): void
+    public function test_pending_attempt_is_visible_and_its_failure_receipt_satisfies_structural_grounding(): void
     {
         $gate = $this->positionedCandidate(PhaseKind::Bias);
         $this->attest($gate);
@@ -144,7 +144,7 @@ class OperationalCommitmentTest extends TestCase
         $this->publishPotentialFixture($committer);
         $state = app(ParticipationService::class)->stateFor($committer);
         $this->assertSame('ready', $state['status']);
-        $this->assertFalse($state['plan']['commitment']['admissible']);
+        $this->assertTrue($state['plan']['commitment']['admissible']);
         $this->assertSame('failed', $this->workspaceCard($committer, $gate)['instruments'][0]['status']);
         $this->assertSame('Instrument unavailable.', $this->workspaceCard($committer, $gate)['instruments'][0]['failure_reason']);
         $this->assertTrue($state['plan']['commitment']['requirements']['receipt']);
