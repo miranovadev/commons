@@ -48,48 +48,12 @@ final class ContinuationOpportunityService
         return $evaluation;
     }
 
-    /** Evidence shortage is not a completed exploration encounter. This probe grants no action. */
-    public function awaitingEvidence(Phase $phase, ParticipationContext $context): bool
-    {
-        if ($phase->kind === PhaseKind::Bias) {
-            $generation = app(PhaseGenerationService::class);
-
-            return ! $generation->available($phase, 'proposition.reclassify', $context)
-                && $generation->available($phase, 'proposition.reclassify', $context, withoutReceipt: true);
-        }
-        if ($phase->kind === PhaseKind::Order) {
-            return app(ClosureOptionService::class)->forPhase($phase, $context)->contains(function ($node) use ($phase, $context): bool {
-                $requirements = app(CommitmentAdmissibilityService::class)->evaluate($node, $phase, $context)['requirements'];
-
-                return ! $requirements['receipt'] && collect($requirements)->except('receipt')->every(fn ($met) => $met === true);
-            });
-        }
-
-        return false;
-    }
-
     public function pendingEvidence(Phase $phase, ?ParticipationContext $context = null): bool
     {
         $query = fn () => EvidenceExecution::where('cycle_id', $phase->cycle_id)
             ->whereIn('status', ['pending', 'presented'])->exists();
 
         return $context === null ? $query() : $context->remember('pending-evidence:'.$phase->cycle_id, $query);
-    }
-
-    /** Acquisition is not forward generation, but an unfinished test cannot publish an encounter. */
-    public function unfinishedEvidence(Phase $phase, ParticipationContext $context): bool
-    {
-        if ($this->pendingEvidence($phase, $context)) {
-            return true;
-        }
-        foreach (array_intersect(config('phases.'.$phase->kind->value.'.actions', []), ['instrument.execute', 'preparation.start']) as $action) {
-            if (app(PhaseGenerationService::class)->available($phase, $action, $context)
-                && ($action === 'preparation.start' || app(PropositionOptionService::class)->instrumentOptionsFor($phase, $context)->isNotEmpty())) {
-                return true;
-            }
-        }
-
-        return $this->awaitingEvidence($phase, $context);
     }
 
     /**

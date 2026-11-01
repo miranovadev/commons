@@ -43,7 +43,7 @@ Summaries, personal loading, Read-context inclusion, original Gate provenance an
 
 The shared action plan distinguishes `not_required`, `required`, `pending`, `awaiting_resolution` and `resolved`. After Instrument persistence, the next inference or human action sees Variant/Defer. Human Defer uses the existing contribution form, retaining its execution and reason across refreshes. Preparation resolution schemas accompany delivered reading; execution still requires actual presentation acknowledgement. Human and autonomous clients cannot bypass the backend by submitting an older plan.
 
-Exploration completion no longer looks up historical acquisition. Effective personal judgment, selected active routes, independent evidence witness and genuine forward-generation reopening remain unchanged. Acquisition and Defer do not publish completion events.
+Terminal exploration records the actual arrival and effective personal judgment on a completed route. It can publish without a Receipt or completed evidence execution. A pending execution still blocks publication. Acquisition and Defer do not publish exploration events. See [participatory exploration completion](participatory-exploration-completion.md).
 
 ## Executable evidence and limitations
 

@@ -17,6 +17,7 @@ use App\Services\ParticipantExplorationService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseGenerationService;
 use App\Services\PotentialChargeService;
+use App\Services\ReceiptContextService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -72,19 +73,19 @@ class ExpressiveEvidenceGatingTest extends TestCase
     }
 
     #[DataProvider('expressivePhases')]
-    public function test_empty_position_then_shared_persist_evidence_then_attestation(PhaseKind $kind): void
+    public function test_consumption_preserves_first_attestation_without_resetting_acquisition(PhaseKind $kind): void
     {
         $phase = $this->position($kind);
         if ($kind === PhaseKind::Disperse) {
             $this->assertArrayNotHasKey('proposition.variant', $this->actions($phase));
-            $initialReceipt = $this->sharedObservation();
+            $this->sharedObservation();
         }
         $this->assertArrayNotHasKey('proposition.variant', $this->actions($phase), 'Shared evidence does not complete personal acquisition');
         $this->instrumentGateFixture($phase);
         $write = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'Explore this possibility']);
-        $actions = $this->actions($phase);
-        // Consume all ordinary observations to isolate the independent Attestation prerequisite.
+        $gateReceipt = Receipt::where('phase_id', $phase->id)->sole();
+        // The Gate observation remains visible after consumption.
         $consumerPhase = $this->phase($write, PhaseKind::Constrain);
         foreach (app(HorizonReceiptService::class)->ordinaryAvailable($consumerPhase) as $observation) {
             $consumer = $this->node($consumerPhase, $write);
@@ -93,7 +94,9 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $actions = $this->actions($phase);
         $this->assertArrayNotHasKey('instrument.execute', $actions, 'Consumption does not reset personal acquisition');
         $this->assertArrayNotHasKey('proposition.variant', $actions);
-        $this->assertArrayNotHasKey('attestation.create', $actions);
+        $this->assertEmpty(app(HorizonReceiptService::class)->ordinaryAvailable($phase));
+        $this->assertSame('consumed', app(ReceiptContextService::class)->forPhase($phase)->firstWhere('id', $gateReceipt->id)['availability']);
+        $this->assertContains($write->id, $actions['attestation.create']['properties']['proposition_id']['enum']);
         $this->assertArrayNotHasKey('proposition.reclassify', $actions);
 
         $instruments = app(EvidenceExecutionService::class);
@@ -114,19 +117,37 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $this->assertArrayNotHasKey('proposition.variant', $this->actions($phase), 'Receipt consumption does not reopen Variant');
     }
 
-    #[DataProvider('expressivePhases')]
-    public function test_attestation_becomes_traverse_next_cycle_even_after_receipt_consumption(PhaseKind $kind): void
+    public static function receiptFreeJudgments(): array
+    {
+        return [[PhaseKind::Distinguish, false], [PhaseKind::Distinguish, true], [PhaseKind::Disperse, false], [PhaseKind::Disperse, true]];
+    }
+
+    #[DataProvider('receiptFreeJudgments')]
+    public function test_first_judgment_then_later_reconsideration_without_available_receipts(PhaseKind $kind, bool $consumed): void
     {
         $phase = $this->position($kind);
         $write = $this->node($phase, $phase->gate);
-        $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $write->id, 'direction' => 'support']);
-        $vote->save();
-        app(LedgerService::class)->record($vote);
+        $this->assertDatabaseCount('receipts', 0);
+        $this->assertDatabaseCount('evidence_executions', 0);
+        if ($consumed) {
+            $receipt = $this->sharedObservation($kind === PhaseKind::Distinguish ? $write : null);
+            $consumerPhase = $this->phase($write, PhaseKind::Constrain);
+            $consumer = $this->node($consumerPhase, $write);
+            DB::transaction(fn () => app(HorizonReceiptService::class)->consume($consumerPhase, $write, $consumer, $receipt->id));
+            $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $receipt->id]);
+        }
+        $this->assertEmpty(app(HorizonReceiptService::class)->ordinaryAvailable($phase));
+        $first = $this->actions($phase);
+        $this->assertContains($write->id, $first['attestation.create']['properties']['proposition_id']['enum']);
+        $this->assertArrayNotHasKey('proposition.traverse', $first);
+        app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+            ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'support']);
+        $this->assertArrayNotHasKey('attestation.create', $this->actions($phase), 'One judgment per Write in this Phase');
         $this->assertArrayNotHasKey('proposition.traverse', $this->actions($phase));
         $phase->forceFill(['completed_at' => now()])->save();
         $phase->cycle->forceFill(['completed_at' => now()])->save();
         $cycle = (new Cycle)->forceFill(['participant_id' => $phase->cycle->participant_id,
-            'context_horizon_id' => $phase->cycle->context_horizon_id, 'sequence' => 2]);
+            'context_horizon_id' => $phase->cycle->context_horizon_id, 'entry_committal_id' => $phase->cycle->entry_committal_id, 'sequence' => 2]);
         $cycle->save();
         $next = (new Phase)->forceFill(['cycle_id' => $cycle->id, 'gate_proposition_id' => $phase->gate_proposition_id,
             'kind' => $kind, 'write_register' => $phase->write_register, 'started_at' => now()]);
@@ -135,6 +156,19 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $this->assertSame([$write->id], $actions['proposition.traverse']['properties']['proposition_id']['enum']);
         $this->assertArrayNotHasKey('proposition.variant', $actions);
         $this->assertArrayNotHasKey('instrument.execute', $actions, 'Existing exploration needs no acquisition');
+        $this->assertEmpty(app(HorizonReceiptService::class)->ordinaryAvailable($next));
+        $choices = $actions['attestation.create']['anyOf'];
+        $this->assertSame([['properties' => [
+            'proposition_id' => ['enum' => [$write->id]], 'direction' => ['enum' => ['refute']],
+        ]]], $choices);
+        $firstVote = $write->effectiveAttestations()->sole();
+        app(ContributionDispatcher::class)->dispatch($next->cycle->participant, $next,
+            ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'refute']);
+        $effective = $write->effectiveAttestations()->sole();
+        $this->assertSame($firstVote->id, $effective->supersedes_attestation_id);
+        $this->assertSame('refute', $effective->direction);
+        $this->assertDatabaseCount('evidence_executions', (int) $consumed);
+        $this->assertDatabaseCount('receipts', (int) $consumed);
     }
 
     #[DataProvider('expressivePhases')]

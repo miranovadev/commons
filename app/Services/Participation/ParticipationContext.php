@@ -331,6 +331,13 @@ final class ParticipationContext
             ->filter(fn ($a) => $a->supersededBy === null)->values();
     }
 
+    public function personalAttestationsByProposition(string $participantId): Collection
+    {
+        return $this->remember('personal-attestations:'.$participantId,
+            fn () => $this->effectiveAttestations($this->propositions->keys())
+                ->where('phase.cycle.participant_id', $participantId)->keyBy('proposition_id'));
+    }
+
     public function attestationsFor(iterable $ids): Collection
     {
         return collect($ids)->unique()->flatMap(fn ($id) => $this->attestationsByProposition->get($id, collect()))->values();

@@ -72,6 +72,13 @@ class ParticipantCognitiveProjectionTest extends TestCase
         $f->edge($f->gate, $own, 'variant');
         PropositionBirth::complete($own);
         $f->evidence($own);
+        // Revisit the authored Write after its initial judgment.
+        $phase->forceFill(['completed_at' => now()])->save();
+        $cycle->forceFill(['completed_at' => now()])->save();
+        $later = $cycle->replicate();
+        $later->forceFill(['sequence' => 2, 'completed_at' => null])->save();
+        $phase = $phase->replicate();
+        $phase->forceFill(['cycle_id' => $later->id, 'completed_at' => null])->save();
 
         app(PotentialProjectionService::class)->rebuild($f->substrate->id, false);
         $state = app(ParticipationService::class)->stateFor($observer);

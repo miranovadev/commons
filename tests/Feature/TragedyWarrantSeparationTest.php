@@ -57,7 +57,7 @@ class TragedyWarrantSeparationTest extends TestCase
             $this->assertSame($receipt->id, $service->tragedyWarrant($phase, $context)->id);
             $this->assertTrue(app(PropositionStateService::class)->receipts($write, $context)->isEmpty());
             $this->assertSame([], app(PropositionOptionService::class)->instrumentOptionsFor($phase, $context)->pluck('id')->all());
-            $this->assertNotContains($write->id, app(PropositionOptionService::class)->attestationOptionsFor($phase, $context)->pluck('id'));
+            $this->assertContains($write->id, app(PropositionOptionService::class)->attestationOptionsFor($phase, $context)->pluck('id'));
         }
         $this->assertEmpty($service->instrumentedIds($phase, collect([$write->id])));
         $item = app(ReceiptContextService::class)->forPhase($phase)->firstWhere('id', $receipt->id);
@@ -70,6 +70,8 @@ class TragedyWarrantSeparationTest extends TestCase
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);
         $this->assertContains($receipt->id, array_column($plan['receipts'], 'id'));
         $this->assertNotContains($receipt->id, app(ReceiptContextService::class)->gateOptions($phase)->pluck('id'));
+        app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+            ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'support']);
         DB::transaction(fn () => app(ReceiptContextService::class)->desired($phase->cycle->participant, $phase, ['load' => [$receipt->id]]));
         foreach ([null, new ParticipationContext($phase)] as $context) {
             $this->assertTrue($service->ordinaryAvailable($phase, $context)->isEmpty());
@@ -81,7 +83,7 @@ class TragedyWarrantSeparationTest extends TestCase
         $persist = $this->phase($write, PhaseKind::Persist);
         $ordinary = $instruments->complete($instruments->start($persist, $write, 'citation', $this->origin->id), $write);
         $this->assertSame([$ordinary->id], $service->ordinaryAvailable($phase)->pluck('id')->all());
-        $this->assertContains($write->id, app(PropositionOptionService::class)->attestationOptionsFor($phase)->pluck('id'));
+        $this->assertNotContains($write->id, app(PropositionOptionService::class)->attestationOptionsFor($phase)->pluck('id'));
     }
 
     public function test_receipt_consumption_cannot_authorize_acquisition_in_a_terminal_region(): void

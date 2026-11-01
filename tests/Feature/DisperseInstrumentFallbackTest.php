@@ -296,7 +296,7 @@ class DisperseInstrumentFallbackTest extends TestCase
         app(LedgerService::class)->record($vote);
         $this->assertArrayHasKey('proposition.traverse', $this->actions($f));
         $this->assertArrayNotHasKey('instrument.execute', $this->actions($f));
-        $this->assertArrayNotHasKey('attestation.create', $this->actions($f));
+        $this->assertArrayHasKey('attestation.create', $this->actions($f));
         $this->historicalReceipt($f);
         $this->assertArrayHasKey('proposition.traverse', $this->actions($f));
         $this->assertArrayHasKey('attestation.create', $this->actions($f));
