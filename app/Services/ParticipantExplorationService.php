@@ -299,38 +299,8 @@ final class ParticipantExplorationService
                 && ($context->seedIds()[$head->id] ?? null) === $phase->cycle->entry_committal_id
                 && $this->heads($head->id, $phase, $context)->keys()->all() === [$head->id]);
             $probes = $heads->map(fn ($head) => $this->probe($head, $phase, $context));
-            $mediate = $probes->filter(fn ($probe) => $probe->kind === PhaseKind::Mediate
-                && app(CorrespondenceGateService::class)->evaluate($probe->gate, $context)['admissible']);
-            $pools = $mediate->isEmpty() ? [] : app(HomologousMediationService::class)->structuralPoolsFor($mediate, $context);
-            $additional = collect();
-            foreach ($pools as $pool) {
-                $additional = $additional->merge($pool['reads']->pluck('id'))->merge($pool['gates']->pluck('id'));
-            }
-            foreach ([PhaseKind::Bias->value => HomologousBiasService::class, PhaseKind::Order->value => HomologousOrderService::class] as $kind => $service) {
-                $group = $probes->filter(fn ($probe) => $probe->kind->value === $kind);
-                if ($group->isEmpty()) {
-                    continue;
-                }
-                // Same entry, Domain and producing position have one canonical population.
-                $pool = app($service)->populationFor($group->first(), $context);
-                $additional = $additional->merge($pool->pluck('id'));
-                foreach ($group as $probe) {
-                    $prefix = $probe->kind === PhaseKind::Bias ? 'homologous-bias-structure:' : 'homologous-order-structure:';
-                    $pools[$prefix.$probe->id] = $pool;
-                }
-            }
-            $bias = $probes->filter(fn ($probe) => $probe->kind === PhaseKind::Bias);
-            foreach (app(MediatedIncomingBiasService::class)->populationsFor($bias, $context) as $key => $pool) {
-                $additional = $additional->merge($pool->pluck('id'));
-                $pools[$key] = $pool;
-            }
-            $evaluation = $additional->diff($context->propositions->keys())->isEmpty()
-                ? $context : new ParticipationContext($phase, $additional->unique()->values());
-            foreach ($pools as $key => $pool) {
-                $evaluation->remember($key, fn () => $pool);
-            }
 
-            return $evaluation;
+            return app(ContinuationOpportunityService::class)->comparisonContext($probes, $context);
         });
     }
 }

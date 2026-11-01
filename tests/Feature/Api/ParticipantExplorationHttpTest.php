@@ -2,6 +2,16 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\PhaseKind;
+use App\Models\Connection;
+use App\Models\Phase;
+use App\Models\Proposition;
+use App\Services\AcquisitionAttemptService;
+use App\Services\CrossoverMarginService;
+use App\Services\Participation\ParticipationContext;
+use App\Services\ParticipantPromptFactory;
+use App\Services\PhaseGenerationService;
+use App\Services\PropositionOptionService;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\PersistExplorationHttpFixture;
@@ -13,6 +23,57 @@ use Tests\Support\ScriptedParticipationTestCase;
 class ParticipantExplorationHttpTest extends ScriptedParticipationTestCase
 {
     use PersistExplorationHttpFixture;
+
+    public function test_explored_route_to_a_second_disperse_variant(): void
+    {
+        $journey = $this->personalExplorationJourney();
+        $actor = $journey['actor'];
+        $state = $this->readParticipation($actor);
+        $entry = Phase::findOrFail($state['plan']['phase']['id']);
+        self::assertSame($journey['origin'], $entry->gate_proposition_id);
+        self::assertGreaterThan(0, app(CrossoverMarginService::class)->inspect($entry->cycle)['crossover_margin']);
+        $history = DB::table('exploration_events')->get()->toJson();
+        $this->assertDatabaseCount('exploration_events', 1);
+        $attempts = DB::table('evidence_executions')->count();
+        $votes = DB::table('attestations')->count();
+        $p3 = Proposition::findOrFail($journey['constrain']);
+
+        // Independently establish admission at the destination before attempting a hop.
+        $probe = (new Phase)->forceFill(['id' => (string) str()->ulid(), 'cycle_id' => $entry->cycle_id,
+            'kind' => PhaseKind::Disperse, 'write_register' => $entry->cycle->contextHorizon->domain->registerFor(PhaseKind::Disperse),
+            'gate_proposition_id' => $p3->id]);
+        $probe->setRelation('gate', $p3)->setRelation('cycle', $entry->cycle);
+        $context = new ParticipationContext($probe);
+        self::assertSame('required', app(AcquisitionAttemptService::class)->state($probe, $context)['status']);
+        self::assertTrue(app(PropositionOptionService::class)->instrumentOptionsFor($probe, $context)->contains('id', $p3->id));
+        self::assertFalse(app(PhaseGenerationService::class)->available($probe, 'proposition.variant', $context));
+        foreach (['a', 'persist', 'constrain'] as $key) {
+            $id = $journey[$key];
+            self::assertTrue($this->visibleProposition($state, $id)['explored']);
+            $actions = $state['plan']['schema']['$defs']['actions'];
+            self::assertContains($id, $actions['proposition.traverse']['properties']['proposition_id']['enum']);
+            self::assertNotContains($id, $actions['attestation.create']['properties']['proposition_id']['enum'] ?? []);
+            self::assertNotContains($id, $actions['proposition.revise']['properties']['proposition_id']['enum'] ?? []);
+            self::assertSame($state['plan']['schema'], app(ParticipantPromptFactory::class)->make(new Connection, $state)['schema']);
+            $state = $this->contribute($actor, ['action' => 'proposition.traverse', 'proposition_id' => $id], $state);
+        }
+        self::assertSame($p3->id, $state['plan']['gate_id']);
+        self::assertTrue($this->visibleProposition($state, $journey['b'])['explored']);
+        $this->assertActionUnavailable($state, 'proposition.variant');
+        $this->assertActionUnavailable($state, 'proposition.traverse');
+        $this->assertDatabaseCount('evidence_executions', $attempts);
+        $this->assertDatabaseCount('attestations', $votes);
+        $this->assertSame($history, DB::table('exploration_events')->get()->toJson());
+        $observed = $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $p3->id,
+            'instrument' => ['kind' => 'citation', 'reference' => $journey['persist']]], $state);
+        $next = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'A second Disperse Signal'], $observed);
+        self::assertNotSame($journey['b'], $next['current_proposition_id']);
+        foreach ([$journey['b'], $next['current_proposition_id']] as $child) {
+            $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $p3->id, 'target_proposition_id' => $child, 'type' => 'variant']);
+        }
+        $this->assertDatabaseCount('evidence_executions', $attempts + 1);
+        $this->assertSame($history, DB::table('exploration_events')->get()->toJson());
+    }
 
     public function test_real_personal_rest_leaves_staggered_observers_free_and_variant_does_not_erase_history(): void
     {

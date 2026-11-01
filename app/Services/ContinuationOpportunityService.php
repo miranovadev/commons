@@ -6,10 +6,48 @@ use App\Enums\PhaseKind;
 use App\Models\EvidenceExecution;
 use App\Models\Phase;
 use App\Services\Participation\ParticipationContext;
+use Illuminate\Support\Collection;
 
 /** Base action lawfulness only. No exploration suppression, Variant or complete plan recursion. */
 final class ContinuationOpportunityService
 {
+    /** Batch comparison operands for projected Phases without granting movement to them. */
+    public function comparisonContext(Collection $probes, ParticipationContext $context): ParticipationContext
+    {
+        $mediate = $probes->filter(fn ($probe) => $probe->kind === PhaseKind::Mediate
+            && app(CorrespondenceGateService::class)->evaluate($probe->gate, $context)['admissible']);
+        $pools = $mediate->isEmpty() ? [] : app(HomologousMediationService::class)->structuralPoolsFor($mediate, $context);
+        $additional = collect();
+        foreach ($pools as $pool) {
+            $additional = $additional->merge($pool['reads']->pluck('id'))->merge($pool['gates']->pluck('id'));
+        }
+        foreach ([PhaseKind::Bias->value => HomologousBiasService::class, PhaseKind::Order->value => HomologousOrderService::class] as $kind => $service) {
+            $group = $probes->filter(fn ($probe) => $probe->kind->value === $kind);
+            if ($group->isEmpty()) {
+                continue;
+            }
+            // Same entry, Domain and producing position have one canonical population.
+            $pool = app($service)->populationFor($group->first(), $context);
+            $additional = $additional->merge($pool->pluck('id'));
+            foreach ($group as $probe) {
+                $prefix = $probe->kind === PhaseKind::Bias ? 'homologous-bias-structure:' : 'homologous-order-structure:';
+                $pools[$prefix.$probe->id] = $pool;
+            }
+        }
+        $bias = $probes->filter(fn ($probe) => $probe->kind === PhaseKind::Bias);
+        foreach (app(MediatedIncomingBiasService::class)->populationsFor($bias, $context) as $key => $pool) {
+            $additional = $additional->merge($pool->pluck('id'));
+            $pools[$key] = $pool;
+        }
+        $evaluation = $additional->diff($context->propositions->keys())->isEmpty()
+            ? $context : new ParticipationContext($context->phase, $additional->unique()->values());
+        foreach ($pools as $key => $pool) {
+            $evaluation->remember($key, fn () => $pool);
+        }
+
+        return $evaluation;
+    }
+
     /** Evidence shortage is not a completed exploration encounter. This probe grants no action. */
     public function awaitingEvidence(Phase $phase, ParticipationContext $context): bool
     {

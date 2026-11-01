@@ -38,12 +38,30 @@ final class PropositionOptionService
     /** An effective personal Attestation establishes the forward traversal path. */
     public function traversalOptionsFor(Phase $phase, ?ParticipationContext $context = null, bool $base = false): Collection
     {
+        $load = fn () => $this->baseTraversalOptions($phase, $context);
+        $candidates = $context === null ? $load() : $context->remember('base-traversal:'.$phase->id, $load);
+        if ($base || $candidates->isEmpty()) {
+            return $candidates;
+        }
+        $context ??= new ParticipationContext($phase);
+
+        return $context->remember('actionable-traversal:'.$phase->id, function () use ($phase, $context, $candidates) {
+            $explored = app(ParticipantExplorationService::class)->exploredIds($phase, $candidates->pluck('id'), $context);
+            if ($explored->isEmpty()) {
+                return $candidates;
+            }
+            $towardGeneration = app(GenerativeTraversalService::class)->destinations($phase, $candidates->whereIn('id', $explored->keys()), $context);
+
+            return $candidates->filter(fn ($node) => ! $explored->has($node->id) || $towardGeneration->has($node->id))->values();
+        });
+    }
+
+    private function baseTraversalOptions(Phase $phase, ?ParticipationContext $context): Collection
+    {
         if ($phase->kind === PhaseKind::Order) {
-            $options = $this->generation->committedWrites($phase, $context)
+            return $this->generation->committedWrites($phase, $context)
                 ->concat(app(HomologousOrderService::class)->forPhase($phase, $context))
                 ->unique('id')->sortBy('id')->values();
-
-            return $base ? $options : $this->unexplored($phase, $options, $context);
         }
 
         if ($phase->kind === PhaseKind::Bias) {
@@ -68,11 +86,6 @@ final class PropositionOptionService
 
         // Receipt consumption never erases the path established by an earlier vote.
         $options = $this->availableWrites($phase, $context);
-        if (! $base) {
-            $actionable = $this->unexplored($phase, $options->concat($committed), $context)->pluck('id')->flip();
-            $options = $options->filter(fn ($node) => $actionable->has($node->id));
-            $committed = $committed->filter(fn ($node) => $actionable->has($node->id));
-        }
         if ($context !== null) {
             $attested = $context->effectiveAttestations($options->pluck('id'))
                 ->filter(fn ($attestation) => $attestation->phase->cycle->participant_id === $phase->cycle->participant_id

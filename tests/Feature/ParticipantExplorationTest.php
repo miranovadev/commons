@@ -13,6 +13,7 @@ use App\Services\EvidenceExecutionService;
 use App\Services\ExplorationEventService;
 use App\Services\HomologousMediationService;
 use App\Services\HorizonReceiptService;
+use App\Services\ParticipationService;
 use App\Services\InputPlanService;
 use App\Services\MediationAnchorService;
 use App\Services\MediationReadService;
@@ -53,11 +54,36 @@ class ParticipantExplorationTest extends TestCase
         $this->assertContains($signal->id, $options->attestationOptionsFor($luna)->pluck('id'));
         $this->assertNotContains($signal->id, $options->attestationOptionsFor($return)->pluck('id'));
         $this->assertContains($signal->id, $options->traversalOptionsFor($return, base: true)->pluck('id'), 'Base navigation remains lawful');
-        $this->assertNotContains($signal->id, $options->traversalOptionsFor($return)->pluck('id'));
+        $this->assertContains($signal->id, $options->traversalOptionsFor($return)->pluck('id'), 'The explored Write leads to fresh generation');
         $this->assertTrue($exploration->explored($signal, $return), 'Base Traverse cannot reopen the explored destination');
         $this->assertSame($nova->id, $return->cycle->participant_id);
         $this->assertSame(0, Tragedy::count());
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
+    }
+
+    public function test_variant_only_traverse_disappears_on_closure_without_changing_personal_history(): void
+    {
+        [$signal, $persist, $constrain, , $terminal] = $this->personalJourney();
+        $phase = $this->returnAfterRest($terminal);
+        $actor = $phase->cycle->participant;
+        foreach ([$signal, $persist] as $target) {
+            app(ParticipationService::class)->contribute($actor, $phase->id, ['action' => 'proposition.traverse', 'proposition_id' => $target->id]);
+            $phase = $actor->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        }
+        $history = DB::table('exploration_events')->get()->toJson();
+        $options = app(PropositionOptionService::class);
+        self::assertTrue($options->traversalOptionsFor($phase)->contains('id', $constrain->id));
+        $this->variantMarginFixture($phase, closed: true);
+        self::assertTrue(app(ParticipantExplorationService::class)->explored($constrain, $phase));
+        self::assertTrue($options->traversalOptionsFor($phase, base: true)->contains('id', $constrain->id));
+        self::assertFalse($options->traversalOptionsFor($phase)->contains('id', $constrain->id));
+        try {
+            app(ParticipationService::class)->contribute($actor, $phase->id, ['action' => 'proposition.traverse', 'proposition_id' => $constrain->id]);
+            self::fail('The previously offered Traverse must be revalidated.');
+        } catch (\InvalidArgumentException) {
+            self::assertSame($persist->id, $actor->fresh()->current_proposition_id);
+        }
+        self::assertSame($history, DB::table('exploration_events')->get()->toJson());
     }
 
     public function test_prior_cycle_refute_cannot_revise_an_explored_write_or_block_fresh_variant(): void
@@ -457,6 +483,67 @@ class ParticipantExplorationTest extends TestCase
         $this->returnAfterRest($terminal);
         $this->expectException(QueryException::class);
         DB::table('exploration_events')->where('phase_id', $terminal->id)->update(['observed_field_version' => 0]);
+    }
+
+    #[Group('query')]
+    public function test_generative_traverse_cost_is_bounded_across_explored_sibling_routes(): void
+    {
+        [$signal, $persist, $constrain, $head, $terminal] = $this->personalJourney();
+        $return = $this->returnAfterRest($terminal);
+        $gates = collect([$constrain->id]);
+        $heads = collect([$head]);
+        $counts = [];
+        $visit = null;
+        foreach ([2, 8] as $size) {
+            while ($gates->count() < $size) {
+                // Controlled historical structure. Each personal encounter is
+                // earned through Phase arrivals, judgments and a real Mediate Rest.
+                $next = $this->node($this->phase($persist, PhaseKind::Constrain), $persist);
+                $leaf = $this->node($this->phase($next, PhaseKind::Disperse), $next);
+                $phase = $visit ?? $return;
+                $route = $visit === null ? [$signal, $persist, $next, $leaf] : [$next, $leaf];
+                $visit = null;
+                foreach ($route as $node) {
+                    if ($node->is($next) || $node->is($leaf)) {
+                        $this->personalVote($phase, $node);
+                    }
+                    $phase = app(PhaseProgressionService::class)->advance($phase, $node);
+                }
+                $heads->push($leaf);
+                $gates->push($next->id);
+                $this->measure($leaf, 0);
+                app(PropositionMeasurementService::class)->project($leaf, 0, 0, 0, correspondenceComponents: new CorrespondenceValues(.8, -.8));
+                $this->publishPotentialFixture($this->substrate);
+                $return = $this->returnAfterRest($phase);
+            }
+            foreach ($heads as $leaf) {
+                app(PropositionMeasurementService::class)->project($leaf, 0, 0, 0, correspondenceComponents: new CorrespondenceValues(.8, -.8));
+            }
+            $this->assertDatabaseCount('exploration_events', $size);
+            $phase = $return;
+            foreach ([$signal, $persist] as $node) {
+                $phase = app(PhaseProgressionService::class)->advance($phase, $node);
+            }
+            $context = new ParticipationContext($phase);
+            $options = app(PropositionOptionService::class);
+            DB::enableQueryLog();
+            DB::flushQueryLog();
+            $offered = $options->traversalOptionsFor($phase, $context)->pluck('id');
+            $cold = DB::getQueryLog();
+            DB::flushQueryLog();
+            self::assertEqualsCanonicalizing($gates->all(), $offered->all());
+            self::assertSame($offered->all(), $options->traversalOptionsFor($phase, $context)->pluck('id')->all());
+            self::assertCount(0, DB::getQueryLog());
+            DB::disableQueryLog();
+            foreach ($cold as $query) {
+                $this->assertDoesNotMatchRegularExpression('/insert |update |delete |for update/i', $query['query']);
+            }
+            self::assertCount($size, app(ParticipantExplorationService::class)->exploredIds($phase, $gates, $context));
+            $counts[] = count($cold);
+            $visit = $phase; // Continue from this Constrain arrival on the next branch.
+        }
+        fwrite(STDERR, "\nGENERATIVE_TRAVERSE queries (2 -> 8 routes): ".implode(' -> ', $counts)."; warm 0 -> 0\n");
+        self::assertLessThanOrEqual($counts[0], $counts[1]);
     }
 
     #[Group('query')]
