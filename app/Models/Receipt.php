@@ -89,25 +89,36 @@ class Receipt extends Model
             && ($capability !== ReceiptCapability::Replayable || $this->replayInvocation() !== null);
     }
 
+    /** Recorded retrievals keep their invocation identity, including negative observations. */
+    public function observedInstrumentKind(): ?string
+    {
+        $execution = $this->evidenceExecution;
+        if ($execution?->type !== 'instrument') {
+            return null;
+        }
+        if ($execution->status === 'completed' && $this->type === $execution->kind) {
+            return $execution->kind;
+        }
+
+        return $this->type === 'failure' && $execution->observationRecorded()
+            && in_array(ReceiptCapability::Replayable->value, $this->capabilityValues(), true) ? $execution->kind : null;
+    }
+
     public function replayInvocation(): ?array
     {
-        if ($this->type === 'tragedy') {
+        $kind = $this->observedInstrumentKind();
+        $input = $this->evidenceExecution?->input;
+        if ($kind === null || ! is_array($input) || ($input['kind'] ?? null) !== $kind) {
             return null;
         }
-        $execution = $this->evidenceExecution;
-        $input = $execution?->input;
-        if ($execution?->type !== 'instrument' || $execution->status !== 'completed' || ! is_array($input)
-            || ($input['kind'] ?? null) !== $this->type) {
-            return null;
+        if ($kind === 'web_search' && is_string($input['query'] ?? null)) {
+            return ['kind' => $kind, 'query' => $input['query']];
         }
-        if ($this->type === 'web_search' && is_string($input['query'] ?? null)) {
-            return ['kind' => 'web_search', 'query' => $input['query']];
+        if ($kind === 'load_file' && ($input['method'] ?? null) === 'download' && is_string($input['reference'] ?? null)) {
+            return ['kind' => $kind, 'method' => 'download', 'reference' => $input['reference']];
         }
-        if ($this->type === 'load_file' && ($input['method'] ?? null) === 'download' && is_string($input['reference'] ?? null)) {
-            return ['kind' => 'load_file', 'method' => 'download', 'reference' => $input['reference']];
-        }
-        if ($this->type === 'hyperlink' && is_string($input['reference'] ?? null)) {
-            return ['kind' => 'hyperlink', 'reference' => trim($input['reference'])];
+        if ($kind === 'hyperlink' && is_string($input['reference'] ?? null)) {
+            return ['kind' => $kind, 'reference' => trim($input['reference'])];
         }
 
         return null;

@@ -152,7 +152,7 @@ final readonly class EvidenceExecutionService
             $error = $metadata['verification_error'] ?? $metadata['observation_error'] ?? null;
             if (($metadata['content_verified'] ?? false) === false && ($error !== null || ($download !== null && ! $download->successful()))) {
                 return $this->fail($locked, $error ?? '', ['stage' => 'observation',
-                    'classification' => $metadata['validation'] ?? 'retrieval_failure'], variantObservation: true);
+                    'classification' => $metadata['validation'] ?? 'retrieval_failure'], variantObservation: true, download: $download);
             }
 
             return $this->receipt($locked, $locked->kind, $locked->reference, $resolution['signature'], $metadata);
@@ -215,7 +215,9 @@ final readonly class EvidenceExecutionService
         $receipt = new Receipt;
         $receipt->forceFill([
             'evidence_execution_id' => $execution->id, 'type' => $type,
-            'capabilities' => ReceiptCapability::forReceipt($type),
+            'capabilities' => $type === 'failure' && $execution->type === 'instrument' && ($metadata['variant_observation'] ?? false)
+                ? array_values(array_unique([...ReceiptCapability::forReceipt('failure'), ...ReceiptCapability::forReceipt($execution->kind)]))
+                : ReceiptCapability::forReceipt($type),
             'reference' => $reference, 'signature' => $signature, 'metadata' => $metadata,
         ]);
         $receipt->receiptable()->associate($execution->proposition);
@@ -234,9 +236,9 @@ final readonly class EvidenceExecutionService
     }
 
     /** First terminal writer wins. Historical failures are never backfilled by retries. */
-    public function fail(EvidenceExecution $execution, string $reason = '', array $diagnostic = [], bool $variantObservation = false): ?Receipt
+    public function fail(EvidenceExecution $execution, string $reason = '', array $diagnostic = [], bool $variantObservation = false, ?DownloadObservation $download = null): ?Receipt
     {
-        return DB::transaction(function () use ($execution, $reason, $diagnostic, $variantObservation): ?Receipt {
+        return DB::transaction(function () use ($execution, $reason, $diagnostic, $variantObservation, $download): ?Receipt {
             $participant = $execution->phase->cycle->participant;
             Substrate::lockForUpdate()->findOrFail($participant->substrate_id);
             $locked = EvidenceExecution::lockForUpdate()->findOrFail($execution->id);
@@ -263,6 +265,7 @@ final readonly class EvidenceExecutionService
             $metadata = [
                 'execution_id' => $locked->id, 'originating_gate_id' => $locked->proposition_id, 'participant_id' => $participant->id,
                 'kind' => $kind, 'failed_at' => $at->toISOString(), 'failure' => $failure, 'failure_reason' => $reason,
+                ...($download === null ? [] : ['observation_identity' => $download->identity()]),
                 'attempted_input' => $attempted, 'outcome' => ['type' => 'failed'], 'variant_observation' => $variantObservation,
                 'content_verified' => false, 'reinforcement_version' => 'acquisition-failure',
             ];

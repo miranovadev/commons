@@ -255,7 +255,7 @@ final class PreparationService
             $references = app(ParticipantReceiptProjection::class)->referencesFor($ids->unique())->flatten(1)->pluck('id')->unique();
 
             return Receipt::whereKey($references)->whereHas('evidenceExecution.phase.cycle.participant',
-                fn ($q) => $q->where('substrate_id', $phase->cycle->participant->substrate_id))->get();
+                fn ($q) => $q->where('substrate_id', $phase->cycle->participant->substrate_id))->orderBy('receipts.id')->get();
         };
 
         return $context === null ? $select() : $context->remember('preparation-causal-receipts:'.$phase->id, $select);

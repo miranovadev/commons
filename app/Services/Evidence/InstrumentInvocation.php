@@ -18,7 +18,8 @@ final class InstrumentInvocation
 
     public static function citationSubject(mixed $reference): string
     {
-        if (! is_string($reference) || ! preg_match('/'.self::CITATION_PATTERN.'/D', $reference)) {
+        $reference = is_string($reference) ? trim($reference, " \t\r\n") : null;
+        if ($reference === null || ! preg_match('/'.self::CITATION_PATTERN.'/D', $reference)) {
             throw new DomainException(self::CITATION_GUIDANCE);
         }
 
@@ -62,13 +63,13 @@ final class InstrumentInvocation
     public function fromReceipt(Receipt $receipt): ?array
     {
         $execution = $receipt->evidenceExecution;
-        if ($execution?->type !== 'instrument' || $execution->status !== 'completed') {
+        if ($receipt->observedInstrumentKind() === null) {
             return null;
         }
         $input = $execution->input;
         if (! is_array($input) || ! isset($input['kind'])) {
-            $input = ['kind' => $receipt->type,
-                $receipt->type === 'web_search' ? 'query' : 'reference' => $execution->reference ?? $receipt->reference];
+            $input = ['kind' => $execution->kind,
+                $execution->kind === 'web_search' ? 'query' : 'reference' => $execution->reference ?? $receipt->reference];
         }
         try {
             return $this->normalize($input);

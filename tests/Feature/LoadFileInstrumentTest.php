@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Evidence\DownloadObservation;
 use App\Enums\PhaseKind;
 use App\Enums\ReceiptCapability;
 use App\Exceptions\ArtifactStorageException;
@@ -231,6 +232,10 @@ class LoadFileInstrumentTest extends TestCase
         Http::fake(['*' => Http::sequence()->push('', 404)->push('bytes')]);
         $failed = app(OperationalInstrumentService::class)->execute($f->phase, $f->gate, $this->input());
         $this->assertSame('failed', $failed->evidenceExecution->status);
+        $this->assertTrue($failed->supports(ReceiptCapability::Replayable));
+        $this->assertSame($this->input(), $failed->replayInvocation());
+        $this->assertSame($failed->id, app(RelevantInstrumentService::class)->equivalent(
+            $f->gate, $this->input(), download: new DownloadObservation($this->input()['reference'], ['content_verified' => false]))->id);
         $this->assertFalse($failed->metadata['content_verified']);
         $this->assertArrayNotHasKey('artifacts', $failed->metadata);
         $this->assertNull($failed->signature);
