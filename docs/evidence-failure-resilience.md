@@ -52,6 +52,8 @@ All three Gates were personally unexplored at the cutoff and had no existing cla
 
 None offered Attestation, Traverse or Reclassification on an alternate source. As a control, masking only the consumption of one existing in-scope Receipt made both the actual and projected selectors offer Reclassification for Nova 37 at Constrain and Nova 44 at Bias. At Luna 103 it admitted alternate Bias sources while the acting Gate still failed Chirality. No missing Receipt predicate was reproduced.
 
+The preceding Phase explains how a Participant could get there. Nova 3 created the Persist Gate through Variant. Nova 37 and Vela 63 used ordinary Traverse to a personally unexplored Write. At each pre-hop cutoff, the base Traverse selector admitted the Write and the generative look-ahead rejected it. Luna 31, Nova 44, Vela 60 and Luna 103 reached Bias by Attesting at Mediate. The pre-hop selector offered Attestation in each case. None of those arrivals needed a downstream Reclassification to authorize movement.
+
 ## Fresh Distinguish generation
 
 All sampled Origin encounters had Crossover Margin +0.1666666. The two Distinguish Propositions were created by Luna in Cycle 1 and Nova in Cycle 6.

@@ -225,6 +225,10 @@ final readonly class InputSchemaService
 
     public function withReceiptOptions(array $schema, Phase $phase, ?ParticipationContext $context): array
     {
+        // Keep catalogue guidance in every packet. Only an invocable Instrument references its input alternatives.
+        if (! isset($schema['$defs']['actions']['instrument.execute'])) {
+            unset($schema['$defs']['instrument']['anyOf']);
+        }
         if (isset($schema['$defs']['actions']['participant.rest'])
             && app(ContinuationOpportunityService::class)->pendingEvidence($phase, $context)) {
             unset($schema['$defs']['actions']['participant.rest']);
