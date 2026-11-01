@@ -20,7 +20,6 @@ final class PropositionOptionService
         private readonly ClosureOptionService $closure,
         private readonly CausalWriteService $writes,
         private readonly PhaseGenerationService $generation,
-        private readonly EvidenceEligibilityService $evidence,
         private readonly PropositionAvailabilityService $availability,
         private readonly PhasePositionService $positions,
     ) {}
@@ -195,14 +194,8 @@ final class PropositionOptionService
         }
 
         $context ??= new ParticipationContext($phase);
-        $writes = $this->availableWrites($phase, $context);
-        if ($writes->isNotEmpty() && app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isEmpty()) {
-            // Only reconsideration needs evidence. A first personal vote establishes the route.
-            $judged = $context->personalAttestationsByProposition($phase->cycle->participant_id);
-            $localEvidenceAllowed = ! in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true);
-            $writes = $writes->filter(fn (Proposition $node) => ! $judged->has($node->id)
-                || ($localEvidenceAllowed && $this->evidence->hasReceipt($node, $context)));
-        }
+        $judgedHere = $context->personalAttestationsByProposition($phase->cycle->participant_id)->where('phase_id', $phase->id);
+        $writes = $this->availableWrites($phase, $context)->reject(fn (Proposition $write) => $judgedHere->has($write->id));
 
         return $this->unexplored($phase, $writes, $context);
     }

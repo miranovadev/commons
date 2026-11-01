@@ -33,7 +33,7 @@ Origin bootstrap is unchanged and requires no Instrument.
 
 ## Resolved Attestation boundary (Claire / Chat Nova, 22 October 2026)
 
-Stage 2A removed the exact-Write Instrument prerequisite and retained shared ordinary evidence for Attestation. Under the current contract, a first lawful personal Attestation requires no Receipt. Reversals retain their Phase-specific evidence rules. `EpistemicInstrumentationBoundaryTest` exercises first judgment in both Distinguish and Disperse with and without shared evidence. See [participatory exploration completion](participatory-exploration-completion.md).
+Stage 2A removed the exact-Write Instrument prerequisite and retained shared ordinary evidence for Attestation. Under the current contract, both first judgment and lawful reversal are independent of Receipts. `EpistemicInstrumentationBoundaryTest` exercises first judgment in both Distinguish and Disperse with and without shared evidence. See [participatory exploration completion](participatory-exploration-completion.md).
 
 ## Readiness register
 

@@ -170,7 +170,7 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 | --- | --- |
 | Fresh lawful Variant opportunity in Phase 1, 2 or 4 | Acquire in this Cycle, then Variant or Defer |
 | Personally unjudged, eligible Write | First Attest, including when no ordinary Receipt is available |
-| Previously judged, eligible Write | Reconsider under the existing Phase-specific evidence rules |
+| Previously judged, eligible Write | Offer the opposite direction on a later lawful encounter, regardless of Receipts |
 | Personal Attestation from an earlier Cycle | Same-side Traverse |
 | Phase 2 fresh Variant, readable causal Artifact | Preparation, then Variant or Defer |
 | Phase 2 fresh Variant, no readable causal Artifact | Instrument fallback, then Variant or Defer |
@@ -441,7 +441,7 @@ Active candidates exclude outgoing hard supersessions; soft Variant branches
 remain active. A direct Commit edge consumes its source globally; other branches remain available.
 
 A Tragedy Receipt is a dedicated boundary-exit warrant, never ordinary evidence.
-Ordinary Receipt APIs govern Instrument, the evidence conditions for Attestation reversal, and non-Bias
+Ordinary Receipt APIs govern Instrument and non-Bias
 Reclassification. Tragedy can be loaded/unloaded as condensed committed-lineage
 memory, never replayed. Memory supplies no Reinforcement or evidential authority;
 loading and boundary-warrant consumption are independent. Catalogue

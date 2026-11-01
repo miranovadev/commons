@@ -83,7 +83,7 @@ class TragedyWarrantSeparationTest extends TestCase
         $persist = $this->phase($write, PhaseKind::Persist);
         $ordinary = $instruments->complete($instruments->start($persist, $write, 'citation', $this->origin->id), $write);
         $this->assertSame([$ordinary->id], $service->ordinaryAvailable($phase)->pluck('id')->all());
-        $this->assertContains($write->id, app(PropositionOptionService::class)->attestationOptionsFor($phase)->pluck('id'));
+        $this->assertNotContains($write->id, app(PropositionOptionService::class)->attestationOptionsFor($phase)->pluck('id'));
     }
 
     public function test_receipt_consumption_cannot_authorize_acquisition_in_a_terminal_region(): void
