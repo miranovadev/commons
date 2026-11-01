@@ -22,6 +22,7 @@ use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PhaseGenerationService;
 use App\Services\PhaseProgressionService;
+use App\Services\PhaseService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
 use App\Services\ReconciliationOptionService;
@@ -398,6 +399,63 @@ class ParticipantExplorationTest extends TestCase
         self::assertSame($history, DB::table('exploration_events')->get()->toJson());
     }
 
+    public function test_a_first_mediate_judgment_can_complete_one_branch_after_all_ordinary_receipts_are_consumed(): void
+    {
+        [$distinction, $persist, $constrain, $signal, $mediate] = $this->personalJourney();
+        $sibling = $this->node($this->phase($constrain, PhaseKind::Disperse), $constrain);
+        foreach ([$signal, $sibling] as $operand) {
+            app(PropositionMeasurementService::class)->project($operand, .8, .8, .8, correspondenceComponents: new CorrespondenceValues(.8, .8));
+        }
+        $other = app(PhaseProgressionService::class)->advance($this->phase($constrain, PhaseKind::Disperse), $signal);
+        $stance = app(ContributionDispatcher::class)->dispatch($other->cycle->participant, $other,
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $sibling->id]);
+        $unjudged = $this->node($this->phase($constrain, PhaseKind::Disperse), $constrain);
+        $this->measure($unjudged, 0);
+        $receipts = app(HorizonReceiptService::class);
+        DB::transaction(function () use ($receipts, $mediate, $constrain, $persist) {
+            foreach ($receipts->ordinaryAvailable($mediate) as $receipt) {
+                $receipts->consume($constrain->phase, $persist, $constrain, $receipt->id);
+            }
+        });
+        self::assertEmpty($receipts->ordinaryAvailable($mediate));
+        $actor = $mediate->cycle->participant;
+        $schema = app(InputPlanService::class)->forPhase($actor, $mediate)['schema']['$defs']['actions'];
+        self::assertSame([$stance->id], $schema['attestation.create']['properties']['proposition_id']['enum']);
+        self::assertArrayNotHasKey('participant.rest', $schema);
+        $this->publishPotentialFixture($this->substrate);
+        app(ParticipationService::class)->contribute($actor, $mediate->id,
+            ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'refute']);
+        $bias = app(PhaseService::class)->currentFor($actor->fresh());
+        self::assertSame($stance->id, $bias->gate_proposition_id);
+        self::assertSame(['participant.rest'], array_keys(app(InputPlanService::class)->forPhase($actor, $bias)['schema']['$defs']['actions']));
+        $return = $this->returnAfterRest($bias);
+        $event = DB::table('exploration_events')->sole();
+        self::assertSame($stance->id, $event->proposition_id);
+        $witness = json_decode($event->witness, true);
+        self::assertSame($stance->effectiveAttestations()->sole()->id, $witness['attestation_id']);
+        self::assertArrayNotHasKey('receipt_id', $witness);
+        $exploration = app(ParticipantExplorationService::class);
+        self::assertTrue($exploration->explored($signal, $return));
+        self::assertFalse($exploration->explored($constrain, $return), 'The other Signal still needs personal exploration');
+        $disperse = $return;
+        foreach ([$distinction, $persist, $constrain] as $target) {
+            app(ParticipationService::class)->contribute($actor, $disperse->id, ['action' => 'proposition.traverse', 'proposition_id' => $target->id]);
+            $disperse = app(PhaseService::class)->currentFor($actor->fresh());
+        }
+        // The unjudged sibling still offers a first vote. Only coherent operands
+        // can give the completed Signal a new reason to return to Mediate.
+        $measures = app(PropositionMeasurementService::class);
+        $measures->project($unjudged, .8, .8, .8, correspondenceComponents: new CorrespondenceValues(.8, .8));
+        $options = app(PropositionOptionService::class);
+        self::assertContains($unjudged->id, app(ReconciliationOptionService::class)->forPhase($other->fresh())->pluck('id'));
+        self::assertTrue($options->traversalOptionsFor($disperse)->contains('id', $signal->id));
+        $measures->project($unjudged, 0, .8, .8, correspondenceComponents: new CorrespondenceValues(-.8, .8));
+        self::assertEmpty(app(ReconciliationOptionService::class)->forPhase($other->fresh()));
+        self::assertFalse($options->traversalOptionsFor($disperse)->contains('id', $signal->id));
+        self::assertTrue($options->attestationOptionsFor($disperse)->contains('id', $unjudged->id));
+        self::assertEmpty($options->instrumentOptionsFor($disperse));
+    }
+
     public function test_new_receipt_alone_does_not_reopen_a_head_without_generating_opportunities(): void
     {
         [$signal, , , $head, $terminal] = $this->personalJourney();
@@ -437,7 +495,7 @@ class ParticipantExplorationTest extends TestCase
         $this->assertFalse(app(PhaseGenerationService::class)->available($bias, 'proposition.reclassify'));
         $this->assertTrue(app(ParticipantExplorationService::class)->explored($stance, $bias));
         $this->publishPotentialFixture($this->substrate);
-        $this->assertNull(app(ExplorationEventService::class)->inspect($bias)['witness'], 'Receipt shortage cannot mint another completed encounter');
+        $this->assertNotNull(app(ExplorationEventService::class)->inspect($bias)['witness'], 'A hypothetical Reclassification cannot block completion');
         $observation = $this->phase($signal, PhaseKind::Persist);
         $instruments = app(EvidenceExecutionService::class);
         $instruments->complete($instruments->start($observation, $signal, 'citation', $this->origin->id), $signal);

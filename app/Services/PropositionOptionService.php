@@ -20,7 +20,6 @@ final class PropositionOptionService
         private readonly ClosureOptionService $closure,
         private readonly CausalWriteService $writes,
         private readonly PhaseGenerationService $generation,
-        private readonly EvidenceEligibilityService $evidence,
         private readonly PropositionAvailabilityService $availability,
         private readonly PhasePositionService $positions,
     ) {}
@@ -194,21 +193,11 @@ final class PropositionOptionService
             return collect();
         }
 
-        $shared = app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
+        $context ??= new ParticipationContext($phase);
+        $judgedHere = $context->personalAttestationsByProposition($phase->cycle->participant_id)->where('phase_id', $phase->id);
+        $writes = $this->availableWrites($phase, $context)->reject(fn (Proposition $write) => $judgedHere->has($write->id));
 
-        $writes = $this->availableWrites($phase, $context);
-
-        $eligible = $writes->filter(fn (Proposition $node): bool => $this->attestationEvidenceAvailable($node, $phase->kind, $shared, $context));
-
-        return $this->unexplored($phase, $eligible, $context);
-    }
-
-    /** Base evidence/mutability predicate; caller still owns Write and movement selection. */
-    public function attestationEvidenceAvailable(Proposition $node, PhaseKind $kind, bool $shared, ?ParticipationContext $context = null): bool
-    {
-        return $kind !== PhaseKind::Order && $this->availability->mutable($node, $context)
-            && (in_array($kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)
-                ? $shared : ($shared || $this->evidence->canAttest($node, $context)));
+        return $this->unexplored($phase, $writes, $context);
     }
 
     /**

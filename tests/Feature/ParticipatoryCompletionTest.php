@@ -39,7 +39,8 @@ class ParticipatoryCompletionTest extends TestCase
         self::assertSame($personal->id, $proof['attestation_id']);
         self::assertNotSame($foreign->id, $proof['attestation_id']);
         self::assertSame($terminal->cycle->participant_id, $proof['participant_id']);
-        self::assertSame(2, $proof['contract']);
+        self::assertSame(3, $proof['contract']);
+        self::assertArrayNotHasKey('receipt_id', $proof);
     }
 
     public static function missingJudgments(): array
@@ -50,7 +51,7 @@ class ParticipatoryCompletionTest extends TestCase
     #[DataProvider('missingJudgments')]
     public function test_unjudged_active_route_cannot_publish_or_hide_behind_historical_event(int $missing): void
     {
-        [$a, $b, $c, $head, $terminal] = $this->personalJourney(omitJudgment: $missing);
+        [$a, $b, $c, $head, $terminal] = $this->personalJourney(omitJudgment: $missing, omitAcquisition: [1, 2, 4]);
         $nodes = [$a, $b, $c, $head];
         ExplorationHistory::record($head, $terminal);
         $before = DB::table('exploration_events')->get()->toJson();
@@ -64,18 +65,39 @@ class ParticipatoryCompletionTest extends TestCase
 
     public static function acquisitionRoles(): array
     {
-        return [[1], [2], [4]];
+        return [[1], [2], [4], [[1, 2, 4]]];
     }
 
     #[DataProvider('acquisitionRoles')]
-    public function test_route_completion_does_not_require_personal_acquisition(int $role): void
+    public function test_route_completion_does_not_require_personal_acquisition(int|array $role): void
     {
         [, , , $head, $terminal] = $this->personalJourney(omitAcquisition: $role);
         self::assertTrue(app(ParticipantExplorationService::class)->participationComplete($head, $terminal, new ParticipationContext($terminal)));
         self::assertNotNull(app(ExplorationEventService::class)->completionWitness($terminal, new ParticipationContext($terminal)));
-        $this->rest($terminal);
+        $return = $this->returnAfterRest($terminal);
         self::assertDatabaseCount('exploration_events', 1);
+        self::assertTrue(app(ParticipantExplorationService::class)->explored($head, $return));
+        if (is_array($role)) {
+            self::assertDatabaseCount('evidence_executions', 0);
+            self::assertDatabaseCount('receipts', 0);
+            self::assertEmpty(app(PropositionOptionService::class)->instrumentOptionsFor($return), 'The existing Distinction still needs structural evidence for another Variant');
+        }
+    }
 
+    public function test_historical_receipt_witness_remains_readable_and_immutable(): void
+    {
+        [, , , $head, $terminal] = $this->personalJourney();
+        $legacy = ['contract' => 2, 'participant_id' => $terminal->cycle->participant_id, 'personal_route_complete' => true,
+            'attestation_id' => $head->effectiveAttestations()->sole()->id, 'receipt_id' => DB::table('receipts')->value('id')];
+        $rest = ExplorationHistory::record($head, $terminal, $legacy);
+        $row = DB::table('exploration_events')->where('phase_id', $rest);
+        $original = $row->value('witness');
+        self::assertTrue(app(ParticipantExplorationService::class)->explored($head, $terminal));
+        self::assertSame($legacy['receipt_id'], json_decode($original, true)['receipt_id']);
+        $return = $this->returnAfterRest($terminal);
+        self::assertTrue(app(ParticipantExplorationService::class)->explored($head, $return));
+        self::assertSame($original, $row->value('witness'));
+        self::assertDatabaseCount('exploration_events', 2);
     }
 
     public function test_incomplete_rest_recovers_to_existing_first_judgment_without_reacquiring(): void

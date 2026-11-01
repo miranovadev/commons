@@ -143,13 +143,10 @@ final class ParticipantExplorationService
                     ->get(['arrival.cycle_id', 'arrival.gate_proposition_id as target', 'previous.gate_proposition_id as source'])
                     ->groupBy('cycle_id')->map(fn ($rows) => $rows->pluck('source', 'target'));
             })->get($encounterCycleId ?? $phase->cycle_id, collect());
-            $personal = $context->remember('exploration-personal-judgments:'.$phase->cycle->participant_id,
-                fn () => $context->effectiveAttestations($context->propositions->keys())
-                    ->filter(fn ($a) => $a->phase->cycle->participant_id === $phase->cycle->participant_id)->keyBy('proposition_id'));
+            $personal = $context->personalAttestationsByProposition($phase->cycle->participant_id);
             if (! $this->judgedPosition($head, $personal, $context)) {
                 return false;
             }
-            $shared = app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
             $terminal = app(ExhaustedContinuationService::class)->ids($phase, $context);
             $seen = [];
             $pending = [$head->id];
@@ -171,13 +168,9 @@ final class ParticipantExplorationService
                 }
                 $active = $context->activeIds->has($node->id) && ! $terminal->has($node->id)
                     && $context->children->get($node->id, collect())->where('type', '!=', 'variant')->isEmpty();
-                if ($active) {
-                    if ($node->tier === 'expressive'
-                        && app(PropositionOptionService::class)->attestationEvidenceAvailable($node, $node->phase->kind, $shared, $context)
-                        && ! $this->judgedPosition($node, $personal, $context)) {
-                        return false;
-                    }
-
+                if ($active && $node->tier === 'expressive' && $node->phase->kind !== PhaseKind::Order
+                    && ! $this->judgedPosition($node, $personal, $context)) {
+                    return false;
                 }
                 if ($node->tier === 'committal') {
                     continue;

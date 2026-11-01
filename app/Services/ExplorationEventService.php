@@ -29,7 +29,6 @@ final class ExplorationEventService
     /** Base encounter proof shared with Rest planning; never calls InputPlan. */
     public function completionWitness(Phase $phase, ParticipationContext $context): ?array
     {
-        $witness = null;
         $gate = $context->propositions->get($phase->gate_proposition_id);
         $arrival = $phase->cycle->phases()->where('kind', $phase->kind->value - 1)->whereNotNull('completed_at')->first();
         if ($gate?->tier === 'expressive'
@@ -37,22 +36,23 @@ final class ExplorationEventService
             && $gate->phase->kind->value === $phase->kind->value - 1 && $arrival !== null
             && app(ParticipantExplorationService::class)->heads($gate->id, $phase, $context)->keys()->all() === [$gate->id]
             && ! app(ContinuationOpportunityService::class)->nonVariantGenerationAvailable($phase, $context)
-            && ! app(ContinuationOpportunityService::class)->unfinishedEvidence($phase, $context)) {
-            $state = app(PropositionStateService::class);
-            $judgment = $state->attestations(collect([$gate]), $context)
-                ->first(fn ($a) => $a->phase->cycle->participant_id === $phase->cycle->participant_id);
-            $receipt = $state->evidenceReceipts($gate, $context)
-                ->concat(app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context))
-                ->first(fn ($receipt) => $receipt->evidenceExecution?->status === 'completed');
-            if ($judgment !== null && $receipt !== null
-                && app(ParticipantExplorationService::class)->participationComplete($gate, $phase, $context)) {
-                $witness = ['contract' => 2, 'participant_id' => $phase->cycle->participant_id, 'personal_route_complete' => true, 'head_id' => $gate->id, 'arrival_phase_id' => $arrival->id,
-                    'arrival_source_id' => $arrival->gate_proposition_id, 'attestation_id' => $judgment->id,
-                    'receipt_id' => $receipt->id, 'meaningful_continuation' => false];
+            && ! app(ContinuationOpportunityService::class)->pendingEvidence($phase, $context)) {
+            $judgment = $context->personalAttestationsByProposition($phase->cycle->participant_id)->get($gate->id);
+            if ($judgment !== null && app(ParticipantExplorationService::class)->participationComplete($gate, $phase, $context)) {
+                return [
+                    'contract' => 3,
+                    'participant_id' => $phase->cycle->participant_id,
+                    'personal_route_complete' => true,
+                    'head_id' => $gate->id,
+                    'arrival_phase_id' => $arrival->id,
+                    'arrival_source_id' => $arrival->gate_proposition_id,
+                    'attestation_id' => $judgment->id,
+                    'meaningful_continuation' => false,
+                ];
             }
         }
 
-        return $witness;
+        return null;
     }
 
     /** Called inside the same Substrate/Participant/Cycle/Phase locks as Rest completion. */

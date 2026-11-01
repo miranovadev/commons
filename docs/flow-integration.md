@@ -21,7 +21,7 @@ not region-wide traversal eligibility.
 
 | Phase | Structural flow |
 | --- | --- |
-| 1 Distinguish | Personal Instrument acquisition at the governing Gate before fresh Variant. An admitted Instrument enables Variant or Defer. Available shared ordinary Receipt: Attest. Personal earlier-Cycle Attestation: Traverse on that side. |
+| 1 Distinguish | Personal Instrument acquisition at the governing Gate before fresh Variant. An admitted Instrument enables Variant or Defer. An eligible unjudged Write offers first Attestation. A personal earlier-Cycle Attestation establishes Traverse on that side. |
 | 2 Persist | When fresh Variant is lawful, Prepare a causally accessible Artifact or use Instrument fallback; develop the selected Distinguish Proposition through Variant, subject to shared structural viability. |
 | 3 Constrain | Reclassify a grounded, attested Persist source with explicit `receipt_id`; attach/consume and advance atomically. |
 | 4 Disperse | Choose Instrument or accessible Preparation once per exact Phase/generative opportunity when fresh Variant is lawful; earlier-Phase acquisition in the same Cycle neither fulfills nor blocks it. Retain ordinary Variant / Attest / later-Cycle Traverse rules. |

@@ -66,15 +66,17 @@ class ExhaustedParticipantContextTest extends TestCase
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase, true);
         $this->assertContains($right->id, array_column($plan['write_options'], 'id'));
         $this->assertNotContains($wrong->id, array_column($plan['write_options'], 'id'));
-        foreach (['traversal_options', 'attestation_options', 'instrument_options', 'revision_options'] as $key) {
+        $this->assertContains($right->id, array_column($plan['attestation_options'], 'id'));
+        $this->assertNotContains($wrong->id, array_column($plan['attestation_options'], 'id'));
+        foreach (['traversal_options', 'instrument_options', 'revision_options'] as $key) {
             $this->assertNotContains($right->id, array_column($plan[$key], 'id'));
         }
         $this->assertSame([], $plan['exhausted_alternatives'], 'Explored is not Horizon Exhaustion');
         $this->assertFalse(app(ParticipantExplorationService::class)->explored($right, $phase),
             'An historical encounter without personal judgment does not establish participatory completion');
         $compact = array_column(app(ParticipantContextSerializer::class)->plan($plan)['write_options'], 'id');
-        $this->assertNotContains($right->id, $compact,
-            'The operational serializer does not promote an unavailable, unevaluated Write through a historical event');
+        $this->assertContains($right->id, $compact, 'The operational packet carries the available first judgment');
+        $this->assertNotContains($wrong->id, $compact);
         $this->assertDatabaseCount('exploration_events', 2);
     }
 

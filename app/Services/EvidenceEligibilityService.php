@@ -14,11 +14,4 @@ final readonly class EvidenceEligibilityService
     {
         return $this->state->evidenceReceipts($proposition, $context)->isNotEmpty();
     }
-
-    public function canAttest(Proposition $proposition, ?ParticipationContext $context = null): bool
-    {
-        // Deliberately existence-only. A future read policy belongs here, not in
-        // duplicated UI/schema/dispatcher conditions. No truth judgment is implied.
-        return $this->hasReceipt($proposition, $context);
-    }
 }

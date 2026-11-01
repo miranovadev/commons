@@ -238,7 +238,7 @@ class InputPlanVisibilityTest extends TestCase
             $updated = app(InputPlanService::class)->forParticipant($viewer);
             $this->assertInput($updated['schema'], [
                 'action' => 'attestation.create', 'proposition_id' => $child->id, 'direction' => $direction,
-            ], true);
+            ], false); // The locked dispatcher permits only one judgment per Write in this Phase.
         }
     }
 
