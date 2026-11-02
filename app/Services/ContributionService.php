@@ -43,7 +43,10 @@ final readonly class ContributionService
         if (($input['action'] ?? null) === 'instrument.execute' && is_array($input['instrument'] ?? null)) {
             try {
                 $input['instrument'] = app(InstrumentInvocation::class)->normalize($input['instrument']);
-            } catch (\DomainException) {
+            } catch (\DomainException $error) {
+                if (($input['instrument']['kind'] ?? null) === 'citation' && $error->getMessage() === InstrumentInvocation::CITATION_GUIDANCE) {
+                    throw new InvalidArgumentException(InstrumentInvocation::CITATION_GUIDANCE, previous: $error);
+                }
                 // Preserve invalid input for the ordinary shape/domain validation.
             }
         }

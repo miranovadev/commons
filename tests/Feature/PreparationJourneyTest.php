@@ -169,8 +169,9 @@ class PreparationJourneyTest extends TestCase
         $this->travel(31)->minutes();
         $service->recover($f->viewer, $f->phase);
         $this->assertSame('failed', $execution->fresh()->status);
-        $this->assertNull($execution->fresh()->receipt);
-        $this->assertNull($execution->fresh()->outcome);
+        $this->assertSame('expired', $execution->fresh()->receipt->metadata['failure']['stage']);
+        $this->assertSame('failed', $execution->fresh()->outcome);
+        $this->assertNull($execution->fresh()->attempt_resolution);
         $this->assertNull($service->active($f->phase));
         $this->assertSame(['acquisition.defer'], array_keys(app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema']['$defs']['actions']));
     }

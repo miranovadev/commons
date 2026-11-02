@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Evidence\DownloadObservation;
 use App\Enums\PhaseKind;
 use App\Enums\ReceiptCapability;
 use App\Exceptions\ArtifactStorageException;
@@ -225,12 +226,16 @@ class LoadFileInstrumentTest extends TestCase
         Http::assertSentCount(1);
     }
 
-    public function test_failed_download_records_observation_but_storage_failure_retains_only_pending_reservation(): void
+    public function test_failed_download_and_storage_failure_record_their_respective_stages(): void
     {
         $f = $this->fixture();
         Http::fake(['*' => Http::sequence()->push('', 404)->push('bytes')]);
         $failed = app(OperationalInstrumentService::class)->execute($f->phase, $f->gate, $this->input());
-        $this->assertSame('completed', $failed->evidenceExecution->status);
+        $this->assertSame('failed', $failed->evidenceExecution->status);
+        $this->assertTrue($failed->supports(ReceiptCapability::Replayable));
+        $this->assertSame($this->input(), $failed->replayInvocation());
+        $this->assertSame($failed->id, app(RelevantInstrumentService::class)->equivalent(
+            $f->gate, $this->input(), download: new DownloadObservation($this->input()['reference'], ['content_verified' => false]))->id);
         $this->assertFalse($failed->metadata['content_verified']);
         $this->assertArrayNotHasKey('artifacts', $failed->metadata);
         $this->assertNull($failed->signature);
@@ -241,9 +246,10 @@ class LoadFileInstrumentTest extends TestCase
             app(OperationalInstrumentService::class)->execute($other->phase, $other->gate, $this->input());
             $this->fail('Infrastructure failure recorded as observation');
         } catch (ArtifactStorageException) {
-            $this->assertSame('pending', EvidenceExecution::where('phase_id', $other->phase->id)->sole()->status);
-            $this->assertNull(EvidenceExecution::where('phase_id', $other->phase->id)->sole()->receipt);
-            $this->assertSame(1, Receipt::count());
+            $execution = EvidenceExecution::where('phase_id', $other->phase->id)->sole();
+            $this->assertSame('failed', $execution->status);
+            $this->assertSame('storage', $execution->receipt->metadata['failure']['stage']);
+            $this->assertSame(2, Receipt::count());
         }
     }
 

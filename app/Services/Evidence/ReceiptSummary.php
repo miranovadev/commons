@@ -22,6 +22,12 @@ final class ReceiptSummary
             'proposition_search' => $this->search($metadata['proposition_collection'] ?? [], $receipt->reference),
             'citation' => ['target_id' => $receipt->reference],
             'preparation' => $this->preparation($metadata),
+            'failure' => [
+                ...(($metadata['kind'] ?? null) === 'preparation' ? $this->preparation($metadata) : []),
+                'outcome' => 'failed', 'content_verified' => false,
+                'message' => ucfirst(str_replace('_', ' ', $metadata['kind'] ?? 'acquisition')).' failed: '.($metadata['failure_reason'] ?? 'No diagnostic details were recorded.'),
+                'failure' => Arr::only($metadata['failure'] ?? [], ['stage', 'classification', 'method', 'version']),
+            ],
             'load_file' => [...Arr::only($metadata, ['method', 'source_url', 'filename', 'content_verified']),
                 'artifact_count' => count($metadata['artifacts'] ?? []),
                 'artifacts' => array_map(fn ($item) => Arr::only($item, ['hash', 'media_type', 'size']),
@@ -92,7 +98,7 @@ final class ReceiptSummary
             if (is_array($value)) {
                 $value = $depth > 0 ? $this->bounded($value, $depth - 1, $childLimit) : [];
             } elseif (is_string($value)) {
-                $value = $this->text($value);
+                $value = self::text($value);
             } elseif (! is_bool($value) && ! is_int($value) && ! is_float($value)) {
                 continue;
             }
@@ -112,9 +118,12 @@ final class ReceiptSummary
         return $result;
     }
 
-    private function text(string $value): string
+    public static function text(string $value): string
     {
         // Do not turn a compatibility summary into a credential/path channel.
+        if (preg_match('~(?:authorization|proxy-authorization|cookie|set-cookie|x-api-key)\s*:|https?://[^\s/]+@~i', $value)) {
+            return '';
+        }
         if (preg_match('~(?:^|\s)(?:/\S|[A-Za-z]:[\\\\/]|\\\\\\\\|(?:file|s3|gs|az|abfs|abfss)://)|-----BEGIN |\b(?:Bearer|Basic)\s+\S+|(?:password|secret|token|api[_-]?key)\s*[=:]~i', $value)) {
             return '';
         }

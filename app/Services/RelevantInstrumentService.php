@@ -28,8 +28,8 @@ final readonly class RelevantInstrumentService
             // Source alone cannot identify a resource version. Recheck the observed bytes
             // under the contribution lock, using the existing effective evidence scope.
             return $download === null ? null : $this->state->receipts($proposition, $context)->first(
-                fn (Receipt $receipt): bool => $receipt->type === 'load_file'
-                    && ($receipt->metadata['observation_identity'] ?? null) === $download->identity(),
+                fn (Receipt $receipt): bool => ($receipt->metadata['observation_identity'] ?? null) === $download->identity()
+                    && $receipt->observedInstrumentKind() === 'load_file',
             );
         }
         if ($normalized['kind'] === 'proposition_search') {

@@ -64,8 +64,13 @@ final class AcquisitionAttemptService
 
     public function ready(Phase $phase, ?ParticipationContext $context = null): bool
     {
-        return $this->admitted($phase, $context) && ($this->execution($phase, $context)->observationRecorded()
-            || $this->execution($phase, $context)->status === 'presented');
+        if (! $this->admitted($phase, $context)) {
+            return false;
+        }
+        $execution = $this->execution($phase, $context);
+
+        return $execution->status === 'presented' || ($execution->observationRecorded()
+            && ($execution->metadata['variant_observation'] ?? true));
     }
 
     public function recover(Phase $phase): void
@@ -73,7 +78,8 @@ final class AcquisitionAttemptService
         $execution = $this->execution($phase);
         if ($execution !== null && $execution->type === 'instrument' && $execution->status === 'pending'
             && $execution->started_at->lt(now()->subSeconds((int) config('preparation.unresolved_seconds')))) {
-            app(EvidenceExecutionService::class)->fail($execution, 'Instrument reservation expired before a recorded observation.');
+            app(EvidenceExecutionService::class)->fail($execution, 'Instrument reservation expired before a recorded observation.',
+                ['stage' => 'reservation', 'classification' => 'expired']);
         }
     }
 

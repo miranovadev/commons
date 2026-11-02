@@ -167,8 +167,8 @@ final class PreparationService
     {
         if (! in_array($stage, ['unsupported', 'read', 'delivery', 'inference', 'expired', 'stale'], true)
             || trim($method) === '' || mb_strlen($method) > 160 || trim($version) === '' || mb_strlen($version) > 160
-            || trim($reason) === '' || mb_strlen($reason) > 1000) {
-            throw new DomainException('Preparation failure requires bounded method, version, stage and diagnostic reason.');
+        ) {
+            throw new DomainException('Preparation failure requires a supported stage and bounded reader identity.');
         }
         DB::transaction(function () use ($participant, $execution, $method, $version, $stage, $reason, $details): void {
             Substrate::lockForUpdate()->findOrFail($participant->substrate_id);
@@ -194,19 +194,9 @@ final class PreparationService
                 'unsupported' => 'missing_capability', 'read' => 'reader_failure',
                 'delivery' => 'delivery_failure', 'inference' => 'inference_failure', default => $stage,
             };
-            $diagnostic = ['failure' => [...compact('method', 'version', 'stage'), ...$details], 'failure_reason' => $reason];
-            // A reservation alone does not prove an attempt. Acknowledged presentation
-            // does: expiry after that real delivery records its unsuccessful resolution.
-            if ($stage === 'stale' || ($stage === 'expired' && $stored->presentation === null)
-                || $details['classification'] === 'invalid_parameters') {
-                $this->executions->fail($stored, $reason, $diagnostic);
-            } else {
-                $this->executions->recordPreparationFailure($stored, $reason, $diagnostic);
-                // Failure can resolve outside ParticipationService (reader or Wake).
-                // Its Receipt changes the field just like a successful resolution.
-                // Publish only after commit, outside the evidence write locks.
-                DB::afterCommit(fn () => app(PotentialProjectionService::class)->refresh($participant->substrate_id));
-            }
+            $variantObservation = $stage !== 'stale' && ! ($stage === 'expired' && $stored->presentation === null)
+                && $details['classification'] !== 'invalid_parameters';
+            $this->executions->fail($stored, $reason, [...compact('method', 'version', 'stage'), ...$details], $variantObservation);
         });
     }
 
@@ -265,7 +255,7 @@ final class PreparationService
             $references = app(ParticipantReceiptProjection::class)->referencesFor($ids->unique())->flatten(1)->pluck('id')->unique();
 
             return Receipt::whereKey($references)->whereHas('evidenceExecution.phase.cycle.participant',
-                fn ($q) => $q->where('substrate_id', $phase->cycle->participant->substrate_id))->get();
+                fn ($q) => $q->where('substrate_id', $phase->cycle->participant->substrate_id))->orderBy('receipts.id')->get();
         };
 
         return $context === null ? $select() : $context->remember('preparation-causal-receipts:'.$phase->id, $select);
@@ -357,8 +347,8 @@ final class PreparationService
         $bodies = [];
         $selection = [];
         $attempt = [];
-        $reader = app(ArtifactReaderRegistry::class);
         try {
+            $reader = app(ArtifactReaderRegistry::class);
             foreach ($execution->input['artifacts'] as $selection) {
                 $attempt = [];
                 $id = PreparationInput::requestId($selection);
@@ -402,10 +392,18 @@ final class PreparationService
             throw new DomainException('Preparation reading failed: '.$exception->getMessage(), previous: $exception);
         }
 
+        try {
+            $token = Crypt::encryptString(json_encode(['participant_id' => $participant->id, 'execution_id' => $execution->id,
+                'deliveries' => $acknowledgement->deliveries], JSON_THROW_ON_ERROR));
+        } catch (Throwable $exception) {
+            $this->fail($participant, $execution, $method, ArtifactReaderRegistry::VERSION, 'delivery',
+                'The presentation acknowledgement could not be issued.');
+            throw new DomainException('Preparation delivery failed.', previous: $exception);
+        }
+
         return ['execution_id' => $execution->id, 'gate_id' => $execution->proposition_id,
             'purpose' => $execution->input['purpose'], 'selections' => $execution->input['artifacts'], 'deliveries' => $deliveries,
-            'presentation_token' => Crypt::encryptString(json_encode(['participant_id' => $participant->id,
-                'execution_id' => $execution->id, 'deliveries' => $acknowledgement->deliveries], JSON_THROW_ON_ERROR))];
+            'presentation_token' => $token];
     }
 
     public function acknowledge(Participant $participant, EvidenceExecution $execution, string $token): void

@@ -146,12 +146,13 @@ class DisperseInstrumentFallbackTest extends TestCase
             $f->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
         }
         Http::fake(['*' => Http::response('', 404)]);
-        // Failed verification is still a completed ordinary observation under the existing contract.
+        // A failed verification records an ordinary, consumable observation.
         $this->mock(HyperlinkVerifier::class,
             fn ($mock) => $mock->shouldReceive('verify')->once()->andThrow(new \DomainException('Missing resource.')));
         $receipt = app(OperationalInstrumentService::class)->execute($phase, $phase->gate,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/missing']);
-        $this->assertSame('completed', $receipt->evidenceExecution->status);
+        $this->assertSame('failed', $receipt->evidenceExecution->status);
+        $this->assertSame('failure', $receipt->type);
         if ($kind === PhaseKind::Persist) {
             // Isolated service fixture: position a separate Phase after the recorded Persist observation.
             $phase->forceFill(['completed_at' => now()])->save();
@@ -187,7 +188,7 @@ class DisperseInstrumentFallbackTest extends TestCase
         $service = app(PreparationService::class);
         $execution = $service->start($f->viewer, $f->phase, $fixture->input());
         $service->fail($f->viewer, $execution, 'test-reader', '1', 'expired', 'Unattempted Preparation expired.');
-        $this->assertNull($execution->fresh()->receipt);
+        $this->assertSame('expired', $execution->fresh()->receipt->metadata['failure']['stage']);
         $this->assertFalse($service->eligible($f->phase));
         $this->assertSame(['acquisition.defer'], array_keys($this->actions($f)));
         app(AcquisitionAttemptService::class)->resolve($f->viewer, $execution,

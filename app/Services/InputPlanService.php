@@ -424,7 +424,7 @@ final readonly class InputPlanService
             'continuation_exhausted' => app(ExhaustedContinuationService::class)->ids($context?->phase ?? $this->phases->currentFor($viewer), $context)->has($proposition->id),
             'structural_position' => $proposition->phase->kind->value,
             'structural_source_id' => app(StructuralSourceService::class)->forProposition($proposition, $context)['structural_source_id'] ?? null,
-            'parent_ids' => $proposition->parents->pluck('id')->all(),
+            'parent_ids' => $proposition->parents->pluck('id')->sort(SORT_STRING)->values()->all(),
             'title' => str($proposition->statement)
                 ->before("\n")
                 ->trim()

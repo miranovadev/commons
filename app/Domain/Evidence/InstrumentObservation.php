@@ -12,5 +12,6 @@ final readonly class InstrumentObservation
         public ?SearchObservation $search = null,
         public ?PropositionCollection $propositions = null,
         public ?DownloadObservation $download = null,
+        public ?string $reservationId = null,
     ) {}
 }

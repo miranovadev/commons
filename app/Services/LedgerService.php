@@ -101,10 +101,10 @@ final readonly class LedgerService
                 $phase = $ledgerable->phase;
                 // Cognitive memory is auditable history, not field/evidence mutation.
                 $memoryOnly = ($ledgerable instanceof ReceiptContextEvent
-                    && ($ledgerable->context->receipt->isSpecial() || $ledgerable->context->receipt->isPreparationFailure()));
+                    && ($ledgerable->context->receipt->isSpecial() || $ledgerable->context->receipt->isFailure()));
                 if (! $memoryOnly) {
                     app(FieldMutationService::class)->touch($phase, $affected,
-                        measurementsDirty: ! ($ledgerable instanceof Receipt && $ledgerable->isPreparationFailure()));
+                        measurementsDirty: ! ($ledgerable instanceof Receipt && $ledgerable->isFailure()));
                 }
                 if ($ledgerable instanceof Supersession) {
                     app(AttestationBeatCursorService::class)->inherit($ledgerable);

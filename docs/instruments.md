@@ -8,7 +8,12 @@
 
 Instrumentation preserves an observation and leaves the Phase unchanged. The next decision is Variant or Defer. Preparation resolves its delivered reading atomically through Variant or Defer. Either decision consumes the attempt, never the Receipt. Defer completes the Cycle without a Proposition or Exploration Event. A later Cycle may acquire again at the same Gate; history cannot satisfy the new attempt.
 
-Readable results follow existing personal loading rules. Load File preserves an Artifact without loading its bytes. Genuine unsuccessful observations remain explicitly unverified; abandoned reservations create no Receipt and can only Defer. Ordinary evidence prerequisites still apply to Variant. Revision remains independent. Artifacts referenced by causally visible Receipts are readable through supported Preparation capabilities, including consumed Receipts and qualifying Reconciliation ancestry.
+Readable results follow existing personal loading rules. Load File preserves an Artifact without loading its bytes. Every terminal failure after admission produces an ordinary Failure Receipt. An expired Instrument reservation can resolve through Defer. Ordinary evidence prerequisites still apply to Variant. Revision remains independent. Artifacts referenced by causally visible Receipts are readable through supported Preparation capabilities, including consumed Receipts and qualifying Reconciliation ancestry.
+
+Citation accepts the ULID of a Proposition or Attestation in the acting substrate. A
+Participant can cite a subject outside its current causal working set within that
+scope. Use Hyperlink for an external URL. The authoritative schema rejects a
+malformed Citation before reservation. See [failure handling](evidence-failure-resilience.md).
 
 ## Hyperlink Artifact preservation (Stage 1)
 
@@ -226,8 +231,8 @@ not a permanent Commons semantic dependency.
 Requests have a three-second connection limit and ten-second total limit, TLS
 verification, no redirects, no proxy and a 256 KiB response limit. There are no
 implicit retries or provider fallbacks. Invalid responses, network errors, missing
-keys and unsupported provider configuration produce a completed attempt with a
-safe, unqualified failure Receipt; they never disclose provider error bodies or
+keys and unsupported provider configuration produce a failed execution and an
+ordinary Failure Receipt. They never disclose provider error bodies or
 credentials. A later explicit execution can retry once equivalent evidence is no longer effective. The Instrument retains
 the existing synchronous transaction and Phase progression, including failed
 observations; a failure grants no Reinforcement.

@@ -233,6 +233,9 @@ class PropositionSearchTest extends TestCase
             $this->fail('A stale Proposition Search collection was persisted.');
         } catch (ConflictHttpException) {
             $this->assertSame(0, Receipt::where('type', 'proposition_search')->count());
+            $failure = Receipt::where('type', 'failure')->sole();
+            $this->assertSame('result', $failure->metadata['failure']['stage']);
+            $this->assertNull($failure->signature);
         }
     }
 
