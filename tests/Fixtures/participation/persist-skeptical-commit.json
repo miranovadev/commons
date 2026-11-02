@@ -1,5 +1,5 @@
 {
-  "description": "One acquisition per Cycle. Two readers enter and judge at Persist acquisition boundaries. Fixed authorised actions progress through Reconciliation, Bias and real Commit without changing measurement gates.",
+  "description": "Two readers judge at Persist acquisition boundaries. After Reclassification extends an already judged Mediate Write, the author traverses to the unjudged Bias child before acquiring again.",
   "steps": [
     {
       "cycle": 2,
@@ -854,141 +854,6 @@
       "phase": 1,
       "gate": "origin",
       "input": {
-        "action": "instrument.execute",
-        "proposition_id": {
-          "ref": "origin"
-        },
-        "instrument": {
-          "kind": "hyperlink",
-          "reference": "https://evidence.example.test/evidence/54"
-        }
-      },
-      "result": "origin",
-      "receipt": "r2"
-    },
-    {
-      "cycle": 13,
-      "phase": 1,
-      "gate": "origin",
-      "input": {
-        "action": "proposition.variant",
-        "statement": "Opportunity 55"
-      },
-      "result": "p13"
-    },
-    {
-      "cycle": 13,
-      "phase": 2,
-      "gate": "p13",
-      "result": "p13",
-      "execution": "delayed60",
-      "input": {
-        "action": "preparation.start",
-        "proposition_id": {
-          "ref": "p13"
-        },
-        "purpose": "Examine before developing this distinction in a later Cycle",
-        "artifacts": [
-          {
-            "receipt_id": {
-              "ref": "r2"
-            },
-            "artifact_id": {
-              "artifact_of": "r2"
-            },
-            "read_type": "text",
-            "parameters": {
-              "offset": 0,
-              "max_chars": 4000
-            }
-          }
-        ]
-      }
-    },
-    {
-      "cycle": 13,
-      "phase": 2,
-      "gate": "p13",
-      "input": {
-        "action": "preparation.defer",
-        "execution_id": {
-          "ref": "delayed60"
-        },
-        "reason": "Preserve this reading and reconsider development next Cycle."
-      },
-      "result": "origin",
-      "deferred_receipt": "delayed60Receipt"
-    },
-    {
-      "cycle": 14,
-      "phase": 1,
-      "gate": "origin",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p13"
-        },
-        "direction": "refute"
-      },
-      "result": "p13"
-    },
-    {
-      "cycle": 14,
-      "phase": 2,
-      "gate": "p13",
-      "input": {
-        "action": "preparation.start",
-        "proposition_id": {
-          "ref": "p13"
-        },
-        "purpose": "Examine the evidence before developing this continuation.",
-        "artifacts": [
-          {
-            "receipt_id": {
-              "ref": "r0"
-            },
-            "artifact_id": {
-              "artifact_of": "r0"
-            },
-            "read_type": "text",
-            "parameters": {
-              "max_chars": 4000,
-              "offset": 0
-            }
-          }
-        ]
-      },
-      "result": "p13",
-      "execution": "execution62"
-    },
-    {
-      "cycle": 14,
-      "phase": 2,
-      "gate": "p13",
-      "input": {
-        "action": "proposition.variant",
-        "statement": "Prepared opportunity 58",
-        "execution_id": {
-          "ref": "execution62"
-        }
-      },
-      "result": "p14",
-      "receipt": "extraReading"
-    },
-    {
-      "cycle": 14,
-      "phase": 3,
-      "gate": "p14",
-      "input": {
-        "action": "participant.rest"
-      },
-      "result": "origin"
-    },
-    {
-      "cycle": 15,
-      "phase": 1,
-      "gate": "origin",
-      "input": {
         "action": "proposition.traverse",
         "proposition_id": {
           "ref": "leftDistinction"
@@ -997,175 +862,7 @@
       "result": "leftDistinction"
     },
     {
-      "cycle": 15,
-      "phase": 2,
-      "gate": "leftDistinction",
-      "input": {
-        "action": "preparation.start",
-        "proposition_id": {
-          "ref": "leftDistinction"
-        },
-        "purpose": "Examine the evidence before developing this continuation.",
-        "artifacts": [
-          {
-            "receipt_id": {
-              "ref": "r0"
-            },
-            "artifact_id": {
-              "artifact_of": "r0"
-            },
-            "read_type": "text",
-            "parameters": {
-              "max_chars": 4000,
-              "offset": 0
-            }
-          }
-        ]
-      },
-      "result": "leftDistinction",
-      "execution": "execution66"
-    },
-    {
-      "cycle": 15,
-      "phase": 2,
-      "gate": "leftDistinction",
-      "input": {
-        "action": "proposition.variant",
-        "statement": "Prepared opportunity 61",
-        "execution_id": {
-          "ref": "execution66"
-        }
-      },
-      "result": "p15",
-      "receipt": "reopenedReading"
-    },
-    {
-      "cycle": 15,
-      "phase": 3,
-      "gate": "p15",
-      "input": {
-        "action": "participant.rest"
-      },
-      "result": "origin"
-    },
-    {
-      "cycle": 16,
-      "phase": 1,
-      "gate": "origin",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "leftDistinction"
-        }
-      },
-      "result": "leftDistinction"
-    },
-    {
-      "cycle": 16,
-      "phase": 2,
-      "gate": "leftDistinction",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "p15"
-        },
-        "direction": "refute"
-      },
-      "result": "p15"
-    },
-    {
-      "cycle": 16,
-      "phase": 3,
-      "gate": "p15",
-      "input": {
-        "action": "proposition.reclassify",
-        "proposition_id": {
-          "ref": "p15"
-        },
-        "receipt_id": {
-          "ref": "rightReading"
-        }
-      },
-      "result": "p16"
-    },
-    {
-      "cycle": 16,
-      "phase": 4,
-      "gate": "p16",
-      "input": {
-        "action": "preparation.start",
-        "proposition_id": {
-          "ref": "p16"
-        },
-        "purpose": "Examine the evidence before developing this continuation.",
-        "artifacts": [
-          {
-            "receipt_id": {
-              "ref": "r0"
-            },
-            "artifact_id": {
-              "artifact_of": "r0"
-            },
-            "read_type": "text",
-            "parameters": {
-              "max_chars": 4000,
-              "offset": 0
-            }
-          }
-        ]
-      },
-      "result": "p16",
-      "execution": "execution72"
-    },
-    {
-      "cycle": 16,
-      "phase": 4,
-      "gate": "p16",
-      "input": {
-        "action": "proposition.variant",
-        "statement": "Prepared opportunity 66",
-        "execution_id": {
-          "ref": "execution72"
-        }
-      },
-      "result": "p17",
-      "receipt": "reopenedPreparation"
-    },
-    {
-      "cycle": 16,
-      "phase": 5,
-      "gate": "p17",
-      "input": {
-        "action": "proposition.reconcile",
-        "other_proposition_id": {
-          "ref": "leftSignal"
-        }
-      },
-      "result": "p18"
-    },
-    {
-      "cycle": 16,
-      "phase": 6,
-      "gate": "p18",
-      "input": {
-        "action": "participant.rest"
-      },
-      "result": "origin"
-    },
-    {
-      "cycle": 17,
-      "phase": 1,
-      "gate": "origin",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "leftDistinction"
-        }
-      },
-      "result": "leftDistinction"
-    },
-    {
-      "cycle": 17,
+      "cycle": 13,
       "phase": 2,
       "gate": "leftDistinction",
       "input": {
@@ -1177,7 +874,7 @@
       "result": "leftPersist"
     },
     {
-      "cycle": 17,
+      "cycle": 13,
       "phase": 3,
       "gate": "leftPersist",
       "input": {
@@ -1189,7 +886,7 @@
       "result": "leftCanon"
     },
     {
-      "cycle": 17,
+      "cycle": 13,
       "phase": 4,
       "gate": "leftCanon",
       "input": {
@@ -1201,89 +898,19 @@
       "result": "leftSignal"
     },
     {
-      "cycle": 17,
+      "cycle": 13,
       "phase": 5,
       "gate": "leftSignal",
       "input": {
-        "action": "proposition.reconcile",
-        "other_proposition_id": {
-          "ref": "p17"
-        }
-      },
-      "result": "p19"
-    },
-    {
-      "cycle": 17,
-      "phase": 6,
-      "gate": "p19",
-      "input": {
-        "action": "participant.rest"
-      },
-      "result": "origin"
-    },
-    {
-      "cycle": 18,
-      "phase": 1,
-      "gate": "origin",
-      "input": {
         "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "leftDistinction"
-        }
-      },
-      "result": "leftDistinction"
-    },
-    {
-      "cycle": 18,
-      "phase": 2,
-      "gate": "leftDistinction",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "leftPersist"
-        }
-      },
-      "result": "leftPersist"
-    },
-    {
-      "cycle": 18,
-      "phase": 3,
-      "gate": "leftPersist",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "leftCanon"
-        }
-      },
-      "result": "leftCanon"
-    },
-    {
-      "cycle": 18,
-      "phase": 4,
-      "gate": "leftCanon",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "leftSignal"
-        }
-      },
-      "result": "leftSignal"
-    },
-    {
-      "cycle": 18,
-      "phase": 5,
-      "gate": "leftSignal",
-      "input": {
-        "action": "attestation.create",
         "proposition_id": {
           "ref": "rightSynthesis"
-        },
-        "direction": "refute"
+        }
       },
       "result": "rightSynthesis"
     },
     {
-      "cycle": 18,
+      "cycle": 13,
       "phase": 6,
       "gate": "rightSynthesis",
       "input": {
@@ -1296,7 +923,7 @@
       "result": "classification"
     },
     {
-      "cycle": 18,
+      "cycle": 13,
       "phase": 7,
       "gate": "classification",
       "input": {

@@ -201,7 +201,7 @@ class InputPlanVisibilityTest extends TestCase
             return;
         }
         $this->assertEqualsCanonicalizing([$child->id, $untouched->id], array_column($plan['write_options'], 'id'));
-        $traversable = (in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Disperse, PhaseKind::Bias], true)) && $direction !== null;
+        $traversable = $direction !== null;
         $card = collect($plan['write_options'])->firstWhere('id', $child->id);
         $this->assertSame(['support' => 1 + (int) ($direction === 'support'), 'refute' => (int) ($direction === 'refute')], $card['attestation_counts']);
         $this->assertSame($traversable ? [$child->id] : [], array_column($plan['traversal_options'], 'id'));

@@ -362,7 +362,7 @@ class ParticipantActionContractTest extends TestCase
                 $refute->forceFill(['phase_id' => $past->id, 'proposition_id' => $revision->id, 'direction' => 'refute'])->save();
                 app(LedgerService::class)->record($refute);
             }
-            if (in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Disperse, PhaseKind::Bias], true)) {
+            if ($kind !== PhaseKind::Order) {
                 $traverse = $node($writes[$kind->value - 1], $gate, $kind === PhaseKind::Order ? PhaseKind::Bias : $kind);
                 $attestation = new Attestation;
                 $attestation->forceFill(['phase_id' => $past->id, 'proposition_id' => $traverse->id, 'direction' => 'support'])->save();

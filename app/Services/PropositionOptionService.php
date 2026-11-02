@@ -79,7 +79,7 @@ final class PropositionOptionService
             $committed = collect();
         }
 
-        if (! in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Disperse, PhaseKind::Bias], true)) {
+        if (! in_array('proposition.traverse', config('phases.'.$phase->kind->value.'.actions', []), true)) {
             return collect();
         }
 

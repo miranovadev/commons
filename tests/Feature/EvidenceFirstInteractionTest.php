@@ -17,14 +17,22 @@ class EvidenceFirstInteractionTest extends TestCase
 
     public static function phases(): array
     {
-        return [[PhaseKind::Persist, 'frontier'], [PhaseKind::Bias, 'canon']];
+        return [
+            [PhaseKind::Distinguish, 'activity'], [PhaseKind::Persist, 'frontier'],
+            [PhaseKind::Constrain, 'canon'], [PhaseKind::Disperse, 'activity'],
+            [PhaseKind::Mediate, 'frontier'], [PhaseKind::Bias, 'canon'],
+        ];
     }
 
     #[DataProvider('phases')]
     public function test_receipt_then_attestation_unlocks_personal_traversal_without_an_explicit_load_request(PhaseKind $kind, string $register): void
     {
         $f = new ParticipantContextFixture(1, 0);
-        $gate = $kind === PhaseKind::Bias ? $f->node($f->gate, 'frontier', position: PhaseKind::Mediate) : $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $gate = match ($kind) {
+            PhaseKind::Distinguish => $f->seed,
+            PhaseKind::Mediate => $f->gate,
+            default => $f->node($f->seed, $f->phase->cycle->contextHorizon->domain->registerFor(PhaseKind::from($kind->value - 1)), position: PhaseKind::from($kind->value - 1)),
+        };
         $write = $f->node($gate, $register, position: $kind);
         $other = $f->node($gate, $register, position: $kind);
         $f->evidence($other);
@@ -52,7 +60,10 @@ class EvidenceFirstInteractionTest extends TestCase
         $later->forceFill(['cycle_id' => $cycle->id, 'completed_at' => null])->save();
         $f->phase = $later;
         $this->assertContains($write->id, $targets('proposition.traverse'));
+        $previous = $write->effectiveAttestations()->sole();
         $next = $service->contribute($f->viewer, $f->phase->id, ['action' => 'proposition.traverse', 'proposition_id' => $write->id]);
+        $this->assertSame($previous->id, $write->attestations()->sole()->id);
+        $this->assertSame('refute', $previous->direction);
         $this->assertSame($kind->value + 1, $next['plan']['phase']['number']);
         $this->assertSame($write->id, $next['plan']['gate_id']);
     }
