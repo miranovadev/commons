@@ -200,6 +200,89 @@ class HomologousBiasTest extends TestCase
         }
     }
 
+    public function test_projected_bias_arrivals_share_zero_mean_history_only_with_the_same_committed_ancestry(): void
+    {
+        // Same current Mediate coordinate. One branch entered Settlement a Commit earlier.
+        $early = $this->committedCoordinate($this->a, 'settlement');
+        $emergence = $this->committedCoordinate($this->origin, 'emergence');
+        $late = $this->committedCoordinate($emergence, 'settlement');
+        $entries = [$early, $early, $late];
+        $counterparts = [];
+        $producers = [];
+        foreach ($entries as $entry) {
+            $counterparts[$entry->id] ??= $this->position($entry, PhaseKind::Disperse);
+            $parent = $this->position($entry, PhaseKind::Disperse);
+            $producers[] = $this->phase($entry, $parent, PhaseKind::Mediate);
+        }
+
+        // Enter all producing Cycles before these births, so the new coordinate has no observation.
+        $gates = [];
+        $probes = [];
+        foreach ($producers as $i => $producer) {
+            $gate = new Proposition;
+            $gate->forceFill(['phase_id' => $producer->id, 'tier' => 'expressive',
+                'register' => $producer->write_register, 'statement' => 'Reconciled position'])->save();
+            app(LedgerService::class)->record($gate, $producer->gate);
+            $this->edge($producer->gate, $gate, 'reconcile');
+            $this->edge($counterparts[$entries[$i]->id], $gate, 'reconcile');
+            $this->measure($gate, [.5, -.75, .25][$i]);
+            $gates[] = $gate;
+            $cycle = $entries[$i]->is($early) ? $producers[0]->cycle : $producer->cycle;
+            $probe = (new Phase)->forceFill(['id' => 'traverse:'.$cycle->id.':'.$gate->id, 'cycle_id' => $cycle->id,
+                'gate_proposition_id' => $gate->id, 'kind' => PhaseKind::Bias,
+                'write_register' => $cycle->contextHorizon->domain->registerFor(PhaseKind::Bias)]);
+            $probes[] = $probe->setRelation('cycle', $cycle)->setRelation('gate', $gate);
+        }
+
+        $history = app(ChiralityPopulationHistoryService::class);
+        $current = $history->key($gates[0]);
+        $this->assertNotNull($current);
+        foreach ($gates as $gate) {
+            $this->assertSame($current, $history->key($gate));
+        }
+        $this->assertDatabaseMissing('chirality_population_observations', ['population_key' => $current]);
+        $record = function (string $key, ObservableDirection $direction): void {
+            DB::table('chirality_population_observations')->insert(['substrate_id' => $this->actor->substrate_id,
+                'population_key' => $key, 'mean' => $direction === ObservableDirection::Positive ? .5 : -.5,
+                'direction' => $direction->value]);
+        };
+        $record($history->key($gates[0], $this->origin, 'emergence'), ObservableDirection::Negative);
+        $record($history->key($gates[2], $emergence, 'emergence'), ObservableDirection::Positive);
+
+        $bias = app(HomologousBiasService::class);
+        $verify = function (array $expected) use ($gates, $probes, $bias): void {
+            foreach ([[0, 1, 2], [2, 1, 0]] as $order) {
+                $context = new ParticipationContext($probes[$order[0]]);
+                $visitedEntries = [];
+                foreach ($order as $i) {
+                    $population = $bias->populationFor($probes[$i], $context);
+                    $this->assertEqualsCanonicalizing(array_column($gates, 'id'), $population->pluck('id')->all());
+                    $cold = app(HomeostaticDirectionService::class)->forPopulation($gates[$i], $population, 'chirality', $context);
+                    $this->assertSame(0.0, $cold->mean);
+                    $this->assertSame($expected[$i], $cold->direction);
+                    $matches = $population->reject(fn ($member) => $member->is($gates[$i]))
+                        ->filter(fn ($member) => app(PropositionMeasurementService::class)->chiralityDirectionFor($member, $context) === $cold->direction);
+                    DB::enableQueryLog();
+                    DB::flushQueryLog();
+                    try {
+                        $offered = $bias->forPhase($probes[$i], $context);
+                        $historyRead = collect(DB::getQueryLog())->contains(fn ($query) => str_contains($query['query'], 'chirality_population_observations'));
+                    } finally {
+                        DB::disableQueryLog();
+                    }
+                    $entry = $gates[$i]->phase->cycle->entry_committal_id;
+                    $this->assertSame(! isset($visitedEntries[$entry]), $historyRead, 'Only the first sibling reads population history.');
+                    $visitedEntries[$entry] = true;
+                    $this->assertEqualsCanonicalizing($matches->pluck('id')->all(), $offered->pluck('id')->all());
+                }
+            }
+        };
+
+        $verify([ObservableDirection::Negative, ObservableDirection::Negative, ObservableDirection::Positive]);
+        $record($current, ObservableDirection::Positive);
+        $verify(array_fill(0, 3, ObservableDirection::Positive));
+    }
+
     public static function directions(): array
     {
         return [[false], [true]];
