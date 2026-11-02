@@ -211,6 +211,10 @@ final readonly class PhaseGenerationService
             return collect();
         }
         $sources = $this->writes->forPhase($phase, $context)->pluck('id');
+        if ($context !== null) {
+            // Outgoing hard edges are complete even when the target lies outside the working set.
+            $sources = $sources->filter(fn ($id) => $context->children->get($id, collect())->contains('type', 'commit'));
+        }
         if ($sources->isEmpty()) {
             return collect();
         }

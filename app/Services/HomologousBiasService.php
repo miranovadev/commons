@@ -47,7 +47,10 @@ final readonly class HomologousBiasService
             if ($gate === null) {
                 return collect();
             }
-            $field = $this->directions->forPopulation($gate, $population, 'chirality', $context);
+            // Sibling projected arrivals share the population and its entry-lineage history.
+            $fieldKey = implode(':', ['bias-population-direction', $context->seedIds()[$gate->id] ?? $gate->id,
+                $gate->phase->cycle->entry_committal_id, $gate->phase->cycle->context_horizon_id, $population->pluck('id')->sort()->implode(',')]);
+            $field = $context->remember($fieldKey, fn () => $this->directions->forPopulation($gate, $population, 'chirality', $context));
             if ($field->direction === null) {
                 return collect(); // No measured members, rather than a numeric zero.
             }

@@ -35,8 +35,8 @@ use App\Services\Observables\PhaseProfileObservationService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipantContextSerializer;
-use App\Services\ParticipantPromptLayout;
 use App\Services\ParticipantExplorationService;
+use App\Services\ParticipantPromptLayout;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PhaseGenerationService;
@@ -577,16 +577,48 @@ class HomologousBiasTest extends TestCase
         $this->assertDatabaseCount('receipt_consumptions', 0);
     }
 
-    public function test_another_same_region_expressive_path_uses_ordinary_evidence_without_tragedy(): void
+    public function test_a_same_region_reclassification_reopens_its_source_and_preserves_productive_mediate_traverse(): void
     {
-        $other = $this->source($this->a);
+        $other = $this->position($this->a, PhaseKind::Mediate);
+        $signal = $this->position($this->a, PhaseKind::Disperse);
+        $this->edge($this->a, $signal, 'variant');
+        $this->vote($signal);
+        $other->phase->forceFill(['gate_proposition_id' => $signal->id])->save();
+        $counterpart = $this->position($this->a, PhaseKind::Disperse);
+        $this->edge($this->a, $counterpart, 'variant');
+        $this->edge($signal, $other, 'reconcile');
+        $this->edge($counterpart, $other, 'reconcile');
+        $this->receiptFixture($other);
+        $this->vote($other);
         $this->measure($other, -.7);
         $this->assertContains($other->id, $this->biasOptionIds());
         $this->assertSame('ordinary', app(BiasReceiptAuthorityService::class)->authority($this->bias, $other, new ParticipationContext($this->bias)));
+        $previous = ExplorationHistory::record($other, $this->bias);
         $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($other));
         $this->assertNotSame($other->id, $target->phase->gate_proposition_id);
         $heads = app(ParticipantExplorationService::class)->heads($other->id, $this->bias, new ParticipationContext($this->bias));
         $this->assertSame([$target->id], $heads->keys()->all());
+        $exploration = app(ParticipantExplorationService::class);
+        $this->assertFalse($exploration->explored($other, $this->bias), 'The new child has no personal encounter.');
+        $this->vote($target);
+        // A separate Order closure control leaves no generation at the new head.
+        $this->componentClosureInput($target, ['admissible' => false]);
+        $restId = ExplorationHistory::record($target, $this->bias);
+        $ctx = new ParticipationContext($this->bias);
+        $this->assertTrue($exploration->participationComplete($target, $this->bias, $ctx, $other->id, Phase::findOrFail($restId)->cycle_id), 'all personal judgments');
+        $this->assertFalse($exploration->canGenerateFromHead($target, $this->bias, $ctx), 'terminal Order head');
+        $this->assertTrue($exploration->explored($other, $this->bias));
+        $this->assertDatabaseHas('exploration_events', ['phase_id' => $previous, 'proposition_id' => $other->id]);
+        $mediate = $this->phase($this->a, $signal, PhaseKind::Mediate);
+        $options = app(PropositionOptionService::class);
+        $this->assertFalse($options->attestationOptionsFor($mediate)->contains('id', $other->id));
+        // A fresh source in the same Region supplies the productive Bias return.
+        $candidate = $this->source($this->a);
+        $this->measure($candidate, -.8);
+        $this->assertTrue($options->traversalOptionsFor($mediate)->contains('id', $other->id));
+        $this->components($candidate, .5, -.5);
+        $this->components($this->gateA, .5, -.5);
+        $this->assertFalse($options->traversalOptionsFor($mediate)->contains('id', $other->id));
         $this->assertDatabaseCount('receipt_consumptions', 1);
     }
 

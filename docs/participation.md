@@ -212,7 +212,7 @@ Homeostatic selection and an existing Commit elsewhere cannot supply that edge.
 The current Gate and positions already visited as Gates in this Cycle are
 excluded; later Cycles may revisit them. Traversal creates no Proposition,
 Supersession or evidence and never selects globally. It advances the Phase as
-selection did. Mediate does not admit expressive Traverse. Order preserves that direct Committal continuation and additionally permits dominant-direction homologous existing Committals under its strict committed Write rule below. Both complete the Cycle at the selected Committal; this narrow exception creates no synthetic edge and does not loosen Traverse in other Phases.
+selection did. Order preserves that direct Committal continuation and additionally permits dominant-direction homologous existing Committals under its strict committed Write rule below. Both complete the Cycle at the selected Committal; this narrow exception creates no synthetic edge and does not loosen Traverse in other Phases.
 
 Commitment preserves successful routes: at Bias, a frozen classification remains
 traversable only from the exact Gate whose causal continuation produced it,
@@ -232,7 +232,7 @@ In phases 1–4 and Bias, a receipted Write exposes the following direction slot
 The specialized `attestation.create.anyOf` branches bind each direction to its
 permitted Proposition IDs. Same-direction re-attestation is unavailable; the
 opposite direction uses the existing Attestation supersession mechanism.
-The card footer, form and inference schema use these same choices. In Mediate an effective Attestation does not create a Traverse affordance; the opposite direction remains available. Order uses one Committal Traverse action without Attestation controls. Traverse
+The card footer, form and inference schema use these same choices. At Mediate, an earlier Cycle’s effective Attestation can authorize Traverse to an unexplored Write or toward lawful generation at Bias. Order uses one Committal Traverse action without Attestation controls. Traverse
 creates neither a Proposition nor a Supersession and advances through the
 existing personal path. Reconciliation counterparts belong to Gate, as described below.
 
