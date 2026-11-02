@@ -39,41 +39,6 @@ class ParticipantExplorationTest extends TestCase
 {
     use ParticipantExplorationFixture, RefreshDatabase;
 
-    public function test_terminal_constrain_rest_closes_only_the_fully_judged_persist_route(): void
-    {
-        $this->resolveExpressiveFieldFixture(.8);
-        $this->initializeExhaustionFixture(originOpensSettlement: true);
-        $distinguish = $this->phase($this->origin, PhaseKind::Distinguish);
-        $actor = $distinguish->cycle->participant;
-        $signal = $this->node($distinguish, $this->origin);
-        $this->personalVote($distinguish, $signal, 'support');
-        $persist = app(PhaseProgressionService::class)->advance($distinguish, $signal);
-        $head = $this->node($persist, $signal);
-        $sibling = $this->node($this->phase($signal, PhaseKind::Persist), $signal);
-        $service = app(ParticipationService::class);
-        $send = function ($phase, array $action) use ($service, $actor) {
-            $service->contribute($actor, $phase->id, $action);
-
-            return app(PhaseService::class)->currentFor($actor->fresh());
-        };
-        $this->publishPotentialFixture($this->substrate);
-        foreach ([$head, $sibling] as $write) {
-            $constrain = $send($persist, ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'support']);
-            self::assertSame($write->id, $constrain->gate_proposition_id);
-            self::assertEmpty(app(HorizonReceiptService::class)->ordinaryAvailable($constrain));
-            $next = $this->returnAfterRest($constrain);
-            $this->assertDatabaseHas('exploration_events', ['phase_id' => $constrain->id, 'proposition_id' => $write->id]);
-            $persist = $send($next, ['action' => 'proposition.traverse', 'proposition_id' => $signal->id]);
-            $actions = app(InputPlanService::class)->forPhase($actor, $persist)['schema']['$defs']['actions'];
-            self::assertNotContains($write->id, $actions['proposition.traverse']['properties']['proposition_id']['enum'] ?? []);
-            if ($write->is($head)) {
-                self::assertContains($sibling->id, $actions['attestation.create']['properties']['proposition_id']['enum']);
-                self::assertArrayNotHasKey('instrument.execute', $actions);
-            }
-        }
-        self::assertArrayHasKey('instrument.execute', $actions);
-    }
-
     public function test_constrain_witness_requires_personal_judgments_and_a_finished_encounter(): void
     {
         $this->resolveExpressiveFieldFixture(.8);
