@@ -111,7 +111,7 @@ class PreparationHistoryApiTest extends TestCase
         $this->assertEquals($before, $this->getJson("{$url}/{$execution->id}")->assertOk()->json('data'));
     }
 
-    public function test_failure_without_acknowledgement_or_receipt_does_not_invent_delivery_or_outcome(): void
+    public function test_stale_admitted_preparation_links_its_failure_receipt_without_claiming_delivery(): void
     {
         $fixture = new PreparationFixture;
         $f = $fixture->context;
@@ -119,8 +119,8 @@ class PreparationHistoryApiTest extends TestCase
         $execution = $service->start($f->viewer, $f->phase, $fixture->input());
         $service->fail($f->viewer, $execution, 'reader', '1', 'stale', 'Gate changed.');
         $this->getJson("/api/substrates/{$f->substrate->slug}/preparations/{$execution->id}")->assertOk()
-            ->assertJsonPath('data.status', 'failed')->assertJsonPath('data.receipt_id', null)
-            ->assertJsonPath('data.outcome', null)->assertJsonPath('data.deliveries', [])
+            ->assertJsonPath('data.status', 'failed')->assertJsonPath('data.receipt_id', $execution->fresh()->receipt->id)
+            ->assertJsonPath('data.outcome', 'failed')->assertJsonPath('data.deliveries', [])
             ->assertJsonPath('data.failure.stage', 'stale');
     }
 

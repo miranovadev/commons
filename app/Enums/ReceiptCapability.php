@@ -11,7 +11,7 @@ enum ReceiptCapability: string
     public static function forReceipt(string $kind): array
     {
         return match ($kind) {
-            'citation', 'tragedy', 'proposition_search', 'preparation' => [self::Readable->value],
+            'citation', 'tragedy', 'proposition_search', 'preparation', 'failure' => [self::Readable->value],
             'load_file' => [self::Replayable->value],
             'hyperlink', 'web_search' => [self::Readable->value, self::Replayable->value],
             default => [],

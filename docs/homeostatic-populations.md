@@ -118,6 +118,22 @@ The action consumes only an acting Cycle-entry Receipt and creates its result in
 that Cycle, with one actual causal edge from the selected source. Homology grants
 no generic Traverse, Read or Receipt access. Order has the separate committed-position consumer below.
 
+For a zero population mean, Bias first uses the latest direction at the canonical
+Mediate coordinate. Within a single participation context, the same validated Region
+owner fixes the committed Origin and depth. The producing Horizon fixes the Domain,
+and the sorted member IDs fix the measured population. If that coordinate has no
+observation, the Gate's creating-Cycle entry determines the ordered chain of
+committed ancestors searched in successive parent Horizons. If that search also
+finds no observation, Chirality retains its constitutional Positive default.
+
+Projected Bias arrivals share a cached field only for the same owner, creating-Cycle
+entry, creating Horizon and members. A missing owner uses the individual Gate ID as a fallback.
+The selected expressive parents can differ
+because their Supersession edges do not participate in either history lookup.
+Homologous Gates with equal members can still inherit opposite directions when
+their committed branches crossed into the current Domain at different depths.
+Each arrival applies the resulting field to its own Gate and candidate set.
+
 
 
 ## Stage 5: Order committed continuations

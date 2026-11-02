@@ -13,6 +13,7 @@ use App\Services\PreparationService;
 use App\Services\PropositionStateService;
 use App\Services\ReceiptContextService;
 use DomainException;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -65,7 +66,7 @@ class PreparationFailureReceiptTest extends TestCase
         $this->assertNull($execution->completed_at);
         $this->assertNotNull($execution->failed_at);
         $this->assertNull($execution->presentation);
-        $this->assertSame('preparation', $receipt->type);
+        $this->assertSame('failure', $receipt->type);
         $this->assertTrue($receipt->isEvidence());
         $this->assertNull($receipt->signature);
         $this->assertNull($receipt->consumption);
@@ -134,6 +135,12 @@ class PreparationFailureReceiptTest extends TestCase
         $this->assertFalse(app(HorizonReceiptService::class)->ordinaryAvailable($other->context->phase)->contains('id', $receipt->id));
         $classification = $fixture->consume($receipt);
         $this->assertSame($classification->id, $receipt->fresh()->consumption->proposition_id);
+        $catalogue = app(ParticipantReceiptProjection::class)->normalize($registers, [
+            'participant' => ['id' => $f->viewer->id], 'plan' => ['phase' => ['id' => $f->phase->id, 'kind' => 'disperse'], 'gate_id' => $f->gate->id],
+        ]);
+        $seen = collect($catalogue)->firstWhere('id', $receipt->id);
+        $this->assertSame($classification->id, $seen['consumed_by_proposition_id']);
+        $this->assertSame('failed', $seen['summary']['outcome']);
         $this->assertSame('failed', $execution->fresh()->status);
         $this->assertFalse(app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->contains('id', $receipt->id));
     }
@@ -160,6 +167,27 @@ class PreparationFailureReceiptTest extends TestCase
         $this->assertSame(1, Receipt::where('evidence_execution_id', $execution->id)->count());
     }
 
+    public function test_failed_delivery_acknowledgement_issues_one_receipt_without_claiming_presentation(): void
+    {
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        $service = app(PreparationService::class);
+        $execution = $service->start($f->viewer, $f->phase, $fixture->input());
+        Crypt::shouldReceive('encryptString')->once()->andThrow(new RuntimeException('private adapter details'));
+        try {
+            $service->delivery($f->viewer, $execution, 'human-text');
+            $this->fail('Delivery succeeded without a token.');
+        } catch (DomainException $exception) {
+            $this->assertSame('Preparation delivery failed.', $exception->getMessage());
+        }
+        $receipt = $execution->refresh()->receipt;
+        $this->assertSame('failure', $receipt->type);
+        $this->assertSame('delivery', $receipt->metadata['failure']['stage']);
+        $this->assertSame([], $receipt->metadata['deliveries']);
+        $this->assertNull($execution->presented_at);
+        $this->assertStringNotContainsString('private adapter details', json_encode($receipt->metadata));
+    }
+
     public function test_failure_and_receipt_creation_roll_back_together(): void
     {
         $fixture = new PreparationFixture;
@@ -167,7 +195,7 @@ class PreparationFailureReceiptTest extends TestCase
         $f = $fixture->context;
         $execution = $service->start($f->viewer, $f->phase, $fixture->input());
         Receipt::creating(function (Receipt $receipt): void {
-            if ($receipt->type === 'preparation') {
+            if ($receipt->type === 'failure') {
                 throw new RuntimeException('Injected failure Receipt persistence error.');
             }
         });

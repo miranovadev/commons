@@ -39,6 +39,38 @@ class ParticipantExplorationTest extends TestCase
 {
     use ParticipantExplorationFixture, RefreshDatabase;
 
+    public function test_constrain_witness_requires_personal_judgments_and_a_finished_encounter(): void
+    {
+        $this->resolveExpressiveFieldFixture(.8);
+        $this->initializeExhaustionFixture(originOpensSettlement: true);
+        $first = $this->phase($this->origin, PhaseKind::Distinguish);
+        $signal = $this->node($first, $this->origin);
+        $advance = app(PhaseProgressionService::class);
+        $persist = $advance->advance($first, $signal);
+        $head = $this->node($persist, $signal);
+        $constrain = $advance->advance($persist, $head);
+        $witness = fn () => app(ExplorationEventService::class)->completionWitness($constrain, new ParticipationContext($constrain));
+        self::assertNull($witness());
+        $this->personalVote($persist, $head);
+        self::assertNull($witness(), 'The Distinguish ancestor still needs a judgment.');
+        $this->personalVote($first, $signal);
+        self::assertNotNull($witness());
+
+        $service = app(EvidenceExecutionService::class);
+        $execution = $service->start($persist, $signal, 'citation', $this->origin->id);
+        self::assertNull($witness(), 'An observation is still pending.');
+        $receipt = $service->complete($execution, $signal);
+        self::assertTrue(app(PhaseGenerationService::class)->available($constrain, 'proposition.reclassify'));
+        self::assertNull($witness(), 'Reclassification can consume the Receipt.');
+        $child = app(ContributionDispatcher::class)->dispatch($first->cycle->participant, $constrain,
+            ['action' => 'proposition.reclassify', 'proposition_id' => $head->id, 'receipt_id' => $receipt->id]);
+        self::assertNull($witness(), 'The active Constrain Write still needs a judgment.');
+        $this->personalVote($constrain, $child);
+        $disperse = $advance->advance($constrain, $child);
+        self::assertTrue(app(PhaseGenerationService::class)->available($disperse, 'proposition.variant', prepared: true));
+        self::assertNull(app(ExplorationEventService::class)->completionWitness($disperse, new ParticipationContext($disperse)));
+    }
+
     public function test_completed_rest_records_one_personal_head_and_preserves_other_participants_actions(): void
     {
         [$signal, , , $head, $terminal] = $this->personalJourney();

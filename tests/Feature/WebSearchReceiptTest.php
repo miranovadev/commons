@@ -243,7 +243,7 @@ class WebSearchReceiptTest extends TestCase
         config(['services.tavily.api_key' => null]);
         $failed = $this->search($fixture, $subject);
         $this->assertNull($failed->signature);
-        $this->assertSame('search-failed', $failed->metadata['validation']);
+        $this->assertSame('search-failed', $failed->metadata['failure']['classification']);
         $this->assertSame('loaded', app(ReceiptContextService::class)->forPhase($fixture->phase)->firstWhere('id', $failed->id)['status']);
         Http::assertNothingSent();
         config(['services.tavily.api_key' => 'server-only-test-key']);
@@ -252,7 +252,7 @@ class WebSearchReceiptTest extends TestCase
         $retry = $this->search($retryFixture, $fresh);
         $this->assertNotNull($retry->signature);
         $this->assertNull($retry->evidenceExecution->replayed_from_receipt_id);
-        $this->assertSame('search-failed', $failed->fresh()->metadata['validation']);
+        $this->assertSame('search-failed', $failed->fresh()->metadata['failure']['classification']);
         $this->assertSame(2, ParticipantReceiptContext::count());
         $this->assertSame(1, app(ReinforcementService::class)->count($subject)); // Existing load-based counting is unchanged.
     }

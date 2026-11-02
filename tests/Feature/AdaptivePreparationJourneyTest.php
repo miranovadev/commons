@@ -153,7 +153,7 @@ class AdaptivePreparationJourneyTest extends TestCase
             $failure = $execution->fresh()->metadata['failure'];
             $this->assertSame($input['artifacts'][0]['artifact_id'], $failure['artifact_id']);
             $this->assertSame('invalid_parameters', $failure['classification']);
-            $this->assertNull($execution->fresh()->receipt);
+            $this->assertSame('read', $execution->fresh()->receipt->metadata['failure']['stage']);
         }
     }
 

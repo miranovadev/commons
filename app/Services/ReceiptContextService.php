@@ -101,7 +101,7 @@ final readonly class ReceiptContextService
                     'attached_proposition_id' => $receipt->consumption?->proposition_id,
                     'type' => $receipt->type, 'reference' => $receipt->reference,
                     ...($receipt->type === 'load_file' ? ['acquisition' => $this->evidence->acquisition($receipt)] : []),
-                    ...($receipt->type === 'preparation' && $verified !== null ? ['preparation_history' => $verified['evidence']] : []),
+                    ...($receipt->evidenceExecution?->type === 'prepare' && $verified !== null ? ['preparation_history' => $verified['evidence']] : []),
                     ...($receipt->type === 'tragedy' ? ['purpose' => 'homologous_boundary_escape', 'warrant' => app(TragedyEvidenceService::class)->describe($receipt)] : []),
                     'capabilities' => [
                         'readable' => $receipt->supports(ReceiptCapability::Readable),
@@ -313,7 +313,7 @@ final readonly class ReceiptContextService
         $event->setRelation('phase', $phase);
         $event->setRelation('context', $load);
         app(LedgerService::class)->record($event);
-        if ($load->receipt->isSpecial() || $load->receipt->isPreparationFailure()) {
+        if ($load->receipt->isSpecial() || $load->receipt->isFailure()) {
             // Cognition only: no field invalidation, recalculation or evidence signature.
             app(RealtimePublisher::class)->participant($load->participant_id);
 

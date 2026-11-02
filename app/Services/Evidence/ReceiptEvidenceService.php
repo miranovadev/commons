@@ -47,7 +47,7 @@ final class ReceiptEvidenceService
         if (($observation = $this->observation($receipt)) !== null) {
             return $observation;
         }
-        if ($receipt->isPreparationFailure()) {
+        if ($receipt->isFailure()) {
             return ['signature' => null, 'evidence' => $this->failure($receipt)];
         }
 
@@ -189,11 +189,11 @@ final class ReceiptEvidenceService
     public function failure(Receipt $receipt): ?array
     {
         $metadata = $receipt->metadata ?? [];
-        if ($receipt->isPreparationFailure()) {
+        if ($receipt->isFailure()) {
             return ['content_verified' => false,
                 'interpretation' => 'Operational failure only; no source content supports or refutes a Proposition.',
                 ...array_intersect_key($metadata, array_flip(['execution_id', 'originating_gate_id', 'participant_id',
-                    'purpose', 'selections', 'deliveries', 'presented_at', 'outcome', 'failure', 'failure_reason']))];
+                    'purpose', 'selections', 'deliveries', 'presented_at', 'outcome', 'failure', 'failure_reason', 'failed_at', 'kind', 'attempted_input']))];
         }
         if (! $receipt->observationComplete() || (! isset($metadata['observation_error']) && ! isset($metadata['verification_error']))) {
             return null;

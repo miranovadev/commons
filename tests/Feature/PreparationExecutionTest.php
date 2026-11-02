@@ -573,7 +573,7 @@ class PreparationExecutionTest extends TestCase
 
     private function assertOrdinary(Receipt $receipt, EvidenceExecution $execution): void
     {
-        $this->assertSame('preparation', $receipt->type);
+        $this->assertSame($execution->status === 'failed' ? 'failure' : 'preparation', $receipt->type);
         $this->assertSame($execution->id, $receipt->evidence_execution_id);
         $this->assertSame($execution->proposition_id, $receipt->receiptable_id);
         $this->assertTrue($receipt->isEvidence());

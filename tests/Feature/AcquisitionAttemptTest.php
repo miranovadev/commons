@@ -3,16 +3,22 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
+use App\Exceptions\InvalidCitationSubject;
 use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Services\AcquisitionAttemptService;
+use App\Services\ContributionService;
 use App\Services\Evidence\HyperlinkVerifier;
+use App\Services\Evidence\InstrumentInvocation;
 use App\Services\Evidence\PublicResourceAddress;
 use App\Services\EvidenceExecutionService;
+use App\Services\InputPlanService;
+use App\Services\OpenAIResponseSchema;
 use App\Services\OperationalInstrumentService;
+use App\Services\ParticipantContextSerializer;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseGenerationService;
 use App\Services\PreparationService;
@@ -105,7 +111,7 @@ class AcquisitionAttemptTest extends TestCase
         $service->fail($f->viewer, $execution, 'reader', '1', $stage, 'Recorded failure', ['classification' => $classification]);
         $attempts = app(AcquisitionAttemptService::class);
         $this->assertSame('awaiting_resolution', $attempts->state($f->phase)['status']);
-        $this->assertSame($recorded, $execution->fresh()->receipt !== null);
+        $this->assertSame('failure', $execution->fresh()->receipt->type);
         $this->assertSame($recorded, $attempts->ready($f->phase));
         $this->assertFalse($service->eligible($f->phase));
         $count = Proposition::count();
@@ -216,7 +222,7 @@ class AcquisitionAttemptTest extends TestCase
         $this->travel((int) config('preparation.unresolved_seconds') + 1)->seconds();
         $attempts->recover($phase);
         $this->assertSame(['acquisition.defer'], array_keys($attempts->schema($phase, $execution->fresh())['$defs']['actions']));
-        $this->assertNull($execution->fresh()->receipt);
+        $this->assertSame('expired', $execution->fresh()->receipt->metadata['failure']['classification']);
         $attempts->resolve($f->viewer, $execution, ['action' => 'acquisition.defer', 'execution_id' => $execution->id, 'reason' => 'Reservation expired']);
         $this->assertNotNull($phase->cycle->fresh()->deferred_at);
         $this->assertDatabaseCount('exploration_events', 0);
@@ -311,6 +317,117 @@ class AcquisitionAttemptTest extends TestCase
         $attempts->resolve($f->viewer, $receipt->evidenceExecution, ['action' => 'acquisition.defer', 'execution_id' => $receipt->evidence_execution_id, 'reason' => 'The Gate is now historical']);
         $this->assertSame($before, $receipt->fresh()->getAttributes());
         $this->assertDatabaseCount('exploration_events', 0);
+    }
+
+    public function test_malformed_citations_are_rejected_by_the_shared_schema_before_reservation(): void
+    {
+        $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $phase = $this->at($f, PhaseKind::Distinguish, $f->seed);
+        $schema = app(InputPlanService::class)->forPhase($f->viewer, $phase)['schema'];
+        $citation = collect($schema['$defs']['instrument']['anyOf'])->firstWhere('properties.kind.const', 'citation');
+        $this->assertSame(InstrumentInvocation::CITATION_PATTERN, $citation['properties']['reference']['pattern']);
+        $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
+        $this->assertStringContainsString(InstrumentInvocation::CITATION_GUIDANCE, json_encode($transport));
+
+        foreach (['https://miranova.dev/matrix', 'missing', str_repeat('Z', 26)] as $invalid) {
+            $input = ['action' => 'instrument.execute', 'proposition_id' => $f->seed->id,
+                'instrument' => ['kind' => 'citation', 'reference' => $invalid]];
+            try {
+                app(ContributionService::class)->validateSchema($schema, $input);
+                $this->fail('Malformed Citation passed.');
+            } catch (\InvalidArgumentException $exception) {
+                $this->assertSame(InstrumentInvocation::CITATION_GUIDANCE, $exception->getMessage());
+            }
+        }
+        $this->assertDatabaseCount('evidence_executions', 0);
+        $this->assertDatabaseCount('receipts', 0);
+    }
+
+    public function test_unavailable_citation_is_recorded_once_then_deferred_and_seen_at_the_same_gate(): void
+    {
+        $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $phase = $this->at($f, PhaseKind::Distinguish, $f->seed);
+        $subject = strtolower((string) str()->ulid());
+        $input = ['kind' => 'citation', 'reference' => $subject];
+        try {
+            app(OperationalInstrumentService::class)->execute($phase, $f->seed, $input);
+            $this->fail('A nonexistent subject was cited.');
+        } catch (InvalidCitationSubject $exception) {
+            $this->assertStringContainsString('this ULID is available in this substrate', $exception->getMessage());
+        }
+        $execution = EvidenceExecution::where('phase_id', $phase->id)->sole();
+        $receipt = $execution->receipt;
+        $this->assertSame('failed', $execution->status);
+        $this->assertSame('failure', $receipt->type);
+        $this->assertSame($subject, $receipt->metadata['attempted_input']['subject']);
+        $this->assertSame('invalid_subject', $receipt->metadata['failure']['classification']);
+        $this->assertSame('validation', $receipt->metadata['failure']['stage']);
+        $this->assertNotNull($receipt->metadata['failed_at']);
+        $this->assertSame($f->seed->id, $receipt->receiptable_id);
+        $this->assertFalse($receipt->metadata['content_verified']);
+        $this->assertNull($receipt->signature);
+        $this->assertSame($receipt->id, app(EvidenceExecutionService::class)->fail($execution, 'Late failure')->id);
+        $this->assertSame(1, $execution->receipt()->count());
+
+        $cognition = function ($actor, $at) use ($receipt) {
+            $plan = app(InputPlanService::class)->forPhase($actor, $at);
+            $catalogue = app(ParticipantContextSerializer::class)->receiptCognition([
+                'participant' => $actor->only('id'), 'plan' => app(ParticipantContextSerializer::class)->plan($plan),
+            ]);
+
+            return collect($catalogue['receipts'])->firstWhere('id', $receipt->id);
+        };
+        $created = $cognition($f->viewer, $phase);
+        $this->assertStringContainsString('Citation failed', $created['summary']['message']);
+        $this->assertSame('failed', $created['loaded_inline_content']['outcome']['type']);
+        $attempts = app(AcquisitionAttemptService::class);
+        $attempts->resolve($f->viewer, $execution, ['action' => 'acquisition.defer', 'execution_id' => $execution->id, 'reason' => 'The subject could not be resolved.']);
+        $this->assertNotNull($phase->cycle->fresh()->deferred_at);
+        $other = (new Participant)->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'witness']);
+        $other->save();
+        $at = $this->visit($phase, $other);
+        $seen = $cognition($other, $at);
+        $this->assertSame($created['summary'], $seen['summary']);
+        $this->assertFalse($seen['loaded']);
+        $this->assertSame($f->seed->id, $seen['originating_gate_id']);
+        $next = app(OperationalInstrumentService::class)->execute($at, $f->seed, ['kind' => 'citation', 'reference' => $f->seed->id]);
+        $this->assertSame('citation', $next->type);
+        $this->assertSame('completed', $next->evidenceExecution->status);
+        $this->assertDatabaseCount('exploration_events', 0);
+    }
+
+    public function test_foreign_subject_has_the_same_failure_as_an_absent_subject_without_disclosing_its_content(): void
+    {
+        $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $foreign = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $phase = $this->at($f, PhaseKind::Distinguish, $f->seed);
+        try {
+            app(OperationalInstrumentService::class)->execute($phase, $f->seed, ['kind' => 'citation', 'reference' => $foreign->seed->id]);
+            $this->fail('Foreign Citation passed.');
+        } catch (InvalidCitationSubject $exception) {
+            $failure = EvidenceExecution::where('phase_id', $phase->id)->sole()->receipt;
+            $this->assertSame('invalid_subject', $failure->metadata['failure']['classification']);
+            $this->assertSame($exception->getMessage(), $failure->metadata['failure_reason']);
+            $this->assertArrayNotHasKey('target_type', $failure->metadata);
+            $this->assertFalse($failure->metadata['content_verified']);
+        }
+    }
+
+    public function test_missing_diagnostics_are_safe_and_historical_failures_are_never_backfilled(): void
+    {
+        $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $service = app(EvidenceExecutionService::class);
+        $execution = $service->start($f->phase, $f->gate, 'hyperlink', 'https://example.test/private?token=hidden');
+        $receipt = $service->fail($execution, 'Authorization: Bearer hidden', ['classification' => 'timeout', 'headers' => 'hidden']);
+        $this->assertSame('No diagnostic details were recorded.', $receipt->metadata['failure_reason']);
+        $this->assertSame(['host' => 'example.test'], $receipt->metadata['attempted_input']);
+        $this->assertStringNotContainsString('hidden', json_encode($receipt->metadata));
+        $old = $service->start($f->phase, $f->gate, 'citation', $f->seed->id);
+        DB::table('evidence_executions')->where('id', $old->id)->update(['status' => 'failed', 'failed_at' => now(), 'failure_reason' => 'Historic expiry']);
+        $this->assertFalse($old->refresh()->observationRecorded());
+        $this->assertNull($service->fail($old, 'Retry'));
+        $this->assertNull($old->receipt);
+        $this->assertSame('Historic expiry', $old->fresh()->failure_reason);
     }
 
     private function at(ParticipantContextFixture $f, PhaseKind $kind, Proposition $gate): Phase

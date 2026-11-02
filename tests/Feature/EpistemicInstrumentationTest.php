@@ -112,7 +112,7 @@ class EpistemicInstrumentationTest extends TestCase
         $this->assertSame(1, EvidenceExecution::where('phase_id', $f->phase->id)->where('status', 'completed')->count());
     }
 
-    public function test_failed_verification_records_an_observation_but_infrastructure_failure_only_reserves(): void
+    public function test_verification_and_storage_failures_record_distinct_observations(): void
     {
         $f = $this->fixture();
         $input = [...$this->input($f), 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/failure']];
@@ -122,9 +122,9 @@ class EpistemicInstrumentationTest extends TestCase
             app(ParticipationService::class)->contribute($f->viewer, $f->phase->id, $input);
             $this->fail('Infrastructure failure must abort.');
         } catch (ArtifactStorageException) {
-            $this->assertSame('pending', EvidenceExecution::where('phase_id', $f->phase->id)->sole()->status);
+            $this->assertSame('storage_failure', EvidenceExecution::where('phase_id', $f->phase->id)->sole()->receipt->metadata['failure']['classification']);
             $this->assertCount(0, app(PropositionOptionService::class)->instrumentOptionsFor($f->phase));
-            $this->assertDatabaseCount('receipts', 0);
+            $this->assertDatabaseCount('receipts', 1);
         }
         $f = $this->fixture();
         $input = [...$this->input($f), 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/failure']];
@@ -132,7 +132,7 @@ class EpistemicInstrumentationTest extends TestCase
             ->andThrow(new \DomainException('Verification failed')));
         $state = app(ParticipationService::class)->contribute($f->viewer, $f->phase->id, $input);
         $execution = EvidenceExecution::where('phase_id', $f->phase->id)->sole();
-        $this->assertSame('completed', $execution->status);
+        $this->assertSame('failed', $execution->status);
         $this->assertFalse($execution->receipt->metadata['content_verified']);
         $this->assertArrayNotHasKey('instrument.execute', $state['plan']['schema']['$defs']['actions']);
     }

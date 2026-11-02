@@ -123,7 +123,7 @@ final class ParticipantCognitiveProjection
         if ($missing->isNotEmpty()) {
             foreach (Proposition::with(['parents', 'measurement'])->whereKey($missing)->get() as $node) {
                 $pool->put($node->id, [...$node->only(['id', 'statement', 'register', 'tier']),
-                    'parent_ids' => $node->parents->pluck('id')->all(),
+                    'parent_ids' => $node->parents->pluck('id')->sort(SORT_STRING)->values()->all(),
                     'observables' => $node->measurement?->only(['correspondence', 'chirality', 'closure']) ?? []]);
             }
         }

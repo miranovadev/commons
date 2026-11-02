@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Domain\Evidence\InstrumentObservation;
 use App\Enums\LedgerEntryKind;
 use App\Enums\PhaseKind;
 use App\Enums\RestReason;
@@ -273,6 +274,19 @@ final readonly class ParticipationService
             $observed = $this->dispatcher->observeInstrument($participant, $observedPhase, $input);
         }
 
+        try {
+            return $this->applyContribution($participant, $phaseId, $input, $expectedSchema, $expectedClosureObservation, $observed);
+        } catch (\Throwable $exception) {
+            if ($observed !== null) {
+                app(OperationalInstrumentService::class)->resultFailed($observedPhase, $observed);
+            }
+            throw $exception;
+        }
+    }
+
+    private function applyContribution(Participant $participant, string $phaseId, array $input, ?array $expectedSchema,
+        ?string $expectedClosureObservation, ?InstrumentObservation $observed): array
+    {
         // Build admissibility optimistically before acquiring the shared root.
         // The version check below makes this exact schema authoritative for the
         // guarded write without hydrating a graph while other writers wait.

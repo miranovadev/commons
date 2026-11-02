@@ -131,6 +131,7 @@ class ParticipantContextTest extends TestCase
         $packet = json_decode($prompt['user'], true, flags: JSON_THROW_ON_ERROR);
         $schema = $packet['actions'];
         $this->assertArrayNotHasKey('instrument.execute', $schema['$defs']['actions']);
+        $this->assertArrayNotHasKey('anyOf', $schema['$defs']['instrument']);
         $transportSchema = $prompt['schema'];
         unset($transportSchema['x-commons']['description'], $transportSchema['$comment']);
         $this->assertSame($schema, $transportSchema);
