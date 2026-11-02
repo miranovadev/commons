@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
+use App\Models\EvidenceExecution;
 use App\Models\Phase;
 use App\Models\Substrate;
 use App\Services\Participation\ParticipationContext;
@@ -32,11 +33,13 @@ final class ExplorationEventService
         $gate = $context->propositions->get($phase->gate_proposition_id);
         $arrival = $phase->cycle->phases()->where('kind', $phase->kind->value - 1)->whereNotNull('completed_at')->first();
         if ($gate?->tier === 'expressive'
-            && $phase->kind->value >= PhaseKind::Mediate->value
+            && ($phase->kind === PhaseKind::Constrain || $phase->kind->value >= PhaseKind::Mediate->value)
             && $gate->phase->kind->value === $phase->kind->value - 1 && $arrival !== null
             && app(ParticipantExplorationService::class)->heads($gate->id, $phase, $context)->keys()->all() === [$gate->id]
             && ! app(ContinuationOpportunityService::class)->nonVariantGenerationAvailable($phase, $context)
-            && ! app(ContinuationOpportunityService::class)->pendingEvidence($phase, $context)) {
+            && ! app(ContinuationOpportunityService::class)->pendingEvidence($phase, $context)
+            && ($phase->kind !== PhaseKind::Constrain || ! EvidenceExecution::where('cycle_id', $phase->cycle_id)
+                ->whereNotNull('attempt_admitted_at')->whereNull('attempt_resolution')->exists())) {
             $judgment = $context->personalAttestationsByProposition($phase->cycle->participant_id)->get($gate->id);
             if ($judgment !== null && app(ParticipantExplorationService::class)->participationComplete($gate, $phase, $context)) {
                 return [

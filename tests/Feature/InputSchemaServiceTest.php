@@ -143,6 +143,7 @@ class InputSchemaServiceTest extends TestCase
             PhaseKind::Mediate->value => [
                 'proposition.reconcile',
                 'attestation.create',
+                'proposition.traverse',
             ],
             PhaseKind::Bias->value => [
                 'proposition.reclassify',
@@ -169,17 +170,7 @@ class InputSchemaServiceTest extends TestCase
             $this->assertNotEmpty(
                 $schema['x-commons']['description'],
             );
-            $expectsTraverse = in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Disperse, PhaseKind::Bias, PhaseKind::Order], true);
-            $this->assertSame(
-                $expectsTraverse,
-                isset($schema['$defs']['actions']['proposition.traverse']),
-            );
-            if (! $expectsTraverse) {
-                $this->assertStringNotContainsString(
-                    'traverse',
-                    strtolower($schema['x-commons']['description']),
-                );
-            }
+            $this->assertArrayHasKey('proposition.traverse', $schema['$defs']['actions']);
         }
     }
 

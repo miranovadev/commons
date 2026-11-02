@@ -92,7 +92,9 @@ final class ParticipantExplorationService
                     $expected = $node->tier === 'committal' ? PhaseKind::Distinguish->value : $node->phase->kind->value + 1;
 
                     return $target->phase->kind->value === $expected
-                        && ($target->phase->gate_proposition_id === $node->id || $edge->type === 'reconcile')
+                        && ($target->phase->gate_proposition_id === $node->id || $edge->type === 'reconcile'
+                            || ($edge->type === 'reclassify' && $target->phase->kind === PhaseKind::Bias
+                                && app(PhasePositionService::class)->matches($target, $phase, PhaseKind::Bias)))
                         && $target->register === $phase->cycle->contextHorizon->domain->registerFor($target->phase->kind);
                 });
                 if ($next->isNotEmpty()) {

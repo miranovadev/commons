@@ -36,6 +36,7 @@ use App\Services\Observables\ReinforcementService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptLayout;
+use App\Services\ParticipantExplorationService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PhaseGenerationService;
@@ -334,6 +335,8 @@ class HomologousBiasTest extends TestCase
         $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($right));
         $this->assertContains($target->id, app(CausalWriteService::class)->forPhase($this->bias)->pluck('id'));
         $other = $this->phase($b, $right, PhaseKind::Bias);
+        $heads = app(ParticipantExplorationService::class)->heads($right->id, $other, new ParticipationContext($other));
+        $this->assertFalse($heads->has($target->id));
         foreach ([null, new ParticipationContext($other)] as $context) {
             $this->assertNotContains($target->id, app(CausalWriteService::class)->forPhase($other, $context)->pluck('id'));
             $this->assertNotContains($target->id, app(PropositionOptionService::class)->traversalOptionsFor($other, $context)->pluck('id'));
@@ -580,7 +583,10 @@ class HomologousBiasTest extends TestCase
         $this->measure($other, -.7);
         $this->assertContains($other->id, $this->biasOptionIds());
         $this->assertSame('ordinary', app(BiasReceiptAuthorityService::class)->authority($this->bias, $other, new ParticipationContext($this->bias)));
-        app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($other));
+        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($other));
+        $this->assertNotSame($other->id, $target->phase->gate_proposition_id);
+        $heads = app(ParticipantExplorationService::class)->heads($other->id, $this->bias, new ParticipationContext($this->bias));
+        $this->assertSame([$target->id], $heads->keys()->all());
         $this->assertDatabaseCount('receipt_consumptions', 1);
     }
 

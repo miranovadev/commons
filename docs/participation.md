@@ -200,7 +200,7 @@ alias: no persisted action contract requires one. The old automatic
 }
 ```
 
-Expressive Traverse is available during Distinguish, Persist, Constrain, Disperse and Bias after personal effective Attestation in an earlier Cycle. Receipt consumption does not erase that established path. It
+Expressive Traverse is available during Distinguish, Persist, Constrain, Disperse, Mediate and Bias after personal effective Attestation in an earlier Cycle. Receipt consumption does not erase that established path. It
 explicitly chooses an existing local **Expressive Proposition** in
 the current Write register. Targets are immediate valid descendants of the Gate in the
 existing supersession graph, including historical superseded Propositions, and
