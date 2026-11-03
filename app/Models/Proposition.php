@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Models\Concerns\HasLedgerEntry;
 use App\Services\CausalContextService;
 use App\Services\ExhaustionService;
-use App\Services\Observables\ClosureBirthService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -30,8 +29,7 @@ class Proposition extends Model
         }
 
         return DB::transaction(function () use ($options) {
-            // Serialize birth with Cycle entry and Commit; a failed observation
-            // rolls back the Proposition rather than leaving a partial birth.
+            // Serialize Proposition creation with Cycle entry and Commit.
             Substrate::query()->lockForUpdate()->findOrFail($this->phase->cycle->participant->substrate_id);
 
             return parent::save($options);
@@ -40,8 +38,6 @@ class Proposition extends Model
 
     protected static function booted(): void
     {
-        static::created(fn (self $proposition) => app(ClosureBirthService::class)->record($proposition));
-
         static::saving(function (self $proposition): void {
             if ($proposition->exists && $proposition->isDirty('phase_id')) {
                 throw new \DomainException('A Proposition cannot change its creating Phase.');

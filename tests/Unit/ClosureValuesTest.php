@@ -36,19 +36,6 @@ class ClosureValuesTest extends TestCase
         $this->assertSame(1.0, $calc::variabilitySimilarity(1 / 3, 1 / 3));
     }
 
-    public function test_lateral_centroids_are_positive_real_values_with_bounded_similarity(): void
-    {
-        $calc = ClosureCalculator::class;
-        $history = [1, 2, 2, 3];
-        $centroid = array_sum($history) / count($history);
-        $this->assertEquals(2.0, $centroid);
-        $this->assertSame(1.0, $calc::positionalSimilarity(2, $centroid));
-        $this->assertSame(0.3333333, $calc::positionalSimilarity(4, $centroid));
-        $this->assertSame(0.6, $calc::positionalSimilarity(1, 1.5));
-        $this->assertGreaterThanOrEqual(-1.0, $calc::positionalSimilarity(1000000, 1.5));
-        $this->assertLessThanOrEqual(1.0, $calc::positionalSimilarity(1000000, 1.5));
-    }
-
     public function test_invalid_component_is_rejected(): void
     {
         $this->expectException(\InvalidArgumentException::class);

@@ -256,7 +256,7 @@ class PreparationFailureReceiptTest extends TestCase
     private function structure(): array
     {
         return collect(['propositions', 'supersessions', 'phases', 'cycles', 'exploration_events',
-            'chirality_observations', 'closure_births', 'chirality_population_observations', 'phase_profile_observations',
+            'chirality_observations', 'prospective_closure_states', 'chirality_population_observations', 'phase_profile_observations',
             'proposition_attestation_cursors'])->mapWithKeys(fn ($table) => [$table => DB::table($table)->get()->toJson()])->all();
     }
 }

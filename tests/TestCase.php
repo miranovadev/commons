@@ -6,7 +6,6 @@ use App\Domain\Evidence\VerifiedHyperlink;
 use App\Domain\Observables\ChiralityValues;
 use App\Domain\Observables\CorrespondenceValues;
 use App\Domain\Observables\LocalMeasurements;
-use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Enums\RegisterPosition;
 use App\Models\Attestation;
@@ -24,7 +23,6 @@ use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Services\AcquisitionAttemptService;
 use App\Services\ContextHorizonProjector;
-use App\Services\CrossoverMarginService;
 use App\Services\Evidence\ArtifactStore;
 use App\Services\Evidence\HyperlinkIdentity;
 use App\Services\Evidence\HyperlinkMetadataExtractor;
@@ -33,7 +31,6 @@ use App\Services\Evidence\PublicResourceRetriever;
 use App\Services\EvidenceExecutionService;
 use App\Services\HorizonReceiptService;
 use App\Services\LedgerService;
-use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ProspectiveClosureService;
 use App\Services\OperationalInstrumentService;
@@ -114,7 +111,8 @@ abstract class TestCase extends BaseTestCase
                 $observation = $onlyId !== null ? $prospective->stored($node, $context) : [
                     // Existing interval metadata is used only by snapshot plumbing;
                     // this double supplies no historical observation population.
-                    'cadence_interval' => app(ClosureBirthService::class)->stored($node)['cadence_interval'],
+                    'cadence_interval' => $node->phase->cycle->entry_committal_id === null ? 1 : Cycle::where('entry_committal_id', $node->phase->cycle->entry_committal_id)
+                        ->where('context_horizon_id', $node->phase->cycle->context_horizon_id)->count(),
                     'history_proposition_id' => $node->phase->cycle->entry_committal_id,
                     'historical_phase_profile' => $value, 'historical_orientation' => $value,
                     'fixture' => 'controlled_closure_output',
@@ -142,24 +140,6 @@ abstract class TestCase extends BaseTestCase
                 $this->assertSame(app(ProspectiveClosureService::class)->stored($source), $expected);
                 $this->controlledCanonicalClosure[$target->id] = $expected;
             });
-        });
-        $births = app(ClosureBirthService::class);
-        $this->partialMock(ClosureBirthService::class, function ($mock) use ($births, $value, $onlyId, $includeCommittal): void {
-            foreach (['stored', 'prospective'] as $method) {
-                $mock->shouldReceive($method)->andReturnUsing(function ($node, $context = null) use ($births, $value, $onlyId, $method, $includeCommittal) {
-                    $observation = $method === 'stored' ? $births->stored($node, $context) : $births->prospective($node);
-                    if ((! $includeCommittal && $node->tier === 'committal') || ($onlyId !== null && $node->id !== $onlyId)) {
-                        return $observation;
-                    }
-                    foreach (['depth', 'lateral_committal_position', 'committed_cardinal_position', 'cadence', 'closure'] as $key) {
-                        $observation[$key] = $value;
-                        $observation[$key.'_direction'] = $value > 0 ? 'positive' : 'negative';
-                    }
-                    $observation['admissible'] = true;
-
-                    return $observation;
-                });
-            }
         });
     }
 
@@ -304,17 +284,6 @@ abstract class TestCase extends BaseTestCase
         app(OperationalInstrumentService::class)->execute($phase, $phase->gate,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/personal-acquisition/'.str()->ulid()]);
         $this->publishPotentialFixture($phase->cycle->participant);
-    }
-
-    /** Supply the governing margin to a component fixture without changing the acting Gate's observables. */
-    protected function variantMarginFixture(Phase $phase, bool $closed): void
-    {
-        $value = $phase->cycle->contextHorizon->domain === ContextDomain::Settlement ? 1 : -1;
-        if ($closed) {
-            $value = -$value;
-        }
-        $phase->cycle->entryCommittal->commitmentSnapshot->forceFill(['correspondence' => $value, 'chirality' => $value])->save();
-        $this->assertSame($closed, app(CrossoverMarginService::class)->inspect($phase->cycle)['closed']);
     }
 
     /** Fixture authors supply the governor before creating immutable history. */

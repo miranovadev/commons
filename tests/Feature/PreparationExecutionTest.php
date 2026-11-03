@@ -100,7 +100,7 @@ class PreparationExecutionTest extends TestCase
         $reason = '  Further comparison is needed; this is a reason, not an instruction.  ';
         $receipt = $service->defer($f->viewer, $execution, $reason);
         $after = $this->structuralSnapshot();
-        foreach (['propositions', 'supersessions', 'exploration_events', 'closure_births', 'phase_profile_observations', 'proposition_attestation_cursors'] as $table) {
+        foreach (['propositions', 'supersessions', 'exploration_events', 'prospective_closure_states', 'phase_profile_observations', 'proposition_attestation_cursors'] as $table) {
             $this->assertSame($before[$table], $after[$table], $table);
         }
         $this->assertNotNull($f->phase->fresh()->completed_at);
@@ -608,6 +608,6 @@ class PreparationExecutionTest extends TestCase
     private function structuralSnapshot(): array
     {
         return collect(['propositions', 'supersessions', 'phases', 'cycles', 'exploration_events',
-            'chirality_observations', 'closure_births', 'chirality_population_observations', 'phase_profile_observations', 'proposition_attestation_cursors'])->mapWithKeys(fn ($t) => [$t => DB::table($t)->get()->sortBy(fn ($row) => json_encode($row))->values()->toJson()])->all();
+            'chirality_observations', 'prospective_closure_states', 'chirality_population_observations', 'phase_profile_observations', 'proposition_attestation_cursors'])->mapWithKeys(fn ($t) => [$t => DB::table($t)->get()->sortBy(fn ($row) => json_encode($row))->values()->toJson()])->all();
     }
 }

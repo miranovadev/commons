@@ -1,73 +1,34 @@
-# Crossover Margin and fresh Variant eligibility
+# Retirement of Crossover authority
 
-A Cycle's governing Committal and Domain determine whether its Region permits a
-fresh Variant. Distinguish, Persist and Disperse share the same check. Both the
-prospective acquisition probe and the contribution resolvers consult it, including
-for an independently admitted attempt. A closed margin leaves Defer available
-for an already observed attempt. Missing committed geometry or historical Closure
-observations cannot establish closure.
+The Cardinal Position bound assumed the next committed position could pass a point beyond which reversal was impossible. Historical Phase Profiles and Prospective Closure no longer have that bound. A negative legacy margin proves nothing about the next lawful expressive move.
 
-`CrossoverMarginService::inspect()` exposes a read-only diagnostic. Correspondence
-and Chirality are the entry seed's authoritative committed snapshot values. This
-is a conditional bound on **current committed geometry**, not a prediction about
-future expressive measurements or Future Reopening Capacity.
+## Participation
 
-Committed Cardinal Position is computed for a hypothetical next Committal in the
-acting Cycle's Domain, using the canonical `ClosureBirthService` and its temporary
-next-child placement. It includes full committed Domain depth and frozen lateral
-history. No Proposition or birth observation is persisted. The component's retained
-direction comes from that observation, including at zero; snapshot Depth direction
-is not a substitute.
+Distinguish, Persist and Disperse evaluate the same fresh Variant opportunity for projected traversal, acquisition and resolution. Unexplored reachable Writes take priority. Phase position, active Region and Horizon, hard Supersession, terminal authority and the existing Receipt rules still apply. A competing ordinary Variant cannot revoke an independently admitted attempt. Each attempt resolves once to Variant or Defer. Acquisition itself creates no Proposition.
 
-The existing optimistic Cadence endpoint policy is unchanged: 0 or +1 in Settlement
-(negative or positive Cardinal direction), and -1 or 0 in Emergence. Zero remains
-an optimistic endpoint even where hysteresis makes it a supremum rather than an
-attainable value. This does not optimize attainable CVs or predict future paths.
+The action schema continues to authorize Rest and any qualified local completion. New actionless Rests record `no_available_move`. Historical `no_remaining_potential` rows remain readable. Potential Charge is still observable. An expressive Rest can return the Participant to the governing Committal. A Rest recorded at that entry requires a strict backward hop. Recovery respects the recorded path, Horizon crossing rules and genuine regional Exhaustion.
 
-The prospective Closure bound is `(Committed Cardinal Position + endpoint) / 2`.
-Receipt state
-and reinforcement count do not enter this calculation or its diagnostic contract. The canonical field
-projection supplies Tension, algebraically `(Correspondence + Chirality + Closure)
-/ 3`, using its existing seven-decimal rounding. Margin is Tension in Settlement
-and negative Tension in Emergence; margin <= 0 is closed. Zero retains Domain.
+## November 3 reconstruction
 
-Participants can still Attest, Traverse and Revise existing Writes under their
-ordinary personal and structural rules. Reconcile, Reclassify and Commit retain
-their own eligibility. An open margin supplies only one Variant prerequisite.
-An unexplored reachable head, terminal authority or missing evidence can still
-prevent acquisition or contribution.
+On merged main `c5bbdc09c2ed17d1f08ae5383e5dec13275843c3`, we loaded the November 3 Constrain Exploration Offsets SQL export into an isolated SQLite schema. We selected the recorded Distinguish Phase by ID, restored the actor’s Gate and cleared completion and Rest fields on the in-memory models. Each planner evaluated the same snapshot of the Region. Neither Region gained children or terminal evidence between entry and export. No acquisition or Variant was submitted.
 
-## Rest and backward recovery
+| Luna Cycle | Governing Committal | Correspondence | Chirality | Closure | Legacy margin | Recorded Distinguish Rests | Main plan | Corrected plan |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| 80 | `01m6fdrg3vqf5nnhn604qc3qdz` | −0.4955187 | −0.1021861 | −0.2217263 | −0.1992350 | 10 | Rest | Instrument |
+| 93 | `01m6fh9zeyvhr327gqnbpb1qcn` | −0.3743373 | +0.0783020 | −0.1755953 | −0.0986784 | 3 | Rest | Instrument |
 
-Rest uses the ordinary action plan. From an expressive Rest position, recovery
-can return to the governing Committal so the Participant can explore another
-branch. From a Rest at that entry itself, backward recovery requires an actual
-hop. It selects the nearest eligible ancestor on the recorded path. Crossing a
-Horizon still requires actual boundary exhaustion. Without an eligible ancestor
-the Participant waits. Origin follows both the ordinary Variant rule and this
-structural backward boundary.
+Distinguish Phase IDs were `01m6fdrmjnwxxmwmj9fqwg8cnj` and `01m6fha4884x9pwzkwwnzqs4vh`. The recorded acquisition state reconstructed on main was `not_required`. On the corrected branch it was `required`. For both cases, the complete `InputPlanService::forPhase` query count fell from 78 to 69. Each Region had zero children, Tragedies and Exhaustion proofs.
 
-Crossover creates no Tragedy, Exhaustion, Exploration Event or movement edge.
+## Runtime and archive audit
 
-## Historical comparison
+| Reference | Disposition |
+| --- | --- |
+| `PhaseGenerationService::available` | Removed the hypothetical Committal calculation and request cache. Its callers share the structural predicate. |
+| `CrossoverMarginService`, `ClosureBirthService`, `Proposition::created` | Removed both services and the legacy birth hook. Proposition creation retains the existing transactional Substrate lock and causal/register checks. |
+| Legacy lateral position and centroid, hypothetical committed interval | Removed the retired calculation, its exclusive helpers and consumer tests. |
+| `closure_births` and its original migration | Archival only. No migration, backfill, drop or change to its observations or triggers. The C3 projection extractor no longer requests these rows. |
+| `prospective_closure_states` and frozen Commitment snapshots | Existing initialization after ledger/edge creation, Cycle-entry updates and canonical preservation continue through their existing services. The snapshot’s legacy Cardinal-direction accessor can still decode frozen historical observations. |
+| `ClosureCalculator`, committed ancestry, Cardinal morphology | Retained the depth similarity, coefficient of variation and variability similarity used by Prospective Closure. Committed ancestry also serves evidence, Chirality and Horizon reads. Cardinal morphology remains independent Correspondence work. |
+| Fixtures, reviews and diagnostics | Controlled snapshots and Phase Profile fixtures use the current contract. Existing historical reports, test inventories and transcript captures remain records of their respective revisions. |
 
-The October 30 extended export records eight Commit edges. Vela's Cycles 120–131
-alternate between Origin and the eighth Commit, with Rest recorded on each of
-the six visits to the newer Committal. The export records the entries and Rests.
-It does not establish which actions a corrected planner would have offered.
-
-On merged main (`ad7bf8e`), the controlled expressive-Rest fixture selected
-the parent when the governor's margin was closed and the governor when it was
-open. The same inputs now select the governor in both cases. The sibling fixture
-starts with pre-existing expressive structure in a closed Region and then uses
-the ordinary contribution path for three Participants. Two personal exploration
-histories diverge while the third Participant can still make a first judgment.
-
-The natural HTTP transcript preserves its Settlement Commit's measured margin
-of `-0.1950613`. Its empty Distinguish entry offers Rest, and the backward path
-from that entry reaches Origin in seven edges. The separate historical
-post-Commit Receipt/search fixture preserves descendant evidence and exact
-lineage distances for Writes created under the former rule.
-
-Run the focused regressions with
-`vendor/bin/phpunit tests/Feature/CrossoverRecoveryTest.php tests/Feature/Api/ParticipationTragedyLifecycleTest.php`.
+Future archive removal requires a separate migration decision, a retention/export policy for existing observations and an audit of external historical readers. This change ships no database migration.

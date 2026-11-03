@@ -17,6 +17,7 @@ class ClosureBirthTest extends TestCase
     {
         $fixture = new GovernedExpressionFixture;
         $head = $fixture->expression;
+        $this->assertDatabaseCount('closure_births', 0);
         $this->assertNotNull($head->ledgerEntry);
         $this->assertSame($fixture->origin->id, $head->phase->cycle->entry_committal_id);
         $this->assertSame([$fixture->origin->id], $head->parents()->pluck('propositions.id')->all());
