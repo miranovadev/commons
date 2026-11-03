@@ -76,13 +76,16 @@ final readonly class ContributionDispatcher
                     || ($input['execution_id'] ?? null) !== $preparation->id) {
                     throw new DomainException('A prepared contribution must resolve its exact execution.');
                 }
-                unset($input['execution_id']);
             } elseif (app(PreparationService::class)->active($phase) !== null) {
                 throw new ConflictHttpException('Resolve the unfinished Preparation before ordinary participation.');
             }
             if (app(AcquisitionAttemptService::class)->admitted($phase)
                 && ! in_array($action, ['instrument.execute', 'proposition.variant'], true)) {
                 throw new ConflictHttpException('Resolve the admitted acquisition through Variant or Defer before ordinary participation.');
+            }
+            // Reclassification checks its exact fields, including an unexpected null execution ID.
+            if ($action !== 'proposition.reclassify') {
+                unset($input['execution_id']);
             }
             if (! in_array($action, config("phases.{$phase->kind->value}.actions", []), true)
                 || $phase->cycle->participant_id !== $participant->id) {
