@@ -18,7 +18,7 @@ class ReclassificationEvidenceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_reclassification_preserves_evidence_and_content_without_copying_judgments_or_uptake(): void
+    public function test_reclassification_preserves_evidence_and_normalizes_authored_content_without_copying_judgments_or_uptake(): void
     {
         $f = new ParticipantContextFixture(1, 0);
         $source = $f->node($f->seed, 'frontier', position: PhaseKind::Persist);
@@ -31,7 +31,8 @@ class ReclassificationEvidenceTest extends TestCase
         $target = app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase->fresh(), $this->reclassificationInputFixture($f->phase->fresh(), $source));
         $state = app(PropositionStateService::class);
         $counts = app(ReinforcementService::class);
-        $this->assertSame($source->statement, $target->statement);
+        $this->assertSame(trim($source->statement), $target->statement);
+        $this->assertSame($source->statement, $source->fresh()->statement);
         $this->assertSame([$receipt->id], $state->receipts($target)->pluck('id')->all());
         $this->assertCount(0, $state->attestations(collect([$target])));
         $this->assertSame(0, $state->touchCount($target));
@@ -48,7 +49,7 @@ class ReclassificationEvidenceTest extends TestCase
         $this->assertSame(1, $target->reinforcement_count);
     }
 
-    public function test_reclassification_rejects_authored_text_even_for_direct_dispatch_callers(): void
+    public function test_reclassification_remains_unavailable_in_persist_for_direct_dispatch_callers(): void
     {
         $f = new ParticipantContextFixture(1, 0);
         $f->gate = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);

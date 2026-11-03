@@ -169,14 +169,13 @@ class BiasGateTest extends TestCase
         $this->viewer->forceFill(['current_proposition_id' => $selected->id])->save();
         $plan = $this->plan();
         $input = $this->reclassificationInputFixture($this->phase, $selected);
-        $this->assertSame(['action', 'proposition_id', 'receipt_id'], $plan['schema']['$defs']['actions']['proposition.reclassify']['required']);
+        $this->assertSame(['action', 'proposition_id', 'receipt_id', 'statement'], $plan['schema']['$defs']['actions']['proposition.reclassify']['required']);
         $this->assertSame($this->optionIds(), $plan['schema']['$defs']['actions']['proposition.reclassify']['properties']['proposition_id']['enum']);
         $this->assertArrayNotHasKey('proposition.reconcile', $plan['schema']['$defs']['actions']);
         $this->assertCount(0, app(ReconciliationOptionService::class)->forPhase($this->phase));
         $this->assertInput($plan['schema'], $input, true);
-        foreach ([['statement' => 'Replacement'], ['other_proposition_id' => $this->gate->id]] as $extra) {
-            $this->assertInput($plan['schema'], [...$input, ...$extra], false);
-        }
+        $this->assertInput($plan['schema'], [...$input, 'statement' => 'Replacement'], true);
+        $this->assertInput($plan['schema'], [...$input, 'other_proposition_id' => $this->gate->id], false);
         $this->assertInput($plan['schema'], ['action' => 'proposition.reconcile', 'other_proposition_id' => $selected->id], false);
         $this->publishPotentialFixture($this->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, app(ParticipationService::class)->stateFor($this->viewer));
@@ -187,7 +186,7 @@ class BiasGateTest extends TestCase
         $properties = isset($union['anyOf'])
             ? collect($union['anyOf'])->first(fn ($variant) => $variant['properties']['action']['enum'] === ['proposition.reclassify']) : $union;
         $this->assertArrayNotHasKey('other_proposition_id', $properties['properties']);
-        $this->assertArrayNotHasKey('statement', $properties['properties']);
+        $this->assertSame('string', $properties['properties']['statement']['type']);
         $wire = array_replace(array_fill_keys($properties['required'], null), $input);
         $this->assertInput($transport, ['contribution' => $wire], true);
 
@@ -198,7 +197,7 @@ class BiasGateTest extends TestCase
         $target = Proposition::findOrFail($this->viewer->fresh()->current_proposition_id);
         $this->assertSame($count + 1, Proposition::count());
         $this->assertSame('order', $state['plan']['phase']['kind']);
-        $this->assertSame($selected->statement, $target->statement);
+        $this->assertSame(trim($selected->statement), $target->statement);
         $this->assertSame($write, $target->register);
         $this->assertSame('expressive', $target->tier);
         $edges = Supersession::where('target_proposition_id', $target->id)->get();
@@ -378,7 +377,7 @@ class BiasGateTest extends TestCase
         $this->rejectDispatch($input); // The candidate itself changed direction after preview.
         $this->attest($this->gate, 'support');
         $this->rejectDispatch([...$input, 'other_proposition_id' => $negative->id]);
-        $this->rejectDispatch([...$input, 'statement' => 'Overwritten']);
+        $this->rejectDispatch([...$input, 'statement' => '   ']);
         $this->rejectDispatch(['action' => 'proposition.reconcile', 'other_proposition_id' => $negative->id]);
         $this->edge($this->gate, $this->node('Replacement', 'concord', position: PhaseKind::Bias), 'reclassify');
         $this->rejectDispatch($input);

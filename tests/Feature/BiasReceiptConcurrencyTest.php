@@ -62,7 +62,7 @@ class BiasReceiptConcurrencyTest extends TestCase
             app(PropositionMeasurementService::class)->project($node, 0, -.5, 0);
         }
         $this->resolveExpressiveFieldFixture(.8);
-        $input = ['action' => 'proposition.reclassify', 'proposition_id' => $gates[1]->id, 'receipt_id' => $tragedy->receipt_id];
+        $input = ['action' => 'proposition.reclassify', 'proposition_id' => $gates[1]->id, 'statement' => $gates[1]->statement, 'receipt_id' => $tragedy->receipt_id];
         $before = Proposition::count();
         $this->whileWorkerWaits($this->actor->substrate, ['operation' => 'dispatch-rejected',
             'participant_id' => $this->actor->id, 'phase_id' => $second->id,

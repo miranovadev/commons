@@ -177,6 +177,9 @@ trait HorizonCycleFixture
                     'artifacts' => [['receipt_id' => $selection['receipt_id'], 'artifact_id' => $selection['artifact_id'],
                         'read_type' => 'text', 'parameters' => ['max_chars' => 4000]]]];
             }
+            if ($action === 'proposition.reclassify') {
+                $input['statement'] = Proposition::findOrFail($input['proposition_id'])->statement;
+            }
             if ($action === 'proposition.variant') {
                 $input['statement'] = 'Opportunity '.$step;
             }

@@ -490,7 +490,7 @@ abstract class TestCase extends BaseTestCase
         $receipt = $available->first(fn ($item) => $item->evidenceExecution?->proposition_id === $source->id)
             ?? $available->firstOrFail();
 
-        return ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id];
+        return ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'statement' => $source->statement, 'receipt_id' => $receipt->id];
     }
 
     /**

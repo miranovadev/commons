@@ -307,7 +307,7 @@ class ChargeBoundaryTragedyTest extends TestCase
         $this->assertSame(0, Receipt::where('type', 'tragedy')->count());
         try {
             app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
-                ['action' => 'proposition.reclassify', 'proposition_id' => $this->origin->id]);
+                ['action' => 'proposition.reclassify', 'proposition_id' => $this->origin->id, 'statement' => $this->origin->statement]);
             $this->fail('The ordinary phase/action validation must reject this contribution');
         } catch (\DomainException|ConflictHttpException) {
             $this->assertDatabaseCount('tragedies', 0);

@@ -65,7 +65,7 @@ class ParticipantExplorationTest extends TestCase
         self::assertTrue(app(PhaseGenerationService::class)->available($constrain, 'proposition.reclassify'));
         self::assertNull($witness(), 'Reclassification can consume the Receipt.');
         $child = app(ContributionDispatcher::class)->dispatch($first->cycle->participant, $constrain,
-            ['action' => 'proposition.reclassify', 'proposition_id' => $head->id, 'receipt_id' => $receipt->id]);
+            ['action' => 'proposition.reclassify', 'proposition_id' => $head->id, 'statement' => $head->statement, 'receipt_id' => $receipt->id]);
         self::assertNull($witness(), 'The active Constrain Write still needs a judgment.');
         $this->personalVote($constrain, $child);
         $disperse = $advance->advance($constrain, $child);
@@ -133,7 +133,7 @@ class ParticipantExplorationTest extends TestCase
         $constrain = app(PhaseProgressionService::class)->advance($persistPhase, $sibling);
         $receipt = app(HorizonReceiptService::class)->ordinaryAvailable($constrain)->firstOrFail();
         $classification = app(ContributionDispatcher::class)->dispatch($constrain->cycle->participant, $constrain,
-            ['action' => 'proposition.reclassify', 'proposition_id' => $sibling->id, 'receipt_id' => $receipt->id]);
+            ['action' => 'proposition.reclassify', 'proposition_id' => $sibling->id, 'statement' => $sibling->statement, 'receipt_id' => $receipt->id]);
         $this->personalVote($constrain, $classification);
         $disperse = app(PhaseProgressionService::class)->advance($constrain, $classification);
         $this->instrumentGateFixture($disperse);
