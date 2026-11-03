@@ -45,23 +45,21 @@ frontier rank or action availability.
   inspect parked observers between those final steps.
 - `tragedy-lifecycle.json` retains the historical transcript. The current
   `ParticipationTragedyLifecycleTest` uses the skeptical Persist Commit journey.
-  Its Settlement Committal has a measured margin of -0.1950613. Distinguish
-  has no existing Write and cannot acquire. Rest at that entry moves seven
-  recorded edges back to Origin without changing the Horizon or any proof.
+  Its Settlement Committal has no Distinguish Writes and offers Instrumentation. Its frozen field and the seven-edge backward path to Origin remain covered.
 
 Coverage is deliberately separated:
 
-- `ParticipationTragedyLifecycleTest`: natural closed-crossover Rest, exact backward
-  ancestry, and unchanged Tragedy/exhaustion/Receipt/Horizon history after recovery.
+- `ParticipationTragedyLifecycleTest`: fresh Distinguish acquisition, exact backward
+  ancestry, frozen Commitment observations and absence of terminal evidence.
 - `NaturalChargeBoundaryLifecycleTest`: ordinary unmocked contributions by two
   participants create first Tragedy, load non-evidential warrant memory, reproduce
   the Charge boundary, exhaust the Region and recover while preserving history.
 - `ChargeBoundaryTragedyTest` and `AuthoritativeRestReasonTest`: zero Potential and
-  a no-Potential Rest cannot create Tragedy/exhaustion; fresh resolved zero Charge
+  an actionless Rest cannot create Tragedy/exhaustion; fresh resolved zero Charge
   remains the catastrophe authority. Bias/warrant suites independently cover
   consumption authority and exact-once use.
 
-Crossover governs fresh Variants. Rest and backward recovery preserve the independent catastrophe and exhaustion proofs.
+Fresh acquisition follows structural eligibility and personal exploration. Rest and backward recovery preserve the independent catastrophe and exhaustion proofs.
 
 An unexpected state fails at that step. Do not regenerate expected output to
 make a failing test pass: determine whether it exposes a regression or an explicitly
@@ -72,7 +70,7 @@ The complete solo and collective Domain scripts live unchanged in
 with `composer test:replay-domain`, and are outside mandatory PHPUnit discovery.
 A deterministic full Domain round trip is not a Core acceptance requirement.
 
-Chirality v2 recalibrates the recorded intermediate Rest reasons where live Potential is now zero: `no_remaining_potential` replaces `no_available_move` only at the observed steps. Authored actions, topology and recovery assertions are unchanged. The final Crossover remains closed with Correspondence -0.5276331, Chirality 0.7666717 and Tension bound 0.2463462. The diagnostic independently checks Orientation, live Attestation rates, their mean and unchanged attenuation; live reconstruction is not compared to an earlier frozen snapshot.
+Archived Chirality v2 expectations describe the intermediate Rest reasons where live Potential is now zero: `no_remaining_potential` replaces `no_available_move` only at the observed steps. Authored actions, topology and recovery assertions are unchanged. That historical Crossover calculation closed with Correspondence -0.5276331, Chirality 0.7666717 and Tension bound 0.2463462. The diagnostic independently checks Orientation, live Attestation rates, their mean and unchanged attenuation; live reconstruction is not compared to an earlier frozen snapshot.
 
 Origin now requires an explicit Attestation and creates no bootstrap Receipt.
 The archived expected packets and declared bindings omit that former observation;

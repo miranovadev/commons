@@ -243,7 +243,7 @@ remain in place, and middle actions wrap without moving the directional slots.
 The UI renders Rest only from the authoritative schema, never from its own
 interpretation of the rest_available flag or visible cards.
 
-**No available move** means the current Phase has zero admissible contributions, including eligible Instrument or Preparation acquisition. The backend separately derives `no_remaining_potential` from an evidenced failure. That reason is a numerical diagnostic only. Neither Rest reason creates Tragedy or exhaustion.
+**No available move** is the reason recorded when the action schema leaves only Rest. Potential Charge remains a numerical observation. Historical Cycles retain the former `no_remaining_potential` reason. The schema also retains its existing Rest option for a qualified local exploration encounter. Rest itself supplies no regional Tragedy or Exhaustion proof.
 The server first applies all phase-native, ownership, target and Commitment
 constraints, then specializes the complete action schema. When no admissible contribution
 remains it sets `rest_available: true` and injects `participant.rest`.

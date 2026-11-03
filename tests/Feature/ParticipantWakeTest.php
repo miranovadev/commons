@@ -381,16 +381,28 @@ class ParticipantWakeTest extends TestCase
         $connection->forceFill(['configuration' => array_replace_recursive($connection->configuration, ['wake' => ['termination' => $mode]])])->save();
         $cycleId = $f->phase->cycle_id;
         $calls = [];
+        $develop = function (array $state): array {
+            $actions = $state['plan']['schema']['$defs']['actions'];
+            if (isset($actions['instrument.execute'])) {
+                return ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+                    'instrument' => ['kind' => 'proposition_search', 'limit' => 3]];
+            }
+            if (isset($actions['proposition.variant'])) {
+                return ['action' => 'proposition.variant', 'statement' => 'Develop this newly entered Region.'];
+            }
+            $this->assertSame(['participant.rest'], array_keys($actions));
+
+            return ['action' => 'participant.rest'];
+        };
         $inference = Mockery::mock(ParticipantInference::class);
-        $inference->shouldReceive('contribute')->times($mode === 'rest' ? 8 : 7)->andReturnUsing(function (Connection $connection, array $state) use (&$calls, $receipt, $nodes, $cycleId, $f): array {
+        $inference->shouldReceive('contribute')->times($mode === 'rest' ? 12 : 7)->andReturnUsing(function (Connection $connection, array $state) use (&$calls, $receipt, $nodes, $cycleId, $f, $develop): array {
             $activity = app(ParticipantActivityService::class)->snapshot(collect([$f->viewer->fresh()]))['participants'][0];
             $this->assertTrue($activity['is_active']);
             $this->assertNotNull($activity['current_proposition_id']);
             if ($state['cycle']['id'] !== $cycleId) {
                 $calls[] = [$state['plan']['phase']['number'], $state['plan']['phase']['id']];
-                $this->assertSame(['participant.rest'], array_keys($state['plan']['schema']['$defs']['actions']));
 
-                return ['action' => 'participant.rest'];
+                return $develop($state);
             }
             $kind = $state['plan']['phase']['number'];
             $calls[] = [$kind, $state['plan']['phase']['id']];
@@ -408,11 +420,11 @@ class ParticipantWakeTest extends TestCase
         $this->app->instance(ParticipantInference::class, $inference);
         $this->app->call([new WakeParticipant($connection->id), 'handle']);
         if ($mode === 'rest') {
-            $this->assertSame([1, 2, 3, 4, 5, 6, 7, 1], array_column($calls, 0));
-            $this->assertCount(8, array_unique(array_column($calls, 1)));
+            $this->assertSame([1, 2, 3, 4, 5, 6, 7, 1, 1, 2, 2, 3], array_column($calls, 0));
+            $this->assertCount(10, array_unique(array_column($calls, 1)));
             $this->assertNotNull(Cycle::findOrFail($cycleId)->completed_at);
             $this->assertNull(Cycle::findOrFail($cycleId)->rested_at);
-            $this->assertNotNull(Phase::findOrFail($calls[7][1])->cycle->rested_at);
+            $this->assertNotNull(Phase::findOrFail($calls[11][1])->cycle->rested_at);
 
             return;
         }
@@ -433,9 +445,9 @@ class ParticipantWakeTest extends TestCase
         // A separately scheduled Phase wake resumes the exact prepared occurrence.
         $connection->forceFill(['configuration' => array_replace_recursive($connection->configuration, ['wake' => ['termination' => 'phase']])])->save();
         $second = Mockery::mock(ParticipantInference::class);
-        $second->shouldReceive('contribute')->once()->withArgs(fn ($connection, $state) => $state['plan']['phase']['id'] === $nextPhaseId
-            && array_keys($state['plan']['schema']['$defs']['actions']) === ['participant.rest'])
-            ->andReturn(['action' => 'participant.rest']);
+        $this->assertSame(['instrument.execute'], array_keys($next['plan']['schema']['$defs']['actions']));
+        $second->shouldReceive('contribute')->twice()->withArgs(fn ($connection, $state) => $state['plan']['phase']['id'] === $nextPhaseId)
+            ->andReturnUsing(fn ($connection, $state) => $develop($state));
         $this->app->instance(ParticipantInference::class, $second);
         $this->app->call([new WakeParticipant($connection->id), 'handle']);
         $this->assertNotNull(Phase::findOrFail($nextPhaseId)->completed_at);

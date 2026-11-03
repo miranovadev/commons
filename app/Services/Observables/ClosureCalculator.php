@@ -33,15 +33,6 @@ final readonly class ClosureCalculator
         return self::bounded(1 - 2 * abs($left - $right) / max($left, $right));
     }
 
-    public static function positionalSimilarity(float $left, float $right): float
-    {
-        if (! is_finite($left) || ! is_finite($right) || $left <= 0 || $right <= 0) {
-            throw new DomainException('Committed positions and centroids must be positive real values.');
-        }
-
-        return self::bounded(1 - 2 * abs($left - $right) / ($left + $right));
-    }
-
     public static function coefficientOfVariation(array $intervals): float
     {
         if (count($intervals) < 2 || min($intervals) <= 0) {

@@ -169,9 +169,9 @@ final readonly class ParticipationService
                     : 'Commitment requires grounding and aligned Historical Extent/Rhythm directions. Use an action available in the current Phase.',
             ] : ($plan['rest_available'] ? [
                 'code' => $plan['rest_reason'],
-                'message' => $plan['rest_reason'] === 'no_remaining_potential'
-                    ? 'No admissible action remains in this Phase, and its Commit Region has zero measured Potential. Rest does not create Tragedy.'
-                    : 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
+                'message' => count($plan['schema']['$defs']['actions']) === 1
+                    ? 'No lawful non-Rest action remains in this Phase.'
+                    : 'You can Rest after this encounter or choose another available action.',
             ] : null),
             'entry' => null,
         ];
@@ -370,7 +370,7 @@ final readonly class ParticipationService
                 // A stale proof is discarded and can be retried after this Rest.
                 $validProof = $explorationWitness !== null && $explorationWitness['stable']
                     && $explorationWitness['field_version'] === (int) $substrate->field_version;
-                $this->rest($lockedParticipant, $phase, RestReason::from($explorationWitness['rest_reason'] ?? 'no_available_move'));
+                $this->rest($lockedParticipant, $phase);
                 if ($validProof) {
                     app(ExplorationEventService::class)->publish($phase, $explorationWitness);
                 }
@@ -399,14 +399,14 @@ final readonly class ParticipationService
     }
 
     /** The validated plan exposes Rest only in a Phase with no meaningful remaining continuation. */
-    private function rest(Participant $participant, Phase $phase, RestReason $reason): void
+    private function rest(Participant $participant, Phase $phase): void
     {
         $participant->current_proposition_id = $phase->gate_proposition_id;
         $participant->save();
         $phase->completed_at = now();
         $phase->save();
         $phase->cycle->rested_at = now();
-        $phase->cycle->rest_reason = $reason;
+        $phase->cycle->rest_reason = RestReason::NoAvailableMove;
         $phase->cycle->save();
     }
 

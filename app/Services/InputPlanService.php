@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
-use App\Enums\RestReason;
 use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
@@ -98,7 +97,7 @@ final readonly class InputPlanService
             'attestation_options' => [], 'instrument_options' => [], 'receipts' => app(ParticipantContextSerializer::class)->receipts($this->receipts->forPhase($phase)->all()),
             'exhausted_alternatives' => $history,
             'commitment' => null, 'commitment_options' => [], 'rest_available' => $resolution === null, 'position_exhausted' => true,
-            'rest_reason' => RestReason::NoAvailableMove->value,
+            'rest_reason' => $resolution === null ? app(RestReasonService::class)->derive($phase)->value : null,
             'schema' => $resolution ?? $this->schemas->forPhase($phase->kind, ['participant.rest']),
         ];
     }
@@ -222,7 +221,7 @@ final readonly class InputPlanService
             'exhausted_alternatives' => $this->historicalContext->forPhase($phase, $context),
             'rest_available' => isset($schema['$defs']['actions']['participant.rest']),
             'rest_reason' => isset($schema['$defs']['actions']['participant.rest'])
-                ? app(RestReasonService::class)->derive($phase, $context)->value : null,
+                ? app(RestReasonService::class)->derive($phase)->value : null,
             'traversal_options' => $this->propositions($traversalOptions, $participant, $context),
             'instrument_options' => $this->propositions($instrumentOptions, $participant, $context),
             'write_options' => $this->propositions($writeOptions, $participant, $context),

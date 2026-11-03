@@ -67,8 +67,9 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
       <Text size="xs" c="dimmed">Zero retains each component’s established direction. Commit preserves this authorised state.</Text>
     </Stack> });
   }
-  if (canRest) notices.push({ id: 'rest', title: plan?.rest_reason === 'no_remaining_potential' ? 'No remaining Potential · Rest' : 'No available move · Rest', color: 'gray', icon: IconMoon, content: <Stack gap="xs">
-    <Text size="sm">No admissible non-Rest action remains in this Phase. Rest ends this Cycle; recovery begins at the nearest viable Committal region.</Text>
+  const onlyRest = Object.keys(plan?.schema?.$defs?.actions ?? {}).length === 1;
+  if (canRest) notices.push({ id: 'rest', title: onlyRest ? 'No available move · Rest' : 'Encounter complete · Rest', color: 'gray', icon: IconMoon, content: <Stack gap="xs">
+    <Text size="sm">{onlyRest ? 'No lawful non-Rest action remains in this Phase.' : 'You can Rest after this encounter or choose another available action.'} Rest ends this Cycle and begins recovery.</Text>
     <Button variant="light" color="gray" onClick={onRest}>Rest</Button>
   </Stack> });
   if (error) notices.push({ id: 'contribution-error', title: 'Contribution could not be applied', color: 'red', icon: IconAlertCircle, urgent: true,

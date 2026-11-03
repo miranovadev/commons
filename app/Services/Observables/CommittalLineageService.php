@@ -3,7 +3,6 @@
 namespace App\Services\Observables;
 
 use App\Models\CommitmentSnapshot;
-use App\Models\Cycle;
 use App\Models\Proposition;
 use App\Services\Participation\ParticipationContext;
 use DomainException;
@@ -85,36 +84,5 @@ final class CommittalLineageService
         }
 
         return $chain->values();
-    }
-
-    public function interval(Proposition $position, ?ParticipationContext $context = null): int
-    {
-        if ($position->exists) {
-            return app(ProspectiveClosureService::class)->stored($position, $context)['cadence_interval'];
-        }
-
-        return $this->prospectiveInterval($position, $context);
-    }
-
-    /** Live state is consumed only by a new birth or a disposable Commit preview. */
-    public function prospectiveInterval(Proposition $position, ?ParticipationContext $context = null): int
-    {
-        $cycle = $position->phase->cycle;
-        if ($cycle->entry_committal_id === null) {
-            throw new DomainException('An ordinary Commit requires an entry Committal.');
-        }
-        $load = function () use ($cycle, $context): Collection {
-            $entries = $context === null ? collect([$cycle->entry_committal_id])
-                : $context->propositions->map(fn ($p) => $p->phase->cycle->entry_committal_id)->push($context->phase->cycle->entry_committal_id);
-
-            return Cycle::whereIn('entry_committal_id', $entries->filter()->unique())
-                ->selectRaw('entry_committal_id, context_horizon_id, count(*) as aggregate')
-                ->groupBy('entry_committal_id', 'context_horizon_id')->get()
-                ->mapWithKeys(fn ($row) => [$row->entry_committal_id.':'.$row->context_horizon_id => $row->aggregate]);
-        };
-        $counts = $context === null ? $load() : $context->remember('closure:entered-basin-counts', $load);
-
-        // Every entered Cycle counts once, including the producer, regardless of completion.
-        return (int) $counts->get($cycle->entry_committal_id.':'.$cycle->context_horizon_id, 0);
     }
 }

@@ -4,11 +4,7 @@ Acquisition prepares one current generative attempt. It is not a permanent Parti
 
 ## Admission and resolution
 
-The prospective fresh Variant probe excludes acquisition. It checks the current
-[Crossover Margin](rest-crossover-experiment.md) of the Cycle's governing
-Committal in its Domain. A closed margin suppresses Instrumentation, Preparation
-and the Variant. Resolution rechecks the same boundary before admitting a
-contribution. An ordinary competing Variant alone cannot revoke admission. Only if that probe is lawful may a Participant reserve an execution. Actual Variant submission requires that admitted current execution and all independent structural/evidence conditions.
+Before reserving an execution, the planner evaluates whether a fresh Variant would be lawful after acquisition. It checks the acting Participant’s exploration, Phase, Gate, Region, Horizon and structural authority. Submission requires the admitted execution and rechecks the applicable evidence and structural conditions. An ordinary competing Variant alone cannot revoke admission. The former Cardinal/Cadence Crossover bound has been [retired](rest-crossover-experiment.md).
 
 | Phase | Acquisition before fresh Variant |
 | --- | --- |

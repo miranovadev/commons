@@ -46,11 +46,7 @@ See [validation and acceptance coverage](participant-relative-exploration-valida
 
 `ContinuationOpportunityService::nonVariantGenerationAvailable` evaluates base Reconcile, Reclassify and Commit lawfulness. Fresh Variant is deliberately excluded: it must never supply its own prerequisite for reopening or authorizing another Variant. Existing reachable Variants remain structural continuations in active-head discovery. Acquisition is required only for an admitted fresh Variant attempt; exploring an existing route no longer requires historical Gate acquisition. First effective personal judgment, active-route authority and forward-generation reopening remain required.
 
-A closed [Crossover Margin](rest-crossover-experiment.md) removes the fresh
-Variant opportunity for every Participant in the governing Region. Existing
-Writes still use each Participant's own frontier, effective judgments and
-eligible reconsiderations. Closing the margin cannot publish or invalidate a
-personal Exploration Event.
+Each Participant’s unexplored reachable Writes take priority over fresh acquisition. The [retired Crossover calculation](rest-crossover-experiment.md) has no role in that decision or in publishing an Exploration Event.
 
 `ParticipantExplorationService::canGenerateFromHead` uses that non-recursive predicate for each historical active head. An explored Write can be a Traverse destination if the Participant can reach a lawful Variant, Reconcile, Reclassify or Commit through it. Every hop requires its ordinary movement authority. The evaluation uses the current Cycle, register, Region, Horizon and arrival path. At a potential Variant Gate it checks whether acquisition could begin there. Acquisition and contribution occur only after arrival. A new request evaluates the route again. See the [reproduced second Disperse journey](generative-traversal.md).
 

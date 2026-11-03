@@ -1,5 +1,7 @@
 # Stage 3 implementation readiness review
 
+> November 3 follow-up. The legacy Crossover authority and Closure Birth writer described in this historical review are [retired](rest-crossover-experiment.md).
+
 Latest conformance and regression evidence: [final Stage 3 review](prospective-closure-final-review.md). Approved semantics are unchanged. Missing-history errors have been eliminated; remaining historical trajectories and lifecycle coverage limits are explicitly reported.
 
 PR #255 continues on its original branch. Main at

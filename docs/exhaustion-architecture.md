@@ -17,8 +17,7 @@ Authority: [approved lifecycle](tragedy-resolution-target.md).
 
 Rest and exploration-epoch failure remain separate. A versioned failed attempt
 is not persistent terminal authority and cannot substitute for an Exhaustion
-proof. Measurement updates are not encounter publishers. The separate Rest
-crossover bound is unchanged.
+proof. Measurement updates are not encounter publishers. The [retired Crossover bound](rest-crossover-experiment.md) supplies no regional proof.
 
 The Stage 4 migration chain targets a fresh database. There is no new historical
 upgrade path or compatibility authority. See the [implementation register](tragedy-resolution-implementation.md)

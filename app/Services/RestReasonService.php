@@ -4,37 +4,15 @@ namespace App\Services;
 
 use App\Enums\RestReason;
 use App\Models\Phase;
-use App\Services\Participation\ParticipationContext;
 
-/**
- * Called only after the action schema establishes Rest. The zero-Potential
- * reason is a numerical diagnostic, never Tragedy or exhaustion authority.
- */
+/** Called after the action schema establishes Rest. Preserve the recorded reason on historical reads. */
 final class RestReasonService
 {
-    public function derive(Phase $phase, ?ParticipationContext $context = null): RestReason
+    public function derive(Phase $phase): RestReason
     {
-        if ($phase->cycle->rested_at !== null) {
-            return $phase->cycle->rest_reason ?? RestReason::NoAvailableMove;
-        }
-        $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate;
-        if ($gate === null || app(ExhaustionService::class)->unavailable($gate)
-            || app(ExhaustedContinuationService::class)->ids($phase, $context)->has($gate->id)) {
-            return RestReason::NoAvailableMove;
-        }
-        $state = app(PropositionStateService::class);
-        // Unobserved structure has not failed a measured probe. A missing vote
-        // or evidence can leave a Phase actionless while earlier work remains.
-        $writes = app(PropositionOptionService::class)->writeOptionsFor($phase, $context);
-        $explored = app(ParticipantExplorationService::class)->exploredIds($phase, $writes->pluck('id'), $context);
-        $testedWrites = $writes->isNotEmpty() && $writes->pluck('id')->diff($explored->keys())->isEmpty();
-        if (! $testedWrites && ($state->attestations(collect([$gate]), $context)->isEmpty()
-            || ($state->evidenceReceipts($gate, $context)->isEmpty()
-                && app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isEmpty()))) {
-            return RestReason::NoAvailableMove;
-        }
+        $cycle = $phase->cycle;
 
-        return app(PotentialChargeService::class)->hasRemainingInRegion($phase, $context)
-            ? RestReason::NoAvailableMove : RestReason::NoRemainingPotential;
+        return $cycle->rested_at !== null && $cycle->rest_reason !== null
+            ? $cycle->rest_reason : RestReason::NoAvailableMove;
     }
 }

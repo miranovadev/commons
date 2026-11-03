@@ -15,7 +15,6 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Services\ContributionService;
-use App\Services\CrossoverMarginService;
 use App\Services\CycleEntryService;
 use App\Services\ExhaustionService;
 use App\Services\LedgerService;
@@ -45,7 +44,6 @@ class ParticipantContinuityTest extends TestCase
         $otherPosition = $other->fresh()->current_proposition_id;
         $otherCycle = $other->cycles()->whereNull('completed_at')->sole();
         $service = app(ParticipationService::class);
-        $this->variantMarginFixture($cycle->currentPhase, closed: true);
         $completed = $service->contribute($participant, $cycle->currentPhase->id,
             ['action' => 'proposition.commit', 'proposition_id' => $candidate->id]);
         $commit = $participant->fresh()->position;
@@ -85,10 +83,7 @@ class ParticipantContinuityTest extends TestCase
         $this->assertNull($otherCycle->fresh()->completed_at);
         $this->assertSame($cycle->context_horizon_id, $otherCycle->fresh()->context_horizon_id);
 
-        // Both controlled Commits lead to a closed child Region. Its entry
-        // and Domain remain valid even though its first Variant is unavailable.
-        $this->assertTrue(app(CrossoverMarginService::class)->inspect($participant->cycles()->whereNull('completed_at')->sole())['closed']);
-        $this->assertSame(['participant.rest'], array_keys($next['plan']['schema']['$defs']['actions']));
+        $this->assertSame(['instrument.execute'], array_keys($next['plan']['schema']['$defs']['actions']));
 
         // A participant still in the previous Horizon can choose the Committal
         // result, end Order there, and continue under its applicable entry rules.
@@ -112,7 +107,7 @@ class ParticipantContinuityTest extends TestCase
         $this->assertSame($domain, $continued['domain']);
         $this->assertSame($register, $continued['plan']['phase']['write_register']);
 
-        $this->assertSame(['participant.rest'], array_keys($continued['plan']['schema']['$defs']['actions']));
+        $this->assertSame(['instrument.execute'], array_keys($continued['plan']['schema']['$defs']['actions']));
     }
 
     public function test_rest_crosses_the_exhausted_boundary_without_reopening_tragedy_history(): void
@@ -145,7 +140,6 @@ class ParticipantContinuityTest extends TestCase
         $state = $service->stateFor($participant);
 
         $this->assertSame(['participant.rest'], array_keys($state['plan']['schema']['$defs']['actions']));
-        $this->assertTrue(app(CrossoverMarginService::class)->inspect($next)['closed']);
         $rested = app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
         $this->assertSame($origin->id, $participant->fresh()->current_proposition_id);
         $this->assertSame('ready', $rested['status']);
