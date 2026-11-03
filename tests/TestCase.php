@@ -109,10 +109,10 @@ abstract class TestCase extends BaseTestCase
                     return $prospective->stored($node, $context);
                 }
                 $observation = $onlyId !== null ? $prospective->stored($node, $context) : [
-                    // Existing interval metadata is used only by snapshot plumbing;
-                    // this double supplies no historical observation population.
+                    // These fixtures issue ordered ULIDs. Count entries through the authored
+                    // birth so later Cycles cannot revise its controlled snapshot interval.
                     'cadence_interval' => $node->phase->cycle->entry_committal_id === null ? 1 : Cycle::where('entry_committal_id', $node->phase->cycle->entry_committal_id)
-                        ->where('context_horizon_id', $node->phase->cycle->context_horizon_id)->count(),
+                        ->where('context_horizon_id', $node->phase->cycle->context_horizon_id)->where('id', '<', $node->id)->count(),
                     'history_proposition_id' => $node->phase->cycle->entry_committal_id,
                     'historical_phase_profile' => $value, 'historical_orientation' => $value,
                     'fixture' => 'controlled_closure_output',

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Cycle;
 use App\Services\Observables\ProspectiveClosureService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use LogicException;
@@ -34,6 +35,22 @@ class ComponentClosureBoundaryTest extends TestCase
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('component Closure double cannot establish canonical Commit preservation');
         app(ProspectiveClosureService::class)->preserve($fixture->origin, $fixture->expression, []);
+    }
+
+    public function test_controlled_snapshot_interval_excludes_entries_after_expressive_birth(): void
+    {
+        $this->controlledBirthClosureFixture(1);
+        $fixture = new GovernedExpressionFixture;
+        $cycle = $fixture->expression->phase->cycle;
+        $entries = Cycle::where('entry_committal_id', $cycle->entry_committal_id)
+            ->where('context_horizon_id', $cycle->context_horizon_id);
+        $atBirth = $entries->count();
+
+        $later = $cycle->replicate();
+        $later->sequence = $cycle->sequence + 1;
+        $later->save();
+        $this->assertSame($atBirth + 1, $entries->count());
+        $this->assertSame($atBirth, app(ProspectiveClosureService::class)->stored($fixture->expression)['cadence_interval']);
     }
 
     public function test_nested_numerical_double_cannot_bypass_component_preservation_boundary(): void
