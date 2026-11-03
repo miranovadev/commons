@@ -70,7 +70,7 @@ The complete solo and collective Domain scripts live unchanged in
 with `composer test:replay-domain`, and are outside mandatory PHPUnit discovery.
 A deterministic full Domain round trip is not a Core acceptance requirement.
 
-Archived Chirality v2 expectations recorded the recorded intermediate Rest reasons where live Potential is now zero: `no_remaining_potential` replaces `no_available_move` only at the observed steps. Authored actions, topology and recovery assertions are unchanged. That historical Crossover calculation closed with Correspondence -0.5276331, Chirality 0.7666717 and Tension bound 0.2463462. The diagnostic independently checks Orientation, live Attestation rates, their mean and unchanged attenuation; live reconstruction is not compared to an earlier frozen snapshot.
+Archived Chirality v2 expectations describe the intermediate Rest reasons where live Potential is now zero: `no_remaining_potential` replaces `no_available_move` only at the observed steps. Authored actions, topology and recovery assertions are unchanged. That historical Crossover calculation closed with Correspondence -0.5276331, Chirality 0.7666717 and Tension bound 0.2463462. The diagnostic independently checks Orientation, live Attestation rates, their mean and unchanged attenuation; live reconstruction is not compared to an earlier frozen snapshot.
 
 Origin now requires an explicit Attestation and creates no bootstrap Receipt.
 The archived expected packets and declared bindings omit that former observation;
