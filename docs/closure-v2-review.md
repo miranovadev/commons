@@ -1,5 +1,7 @@
 # Closure v2 validation notes
 
+> November 3 follow-up. The legacy Crossover authority and Closure Birth writer described in this historical review are [retired](rest-crossover-experiment.md).
+
 > **Historical validation of the currently deployed birth-frozen Closure.**
 > The proposed Cycle-responsive [Historical Extent/Rhythm model](prospective-closure-target.md)
 > is a separate target. These old trajectory expectations are not acceptance

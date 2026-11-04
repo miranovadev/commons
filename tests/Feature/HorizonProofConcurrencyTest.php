@@ -74,10 +74,10 @@ class HorizonProofConcurrencyTest extends TestCase
         $this->whileWorkerWaits($this->substrate, [
             'operation' => 'dispatch-rejected', 'participant_id' => $loserPhase->cycle->participant_id,
             'phase_id' => $loserPhase->id, 'expected_message' => 'unconsumed Receipt',
-            'contribution' => ['action' => 'proposition.reclassify', 'proposition_id' => $second->id, 'receipt_id' => $receipt->id],
+            'contribution' => ['action' => 'proposition.reclassify', 'proposition_id' => $second->id, 'statement' => $second->statement, 'receipt_id' => $receipt->id],
         ], function () use ($winnerPhase, $first, $receipt): void {
             app(ContributionDispatcher::class)->dispatch($winnerPhase->cycle->participant, $winnerPhase,
-                ['action' => 'proposition.reclassify', 'proposition_id' => $first->id, 'receipt_id' => $receipt->id]);
+                ['action' => 'proposition.reclassify', 'proposition_id' => $first->id, 'statement' => $first->statement, 'receipt_id' => $receipt->id]);
         });
         $this->assertSame($before + 1, Proposition::count());
         $this->assertDatabaseCount('receipt_consumptions', 1);

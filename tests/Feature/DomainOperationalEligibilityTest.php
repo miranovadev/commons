@@ -82,19 +82,20 @@ class DomainOperationalEligibilityTest extends TestCase
         $plan = app(InputPlanService::class)->forParticipant($cycle->participant);
         $this->assertSame([$counterpart->id], $plan['schema']['$defs']['actions']['proposition.reconcile']['properties']['other_proposition_id']['enum']);
         foreach ([$foreignGate, $wrongReadChild] as $invalid) {
-            $this->reject($mediate, ['action' => 'proposition.reconcile', 'other_proposition_id' => $invalid->id]);
+            $this->reject($mediate, ['action' => 'proposition.reconcile', 'other_proposition_id' => $invalid->id, 'statement' => 'The observations share a common cause.']);
         }
-        // Reusing the same valid inputs still permits competing reconciliations.
+        // The established pair is unavailable from either Gate.
         $dispatcher = app(ContributionDispatcher::class);
-        $x = $dispatcher->dispatch($cycle->participant, $mediate, ['action' => 'proposition.reconcile', 'other_proposition_id' => $counterpart->id]);
-        $this->reject($mediate, ['action' => 'proposition.reconcile', 'other_proposition_id' => $counterpart->id]);
+        $x = $dispatcher->dispatch($cycle->participant, $mediate, ['action' => 'proposition.reconcile', 'other_proposition_id' => $counterpart->id, 'statement' => 'The observations share a common cause.']);
+        $this->reject($mediate, ['action' => 'proposition.reconcile', 'other_proposition_id' => $counterpart->id, 'statement' => 'The observations share a common cause.']);
         $inverse = $this->phase($cycle, PhaseKind::Mediate, $counterpart);
-        $y = $dispatcher->dispatch($cycle->participant, $inverse, ['action' => 'proposition.reconcile', 'other_proposition_id' => $gate->id]);
-        $this->assertNotSame($x->id, $y->id);
-        foreach ([$x, $y] as $result) {
-            $this->assertSame($second, $result->register);
-            $this->assertEqualsCanonicalizing([$gate->id, $counterpart->id], $result->parents->pluck('id')->all());
-        }
+        $this->reject($inverse, ['action' => 'proposition.reconcile', 'other_proposition_id' => $gate->id, 'statement' => 'The reciprocal interpretation.']);
+        $this->assertSame($second, $x->register);
+        $this->assertEqualsCanonicalizing([$gate->id, $counterpart->id], $x->parents->pluck('id')->all());
+        $another = $this->node($cycle, $first, $otherRead, kind: PhaseKind::Disperse);
+        $measurements->project($another, .7, 0, 0, correspondenceComponents: new CorrespondenceValues(.7, .7));
+        $y = $dispatcher->dispatch($cycle->participant, $inverse, ['action' => 'proposition.reconcile',
+            'other_proposition_id' => $another->id, 'statement' => 'A second distinct relationship.']);
         // Even the implicit anchor must have the exact Read register.
         // Legacy corruption is rejected on write; retain a raw fixture to test read-side exclusion.
         try {
@@ -119,7 +120,7 @@ class DomainOperationalEligibilityTest extends TestCase
             $this->assertSame(ObservableDirection::Positive, app(AttestationEvidenceService::class)->populationDirection($seed, $second, $context));
             $this->assertEqualsCanonicalizing([$x->id, $y->id], $bias->forPhase($biasPhase, $context)->pluck('id')->all());
         }
-        $this->reject($biasPhase, ['action' => 'proposition.reclassify', 'proposition_id' => $foreignMiddle->id]);
+        $this->reject($biasPhase, ['action' => 'proposition.reclassify', 'proposition_id' => $foreignMiddle->id, 'statement' => $foreignMiddle->statement]);
         $this->classificationEvidenceFixture($x);
         $biased = $dispatcher->dispatch($cycle->participant, $biasPhase, $this->reclassificationInputFixture($biasPhase, $x));
         $this->assertSame($third, $biased->register);

@@ -2,7 +2,7 @@
 
 Stage A separates calculation inputs and evidence existence from participant-visible content.
 
-- Mediate exposes only its same-Cycle causal Read anchor. The original regional Read pool still discovers reconciliation counterparts. Directed pair exclusion, inverse eligibility, schemas and historical context retain their existing calculation paths.
+- Mediate exposes only its same-Cycle causal Read anchor. The original regional Read pool still discovers reconciliation counterparts. The reconciliation selector applies pair exclusion independently of the Read display. Schemas and historical context keep their existing calculation paths.
 - The shared Horizon catalogue contains only available, unattached Receipt metadata. Unread evidence, signatures and observation errors do not enter that catalogue.
 - Exposed propositions carry lightweight `receipts` references: identity, type, reference and originating Horizon. The existing evidence-history service supplies direct evidence, retained classification links and Commit inheritance; references do not load content.
 - Existing loaded-state entries remain in `plan.receipts`, even when consumed. They are personal loaded context, not shared available catalogue entries. The prompt layout still moves their full bodies into `loaded_receipts` exactly once and joins dynamic state by ID.

@@ -3,7 +3,9 @@
 namespace Tests\Feature\Api;
 
 use App\Contracts\ParticipantInference;
+use App\Enums\PhaseKind;
 use App\Models\Connection;
+use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Receipt;
 use App\Services\OpenAIResponseSchema;
@@ -36,7 +38,7 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
             ])->assertCreated()->json('data.id');
         $phases = [];
         $positions = [];
-        $this->mock(ParticipantInference::class)->shouldReceive('contribute')->times(5)
+        $this->mock(ParticipantInference::class)->shouldReceive('contribute')->times(4)
             ->andReturnUsing(function ($connection, $state, $metadata) use ($actor, $initial, &$phases, &$positions): array {
                 $this->assertSame($this->readParticipation($actor), json_decode(json_encode($state), true));
                 $this->assertSame($actor, $metadata['participant_id']);
@@ -49,7 +51,7 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
                     $this->assertSame('awaiting_resolution', $state['plan']['acquisition']['status']);
                     $this->assertContains($receipt->id, array_column($state['plan']['receipts'], 'id'));
                 }
-                $this->assertSame(['distinguish', 'distinguish', 'persist', 'persist', 'constrain'][$index], $state['plan']['phase']['kind']);
+                $this->assertSame(['distinguish', 'distinguish', 'persist', 'persist'][$index], $state['plan']['phase']['kind']);
                 $this->assertSame('settlement', $state['domain']);
                 $this->assertSame($initial['context_horizon_id'], $state['context_horizon_id']);
                 $this->assertSame($initial['cycle']['id'], $state['cycle']['id']);
@@ -74,12 +76,16 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
                     ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
                         'instrument' => ['kind' => 'citation', 'reference' => $initial['current_proposition_id']]],
                     ['action' => 'proposition.variant', 'statement' => 'Develop through an independent Persist attempt'],
-                    ['action' => 'participant.rest'],
                 ][count($phases) - 1];
             });
         $this->wakeParticipant($link);
         $after = $this->readParticipation($actor);
-        $this->assertSame(['distinguish', 'distinguish', 'persist', 'persist', 'constrain'], $phases);
+        $this->assertSame(['distinguish', 'distinguish', 'persist', 'persist'], $phases);
+        $constrain = Cycle::findOrFail($initial['cycle']['id'])->currentPhase;
+        $this->assertSame(PhaseKind::Constrain, $constrain->kind);
+        $this->assertNotNull($constrain->completed_at);
+        $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $positions[3],
+            'target_proposition_id' => $constrain->gate_proposition_id]);
         $this->assertSame('distinguish', $after['plan']['phase']['kind']);
         $this->assertSame($initial['current_proposition_id'], $after['current_proposition_id']);
         $this->assertGreaterThan($initial['cycle']['sequence'], $after['cycle']['sequence']);

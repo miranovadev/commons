@@ -13,9 +13,8 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\CommitmentSnapshotService;
 use App\Services\LedgerService;
-use App\Services\Observables\ChiralityCalculator;
 use App\Services\Observables\CanonicalMeasurementService;
-use App\Services\Observables\ClosureBirthService;
+use App\Services\Observables\ChiralityCalculator;
 use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\LocalMeasurementService;
@@ -32,7 +31,6 @@ trait NaturalBoundaryHistory
     {
         // Unlike controlled routing fixtures, this fixture measures every observable.
         $this->app->forgetInstance(LocalMeasurementService::class);
-        $this->app->forgetInstance(ClosureBirthService::class);
         $this->app->forgetInstance(ProspectiveClosureService::class);
         $substrate = (new Substrate)->forceFill(['slug' => 'natural-boundary', 'title' => 'Natural boundary',
             'visibility' => 'public', 'configuration' => []]);

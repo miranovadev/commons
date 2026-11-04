@@ -105,7 +105,7 @@ prerequisites. Population influence never vetoes the ordinary local Gate.
 Receipts always come from the acting Cycle-entry catalogue, even when the selected
 source belongs to another Region/Horizon; its own Receipt stock is not imported.
 
-Unary Bias copies one selected statement exactly into the next register and
+Unary Bias writes the Participant’s interpretation of one selected source into the next register and
 creates one shared hard reclassification result. Reclassify explicitly selects, attaches and consumes one available Horizon
 Receipt by reference, and resets Attestations and Phase touches. Another
 Participant may use that existing Write only when independently authorised on

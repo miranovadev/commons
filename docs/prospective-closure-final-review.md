@@ -1,5 +1,7 @@
 # Stage 3 final conformance and review-readiness pass
 
+> November 3 follow-up. The legacy Crossover authority and Closure Birth writer described in this historical review are [retired](rest-crossover-experiment.md).
+
 This pass starts at `f5a8b8ddf4260e40abd1b0d5af41f9dce869b228` (tested code `661d52ab7d8061595107d3ca0eaa6e6df85e8d12`): Core **1,109 pass / seven fail / 1,116 cases**, Integration **21 pass / eleven fail / 32 cases**. The approved specification and ten Core Invariants are unchanged. This is not another historical-fixture reconstruction.
 
 Final tested code: `9bc9e8576dc9c28d0f52d766193304a22f614d31`. Validation results below are populated only from completed runs at that SHA. Reporting-only commits are not new tested production implementations.

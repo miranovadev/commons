@@ -16,16 +16,16 @@ test('the participant page offers Rest only when the authoritative schema expose
         import { MemoryRouter } from 'react-router-dom';
         import { ParticipantPage } from './resources/js/pages/ParticipantPage';
         import { setParticipation } from './resources/js/services/commonsApi';
-        export function render(action, rest_available) {
+        export function render(action, rest_available, rest_reason, alternative) {
           setParticipation({ status: 'ready', plan: {
             gate: { id: 'gate', register: 'canon', tier: 'expressive', statement: 'Gate' },
             phase: { id: 'phase', kind: 'order', number: 7, write_register: 'canon' },
-            rest_available, traversal_options: [],
+            rest_available, rest_reason, traversal_options: [],
             exhausted_alternatives: [{ id: 'spent', statement: 'A route we learned from', tier: 'expressive', register: 'canon', role: 'gate', phase_number: 6, statement_truncated: false,
               exhausted: true, basin_exhausted: false, exhausted_at: '2026-09-16', actionable: false }],
             schema: {
               oneOf: [{ $ref: '#/$defs/actions/' + action }],
-              $defs: { actions: { [action]: { title: action, properties: { action: { const: action } } } } },
+              $defs: { actions: { [action]: { title: action, properties: { action: { const: action } } }, ...(alternative ? { [alternative]: { title: alternative, properties: { action: { const: alternative } } } } : {}) } },
             },
           } });
           return renderToStaticMarkup(<MantineProvider env="test"><MemoryRouter><ParticipantPage /></MemoryRouter></MantineProvider>);
@@ -75,6 +75,12 @@ export const useGetParticipantWorkspaceQuery = () => ({ data: participation });
   assert.match(exhausted, /A route we learned from/);
   assert.doesNotMatch(exhausted, /data-proposition-id="spent"/);
   assert.match(exhausted, /aria-label="Open No available move · Rest"/);
+  const archived = module.exports.render('participant.rest', true, 'no_remaining_potential');
+  assert.match(archived, /Open No available move · Rest/);
+  assert.doesNotMatch(archived, /No remaining Potential/);
+  const optional = module.exports.render('participant.rest', true, 'no_available_move', 'proposition.traverse');
+  assert.match(optional, /Open Encounter complete · Rest/);
+  assert.doesNotMatch(optional, /No available move/);
   // Even a stale/absent Rest flag cannot hide an authoritative Rest action.
   assert.match(module.exports.render('participant.rest', false), /aria-label="Open No available move · Rest"/);
   assert.match(module.exports.render('participant.rest', undefined), /aria-label="Open No available move · Rest"/);

@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use App\Domain\Observables\CorrespondenceValues;
 use App\Enums\PhaseKind;
+use App\Models\Phase;
 use App\Models\Supersession;
 use App\Models\Tragedy;
+use App\Services\AcquisitionAttemptService;
 use App\Services\ClosureOptionService;
 use App\Services\ContributionDispatcher;
 use App\Services\CorrespondenceGateService;
@@ -63,7 +65,7 @@ class ParticipantExplorationTest extends TestCase
         self::assertTrue(app(PhaseGenerationService::class)->available($constrain, 'proposition.reclassify'));
         self::assertNull($witness(), 'Reclassification can consume the Receipt.');
         $child = app(ContributionDispatcher::class)->dispatch($first->cycle->participant, $constrain,
-            ['action' => 'proposition.reclassify', 'proposition_id' => $head->id, 'receipt_id' => $receipt->id]);
+            ['action' => 'proposition.reclassify', 'proposition_id' => $head->id, 'statement' => $head->statement, 'receipt_id' => $receipt->id]);
         self::assertNull($witness(), 'The active Constrain Write still needs a judgment.');
         $this->personalVote($constrain, $child);
         $disperse = $advance->advance($constrain, $child);
@@ -94,7 +96,7 @@ class ParticipantExplorationTest extends TestCase
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
     }
 
-    public function test_variant_only_traverse_disappears_on_closure_without_changing_personal_history(): void
+    public function test_variant_only_traverse_preserves_exploration_in_its_own_horizon(): void
     {
         [$signal, $persist, $constrain, , $terminal] = $this->personalJourney();
         $phase = $this->returnAfterRest($terminal);
@@ -106,22 +108,18 @@ class ParticipantExplorationTest extends TestCase
         $history = DB::table('exploration_events')->get()->toJson();
         $options = app(PropositionOptionService::class);
         self::assertTrue($options->traversalOptionsFor($phase)->contains('id', $constrain->id));
-        $this->variantMarginFixture($phase, closed: true);
         $foreignEntry = $this->commitFrom($signal, boundary: true);
         $foreignGate = $this->node($this->phase($foreignEntry, PhaseKind::Constrain), $foreignEntry);
         $foreign = $this->phase($foreignGate, PhaseKind::Disperse);
-        $this->variantMarginFixture($foreign, closed: false);
         self::assertNotSame($phase->cycle->context_horizon_id, $foreign->cycle->context_horizon_id);
         self::assertTrue(app(PhaseGenerationService::class)->available($foreign, 'proposition.variant', prepared: true));
         self::assertTrue(app(ParticipantExplorationService::class)->explored($constrain, $phase));
         self::assertTrue($options->traversalOptionsFor($phase, base: true)->contains('id', $constrain->id));
-        self::assertFalse($options->traversalOptionsFor($phase)->contains('id', $constrain->id));
-        try {
-            app(ParticipationService::class)->contribute($actor, $phase->id, ['action' => 'proposition.traverse', 'proposition_id' => $constrain->id]);
-            self::fail('The previously offered Traverse must be revalidated.');
-        } catch (\InvalidArgumentException) {
-            self::assertSame($persist->id, $actor->fresh()->current_proposition_id);
-        }
+        self::assertTrue($options->traversalOptionsFor($phase)->contains('id', $constrain->id));
+        $state = app(ParticipationService::class)->contribute($actor, $phase->id,
+            ['action' => 'proposition.traverse', 'proposition_id' => $constrain->id]);
+        self::assertSame($constrain->id, $state['current_proposition_id']);
+        self::assertArrayHasKey('instrument.execute', $state['plan']['schema']['$defs']['actions']);
         self::assertSame($history, DB::table('exploration_events')->get()->toJson());
     }
 
@@ -135,7 +133,7 @@ class ParticipantExplorationTest extends TestCase
         $constrain = app(PhaseProgressionService::class)->advance($persistPhase, $sibling);
         $receipt = app(HorizonReceiptService::class)->ordinaryAvailable($constrain)->firstOrFail();
         $classification = app(ContributionDispatcher::class)->dispatch($constrain->cycle->participant, $constrain,
-            ['action' => 'proposition.reclassify', 'proposition_id' => $sibling->id, 'receipt_id' => $receipt->id]);
+            ['action' => 'proposition.reclassify', 'proposition_id' => $sibling->id, 'statement' => $sibling->statement, 'receipt_id' => $receipt->id]);
         $this->personalVote($constrain, $classification);
         $disperse = app(PhaseProgressionService::class)->advance($constrain, $classification);
         $this->instrumentGateFixture($disperse);
@@ -151,7 +149,6 @@ class ParticipantExplorationTest extends TestCase
         foreach ([$firstHead, $secondHead] as $head) {
             app(PropositionMeasurementService::class)->project($head, 0, 0, 0, correspondenceComponents: new CorrespondenceValues(.8, -.8));
         }
-        $this->variantMarginFixture($return, closed: true);
         $options = app(PropositionOptionService::class);
         self::assertTrue($options->traversalOptionsFor($return)->contains('id', $signal->id));
         $phase = app(PhaseProgressionService::class)->advance($return, $signal);
@@ -159,7 +156,15 @@ class ParticipantExplorationTest extends TestCase
         $both = collect([$persist->id, $sibling->id]);
         self::assertCount(2, app(ParticipantExplorationService::class)->exploredIds($phase, $both, $context));
         self::assertEqualsCanonicalizing($both->all(), $options->traversalOptionsFor($phase, $context, base: true)->pluck('id')->all());
-        self::assertSame([$persist->id], $options->traversalOptionsFor($phase, $context)->pluck('id')->all());
+        self::assertEqualsCanonicalizing($both->all(), $options->traversalOptionsFor($phase, $context)->pluck('id')->all());
+        // Both routes can reach fresh generation. Only the first Gate can still be reclassified.
+        foreach ([[$persist, true], [$sibling, false]] as [$gate, $canReclassify]) {
+            $arrival = (new Phase)->forceFill(['cycle_id' => $phase->cycle_id, 'kind' => PhaseKind::Constrain,
+                'write_register' => $phase->cycle->contextHorizon->domain->registerFor(PhaseKind::Constrain),
+                'gate_proposition_id' => $gate->id]);
+            $arrival->setRelation('cycle', $phase->cycle)->setRelation('gate', $gate);
+            self::assertSame($canReclassify, app(PhaseGenerationService::class)->available($arrival, 'proposition.reclassify'));
+        }
     }
 
     public function test_regional_tragedy_withdraws_a_previously_available_variant_route(): void
@@ -240,7 +245,8 @@ class ParticipantExplorationTest extends TestCase
         [$signal, , , $head, $terminal] = $this->personalJourney();
         $luna = $this->phase($this->origin, PhaseKind::Distinguish);
         $generation = app(PhaseGenerationService::class);
-        $this->assertFalse($generation->available($luna, 'proposition.variant'));
+        $this->assertFalse($generation->available($luna, 'proposition.variant', prepared: true));
+        $this->assertFalse(app(AcquisitionAttemptService::class)->allows($luna, 'instrument.execute'));
         $return = $this->returnAfterRest($terminal);
         $this->assertTrue($generation->available($return, 'proposition.variant', prepared: true));
         $this->instrumentGateFixture($return);
@@ -440,7 +446,7 @@ class ParticipantExplorationTest extends TestCase
         }
         $other = app(PhaseProgressionService::class)->advance($this->phase($constrain, PhaseKind::Disperse), $signal);
         $stance = app(ContributionDispatcher::class)->dispatch($other->cycle->participant, $other,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $sibling->id]);
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $sibling->id, 'statement' => 'The observations share a common cause.']);
         $unjudged = $this->node($this->phase($constrain, PhaseKind::Disperse), $constrain);
         $this->measure($unjudged, 0);
         $receipts = app(HorizonReceiptService::class);

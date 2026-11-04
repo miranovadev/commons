@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\Proposition;
 use App\Services\Observables\LineageMeasurementService;
 use Illuminate\Support\Facades\DB;
 use LogicException;
@@ -20,11 +21,36 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
     {
         [$actor, $initial] = $this->beginPersistJourney('explorer');
         $origin = $initial['current_proposition_id'];
+        $interpretations = [
+            'leftCanon' => 'The first retrieval establishes a traceable source for this observation.',
+            'classification' => 'The two retrievals support comparing the branches, but independent corroboration is still open.',
+        ];
         foreach (array_keys($this->persistJourneySteps) as $index) {
+            $step = $this->persistJourneySteps[$index];
+            if ($step['input']['action'] === 'proposition.reclassify' && isset($interpretations[$step['result']])) {
+                $this->persistJourneySteps[$index]['input']['statement'] = $interpretations[$step['result']];
+            }
+            $isReconcile = $step['input']['action'] === 'proposition.reconcile';
+            if ($isReconcile) {
+                $consumed = DB::table('receipt_consumptions')->count();
+            }
+            if ($isReconcile && $step['result'] === 'leftSynthesis') {
+                $phaseId = $this->readParticipation($actor)['plan']['phase']['id'];
+                $input = $this->persistJourneyInput($index);
+                $ledger = DB::table('substrate_ledger_entries')->count();
+                foreach ([str_repeat('é', 20001), ' '.str_repeat('é', 20000), " \t\n", ['malformed']] as $invalid) {
+                    $this->postContribution($actor, $phaseId, [...$input, 'statement' => $invalid])->assertUnprocessable();
+                }
+                unset($input['statement']);
+                $this->postContribution($actor, $phaseId, $input)->assertUnprocessable();
+                $this->assertSame($ledger, DB::table('substrate_ledger_entries')->count());
+            }
             $state = $this->executePersistJourneyStep($actor, $index);
+            if ($isReconcile) {
+                $this->assertSame($consumed, DB::table('receipt_consumptions')->count());
+            }
             $packet = $this->auditEvidencePacket($state);
-            if ($this->persistJourneySteps[$index]['result'] === 'rightSynthesis'
-                && $this->persistJourneySteps[$index]['input']['action'] === 'proposition.reconcile') {
+            if ($isReconcile && $step['result'] === 'leftSynthesis') {
                 foreach (['r0', 'leftReading', 'leftPreparation', 'rightReading', 'rightPreparation'] as $reference) {
                     $this->assertContains($this->persistJourneyIds[$reference], array_column($packet['receipts'], 'id'));
                 }
@@ -34,6 +60,24 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
         $this->assertNotSame($origin, $state['last_commitment']['proposition_id']);
         $this->assertSame('distinguish', $state['plan']['phase']['kind']);
         $this->assertSame($state['last_commitment']['proposition_id'], $state['plan']['gate_id']);
+        $ids = $this->persistJourneyIds;
+        $node = fn (string $name) => Proposition::findOrFail($ids[$name]);
+        $this->assertSame('Prepared opportunity 4', $node('leftPersist')->statement);
+        $this->assertSame($interpretations['leftCanon'], $node('leftCanon')->statement);
+        $this->assertSame([$ids['leftCanon']], $node('leftSignal')->parents()->pluck('propositions.id')->all());
+        $this->assertEqualsCanonicalizing([$ids['leftSignal'], $ids['rightSignal']],
+            $node('leftSynthesis')->parents()->pluck('propositions.id')->all());
+        $this->assertSame('The observations share a common cause.', $node('leftSynthesis')->statement);
+        $this->assertNotSame($node('leftSynthesis')->statement, $interpretations['classification']);
+        $this->assertSame([$ids['leftSynthesis']], $node('classification')->parents()->pluck('propositions.id')->all());
+        $this->assertSame($interpretations['classification'], $node('classification')->statement);
+        $this->assertSame([$ids['classification']], $node('commit')->commitSources()->pluck('propositions.id')->all());
+        $this->assertSame($interpretations['classification'], $node('commit')->statement);
+        foreach ([['leftCanon', 'r0'], ['classification', 'rightDiscovery']] as [$result, $observation]) {
+            $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $ids[$observation], 'proposition_id' => $ids[$result]]);
+            $this->assertDatabaseHas('proposition_receipt_links', ['receipt_id' => $ids[$observation], 'proposition_id' => $ids[$result]]);
+        }
+        $this->assertDatabaseHas('attestations', ['proposition_id' => $ids['classification'], 'direction' => 'refute']);
         $snapshot = DB::table('commitment_snapshots')->where('proposition_id', $state['last_commitment']['proposition_id'])->sole();
         $this->assertSame(LineageMeasurementService::VERSION, $snapshot->calculator_version);
         $this->assertSame($snapshot->depth_direction, $snapshot->cadence_direction);

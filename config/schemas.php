@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Proposition;
 use App\Services\Evidence\InstrumentInvocation;
 
 $ulid = [
@@ -10,7 +11,7 @@ $ulid = [
 $statement = [
     'type' => 'string',
     'minLength' => 1,
-    'maxLength' => 20000,
+    'maxLength' => Proposition::MAX_STATEMENT_LENGTH,
 ];
 
 $instrument = [
@@ -76,7 +77,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 33,
+    'version' => 35,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -154,26 +155,28 @@ return [
             ],
         ],
         'proposition.reclassify' => [
-            'description' => 'Classify the selected source using the selected Receipt, preserving its statement.',
+            'description' => 'Select one eligible Receipt and interpret the source using that evidence and causal context. You may keep the source wording if the evidence supports it.',
             'type' => 'object',
-            'title' => 'Reclassify the Gate without changing its statement',
+            'title' => 'Reclassify an eligible Proposition',
             'additionalProperties' => false,
-            'required' => ['action', 'proposition_id', 'receipt_id'],
+            'required' => ['action', 'proposition_id', 'receipt_id', 'statement'],
             'properties' => [
                 'action' => ['const' => 'proposition.reclassify'],
                 'proposition_id' => $ulid,
                 'receipt_id' => $ulid,
+                'statement' => [...$statement, 'pattern' => '\S'],
             ],
         ],
         'proposition.reconcile' => [
-            'description' => 'Create a result with the Gate and selected counterpart as causal parents, preserving the Gate statement.',
-            'title' => 'Reconcile an admissible counterpart with the current Gate statement',
+            'description' => 'Write your interpretation of the relationship between the current Gate and the selected counterpart. Both become causal parents. No Receipt is consumed.',
+            'title' => 'Reconcile two Propositions',
             'type' => 'object',
             'additionalProperties' => false,
-            'required' => ['action', 'other_proposition_id'],
+            'required' => ['action', 'other_proposition_id', 'statement'],
             'properties' => [
                 'action' => ['const' => 'proposition.reconcile'],
                 'other_proposition_id' => $ulid,
+                'statement' => [...$statement, 'pattern' => '\S'],
             ],
         ],
         'attestation.create' => [

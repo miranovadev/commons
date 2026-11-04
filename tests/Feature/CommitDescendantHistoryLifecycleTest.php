@@ -6,22 +6,19 @@ use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Supersession;
+use App\Services\AcquisitionAttemptService;
 use App\Services\CommitmentAdmissibilityService;
-use App\Services\CrossoverMarginService;
-use App\Services\EvidenceExecutionService;
 use App\Services\HomologousPositionService;
-use App\Services\LedgerService;
 use App\Services\Observables\CommittalLineageService;
 use App\Services\Observables\ProspectiveClosureService;
 use App\Services\Observables\ReinforcementService;
+use App\Services\OperationalInstrumentService;
 use App\Services\ParticipationService;
-use App\Services\PhaseProgressionService;
 use App\Services\PropositionSearchService;
 use App\Services\PropositionStateService;
 use App\Services\ReceiptContextService;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\HorizonCycleFixture;
-use Tests\Fixtures\PropositionBirth;
 use Tests\Support\RefreshEvidenceDatabase as RefreshDatabase;
 use Tests\TestCase;
 
@@ -31,7 +28,7 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
 {
     use HorizonCycleFixture, RefreshDatabase;
 
-    public function test_historical_descendant_of_a_real_closed_commit_retains_its_own_evidence_and_selected_search_history(): void
+    public function test_historical_descendant_of_a_real_commit_retains_its_own_evidence_and_selected_search_history(): void
     {
         $gates = [];
         $commit = $this->driveStaggeredCommit(
@@ -56,28 +53,15 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
         $service = app(ParticipationService::class);
         $before = $service->stateFor($actor);
         $entry = Phase::findOrFail($before['plan']['phase']['id']);
-        $this->assertTrue(app(CrossoverMarginService::class)->inspect($entry->cycle)['closed']);
-        $this->assertSame(['participant.rest'], array_keys($before['plan']['schema']['$defs']['actions']));
-
-        // Read-model input from the former admission contract. Today neither
-        // this search nor this Variant can be submitted at this closed entry.
-        $input = ['kind' => 'proposition_search', 'limit' => 10];
-        $collection = app(PropositionSearchService::class)->search($entry, $commit, $input);
-        $executions = app(EvidenceExecutionService::class);
-        $record = $executions->start($entry, $commit, 'proposition_search', 'nearest-history', $input);
-        $discovery = $executions->complete($record, $commit, propositionCollection: $collection);
+        $this->assertSame(['instrument.execute'], array_keys($before['plan']['schema']['$defs']['actions']));
+        $discovery = app(OperationalInstrumentService::class)->execute($entry, $commit,
+            ['kind' => 'proposition_search', 'limit' => 10]);
         $this->assertSame($commit->id, $discovery->evidenceExecution->proposition_id);
         $receiptsAfterDiscovery = [...$receipts, $discovery->id];
-        $head = (new Proposition)->forceFill(['phase_id' => $entry->id, 'register' => $entry->write_register,
-            'tier' => 'expressive', 'statement' => 'A historical post-Commit question.']);
-        $head->save();
-        app(LedgerService::class)->record($head, $commit);
-        $edge = (new Supersession)->forceFill(['phase_id' => $entry->id, 'source_proposition_id' => $commit->id,
-            'target_proposition_id' => $head->id, 'type' => 'variant']);
-        $edge->save();
-        app(LedgerService::class)->record($edge);
-        PropositionBirth::complete($head);
-        $phase = app(PhaseProgressionService::class)->advance($entry, $head);
+        app(AcquisitionAttemptService::class)->resolve($actor, $discovery->evidenceExecution,
+            ['action' => 'proposition.variant', 'statement' => 'A post-Commit question.']);
+        $head = $commit->children()->sole();
+        $phase = $entry->cycle->fresh()->currentPhase;
         $this->publishPotentialFixture($actor);
         $this->assertSame('expressive', $head->tier);
         $this->assertSame([$commit->id], $head->parents()->pluck('propositions.id')->all());

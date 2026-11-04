@@ -106,23 +106,20 @@ class PropositionHistorySemanticsTest extends TestCase
         }
         $source = $gate;
         $input = ['action' => 'proposition.'.$operation, 'statement' => 'A fresh contribution'];
-        if ($operation === 'reclassify') {
-            unset($input['statement']);
-        }
         if ($operation === 'revise') {
             $source = $this->node('Owned prior Write', $writeRegister, position: $kind);
             $this->edge($gate, $source);
             $input['proposition_id'] = $source->id;
         }
         if ($operation === 'bias') {
-            $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id];
+            $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'statement' => $source->statement];
         }
         $sources = collect([$source]);
         if ($operation === 'reconcile') {
             $other = $this->node('Other structure', $gateRegister, position: PhaseKind::Disperse);
             $this->edge($parent, $other);
             $sources->push($other);
-            $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $other->id];
+            $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $other->id, 'statement' => 'The observations share a common cause.'];
         }
         foreach ($sources as $item) {
             $this->giveHistory($item, $operation === 'revise' ? 'refute' : 'support');
@@ -145,9 +142,6 @@ class PropositionHistorySemanticsTest extends TestCase
             'gate_proposition_id' => $gate->id, 'started_at' => now(),
         ])->save();
 
-        if ($operation === 'variant') {
-            $this->variantMarginFixture($phase, closed: false);
-        }
         $this->instrumentGateFixture($phase);
 
         // Isolate history from Mediate/Bias candidate mathematics, covered separately.
@@ -180,7 +174,7 @@ class PropositionHistorySemanticsTest extends TestCase
         $this->assertSame($propositions + 1, Proposition::count());
         $this->assertSame('expressive', $target->tier);
         $this->assertSame($writeRegister, $target->register);
-        $this->assertSame(in_array($operation, ['reconcile', 'bias', 'reclassify'], true) ? $gate->statement : $input['statement'], $target->statement);
+        $this->assertSame($input['statement'], $target->statement);
         $edges = Supersession::where('target_proposition_id', $target->id)->get();
         $this->assertEqualsCanonicalizing($sources->pluck('id')->all(), $edges->pluck('source_proposition_id')->all());
         $this->assertCount($sources->count(), $edges);

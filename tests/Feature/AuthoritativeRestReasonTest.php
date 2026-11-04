@@ -7,10 +7,12 @@ use App\Enums\RestReason;
 use App\Services\ContributionService;
 use App\Services\ExplorationEventService;
 use App\Services\InputPlanService;
+use App\Services\ParticipantContextSerializer;
 use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
 use App\Services\RestReasonService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Tests\Fixtures\ExhaustionFixture;
 use Tests\TestCase;
@@ -36,14 +38,22 @@ class AuthoritativeRestReasonTest extends TestCase
         $this->assertDatabaseCount('tragedies', 0);
     }
 
-    public function test_evidenced_actionless_position_with_zero_projected_potential_has_distinct_reason(): void
+    public function test_evidenced_actionless_position_classifies_rest_without_a_query(): void
     {
         [, $terminal] = $this->exhaustedBranch();
-        $this->assertSame(RestReason::NoRemainingPotential, app(RestReasonService::class)->derive($terminal));
-        $this->assertSame('no_remaining_potential', app(InputPlanService::class)->forPhase($terminal->cycle->participant, $terminal)['rest_reason']);
+        $terminal->load('cycle');
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        try {
+            $this->assertSame(RestReason::NoAvailableMove, app(RestReasonService::class)->derive($terminal));
+            $this->assertCount(0, DB::getQueryLog());
+        } finally {
+            DB::disableQueryLog();
+        }
+        $this->assertSame('no_available_move', app(InputPlanService::class)->forPhase($terminal->cycle->participant, $terminal)['rest_reason']);
     }
 
-    public function test_existing_positive_potential_prevents_a_no_potential_reason(): void
+    public function test_actionless_rest_with_positive_potential_has_the_same_reason(): void
     {
         [, $terminal, , , $head] = $this->exhaustedBranch();
         $this->measure($head, 0);
@@ -59,7 +69,7 @@ class AuthoritativeRestReasonTest extends TestCase
             ['action' => 'participant.rest', 'reason' => 'no_remaining_potential']);
     }
 
-    public function test_zero_regional_potential_is_only_a_rest_diagnostic_not_a_tragedy_trigger(): void
+    public function test_zero_regional_potential_stays_observable_across_a_lawful_rest(): void
     {
         [$root, $terminal] = $this->exhaustedBranch();
         $this->measure($root, 0);
@@ -67,9 +77,21 @@ class AuthoritativeRestReasonTest extends TestCase
         $this->assertSame(0.0, $region['potential']);
         $this->assertTrue(app(PotentialChargeService::class)->hasRemainingInHorizon($terminal));
         $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($terminal));
-        $this->assertSame(RestReason::NoRemainingPotential, app(RestReasonService::class)->derive($terminal));
+        $this->assertSame(RestReason::NoAvailableMove, app(RestReasonService::class)->derive($terminal));
         $this->rest($terminal);
+        $this->assertSame(RestReason::NoAvailableMove, $terminal->cycle->fresh()->rest_reason);
         $this->assertDatabaseCount('tragedies', 0);
+    }
+
+    public function test_recorded_legacy_reason_survives_model_and_plan_serialization(): void
+    {
+        [, $terminal] = $this->exhaustedBranch();
+        $terminal->cycle->forceFill(['rested_at' => now(), 'completed_at' => now(),
+            'rest_reason' => 'no_remaining_potential'])->save();
+        $terminal->refresh();
+        $this->assertSame(RestReason::NoRemainingPotential, $terminal->cycle->rest_reason);
+        $plan = app(InputPlanService::class)->forPhase($terminal->cycle->participant, $terminal);
+        $this->assertSame('no_remaining_potential', app(ParticipantContextSerializer::class)->plan($plan)['rest_reason']);
     }
 
     public function test_legacy_rest_without_an_authoritative_reason_cannot_be_reinterpreted(): void

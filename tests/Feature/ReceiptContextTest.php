@@ -84,7 +84,7 @@ class ReceiptContextTest extends TestCase
         $plan = $service->stateFor($fixture->viewer)['plan'];
         $this->assertContains($receipt->id, $plan['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_options']['properties']['load']['items']['enum']);
         $this->publishPotentialFixture($fixture->viewer);
-        $state = $service->contribute($fixture->viewer, $phase->id, ['action' => 'proposition.reclassify', 'proposition_id' => $subject->id, 'receipt_id' => $receipt->id, 'receipt_options' => ['load' => [$receipt->id]]]);
+        $state = $service->contribute($fixture->viewer, $phase->id, ['action' => 'proposition.reclassify', 'proposition_id' => $subject->id, 'statement' => $subject->statement, 'receipt_id' => $receipt->id, 'receipt_options' => ['load' => [$receipt->id]]]);
         $classification = $state['plan']['gate_id'];
         $this->assertNotSame($phase->id, $state['plan']['phase']['id']);
         $this->assertPublicCount($fixture, $subject, 1);

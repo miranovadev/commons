@@ -15,7 +15,6 @@ use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
-use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\CorrespondenceCalculator;
 use App\Services\Observables\LocalMeasurementService;
@@ -132,7 +131,7 @@ class PhaseProfileTest extends TestCase
         $source = $this->throughBias($cycle);
         $commit = $this->born($cycle, PhaseKind::Order, $source, 'commit');
         $h = $cycle->contextHorizon;
-        $birth = app(ClosureBirthService::class)->stored($commit);
+        $birth = app(ProspectiveClosureService::class)->stored($commit);
         $snapshot = (new CommitmentSnapshot)->forceFill(['proposition_id' => $commit->id,
             'substrate_id' => $this->actor->substrate_id, 'ledger_entry_id' => $commit->ledgerEntry->id,
             'supersession_id' => Supersession::where('target_proposition_id', $commit->id)->sole()->id,
@@ -593,7 +592,7 @@ class PhaseProfileTest extends TestCase
         $p = app(ContributionDispatcher::class)->dispatch($this->actor, $phase,
             ['action' => 'proposition.variant', 'statement' => 'A real observed distinction']);
         app(PropositionMeasurementService::class)->recalculate($p);
-        $tables = ['proposition_measurements', 'closure_births', 'local_chirality_states',
+        $tables = ['proposition_measurements', 'prospective_closure_states', 'local_chirality_states',
             'proposition_attestation_cursors', 'commitment_snapshots', 'supersessions', 'participants', 'cycles',
             'substrates', 'phase_profile_observations'];
         $snapshot = fn () => array_map(fn ($table) => DB::table($table)->get()->toJson(), $tables);

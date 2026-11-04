@@ -26,7 +26,7 @@ trait PersistExplorationHttpFixture
         $this->assertActionUnavailable($this->readParticipation($actor), 'instrument.execute');
         $state = $this->judge($actor, $persist);
         $receipt = $state['plan']['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'][0];
-        $slot = $this->contribute($actor, ['action' => 'proposition.reclassify', 'proposition_id' => $persist, 'receipt_id' => $receipt]);
+        $slot = $this->contribute($actor, ['action' => 'proposition.reclassify', 'proposition_id' => $persist, 'statement' => 'Persist development', 'receipt_id' => $receipt]);
         $constrain = $slot['current_proposition_id'];
         // Admit the author's Preparation before another Participant reaches the same empty position.
         $source = $slot['plan']['preparation_options'][0];

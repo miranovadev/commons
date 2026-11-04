@@ -84,7 +84,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                   {lane.role === 'gate' && (gateCards.length ? <PropositionNavigator label="Gate Propositions" resetKey={plan.phase.id}>
                     {gateCards.map(item => <Box key={item.id} className="write-option-card" data-reconcile-candidate={plan.phase.kind === 'mediate' && item.id !== gate.id ? item.id : undefined}
                       data-bias-candidate={plan.phase.kind === 'bias' ? item.id : undefined}>
-                      {plan.phase.kind === 'mediate' && <Text size="10px" c="dimmed" className="gate-card-context">{item.id === gate.id ? 'Current Gate · statement retained' : 'Reconciling counterpart'}</Text>}
+                      {plan.phase.kind === 'mediate' && <Text size="10px" c="dimmed" className="gate-card-context">{item.id === gate.id ? 'Current Gate · temporal predecessor' : 'Reconciling counterpart'}</Text>}
                       {card(item, 'gate')}
                       {item.id !== gate.id && plan.phase.kind === 'mediate' && allowed('proposition.reconcile') && targets.get('proposition.reconcile')?.has(item.id) && <Group className="write-option-card__context-actions" gap={4}>
                         <Button size="compact-xs" variant="subtle" color="gray" className="reconcile-action" leftSection={<OperationIcon operation="reconcile" />}

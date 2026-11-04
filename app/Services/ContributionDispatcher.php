@@ -83,7 +83,10 @@ final readonly class ContributionDispatcher
                 && ! in_array($action, ['instrument.execute', 'proposition.variant'], true)) {
                 throw new ConflictHttpException('Resolve the admitted acquisition through Variant or Defer before ordinary participation.');
             }
-            unset($input['execution_id']);
+            // Both authored operations validate unexpected fields, including a null execution ID.
+            if (! in_array($action, ['proposition.reclassify', 'proposition.reconcile'], true)) {
+                unset($input['execution_id']);
+            }
             if (! in_array($action, config("phases.{$phase->kind->value}.actions", []), true)
                 || $phase->cycle->participant_id !== $participant->id) {
                 throw new DomainException('The contribution must belong to this Participant and Phase.');
@@ -263,12 +266,17 @@ final readonly class ContributionDispatcher
         return $target;
     }
 
-    /** Classification has no authored content and no inherited judgments. */
+    /** Reclassification authors a new expression without inheriting judgments. */
     private function reclassify(Phase $phase, Proposition $source, array $input): Proposition
     {
-        if (array_diff(array_keys($input), ['action', 'proposition_id', 'receipt_id']) !== []
+        if (array_diff(array_keys($input), ['action', 'proposition_id', 'receipt_id', 'statement']) !== []
             || ! is_string($input['receipt_id'] ?? null) || ! is_string($input['proposition_id'] ?? null)) {
-            throw new DomainException('Reclassify requires proposition_id and receipt_id; the statement is preserved.');
+            throw new DomainException('Reclassify requires a source Proposition, one Receipt and an authored statement.');
+        }
+        $statement = $input['statement'] ?? null;
+        if (! is_string($statement) || ! preg_match('/\S/u', trim($statement))
+            || mb_strlen($statement) > Proposition::MAX_STATEMENT_LENGTH) {
+            throw new DomainException('Reclassify requires a nonblank statement within the Proposition length limit.');
         }
         $source = $phase->kind === PhaseKind::Bias
             ? $this->bias->operationalFor($phase)->firstWhere('id', $input['proposition_id'])
@@ -278,12 +286,12 @@ final readonly class ContributionDispatcher
             throw new DomainException('Reclassify requires an eligible Gate at the exact preceding Phase position.');
         }
 
-        return $this->classified($phase, $source, $input['receipt_id']);
+        return $this->classified($phase, $source, $input['receipt_id'], $statement);
     }
 
-    private function classified(Phase $phase, Proposition $source, string $receiptId): Proposition
+    private function classified(Phase $phase, Proposition $source, string $receiptId, string $statement): Proposition
     {
-        $target = $this->write($phase, $source->statement, tier: 'expressive', preserveStatement: true, temporalSource: $source);
+        $target = $this->write($phase, $statement, tier: 'expressive', temporalSource: $source);
         app(HorizonReceiptService::class)->consume($phase, $source, $target, $receiptId);
         DB::table('reclassification_results')->insert([
             'source_proposition_id' => $source->id, 'register' => $phase->write_register, 'target_proposition_id' => $target->id,
@@ -299,18 +307,23 @@ final readonly class ContributionDispatcher
         Proposition $gate,
         array $input,
     ): Proposition {
-        if (array_key_exists('statement', $input)) {
-            throw new DomainException('Reconcile selects structure; it does not accept a statement.');
+        if (array_diff(array_keys($input), ['action', 'other_proposition_id', 'statement']) !== []
+            || ! is_string($input['other_proposition_id'] ?? null)) {
+            throw new DomainException('Reconcile requires an eligible counterpart and an authored statement.');
         }
-        $other = $this->reconciliation->forPhase($phase)->firstWhere('id', $input['other_proposition_id']);
+        $statement = $input['statement'] ?? null;
+        if (! is_string($statement) || ! preg_match('/\S/u', trim($statement))
+            || mb_strlen($statement) > Proposition::MAX_STATEMENT_LENGTH) {
+            throw new DomainException('Reconcile requires a nonblank statement within the Proposition length limit.');
+        }
+        $other = $this->reconciliation->forPhase($phase)->firstWhere('id', '===', $input['other_proposition_id']);
         if ($other === null) {
             throw new DomainException('Reconcile requires an admissible Gate counterpart.');
         }
         $target = $this->write(
             $phase,
-            $gate->statement,
+            $statement,
             tier: 'expressive',
-            preserveStatement: true,
             temporalSource: $gate,
         );
 

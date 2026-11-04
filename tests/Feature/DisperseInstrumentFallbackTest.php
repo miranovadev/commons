@@ -86,7 +86,7 @@ class DisperseInstrumentFallbackTest extends TestCase
     {
         $snapshot = [];
         foreach (['propositions', 'supersessions', 'phases', 'cycles', 'attestations', 'exploration_events',
-            'phase_profile_observations', 'chirality_observations', 'chirality_population_observations', 'closure_births'] as $table) {
+            'phase_profile_observations', 'chirality_observations', 'chirality_population_observations', 'prospective_closure_states'] as $table) {
             $snapshot[$table] = DB::table($table)->get()->map(fn ($row) => (array) $row)->sortBy(fn ($row) => json_encode($row))->values()->all();
         }
         $snapshot['measurements'] = DB::table('proposition_measurements')->get()->map(function ($row) {

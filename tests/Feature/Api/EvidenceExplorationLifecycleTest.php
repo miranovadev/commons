@@ -136,7 +136,7 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
         $this->judge($actor, $distinction);
         $state = $this->judge($actor, $persist);
         $receipt = $state['plan']['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'][0];
-        $state = $this->contribute($actor, ['action' => 'proposition.reclassify', 'proposition_id' => $persist, 'receipt_id' => $receipt]);
+        $state = $this->contribute($actor, ['action' => 'proposition.reclassify', 'proposition_id' => $persist, 'statement' => 'Persistent observation', 'receipt_id' => $receipt]);
         $this->assertSame('disperse', $state['plan']['phase']['kind']);
         $this->assertActionAvailable($state, 'instrument.execute');
         $this->assertActionUnavailable($state, 'preparation.start');

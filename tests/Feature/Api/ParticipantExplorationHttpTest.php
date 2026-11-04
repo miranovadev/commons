@@ -7,7 +7,6 @@ use App\Models\Connection;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Services\AcquisitionAttemptService;
-use App\Services\CrossoverMarginService;
 use App\Services\ParticipantPromptFactory;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseGenerationService;
@@ -31,7 +30,6 @@ class ParticipantExplorationHttpTest extends ScriptedParticipationTestCase
         $state = $this->readParticipation($actor);
         $entry = Phase::findOrFail($state['plan']['phase']['id']);
         self::assertSame($journey['origin'], $entry->gate_proposition_id);
-        self::assertGreaterThan(0, app(CrossoverMarginService::class)->inspect($entry->cycle)['crossover_margin']);
         $history = DB::table('exploration_events')->get()->toJson();
         $this->assertDatabaseCount('exploration_events', 1);
         $attempts = DB::table('evidence_executions')->count();

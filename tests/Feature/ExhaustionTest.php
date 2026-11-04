@@ -172,7 +172,7 @@ class ExhaustionTest extends TestCase
             $queries = DB::getQueryLog();
             DB::disableQueryLog();
             $counts[] = count($queries);
-            $this->assertSame('no_remaining_potential', $proof['rest_reason']);
+            $this->assertSame('no_available_move', $proof['rest_reason']);
             $this->assertSame($head->id, $proof['position_id']);
             $this->assertNull($proof['witness'], 'An unrecorded personal arrival cannot establish exploration');
             foreach ($queries as $query) {

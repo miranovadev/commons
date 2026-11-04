@@ -6,7 +6,6 @@ use App\Models\CanonicalMeasurement;
 use App\Models\Participant;
 use App\Models\Proposition;
 use App\Services\BackwardRecoveryLineage;
-use App\Services\CrossoverMarginService;
 use App\Services\ExhaustionService;
 use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\LineageMeasurementService;
@@ -24,7 +23,7 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
 {
     use PersistCommitHttpFixture;
 
-    public function test_closed_crossover_alone_does_not_authorize_catastrophe_on_an_untested_continuation(): void
+    public function test_new_committal_with_immature_cadence_offers_distinguish_acquisition(): void
     {
         [$actor, , $initial, $committed] = $this->persistCommitWithObserver('tragic-explorer', 'open-entrant');
 
@@ -41,44 +40,30 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $this->persistJourneyIds['rightDiscovery'], 'proposition_id' => $classification->id]);
         $boundary = $committed['last_commitment'];
         // This lawful skeptical history remains in Settlement; instrumentation
-        // changes the chronology, not the domain-transition or margin equations.
+        // changes the chronology, not the domain-transition equations.
         $this->assertFalse($boundary['closure_boundary']);
         $this->assertEqualsWithDelta(0, $boundary['depth'], 0.0000001);
         $this->assertEqualsWithDelta(0, $boundary['cadence'], 0.0000001);
-        // Twelve author Cycles at Origin and three still-open observer Cycles.
-        $this->assertSame(15, (int) DB::table('commitment_snapshots')
+        // Eleven author Cycles at Origin and three still-open observer Cycles.
+        $this->assertSame(14, (int) DB::table('commitment_snapshots')
             ->where('proposition_id', $boundary['proposition_id'])->value('cadence_interval'));
-        $beforeRest = $committed;
-        $this->assertActionUnavailable($beforeRest, 'instrument.execute');
-        $this->assertActionUnavailable($beforeRest, 'proposition.variant');
+        $this->assertSame(['instrument.execute'], array_keys($committed['plan']['schema']['$defs']['actions']));
+        $this->assertNull($committed['plan']['rest_reason']);
         $participant = Participant::findOrFail($actor);
         $cycle = $participant->cycles()->latest('sequence')->firstOrFail();
         $origin = $initial['current_proposition_id'];
         $seed = Proposition::findOrFail($boundary['proposition_id']);
         $entries = DB::table('cycles')->where('entry_committal_id', $origin)
             ->where('context_horizon_id', $seed->phase->cycle->context_horizon_id);
-        $this->assertSame(15, $entries->count());
+        $this->assertSame(14, $entries->count());
         $this->assertTrue($entries->whereNull('completed_at')->exists());
-        $diagnostic = app(CrossoverMarginService::class)->inspect($cycle);
         $this->assertReceiptNeutralChiralityChain($participant->position);
         $this->assertSame($boundary['tension_after'], $seed->commitmentSnapshot->tension);
-        $this->assertSame($seed->id, $diagnostic['governing_committal_id']);
-        $this->assertSame('settlement', $diagnostic['domain']);
-        // Check this transcript's frozen values and independently project its margin below.
-        foreach (['correspondence' => -0.3980798, 'chirality' => -0.0997720,
-            'prospective_depth' => 0, 'prospective_committed_cardinal_position' => 0, 'admissible_cadence_bound' => 0,
-            'tension_bound' => -0.1659506,
-            'crossover_margin' => -0.1659506] as $name => $value) {
-            $this->assertEqualsWithDelta($value, $diagnostic[$name], 1e-7, $name.' '.json_encode($diagnostic));
-        }
-        // Settlement's negative retained Cardinal direction admits a zero
-        // cadence bound. Independently project the three bounded observables.
-        $values = [$seed->commitmentSnapshot->correspondence, $seed->commitmentSnapshot->chirality, 0.0];
-        $prominence = round(array_sum(array_map(fn ($x) => (1 + $x) / 2, $values)) / 3, 7);
-        $turbulence = round(array_sum(array_map(fn ($x) => (1 - $x) / 2, $values)) / 3, 7);
-        $this->assertSame(round($prominence - $turbulence, 7), $diagnostic['crossover_margin']);
-        $this->assertSame('negative', $diagnostic['prospective_cardinal_direction']);
-        $this->assertTrue($diagnostic['closed']);
+        $this->assertFalse($seed->commitmentSnapshot->closure_observation['availability']['cadence']);
+        $this->assertSame($seed->id, $cycle->entry_committal_id);
+        $this->assertSame('settlement', $cycle->contextHorizon->domain->value);
+        $this->assertEqualsWithDelta(-0.2962244, $seed->commitmentSnapshot->correspondence, 1e-7);
+        $this->assertEqualsWithDelta(-0.1068359, $seed->commitmentSnapshot->chirality, 1e-7);
         $path = app(BackwardRecoveryLineage::class)->distances($participant->position, $participant,
             fn ($id, $horizon) => DB::table('supersessions')->where('target_proposition_id', $id)->pluck('source_proposition_id')->all());
         $committals = Proposition::whereIn('id', array_keys($path))->where('tier', 'committal')->pluck('id')->all();
@@ -86,29 +71,12 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertSame(0, $path[$seed->id]);
         $this->assertSame(7, $path[$origin]);
         $this->assertFalse(app(ExhaustionService::class)->unavailable($origin));
-        $this->assertSame('no_remaining_potential', $beforeRest['plan']['rest_reason']);
-        $this->assertSame(['participant.rest'], array_keys($beforeRest['plan']['schema']['$defs']['actions']));
-
-        $history = fn () => collect(['tragedies' => 'id', 'receipts' => 'id', 'receipt_consumptions' => 'receipt_id',
-            'commit_region_exhaustions' => 'governing_committal_id', 'exhausted_region_memberships' => 'proposition_id',
-            'commitment_snapshots' => 'proposition_id', 'closure_births' => 'proposition_id', 'context_horizons' => 'id'])
-            ->map(fn ($key, $table) => DB::table($table)->orderBy($key)->get()->toJson())->all();
-        $beforeHistory = $history();
-        $state = $this->contribute($actor, ['action' => 'participant.rest'], $beforeRest);
-        $this->assertSame($beforeHistory, $history());
-        $this->assertNotNull($cycle->fresh()->rested_at);
+        $this->assertNull($cycle->fresh()->rested_at);
+        $this->assertFalse(app(ExhaustionService::class)->unavailable($seed));
         $this->assertDatabaseCount('tragedies', 0);
-        $this->assertSame(0, DB::table('receipts')->where('type', 'tragedy')->count());
         $this->assertDatabaseCount('tragedy_final_attempts', 0);
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
-        $this->assertSame('distinguish', $state['plan']['phase']['kind']);
-        // Rest occurred at the Committal itself. Its nearest strict ancestor is Origin.
-        $this->assertSame($origin, $state['current_proposition_id']);
-        $this->assertSame('settlement', $state['domain']);
-        $this->assertSame($beforeRest['horizon_sequence'], $state['horizon_sequence']);
-        $this->assertSame($beforeRest['context_horizon_id'], $state['context_horizon_id']);
-        $this->assertFalse(app(ExhaustionService::class)->unavailable($seed));
-        // A geometric bound alone is not proof of genuine continuation failure.
+        $this->assertDatabaseMissing('evidence_executions', ['phase_id' => $cycle->currentPhase->id]);
     }
 
     public function test_unjudged_expressive_descendants_preserve_receipt_neutral_chirality_in_an_open_region(): void

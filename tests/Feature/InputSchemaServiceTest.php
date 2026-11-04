@@ -69,6 +69,21 @@ class InputSchemaServiceTest extends TestCase
         $this->assertStringContainsString('Cycle-entry Receipt catalogue', $schema['x-commons']['description']);
     }
 
+    public function test_both_reclassification_phases_replace_the_cached_statement_preserving_contract(): void
+    {
+        foreach ([PhaseKind::Constrain, PhaseKind::Bias] as $kind) {
+            $actions = config("phases.{$kind->value}.actions");
+            $key = "commons:input-schema:v33:phase:{$kind->value}:".sha1(implode('|', $actions));
+            Cache::store('array')->forever($key, ['obsolete' => true]);
+
+            $schema = app(InputSchemaService::class)->forPhase($kind);
+            $action = $schema['$defs']['actions']['proposition.reclassify'];
+            $this->assertContains('statement', $action['required']);
+            $this->assertSame(Proposition::MAX_STATEMENT_LENGTH, $action['properties']['statement']['maxLength']);
+            $this->assertStringContainsString('keep the source wording', $action['description']);
+        }
+    }
+
     public function test_bias_retires_binary_reconciliation_schema_and_exposes_unary_selection(): void
     {
         $oldActions = ['proposition.reconcile', 'instrument.execute', 'attestation.create'];
@@ -77,7 +92,7 @@ class InputSchemaServiceTest extends TestCase
         $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Bias);
         $this->assertArrayNotHasKey('stale_binary_bias', $schema);
         $this->assertArrayNotHasKey('proposition.reconcile', $schema['$defs']['actions']);
-        $this->assertSame(['action', 'proposition_id', 'receipt_id'], $schema['$defs']['actions']['proposition.reclassify']['required']);
+        $this->assertSame(['action', 'proposition_id', 'receipt_id', 'statement'], $schema['$defs']['actions']['proposition.reclassify']['required']);
         $this->assertSame(['local-lineage-or-dominant-homologous-chirality', 'unary-selection-fresh-history', 'completed-receipt-and-effective-attestation'],
             $schema['x-commons']['constraints']['proposition.reclassify']);
     }
@@ -204,6 +219,7 @@ class InputSchemaServiceTest extends TestCase
             'action' => 'proposition.reclassify',
             'proposition_id' => '01ARZ3NDEKTSV4RRFFQ69G5FAV',
             'receipt_id' => '01ARZ3NDEKTSV4RRFFQ69G5FAW',
+            'statement' => 'The citation supports retaining the source wording.',
         ]);
         $this->assertInvalid($schema, [
             'action' => 'proposition.reclassify',
@@ -297,6 +313,7 @@ class InputSchemaServiceTest extends TestCase
             [
                 'action' => 'proposition.reconcile',
                 'other_proposition_id' => '01m1xab7yakfnhy6tf52a9qg7z',
+                'statement' => 'The observations share a common cause.',
             ],
         );
     }

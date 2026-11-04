@@ -163,7 +163,7 @@ class CommitRegionTest extends TestCase
             }
             $this->assertSame([$anchor->id, $matching->id], $service->readsFor($phase)->pluck('id')->all());
             $this->assertEqualsCanonicalizing([$gate->id, $counterpart->id], $service->gatesFor($phase)->pluck('id')->all());
-            $this->reject($phase, ['action' => 'proposition.reconcile', 'other_proposition_id' => $otherGate->id]);
+            $this->reject($phase, ['action' => 'proposition.reconcile', 'other_proposition_id' => $otherGate->id, 'statement' => 'The observations share a common cause.']);
         }
     }
 
@@ -189,7 +189,7 @@ class CommitRegionTest extends TestCase
         $this->assertSame(-1.0, $bias->leanFor($phase));
         $this->assertEqualsCanonicalizing([$gate->id, $neutral->id], $bias->forPhase($phase)->pluck('id')->all());
         $this->assertCount(0, $regionDefault->attestations);
-        $this->reject($phase, ['action' => 'proposition.reclassify', 'proposition_id' => $outside->id]);
+        $this->reject($phase, ['action' => 'proposition.reclassify', 'proposition_id' => $outside->id, 'statement' => $outside->statement]);
         $this->attest($gate, 'support'); // The regional aggregate does not change the head-specific comparison.
         $this->assertEqualsCanonicalizing([$gate->id, $neutral->id], $bias->forPhase($phase)->pluck('id')->all());
     }

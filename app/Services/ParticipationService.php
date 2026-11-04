@@ -32,11 +32,12 @@ final readonly class ParticipationService
     ) {}
 
     /**
+     * @param-out int|null $fieldVersion Version of the ready plan, for guarded submissions.
      * @return array<string, mixed>
      */
-    public function stateFor(Participant $participant): array
+    public function stateFor(Participant $participant, ?int &$fieldVersion = null): array
     {
-        return $this->state($participant, false);
+        return $this->state($participant, false, $fieldVersion);
     }
 
     /** Human-only display state, fetched separately from autonomous participation. */
@@ -45,10 +46,11 @@ final readonly class ParticipationService
         return $this->state($participant, true);
     }
 
-    private function state(Participant $participant, bool $workspace): array
+    private function state(Participant $participant, bool $workspace, ?int &$fieldVersion = null): array
     {
+        $fieldVersion = null;
         try {
-            $state = $this->currentStateFor($participant, $workspace);
+            $state = $this->currentStateFor($participant, $workspace, $fieldVersion);
         } catch (PotentialProjectionUnavailable) {
             $state = $this->waiting('potential_projection_pending',
                 'The field is updating. Your position is preserved. Please retry shortly.');
@@ -86,7 +88,7 @@ final readonly class ParticipationService
     }
 
     /** @return array<string, mixed> */
-    private function currentStateFor(Participant $participant, bool $workspace): array
+    private function currentStateFor(Participant $participant, bool $workspace, ?int &$fieldVersion): array
     {
         $cycle = Cycle::query()
             ->whereBelongsTo($participant)
@@ -144,6 +146,7 @@ final readonly class ParticipationService
         if ($version !== app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id)) {
             throw new PotentialProjectionUnavailable($participant->substrate_id);
         }
+        $fieldVersion = $version;
         $blocked = $phase->kind === PhaseKind::Order
             && ! isset($plan['schema']['$defs']['actions']['proposition.commit'])
             && ! isset($plan['schema']['$defs']['actions']['proposition.traverse'])
@@ -169,9 +172,9 @@ final readonly class ParticipationService
                     : 'Commitment requires grounding and aligned Historical Extent/Rhythm directions. Use an action available in the current Phase.',
             ] : ($plan['rest_available'] ? [
                 'code' => $plan['rest_reason'],
-                'message' => $plan['rest_reason'] === 'no_remaining_potential'
-                    ? 'No admissible action remains in this Phase, and its Commit Region has zero measured Potential. Rest does not create Tragedy.'
-                    : 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
+                'message' => count($plan['schema']['$defs']['actions']) === 1
+                    ? 'No lawful non-Rest action remains in this Phase.'
+                    : 'You can Rest after this encounter or choose another available action.',
             ] : null),
             'entry' => null,
         ];
@@ -205,6 +208,7 @@ final readonly class ParticipationService
         array $input,
         ?array $expectedSchema = null,
         ?string $expectedClosureObservation = null,
+        ?int $expectedFieldVersion = null,
     ): array {
         // Invalid model output is still an error; only a formerly valid action
         // rejected by fresh admissibility is a retryable participation conflict.
@@ -275,7 +279,7 @@ final readonly class ParticipationService
         }
 
         try {
-            return $this->applyContribution($participant, $phaseId, $input, $expectedSchema, $expectedClosureObservation, $observed);
+            return $this->applyContribution($participant, $phaseId, $input, $expectedSchema, $expectedClosureObservation, $observed, $expectedFieldVersion);
         } catch (\Throwable $exception) {
             if ($observed !== null) {
                 app(OperationalInstrumentService::class)->resultFailed($observedPhase, $observed);
@@ -285,12 +289,17 @@ final readonly class ParticipationService
     }
 
     private function applyContribution(Participant $participant, string $phaseId, array $input, ?array $expectedSchema,
-        ?string $expectedClosureObservation, ?InstrumentObservation $observed): array
+        ?string $expectedClosureObservation, ?InstrumentObservation $observed, ?int $expectedFieldVersion): array
     {
         // Build admissibility optimistically before acquiring the shared root.
         // The version check below makes this exact schema authoritative for the
         // guarded write without hydrating a graph while other writers wait.
         $validatedVersion = app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id);
+        // An automatic choice is valid only for its observed field, even if Rest
+        // is still offered alongside a newly available action.
+        if ($expectedFieldVersion !== null && $expectedFieldVersion !== $validatedVersion) {
+            throw new ConflictHttpException('The active field changed. Rebuild state before contributing.');
+        }
         $validationPlan = $this->plans->forValidation($participant);
         $expectedClosureObservation ??= $expectedSchema['$comment'] ?? null;
         if (($input['action'] ?? null) === 'proposition.commit' && $expectedClosureObservation !== null
@@ -370,7 +379,7 @@ final readonly class ParticipationService
                 // A stale proof is discarded and can be retried after this Rest.
                 $validProof = $explorationWitness !== null && $explorationWitness['stable']
                     && $explorationWitness['field_version'] === (int) $substrate->field_version;
-                $this->rest($lockedParticipant, $phase, RestReason::from($explorationWitness['rest_reason'] ?? 'no_available_move'));
+                $this->rest($lockedParticipant, $phase);
                 if ($validProof) {
                     app(ExplorationEventService::class)->publish($phase, $explorationWitness);
                 }
@@ -399,14 +408,14 @@ final readonly class ParticipationService
     }
 
     /** The validated plan exposes Rest only in a Phase with no meaningful remaining continuation. */
-    private function rest(Participant $participant, Phase $phase, RestReason $reason): void
+    private function rest(Participant $participant, Phase $phase): void
     {
         $participant->current_proposition_id = $phase->gate_proposition_id;
         $participant->save();
         $phase->completed_at = now();
         $phase->save();
         $phase->cycle->rested_at = now();
-        $phase->cycle->rest_reason = $reason;
+        $phase->cycle->rest_reason = RestReason::NoAvailableMove;
         $phase->cycle->save();
     }
 

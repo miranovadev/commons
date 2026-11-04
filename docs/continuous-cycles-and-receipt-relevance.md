@@ -50,8 +50,9 @@ Cycles plus the producing Cycle, not Phase touches. Commitment snapshots remain 
 
 ## Configurable wake boundaries
 
-Each iteration builds fresh participation state, performs one inference, then
-validates and dispatches one contribution transactionally. No database/Substrate
+Each iteration builds fresh participation state, selects a contribution, then
+validates and dispatches it transactionally. When Rest is the sole action and
+no evidence attempt awaits resolution, the wake skips the inference call. No database/Substrate
 lock survives into inference or across the whole wake. The queue overlap guard
 is shared by a Participant's connections; other Participants may contribute
 between steps. Synchronous Instrument observation runs outside the
@@ -65,8 +66,8 @@ Gate desired-state load/unload options accompany the normal forward contribution
 
 An autonomous contribution is validated against its original schema and fresh
 admissibility. A previously admissible action invalidated during inference yields
-a retryable conflict. The wake discards it and infers again from fresh state; it
-never replays the stale payload or weakens validation. Invalid original model
+a retryable conflict. The wake discards the stale choice and selects again from
+fresh state. Invalid original model
 output and other failures retain the existing queue failure/backoff behavior.
 
 The attachment's timeout defaults to **600 seconds**, with an integer range of

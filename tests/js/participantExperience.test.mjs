@@ -139,6 +139,29 @@ test('background HTTP and projection refresh retain the interactive workspace, d
  });
 });
 
+test('a Mediate reader selects a counterpart and authors the child statement', async () => {
+ await withPage('participant', async (h, page) => {
+  await until(() => button('Variant'));
+  const action = 'proposition.reconcile';
+  const counterpart = { ...h.plan.gate, id: 'other', statement: 'Another observation.' };
+  const definition = { title: 'Reconcile two Propositions', required: ['action', 'other_proposition_id', 'statement'],
+   properties: { action: { const: action }, other_proposition_id: { enum: ['other'] }, statement: { type: 'string' } } };
+  h.state = { ...h.state, plan: { ...h.plan, phase: { ...h.plan.phase, kind: 'mediate', number: 5, write_register: 'frontier' },
+   gate_options: [counterpart], schema: { oneOf: [{ $ref: '#/$defs/actions/' + action }], $defs: { actions: { [action]: definition } } } } };
+  await act(async () => page.refresh());
+  await until(() => button('Reconcile'));
+  await click(button('Reconcile'));
+  const statement = document.querySelector('textarea');
+  assert.equal(statement.required, true);
+  assert.equal(statement.value, '');
+  await draft('The two observations describe the same change at different times.');
+  await click(button('Apply contribution'));
+  await until(() => h.posts.length === 1);
+  assert.deepEqual(h.posts[0].contribution, { action, other_proposition_id: 'other', statement: statement.value });
+  await act(async () => h.resolvePost(new Response(JSON.stringify({ data: h.state }), { headers: { 'Content-Type': 'application/json' } })));
+ });
+});
+
 for (const phaseId of ['phase', 'next-phase']) test(`changed options (${phaseId}) keep drafts and display the authoritative rejection`, async () => {
  await withPage('participant', async (h, page) => {
   await until(() => button('Variant')); await click(button('Variant'));

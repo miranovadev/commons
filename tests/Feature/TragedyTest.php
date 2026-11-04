@@ -118,7 +118,7 @@ class TragedyTest extends TestCase
             if ($kind === PhaseKind::Disperse) {
                 $receipt = app(HorizonReceiptService::class)->ordinaryAvailable($fixture->phase)->firstOrFail();
                 $result = app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,
-                    ['action' => 'proposition.reclassify', 'proposition_id' => $fixture->expression->id, 'receipt_id' => $receipt->id]);
+                    ['action' => 'proposition.reclassify', 'proposition_id' => $fixture->expression->id, 'statement' => $fixture->expression->statement, 'receipt_id' => $receipt->id]);
                 $fixture->phase = app(PhaseProgressionService::class)->advance($fixture->phase, $result);
                 $this->instrumentGateFixture($fixture->phase);
             }

@@ -76,7 +76,7 @@ final readonly class PhaseGenerationService
                 ->contains(fn (Proposition $candidate) => $this->available($phase, $action, $context, $candidate));
         }
         if (! in_array($action, ['proposition.variant', 'proposition.reclassify', 'proposition.commit'], true)) {
-            // Mediate owns a directed relationship, rather than a personal quota.
+            // ReconciliationOptionService checks the established pair for Mediate.
             return true;
         }
         // Standalone evidence previews may supply a candidate before a Phase
@@ -125,15 +125,6 @@ final readonly class PhaseGenerationService
             ? $context->children->get($gate->id, collect())->contains(fn ($edge) => $edge->type !== 'variant')
             : $gate->children()->where('supersessions.type', '!=', 'variant')->exists())) {
             return false;
-        }
-
-        // Every fresh Variant probe, including resolution of an admitted attempt,
-        // uses the governing Cycle's geometry. Unavailable history cannot close it.
-        if ($action === 'proposition.variant') {
-            $closed = fn () => app(CrossoverMarginService::class)->inspect($phase->cycle)['closed'];
-            if ($context === null ? $closed() : $context->remember('variant-crossover:'.$phase->cycle_id, $closed)) {
-                return false;
-            }
         }
 
         // Admission bypasses only later competing Variants, never hard

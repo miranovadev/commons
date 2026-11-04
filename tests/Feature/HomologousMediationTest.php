@@ -101,7 +101,7 @@ class HomologousMediationTest extends TestCase
     {
         $this->resolveExpressiveFieldFixture(1);
         $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id, 'statement' => 'The observations share a common cause.']);
         $profileBirth = app(PhaseProfileObservationService::class)->stored($target->id);
         $gateBirth = app(PhaseProfileObservationService::class)->stored($this->gateA->id);
         $this->assertSame($this->gateA->id, $profileBirth->preceding_phase_proposition_id);
@@ -289,7 +289,7 @@ class HomologousMediationTest extends TestCase
         $before = Proposition::count();
         try {
             app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
-                ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+                ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id, 'statement' => 'The observations share a common cause.']);
             $this->fail('Population direction must be recomputed during write authorization.');
         } catch (\DomainException) {
             $this->assertSame($before, Proposition::count());
@@ -406,7 +406,7 @@ class HomologousMediationTest extends TestCase
         $horizonA = $this->mediate->cycle->context_horizon_id;
         $horizonB = $this->gateB->phase->cycle->context_horizon_id;
         $foreignBefore = $this->gateB->fresh()->getAttributes();
-        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id];
+        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id, 'statement' => 'The observations share a common cause.'];
         app(ParticipationService::class)->contribute($this->actor, $this->mediate->id, $input);
         $result = Proposition::findOrFail($this->actor->fresh()->current_proposition_id);
         $this->assertSame($this->mediate->id, $result->phase_id);
@@ -459,7 +459,7 @@ class HomologousMediationTest extends TestCase
         $before = Proposition::count();
         try {
             app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
-                ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+                ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id, 'statement' => 'The observations share a common cause.']);
             $this->fail('A stale foreign Read direction must not authorize a write.');
         } catch (\DomainException) {
             $this->assertSame($before, Proposition::count());
@@ -520,7 +520,7 @@ class HomologousMediationTest extends TestCase
             $before = Proposition::count();
             try {
                 app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
-                    ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+                    ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id, 'statement' => 'The observations share a common cause.']);
                 $this->fail('A foreign exhausted continuation cannot be reconciled.');
             } catch (\DomainException) {
                 $this->assertSame($before, Proposition::count());
@@ -536,20 +536,48 @@ class HomologousMediationTest extends TestCase
         $this->assertTrue($options->forPhase($this->mediate->fresh())->contains('id', $this->gateB->id));
     }
 
-    public function test_cross_horizon_directed_pairs_are_independent_and_used_pairs_do_not_reopen(): void
+    public function test_foreign_gate_can_establish_the_pair_first_and_retains_its_temporal_lineage(): void
+    {
+        $foreign = (new Participant)->forceFill(['substrate_id' => $this->actor->substrate_id,
+            'callsign' => 'foreign-first', 'current_proposition_id' => $this->gateB->id]);
+        $foreign->save();
+        $local = $this->actor;
+        $this->actor = $foreign;
+        $phase = $this->mediateAt($this->b, $this->readB, $this->gateB);
+        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateA->id,
+            'statement' => 'B and A describe the same sequence.'];
+        $child = app(ContributionDispatcher::class)->dispatch($foreign, $phase, $input);
+        $this->assertSame($this->b->id, $child->phase->cycle->entry_committal_id);
+        $this->assertSame($input['statement'], $child->statement);
+        $this->assertSame($this->gateB->id, app(PhaseProfileObservationService::class)->stored($child->id)->preceding_phase_proposition_id);
+        $this->assertEqualsCanonicalizing([$this->gateB->id, $this->gateA->id], $child->parents->pluck('id')->all());
+
+        // Once this particular continuation is terminal, its recorded parents still identify the pair.
+        $this->boundaryTragedyFixture($child);
+        $this->assertFalse(app(ReconciliationOptionService::class)->forPhase($this->mediate)->contains('id', $this->gateB->id));
+        $before = [Proposition::count(), Supersession::count(), $local->substrate->ledgerEntries()->count()];
+        try {
+            app(ContributionDispatcher::class)->dispatch($local, $this->mediate, [...$input, 'other_proposition_id' => $this->gateB->id]);
+            $this->fail('A terminal child must not release its pair.');
+        } catch (\DomainException) {
+            $this->assertSame($before, [Proposition::count(), Supersession::count(), $local->substrate->ledgerEntries()->count()]);
+        }
+    }
+
+    public function test_cross_horizon_pairs_allow_distinct_partners_and_exclude_reciprocals(): void
     {
         $origin = $this->a->phase->cycle->entryCommittal;
         $c = $this->committedCoordinate($origin, 'settlement');
         [, $gateC] = $this->pair($c);
         $options = app(ReconciliationOptionService::class);
         $dispatcher = app(ContributionDispatcher::class);
-        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id];
+        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id, 'statement' => 'The observations share a common cause.'];
         $forward = $dispatcher->dispatch($this->actor, $this->mediate, $input);
         $originalActor = $this->actor;
         $this->actor = new Participant;
         $this->actor->forceFill(['substrate_id' => $originalActor->substrate_id, 'callsign' => 'competitor',
             'current_proposition_id' => $this->gateA->id])->save();
-        // Fresh discovery still sees B structurally; authorization consumes only A→B.
+        // Fresh discovery still sees B structurally; authorization excludes the established pair.
         $freshA = $this->mediateAt($this->a, $this->readA, $this->gateA);
         $this->assertTrue(app(HomologousMediationService::class)->poolFor($freshA)['gates']->contains('id', $this->gateB->id));
         $this->assertSame([$gateC->id], $options->forPhase($freshA)->pluck('id')->all());
@@ -561,23 +589,16 @@ class HomologousMediationTest extends TestCase
             $this->assertSame($before, Proposition::count());
         }
         $distinct = $dispatcher->dispatch($this->actor, $freshA,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $gateC->id]);
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $gateC->id, 'statement' => 'The observations share a common cause.']);
         // B has its own participant and governed Cycle; no movement/handoff API is added.
         $this->actor = new Participant;
         $this->actor->forceFill(['substrate_id' => $originalActor->substrate_id, 'callsign' => 'reverse',
             'current_proposition_id' => $this->gateB->id])->save();
         $inversePhase = $this->mediateAt($this->b, $this->readB, $this->gateB);
-        $this->assertTrue($options->forPhase($inversePhase)->contains('id', $this->gateA->id));
-        $inverse = $dispatcher->dispatch($this->actor, $inversePhase,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateA->id]);
-        $this->assertNotSame($forward->id, $inverse->id);
+        $this->assertFalse($options->forPhase($inversePhase)->contains('id', $this->gateA->id));
         $this->assertNotSame($forward->id, $distinct->id);
-        $this->assertEqualsCanonicalizing($forward->parents->pluck('id')->all(), $inverse->parents->pluck('id')->all());
         $this->assertSame($this->a->id, $forward->phase->cycle->entry_committal_id);
-        $this->assertSame($this->b->id, $inverse->phase->cycle->entry_committal_id);
         $this->assertSame($this->gateA->id, $forward->phase->gate_proposition_id);
-        $this->assertSame($this->gateB->id, $inverse->phase->gate_proposition_id);
-        $this->assertFalse($options->forPhase($inversePhase->fresh())->contains('id', $this->gateA->id));
         $this->assertFalse($options->forPhase($freshA->fresh())->contains('id', $this->gateB->id));
     }
 
@@ -688,7 +709,7 @@ class HomologousMediationTest extends TestCase
             $before = [Proposition::count(), Supersession::count()];
             try {
                 app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
-                    ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+                    ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id, 'statement' => 'The observations share a common cause.']);
                 $this->fail('An inadmissible causal Gate cannot Write.');
             } catch (\DomainException) {
                 $this->assertSame($before, [Proposition::count(), Supersession::count()]);
@@ -745,7 +766,7 @@ class HomologousMediationTest extends TestCase
         $before = [Proposition::count(), Supersession::count()];
         try {
             app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
-                ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+                ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id, 'statement' => 'The observations share a common cause.']);
             $this->fail('Stale component eligibility cannot authorize a Write.');
         } catch (\DomainException) {
             $this->assertSame($before, [Proposition::count(), Supersession::count()]);
