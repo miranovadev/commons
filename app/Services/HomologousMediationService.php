@@ -28,7 +28,7 @@ final readonly class HomologousMediationService
      * Member qualification uses each Read's own Correspondence, never its Gate child.
      * Context hydration includes structural operands and their measurement ancestry.
      * Receipt availability remains independently qualified by the acting Region.
-     * Final action policy (including exhausted continuations and established pairs) remains
+     * Final action policy (including exhausted continuations and bound operands) remains
      * the responsibility of ReconciliationOptionService.
      *
      * @return array{reads: Collection, gates: Collection}

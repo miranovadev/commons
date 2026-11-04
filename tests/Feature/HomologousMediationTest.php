@@ -24,12 +24,14 @@ use App\Services\HomeostaticDirectionService;
 use App\Services\HomologousMediationService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
+use App\Services\MediatedIncomingBiasService;
 use App\Services\MediationReadService;
 use App\Services\Observables\PhaseProfileObservationService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptLayout;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
+use App\Services\PhaseProgressionService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
@@ -564,11 +566,11 @@ class HomologousMediationTest extends TestCase
         }
     }
 
-    public function test_cross_horizon_pairs_allow_distinct_partners_and_exclude_reciprocals(): void
+    public function test_bound_foreign_operands_remain_structurally_visible_but_cannot_establish_a_new_relationship(): void
     {
         $origin = $this->a->phase->cycle->entryCommittal;
         $c = $this->committedCoordinate($origin, 'settlement');
-        [, $gateC] = $this->pair($c);
+        [$readC, $gateC] = $this->pair($c);
         $options = app(ReconciliationOptionService::class);
         $dispatcher = app(ContributionDispatcher::class);
         $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id, 'statement' => 'The observations share a common cause.'];
@@ -577,10 +579,10 @@ class HomologousMediationTest extends TestCase
         $this->actor = new Participant;
         $this->actor->forceFill(['substrate_id' => $originalActor->substrate_id, 'callsign' => 'competitor',
             'current_proposition_id' => $this->gateA->id])->save();
-        // Fresh discovery still sees B structurally; authorization excludes the established pair.
+        // Fresh discovery still sees B structurally; the previous birth binds both operands.
         $freshA = $this->mediateAt($this->a, $this->readA, $this->gateA);
         $this->assertTrue(app(HomologousMediationService::class)->poolFor($freshA)['gates']->contains('id', $this->gateB->id));
-        $this->assertSame([$gateC->id], $options->forPhase($freshA)->pluck('id')->all());
+        $this->assertTrue($options->forPhase($freshA)->isEmpty());
         $before = Proposition::count();
         try {
             $dispatcher->dispatch($this->actor, $freshA, $input);
@@ -588,18 +590,43 @@ class HomologousMediationTest extends TestCase
         } catch (\DomainException) {
             $this->assertSame($before, Proposition::count());
         }
-        $distinct = $dispatcher->dispatch($this->actor, $freshA,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $gateC->id, 'statement' => 'The observations share a common cause.']);
+        $third = $this->mediateAt($c, $readC, $gateC);
+        $this->assertContains($this->gateB->id, app(HomologousMediationService::class)->poolFor($third)['gates']->pluck('id'));
+        $this->assertFalse($options->forPhase($third)->contains('id', $this->gateB->id));
         // B has its own participant and governed Cycle; no movement/handoff API is added.
         $this->actor = new Participant;
         $this->actor->forceFill(['substrate_id' => $originalActor->substrate_id, 'callsign' => 'reverse',
             'current_proposition_id' => $this->gateB->id])->save();
         $inversePhase = $this->mediateAt($this->b, $this->readB, $this->gateB);
         $this->assertFalse($options->forPhase($inversePhase)->contains('id', $this->gateA->id));
-        $this->assertNotSame($forward->id, $distinct->id);
         $this->assertSame($this->a->id, $forward->phase->cycle->entry_committal_id);
         $this->assertSame($this->gateA->id, $forward->phase->gate_proposition_id);
         $this->assertFalse($options->forPhase($freshA->fresh())->contains('id', $this->gateB->id));
+    }
+
+    public function test_fresh_relationship_does_not_grant_incoming_bias_via_an_unrelated_local_pair(): void
+    {
+        $this->resolveExpressiveFieldFixture(.8);
+        $dispatch = app(ContributionDispatcher::class);
+        $first = $dispatch->dispatch($this->actor, $this->mediate, ['action' => 'proposition.reconcile',
+            'other_proposition_id' => $this->gateB->id, 'statement' => 'Both Regions observed the same signal.']);
+
+        $this->actor = (new Participant)->forceFill(['substrate_id' => $this->actor->substrate_id, 'callsign' => 'receiving-reader']);
+        $this->actor->save();
+        $c = $this->expression($this->b, $this->readB, PhaseKind::Disperse);
+        $d = $this->expression($this->b, $this->readB, PhaseKind::Disperse);
+        $bound = $this->mediateAt($this->b, $this->readB, $this->gateB);
+        $this->assertTrue(app(ReconciliationOptionService::class)->forPhase($bound)->isEmpty());
+        $this->assertFalse(app(PropositionOptionService::class)->traversalOptionsFor($bound)->contains('id', $first->id));
+
+        $local = $this->mediateAt($this->b, $this->readB, $c);
+        $child = $dispatch->dispatch($this->actor, $local, ['action' => 'proposition.reconcile',
+            'other_proposition_id' => $d->id, 'statement' => 'The two local readings agree on duration.']);
+        $bias = app(PhaseProgressionService::class)->advance($local, $child);
+        $incoming = app(MediatedIncomingBiasService::class);
+        $this->assertFalse($incoming->populationFor($bias)->contains('id', $first->id));
+        $batch = $incoming->populationsFor(collect([$bias]), new ParticipationContext($bias));
+        $this->assertFalse($batch['mediated-bias-structure:'.$bias->id]->contains('id', $first->id));
     }
 
     #[Group('query')]

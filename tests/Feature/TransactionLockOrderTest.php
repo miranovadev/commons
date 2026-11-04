@@ -258,14 +258,18 @@ class TransactionLockOrderTest extends TestCase
         $this->assertSame(1, Proposition::where('tier', 'expressive')->count());
     }
 
-    public static function competingReconciliationDirections(): array
+    public static function competingReconciliations(): array
     {
-        return ['same direction' => [false], 'opposing directions' => [true]];
+        return [
+            'same pair' => ['A', 'B'], 'opposing pair' => ['B', 'A'],
+            'shared acting Gate' => ['A', 'C'], 'counterpart becomes Gate' => ['B', 'C'],
+            'shared counterpart' => ['C', 'B'],
+        ];
     }
 
-    #[DataProvider('competingReconciliationDirections')]
+    #[DataProvider('competingReconciliations')]
     #[Group('load')]
-    public function test_waiting_reconciliation_rechecks_the_established_pair_across_participants(bool $opposing): void
+    public function test_waiting_reconciliation_rechecks_both_operands_across_participants(string $secondGate, string $secondOther): void
     {
         [$substrate, $first, $phase] = $this->fixture();
         $seed = $phase->gate;
@@ -287,6 +291,7 @@ class TransactionLockOrderTest extends TestCase
         $read = $node('concord', $seed, PhaseKind::Constrain);
         $a = $node('signal', $read, PhaseKind::Disperse);
         $b = $node('signal', $read, PhaseKind::Disperse);
+        $operands = ['A' => $a, 'B' => $b, 'C' => $node('signal', $read, PhaseKind::Disperse)];
         $second = new Participant;
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'second'])->save();
         $phases = [];
@@ -297,10 +302,10 @@ class TransactionLockOrderTest extends TestCase
             $disperse = new Phase;
             $disperse->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Disperse, 'write_register' => 'signal',
                 'gate_proposition_id' => $read->id, 'started_at' => now()])->save();
-            $phases[] = app(PhaseProgressionService::class)->advance($disperse, $opposing && $participant->is($second) ? $b : $a);
+            $phases[] = app(PhaseProgressionService::class)->advance($disperse, $participant->is($second) ? $operands[$secondGate] : $a);
         }
         $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $b->id, 'statement' => 'The observations share a common cause.'];
-        $other = $opposing ? $a : $b;
+        $other = $operands[$secondOther];
         $options = app(ReconciliationOptionService::class);
         $this->assertContains($b->id, $options->forPhase($phases[0])->pluck('id'));
         $this->assertContains($other->id, $options->forPhase($phases[1])->pluck('id'));

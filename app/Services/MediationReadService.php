@@ -56,7 +56,7 @@ final readonly class MediationReadService
             ->concat($this->homology->poolFor($phase, $context)['reads'])->unique('id')->values();
     }
 
-    /** Immediate Gate children remain reusable by competing reconciliations. */
+    /** Structural Gate children are enumerated before Reconciliation admission. */
     public function gatesFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         if ($phase->kind !== PhaseKind::Mediate) {

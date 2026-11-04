@@ -16,7 +16,7 @@ class IncomingReconciliationCommitTest extends ScriptedParticipationTestCase
 {
     use PersistCommitHttpFixture;
 
-    public function test_commit_preserves_the_interpretation_of_an_incoming_reconciliation(): void
+    public function test_bound_operand_reader_can_judge_the_existing_local_child_and_commit_its_interpretation(): void
     {
         [$author] = $this->beginPersistJourney('explorer');
         foreach ($this->persistJourneySteps as $index => $step) {
@@ -37,13 +37,16 @@ class IncomingReconciliationCommitTest extends ScriptedParticipationTestCase
                 $this->contribute($participant, ['action' => 'attestation.create', 'proposition_id' => $ids[$ref], 'direction' => 'support']);
             }
         }
-        $state = $this->contribute($reader, ['action' => 'proposition.reconcile', 'other_proposition_id' => $ids['thirdSignal'],
-            'statement' => 'The third reading repeats the onset in the first signal.']);
-        $bias = Phase::findOrFail($state['plan']['phase']['id']);
+        $state = $this->readParticipation($reader);
+        $this->assertActionUnavailable($state, 'proposition.reconcile');
+        $this->postContribution($reader, $state['plan']['phase']['id'], ['action' => 'proposition.reconcile',
+            'other_proposition_id' => $ids['thirdSignal'], 'statement' => 'The third reading repeats the onset.'])->assertUnprocessable();
         $source = Proposition::findOrFail($ids['leftSynthesis']);
-        $this->assertNotSame($source->id, $bias->gate_proposition_id);
-        $this->assertSame($ids['leftSignal'], $bias->gate->phase->gate_proposition_id);
-        $this->assertContains($source->id, app(MediatedIncomingBiasService::class)->forPhase($bias)->pluck('id'));
+        $state = $this->contribute($reader, ['action' => 'attestation.create', 'proposition_id' => $source->id,
+            'direction' => 'support'], $state);
+        $bias = Phase::findOrFail($state['plan']['phase']['id']);
+        $this->assertSame($source->id, $bias->gate_proposition_id);
+        $this->assertNotContains($source->id, app(MediatedIncomingBiasService::class)->forPhase($bias)->pluck('id'));
 
         $statement = 'The local evidence narrows the observed relationship to the onset.';
         $state = $this->contribute($reader, ['action' => 'proposition.reclassify', 'proposition_id' => $source->id,

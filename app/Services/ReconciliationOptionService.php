@@ -47,19 +47,19 @@ final readonly class ReconciliationOptionService
             fn () => app(ExhaustedContinuationService::class)->idsForHorizons($horizons));
         $gates = $gates->reject(fn ($node) => $foreignExhausted->has($node->id));
 
-        $used = $this->establishedCounterparts($context)->get($phase->gate_proposition_id, collect());
+        $bound = $this->boundOperands($context);
 
-        return $gates->contains('id', $phase->gate_proposition_id)
-            ? $gates->reject(fn ($node) => $node->id === $phase->gate_proposition_id || $used->has($node->id))->values()
+        return ! $bound->has($phase->gate_proposition_id) && $gates->contains('id', $phase->gate_proposition_id)
+            ? $gates->reject(fn ($node) => $node->id === $phase->gate_proposition_id || $bound->has($node->id))->values()
             : collect();
     }
 
-    /** Experimental pair identity. Both directions refer to the same recorded birth. */
-    private function establishedCounterparts(ParticipationContext $context): Collection
+    /** Both sources of an established binary birth are bound for Reconciliation alone. */
+    private function boundOperands(ParticipationContext $context): Collection
     {
         // Read persisted edges even if the child (or its Region) is no longer active.
         // Dispatch obtains a fresh context after locking the substrate for the entire birth.
-        return $context->remember('established-reconciliation-pairs', fn () => DB::table('supersessions as operand')
+        return $context->remember('bound-reconciliation-operands', fn () => DB::table('supersessions as operand')
             ->join('supersessions as partner', fn ($join) => $join
                 ->on('partner.target_proposition_id', '=', 'operand.target_proposition_id')
                 ->on('partner.phase_id', '=', 'operand.phase_id')
@@ -69,7 +69,6 @@ final readonly class ReconciliationOptionService
             ->where('birth.ledgerable_type', (new Proposition)->getMorphClass())
             ->where('operand.type', 'reconcile')->where('partner.type', 'reconcile')
             ->whereIn('operand.source_proposition_id', $context->propositions->keys())
-            ->distinct()->get(['operand.source_proposition_id as operand_id', 'partner.source_proposition_id as partner_id'])
-            ->groupBy('operand_id')->map(fn ($pairs) => $pairs->keyBy('partner_id')));
+            ->distinct()->pluck('operand.source_proposition_id')->flip());
     }
 }

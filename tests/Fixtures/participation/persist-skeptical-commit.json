@@ -1,5 +1,5 @@
 {
-  "description": "The first synthesis can be judged from either local operand. Exploring the left branch then admits a third Persist and a distinct Disperse pairing. Bias classifies the original synthesis before Order commits its expression.",
+  "description": "A bound signal retains its original synthesis. A later independent pair reaches Bias, and the original synthesis is reclassified and committed.",
   "steps": [
     {
       "cycle": 2,
@@ -766,35 +766,6 @@
       "phase": 5,
       "gate": "thirdSignal",
       "input": {
-        "action": "proposition.reconcile",
-        "statement": "The third signal follows the same sequence as the first.",
-        "other_proposition_id": {
-          "ref": "leftSignal"
-        }
-      },
-      "result": "thirdSynthesis"
-    },
-    {
-      "cycle": 11,
-      "phase": 6,
-      "gate": "thirdSynthesis",
-      "input": {
-        "action": "proposition.reclassify",
-        "statement": "The retained observation narrows the relationship to the onset of the change.",
-        "proposition_id": {
-          "ref": "leftSynthesis"
-        },
-        "receipt_id": {
-          "ref": "rightDiscovery"
-        }
-      },
-      "result": "classification"
-    },
-    {
-      "cycle": 11,
-      "phase": 7,
-      "gate": "classification",
-      "input": {
         "action": "participant.rest"
       },
       "result": "origin"
@@ -840,6 +811,107 @@
       "phase": 4,
       "gate": "leftCanon",
       "input": {
+        "action": "instrument.execute",
+        "proposition_id": {
+          "ref": "leftCanon"
+        },
+        "instrument": {
+          "kind": "hyperlink",
+          "reference": "https://evidence.example.test/observation/53"
+        }
+      },
+      "result": "leftCanon",
+      "receipt": "fourthReading"
+    },
+    {
+      "cycle": 12,
+      "phase": 4,
+      "gate": "leftCanon",
+      "input": {
+        "action": "proposition.variant",
+        "statement": "A fourth signal separates the onset from the sustained response."
+      },
+      "result": "fourthSignal"
+    },
+    {
+      "cycle": 12,
+      "phase": 5,
+      "gate": "fourthSignal",
+      "input": {
+        "action": "proposition.reconcile",
+        "other_proposition_id": {
+          "ref": "thirdSignal"
+        },
+        "statement": "The third and fourth signals share the same onset."
+      },
+      "result": "fourthSynthesis"
+    },
+    {
+      "cycle": 12,
+      "phase": 6,
+      "gate": "fourthSynthesis",
+      "input": {
+        "action": "proposition.reclassify",
+        "proposition_id": {
+          "ref": "leftSynthesis"
+        },
+        "receipt_id": {
+          "ref": "rightDiscovery"
+        },
+        "statement": "The retained observation narrows the relationship to the onset of the change."
+      },
+      "result": "classification"
+    },
+    {
+      "cycle": 12,
+      "phase": 7,
+      "gate": "classification",
+      "input": {
+        "action": "participant.rest"
+      },
+      "result": "origin"
+    },
+    {
+      "cycle": 13,
+      "phase": 1,
+      "gate": "origin",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftDistinction"
+        }
+      },
+      "result": "leftDistinction"
+    },
+    {
+      "cycle": 13,
+      "phase": 2,
+      "gate": "leftDistinction",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftPersist"
+        }
+      },
+      "result": "leftPersist"
+    },
+    {
+      "cycle": 13,
+      "phase": 3,
+      "gate": "leftPersist",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftCanon"
+        }
+      },
+      "result": "leftCanon"
+    },
+    {
+      "cycle": 13,
+      "phase": 4,
+      "gate": "leftCanon",
+      "input": {
         "action": "proposition.traverse",
         "proposition_id": {
           "ref": "leftSignal"
@@ -848,20 +920,19 @@
       "result": "leftSignal"
     },
     {
-      "cycle": 12,
+      "cycle": 13,
       "phase": 5,
       "gate": "leftSignal",
       "input": {
-        "action": "attestation.create",
+        "action": "proposition.traverse",
         "proposition_id": {
           "ref": "leftSynthesis"
-        },
-        "direction": "refute"
+        }
       },
       "result": "leftSynthesis"
     },
     {
-      "cycle": 12,
+      "cycle": 13,
       "phase": 6,
       "gate": "leftSynthesis",
       "input": {
@@ -874,7 +945,7 @@
       "result": "classification"
     },
     {
-      "cycle": 12,
+      "cycle": 13,
       "phase": 7,
       "gate": "classification",
       "input": {

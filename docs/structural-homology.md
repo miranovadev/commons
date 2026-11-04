@@ -44,7 +44,7 @@ Malformed labels cannot override authoritative Domain identity.
 Candidate discovery filters substrate, Domain and canonical Phase/register before
 batching entry Committals. It does not independently query each candidate's ancestry.
 The structural service deliberately leaves active/exhausted state, retained
-Correspondence, unordered-pair uniqueness and other action policies to its consumer.
+Correspondence, operand exclusivity and other action policies to its consumer.
 
 ## Bias integration (epic Stage 4)
 
@@ -87,7 +87,7 @@ definition without a dependency cycle between local and foreign discovery.
 
 Immediate active canonical Disperse children in each eligible Read's own Region
 and Horizon become operands. ReconciliationOptionService still applies availability
-and unordered-pair uniqueness. Foreign exhausted continuations are checked with
+and operand exclusivity. Foreign exhausted continuations are checked with
 one batched read of complete authoritative Horizon data. Backward completion
 and personal exploration remain independent of comparison populations; a foreign causal
 edge cannot transport another Horizon's exhaustion or failure. The partial
@@ -127,8 +127,8 @@ HomologousMediationTest covers:
   keeping that Gate eligible independently of another Participant’s exploration, and later structure
   restoring eligibility. The existing exhaustion lifecycle tests remain the proof
   of how regional exhaustion records are produced.
-- Independent A→B and B→A execution, distinct A→C eligibility, and used-pair
-  rejection across participants even when homologous discovery still returns B.
+- Either orientation can establish the first birth. It binds both operands across
+  participants and Horizons even when homologous discovery still returns them.
 - The real substrate graph API in active and history views: B→result survives,
   while each node retains its own Region and Horizon. Potential records the edge
   in foreign_inputs and excludes B from A's local terrain.

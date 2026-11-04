@@ -24,6 +24,7 @@ use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
+use App\Services\ReconciliationOptionService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +32,7 @@ use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\HistoricalReconciliation;
 use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\Fixtures\PropositionBirth;
 use Tests\TestCase;
@@ -329,13 +331,15 @@ class ReconciliationTest extends TestCase
         return [$read, $gate];
     }
 
-    public function test_pair_identity_blocks_reciprocals_across_participants_and_preserves_distinct_partners(): void
+    public function test_a_recorded_birth_binds_both_operands_across_participants_and_leaves_disjoint_pairs_free(): void
     {
         // Isolate structural rules from a new Charge-boundary event.
         $this->resolveExpressiveFieldFixture(.8);
         $this->fixture();
         $b = $this->sibling('B');
         $c = $this->sibling('C');
+        $d = $this->sibling('D');
+        $e = $this->sibling('E');
         $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $b->id, 'statement' => 'The observations share a common cause.'];
         $this->publishPotentialFixture($this->viewer);
         app(ParticipationService::class)->contribute($this->viewer, $this->phase->id, $input);
@@ -349,20 +353,22 @@ class ReconciliationTest extends TestCase
         $phase = app(PhaseProgressionService::class)->advance($disperse, $this->gate);
         $plan = app(InputPlanService::class)->forParticipant($competitor);
         $this->assertInput($plan['schema'], $input, false);
-        $this->assertSame([$c->id], array_column($plan['gate_options'], 'id'));
+        $this->assertSame([], $plan['gate_options']);
         $this->assertContains($x->id, array_column($plan['write_options'], 'id'));
         $this->assertInput($plan['schema'], ['action' => 'attestation.create', 'proposition_id' => $x->id, 'direction' => 'support'], true);
-        $count = Proposition::count();
-        try {
-            app(ContributionDispatcher::class)->dispatch($competitor, $phase, $input);
-            $this->fail('The established pair cannot be regenerated.');
-        } catch (DomainException) {
-            $this->assertSame($count, Proposition::count());
+        foreach ([$b, $c] as $counterpart) {
+            $this->assertRejectedWithoutWrites($phase, [...$input, 'other_proposition_id' => $counterpart->id]);
         }
-        // A + C is distinct even though A has already reconciled B.
-        $z = app(ContributionDispatcher::class)->dispatch($competitor, $phase,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $c->id, 'statement' => 'The observations share a common cause.']);
-        $this->assertNotSame($x->id, $z->id);
+
+        $unbound = $this->participant('disjoint');
+        $arrival = $this->newPhase($unbound, PhaseKind::Disperse, 'activity');
+        $arrival->forceFill(['gate_proposition_id' => $this->parent->id])->save();
+        $free = app(PhaseProgressionService::class)->advance($arrival, $c);
+        $this->assertEqualsCanonicalizing([$d->id, $e->id], app(ReconciliationOptionService::class)->forPhase($free)->pluck('id')->all());
+        foreach ([$this->gate, $b] as $used) {
+            $this->assertRejectedWithoutWrites($free, [...$input, 'other_proposition_id' => $used->id]);
+        }
+        $z = app(ContributionDispatcher::class)->dispatch($unbound, $free, [...$input, 'other_proposition_id' => $d->id]);
 
         $this->phase->forceFill(['completed_at' => now()])->save();
         $this->phase->cycle->forceFill(['completed_at' => now()])->save();
@@ -373,17 +379,16 @@ class ReconciliationTest extends TestCase
         $this->assertInput($this->plan()['schema'], $reverse, false);
         $this->assertRejectedWithoutWrites($inverse, $reverse);
         // Import an existing reciprocal as historical data, bypassing new-birth admission.
-        $legacy = (new Proposition)->forceFill(['phase_id' => $inverse->id, 'register' => $inverse->write_register,
-            'tier' => 'expressive', 'statement' => $b->statement]);
-        $legacy->save();
-        app(LedgerService::class)->record($legacy, $b);
-        foreach ([$b, $this->gate] as $source) {
-            $edge = (new Supersession)->forceFill(['phase_id' => $inverse->id, 'source_proposition_id' => $source->id,
-                'target_proposition_id' => $legacy->id, 'type' => 'reconcile']);
-            $edge->save();
-            app(LedgerService::class)->record($edge);
-        }
-        PropositionBirth::complete($legacy);
+        $legacy = HistoricalReconciliation::record($inverse, $b, $this->gate, $b->statement);
+        $shared = HistoricalReconciliation::record($inverse, $b, $e, 'B also describes the onset seen in E.');
+        $extra = $this->sibling('Unbound F');
+        $late = $this->participant('after-import');
+        $arrival = $this->newPhase($late, PhaseKind::Disperse, 'activity');
+        $arrival->forceFill(['gate_proposition_id' => $this->parent->id])->save();
+        $fromE = app(PhaseProgressionService::class)->advance($arrival, $e);
+        $this->assertRejectedWithoutWrites($fromE, [...$input, 'other_proposition_id' => $extra->id]);
+        $this->assertEqualsCanonicalizing([$x->id, $legacy->id, $shared->id],
+            $b->children()->wherePivot('type', 'reconcile')->pluck('propositions.id')->all());
         $this->assertRejectedWithoutWrites($inverse, $reverse);
         $this->assertRejectedWithoutWrites($phase, $input);
         $this->assertSame($b->statement, $legacy->fresh()->statement);
@@ -416,15 +421,17 @@ class ReconciliationTest extends TestCase
 
     private function assertRejectedWithoutWrites(Phase $phase, array $input): void
     {
-        $counts = fn () => array_map(fn ($table) => DB::table($table)->count(),
-            ['propositions', 'supersessions', 'substrate_ledger_entries', 'proposition_measurements', 'receipt_consumptions',
-                'phase_profile_observations', 'prospective_closure_states', 'chirality_population_observations']);
-        $before = $counts();
+        $tables = ['propositions', 'supersessions', 'substrate_ledger_entries', 'proposition_measurements', 'receipt_consumptions',
+            'phase_profile_observations', 'prospective_closure_states', 'chirality_population_observations'];
+        $snapshot = fn () => collect($tables)->mapWithKeys(fn ($table) => [
+            $table => DB::table($table)->get()->map(fn ($row) => json_encode($row, JSON_THROW_ON_ERROR))->sort()->values()->all(),
+        ])->all();
+        $before = $snapshot();
         try {
             app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase, $input);
             $this->fail('Unexpected Reconciliation birth.');
         } catch (DomainException) {
-            $this->assertSame($before, $counts());
+            $this->assertSame($before, $snapshot());
         }
     }
 
