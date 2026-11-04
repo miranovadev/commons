@@ -338,6 +338,7 @@ class PreparationJourneyTest extends TestCase
             } else {
                 $execution = EvidenceExecution::where('type', 'prepare')->sole();
                 if ($execution->status !== 'completed') {
+                    $this->assertNull($execution->presented_at, 'Presentation is acknowledged only after inference succeeds.');
                     $this->assertNull($f->phase->fresh()->completed_at);
                     $this->assertStringContainsString('preserved artifact body', $payload['input'][1]['content']);
                     $this->assertStringContainsString($fixture->input()['purpose'], $payload['input'][1]['content']);

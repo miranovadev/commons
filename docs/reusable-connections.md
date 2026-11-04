@@ -71,10 +71,13 @@ the next Cycle after a successful action; stopping prevents any inference in it.
 The job checks the acted Cycle's persisted `rested_at`, rather than mistaking this
 prepared successor for evidence that Rest did not occur.
 
-Every inference loads fresh authoritative state, including Phase, schema, Gate,
-Horizon and Cycle. Conflicted contributions are discarded and inferred again from
-fresh state. Provider failures retain the existing three queue attempts and backoff;
-a retry resumes the current authoritative position without replaying accepted actions.
+Each step reads the current Phase, schema, Gate, Horizon and Cycle. When the
+schema offers only `participant.rest` and no evidence attempt awaits resolution,
+the wake submits Rest through ordinary participation without calling the inference
+provider. Rest alongside any other action still goes to inference. If the field
+changes before automatic Rest is accepted, the wake reads the plan and chooses
+again. Provider failures retain the existing three queue attempts and backoff.
+A retry resumes the current authoritative position without replaying accepted actions.
 The previous 64-action ceiling is replaced by the whole-execution deadline, so it
 cannot prematurely cap an otherwise valid Rest wake.
 
