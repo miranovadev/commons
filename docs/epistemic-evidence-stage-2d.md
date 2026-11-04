@@ -38,6 +38,8 @@ versioned representation. Acquisition by Hyperlink does not select the reader.
 | Markdown | raw, text | commons-native-text / 1 | inline-text, human-text |
 | JSON, XML | raw, text | commons-native-text / 1 | inline-text, human-text |
 
+This section describes the Stage 2D reader. Current Read Types, HTML text and range limits are documented in [Artifact readers and allocation](artifact-readers-stage-3c.md).
+
 Raw preserves every original UTF-8 byte, including line endings. It requests the
 whole source and fails if over budget. Sanitised HTML removes scripts, styles,
 head and embedded content, decodes entities and preserves readable text. It never

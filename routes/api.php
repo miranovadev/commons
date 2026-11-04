@@ -57,7 +57,7 @@ Route::middleware('web')->group(function (): void {
                     Route::apiResource(
                         'substrates.participants',
                         ParticipantController::class,
-                    )->only(['index', 'store', 'show']);
+                    )->only(['index', 'store', 'show', 'update']);
 
                     Route::get(
                         'substrates/{substrate}/participants/{participant}/plan',

@@ -7,7 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
 import { ConnectionsPanel } from '../components/ConnectionsPanel';
 import { PreparationHistory } from '../components/PreparationHistory';
-import { useDeleteParticipantConnectionMutation, useGetConnectionsQuery, useGetParticipantConnectionsQuery, useGetParticipantsQuery, useGetSubstrateQuery, useJoinParticipantMutation, useUpdateParticipantConnectionMutation } from '../services/commonsApi';
+import { useDeleteParticipantConnectionMutation, useGetConnectionsQuery, useGetParticipantConnectionsQuery, useGetParticipantsQuery, useGetSubstrateQuery, useJoinParticipantMutation, useUpdatePreparationBudgetMutation, useUpdateParticipantConnectionMutation } from '../services/commonsApi';
 import type { Connection, ConnectionTrigger, JoinParticipantInput, Participant, User } from '../types';
 
 interface ParticipantsPageProps { user?: User | null }
@@ -27,6 +27,7 @@ interface CreateParticipantValues {
   designation: string;
   max_read_count: number;
   max_token_count: number | string;
+  max_preparation_chars: number | string;
   connection_id: string | null;
 }
 interface CreateParticipantModalProps {
@@ -145,6 +146,7 @@ function ParticipantCard({ participant, slug, onEnter, onConnections }: Particip
         )}
       </Box>
 
+      <PreparationBudgetField key={participant.max_preparation_chars ?? "default"} slug={slug} participant={participant} />
       <ParticipantConnectionSummary slug={slug} participant={participant} onManage={onConnections} />
       <Box mt="sm"><PreparationHistory slug={slug} participantId={participant.id} /></Box>
 
@@ -153,6 +155,17 @@ function ParticipantCard({ participant, slug, onEnter, onConnections }: Particip
       </Button>
     </Card>
   );
+}
+
+function PreparationBudgetField({ slug, participant }: { slug: string; participant: Participant }) {
+  const [value, setValue] = useState<number | string>(participant.max_preparation_chars ?? '');
+  const [save, { isLoading, error }] = useUpdatePreparationBudgetMutation();
+  return <Stack gap="xs" mt="md">
+    <NumberInput label="Maximum Preparation Characters" min={1} allowDecimal={false} placeholder="System default" value={value} onChange={setValue} />
+    {error && <Text size="sm" c="red">{messageFrom(error, 'Could not save the Preparation allowance.')}</Text>}
+    <Button size="compact-sm" variant="light" loading={isLoading} disabled={value === (participant.max_preparation_chars ?? '') || (typeof value !== 'number' && value !== '')}
+      onClick={() => save({ slug, participantId: participant.id, max_preparation_chars: typeof value === 'number' ? value : null })}>Save allowance</Button>
+  </Stack>;
 }
 
 function ParticipantConnectionSummary({ slug, participant, onManage }: ParticipantConnectionSummaryProps) {
@@ -227,6 +240,7 @@ function CreateParticipantModal({ opened, onClose, slug, user, connections, onCr
       designation: '',
       max_read_count: 25,
       max_token_count: '',
+      max_preparation_chars: '',
       connection_id: null,
     },
     validate: { callsign: (value) => value.trim() ? null : 'A callsign is required.' },
@@ -248,6 +262,7 @@ function CreateParticipantModal({ opened, onClose, slug, user, connections, onCr
         callsign: values.callsign.trim(),
         designation: values.designation.trim() || null,
         max_read_count: values.max_read_count,
+        max_preparation_chars: typeof values.max_preparation_chars === 'number' ? values.max_preparation_chars : null,
         max_token_count: typeof values.max_token_count === 'number' ? values.max_token_count : null,
       };
       if (values.connection_id) payload.connection = { id: values.connection_id };
@@ -267,6 +282,7 @@ function CreateParticipantModal({ opened, onClose, slug, user, connections, onCr
         <TextInput label="Designation" description="Optional role or area of experience" {...form.getInputProps('designation')} />
         <Select label="Connection" placeholder="No connection" clearable data={connectionOptions} {...form.getInputProps('connection_id')} />
         <NumberInput label="Maximum propositions in Perspective" min={1} {...form.getInputProps('max_read_count')} />
+        <NumberInput label="Maximum Preparation Characters" min={1} allowDecimal={false} placeholder="System default" {...form.getInputProps('max_preparation_chars')} />
         <NumberInput label="Maximum token count" min={1} placeholder="No token limit" {...form.getInputProps('max_token_count')} />
         <Group justify="flex-end" mt="sm">
           <Button variant="default" onClick={onClose}>Cancel</Button>

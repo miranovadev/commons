@@ -116,6 +116,22 @@ class SubstrateApiTest extends TestCase
         $this->assertNotNull($membership->fresh()->participant_id);
     }
 
+    public function test_preparation_character_allowance_can_be_configured_and_reset_by_the_participant_owner(): void
+    {
+        $this->bootstrapSystem();
+        $public = $this->substrate('reading-space', 'public');
+        $owner = User::factory()->create();
+        $url = "/api/substrates/{$public->slug}/participants";
+        $this->actingAs($owner);
+        $this->postJson($url, ['callsign' => 'too-large', 'max_preparation_chars' => 49153])->assertUnprocessable();
+        $id = $this->postJson($url, ['callsign' => 'reader', 'max_preparation_chars' => 20000])
+            ->assertCreated()->assertJsonPath('data.max_preparation_chars', 20000)->json('data.id');
+        $this->patchJson("$url/$id", ['max_preparation_chars' => 0])->assertUnprocessable();
+        $this->patchJson("$url/$id", ['max_preparation_chars' => 800])->assertOk()->assertJsonPath('data.max_preparation_chars', 800);
+        $this->actingAs(User::factory()->create())->patchJson("$url/$id", ['max_preparation_chars' => null])->assertForbidden();
+        $this->actingAs($owner)->patchJson("$url/$id", ['max_preparation_chars' => null])->assertOk()->assertJsonPath('data.max_preparation_chars', null);
+    }
+
     public function test_maximum_participants_is_enforced(): void
     {
         $this->bootstrapSystem();

@@ -26,6 +26,7 @@ class ParticipantResource extends JsonResource
             'designation' => $this->designation,
             'max_read_count' => $this->max_read_count,
             'max_token_count' => $this->max_token_count,
+            'max_preparation_chars' => $this->max_preparation_chars,
             'owned_by_user' => $request->user()?->getKey()
                 === $this->user_id,
             'position' => $cycle === null ? null : [

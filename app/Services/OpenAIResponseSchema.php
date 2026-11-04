@@ -64,7 +64,8 @@ final class OpenAIResponseSchema
                         $this->resolve($action['properties'][$field], $definitions),
                         $choice['properties'][$field] ?? [],
                     );
-                    $property = $this->transport($property);
+                    $property = $this->transport($property, $field === 'artifacts'
+                        && ($action['properties']['action']['const'] ?? null) === 'preparation.start');
                     $properties[$field] = in_array($field, $action['required'] ?? [], true)
                         ? $property : $this->nullable($property);
                 }
@@ -143,7 +144,7 @@ final class OpenAIResponseSchema
      * @param  array<string, mixed>  $schema
      * @return array<string, mixed>
      */
-    private function transport(array $schema): array
+    private function transport(array $schema, bool $nullableOptional = false): array
     {
         foreach ([
             '$schema', '$id', 'minLength', 'maxLength', 'pattern', 'format',
@@ -161,7 +162,9 @@ final class OpenAIResponseSchema
 
         if (($schema['type'] ?? null) === 'object') {
             foreach ($schema['properties'] ?? [] as $name => $property) {
-                $schema['properties'][$name] = $this->transport($property);
+                $property = $this->transport($property, $nullableOptional);
+                $schema['properties'][$name] = $nullableOptional && ! in_array($name, $schema['required'] ?? [], true)
+                    ? $this->nullable($property) : $property;
             }
 
             $schema['required'] = array_keys($schema['properties'] ?? []);
@@ -169,11 +172,11 @@ final class OpenAIResponseSchema
         }
 
         if (isset($schema['anyOf'])) {
-            $schema['anyOf'] = array_map($this->transport(...), $schema['anyOf']);
+            $schema['anyOf'] = array_map(fn ($option) => $this->transport($option, $nullableOptional), $schema['anyOf']);
         }
 
         if (isset($schema['items']) && is_array($schema['items'])) {
-            $schema['items'] = $this->transport($schema['items']);
+            $schema['items'] = $this->transport($schema['items'], $nullableOptional);
         }
 
         return $schema;
