@@ -1,6 +1,7 @@
 import { Alert, Anchor, Badge, Box, Divider, Group, Stack, Table, Text, Title } from '@mantine/core';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { describeRegexResults } from '../preparation';
 import type { PreparationHistoryRecord } from '../types';
 
 const unknown = 'Not recorded';
@@ -41,6 +42,8 @@ export function PreparationDetails({ preparation: p, slug }: { preparation: Prep
           ['Filename', selection.source?.filename], ['Media type', selection.source?.media_type], ['Artifact bytes', selection.source?.size],
           ['Read Type', selection.read_type],
           ...(selection.read_type === 'regex' ? [['Regex pattern', selection.parameters?.pattern] as [string, ReactNode]] : []),
+          ...(selection.parameters?.limit != null ? [['Maximum matches', selection.parameters.limit] as [string, ReactNode]] : []),
+          ...(selection.parameters?.context_chars != null ? [['Context characters per side', selection.parameters.context_chars] as [string, ReactNode]] : []),
           ['Requested offset', selection.parameters?.offset ?? 0],
           ['Requested maximum characters', selection.parameters?.max_chars ?? 'Automatic allocation'],
         ]} />
@@ -52,11 +55,11 @@ export function PreparationDetails({ preparation: p, slug }: { preparation: Prep
         <Text fw={600} size="sm">Delivery {index + 1}</Text><Facts rows={[
           ['Artifact hash', delivery.artifact_id], ['Source Receipts', delivery.receipt_ids.join(', ')],
           ['Read Type', delivery.read_type],
-          ...(delivery.read_type === 'regex' ? [['First match', delivery.boundaries?.match ? delivery.boundaries.match.start+'–'+delivery.boundaries.match.end : 'No match'] as [string, ReactNode]] : []),
+          ...(delivery.result_set ? [['Regex results', describeRegexResults(delivery.result_set)] as [string, ReactNode]] : delivery.read_type === 'regex' ? [['First match', delivery.boundaries?.match ? delivery.boundaries.match.start+'–'+delivery.boundaries.match.end : 'No match'] as [string, ReactNode]] : []),
           ['Source type', delivery.source_type],
           ['Reader method', delivery.method], ['Reader version', delivery.version],
           ['Representation', delivery.representation], ['Representation hash', delivery.representation_hash],
-          ['Delivery method', delivery.delivery_method], ['Effective offset', delivery.boundaries?.offset],
+          ['Delivery method', delivery.delivery_method], [delivery.result_set ? 'Result character offset' : 'Effective offset', delivery.boundaries?.offset],
           ['Actual end', delivery.boundaries?.end], ['Delivered characters', delivery.boundaries?.length],
           ['Delivered bytes', delivery.payload_bytes], ['Total representation characters', delivery.boundaries?.total],
           ['More material remained', delivery.boundaries?.has_more == null ? unknown : delivery.boundaries.has_more ? 'Yes' : 'No'],

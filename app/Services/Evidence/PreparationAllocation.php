@@ -24,7 +24,7 @@ final class PreparationAllocation
             $total = mb_strlen($representation['content'], 'UTF-8');
             $offset = $parameters['offset'] ?? 0;
             $matchBoundary = [];
-            if ($representation['read_type'] === 'regex') {
+            if ($representation['representation'] === 'regex') {
                 try {
                     $match = RegexSearch::first($representation['content'], $parameters['pattern']);
                 } catch (ArtifactReadingException $error) {

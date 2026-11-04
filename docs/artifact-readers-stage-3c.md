@@ -25,10 +25,10 @@ actually reference the selected hash. There is no substrate-wide hash lookup.
 
 | Source Type | Read Types | Reader and version |
 | --- | --- | --- |
-| HTML | raw, sanitised, text, tables, lists, regex | commons-native-text / 3 |
-| Plain text, PHP/common UTF-8 source, Markdown, JSON, XML | raw, text, regex | commons-native-text / 3 |
-| CSV | raw, text, tables, regex | commons-native-text / 3 |
-| PDF | text, regex | commons-poppler-text / 1/poppler-`runtime version` (regex adds `/regex-1`) |
+| HTML | raw, sanitised, text, tables, lists, regex | commons-native-text / 3 (regex / 4) |
+| Plain text, PHP/common UTF-8 source, Markdown, JSON, XML | raw, text, regex | commons-native-text / 3 (regex / 4) |
+| CSV | raw, text, tables, regex | commons-native-text / 3 (regex / 4) |
+| PDF | text, regex | commons-poppler-text / 1/poppler-`runtime version` (result-set regex adds `/regex-2`) |
 
 Both `inline-text` and `human-text` use identical allocation. A capability is only
 advertised when its reader is available. PDF requires the local executable and its
@@ -64,40 +64,71 @@ partial representation explicit; the allocator does not secretly move a requeste
 HTML parsing uses `LIBXML_NONET`, never fetches linked resources or executes script.
 XML DTD/entity declarations remain unsupported. Representation bodies stay transient.
 
-## Regex selection
+## Regex result sets
 
-Use a bare UTF-8 pattern of 1–512 **bytes**. For example,
-`{"read_type":"regex","parameters":{"pattern":"contract.{0,30}engineering","offset":-80,"max_chars":3000}}`
-starts up to 80 Unicode characters before the first match in the **text**
-representation. The default offset is zero. A signed offset is clamped to the
-start or end of the representation. Ordinary readers retain absolute offsets.
+`regex` searches the readable `text` representation and builds an ordered report.
+Source positions in the report are zero-based Unicode character positions, with
+an exclusive end. For HTML they refer to the extracted readable text. For PDF
+they refer to Poppler's text. Each occurrence has a one-based ordinal and three
+JSON-quoted strings in source order: `Before`, `Match` and `After`. Quoting keeps
+embedded newlines, quotes and backslashes inside the appropriate field.
 
-The reader supports literals, character classes, Unicode properties, anchors,
-alternation, grouping and quantifiers. It accepts leading inline `i`, `m` and
-`s` flags, alone or combined. Use escapes for literal controls. It does not
-accept PCRE control verbs, byte-level matching, match resets, backreferences,
-lookarounds or other special groups apart from `(?:…)`. Grouping does not capture.
+This selection reads up to 3,000 characters from the start of the result set.
+It includes two matches at most, each with up to 40 characters of context on
+either side.
 
-A fixed local PHP CLI worker receives the expression and source on standard
-input. It uses UTF-8 PCRE with JIT disabled, a 100,000 match limit, depth 128,
-a 2 MiB matching heap, a 96 MiB PHP memory limit and a two-second wall deadline.
-The worker returns only byte coordinates. The reader converts these to Unicode
-character positions. Regex is advertised when the CLI is available. PDF regex
-also requires the ordinary PDF extractor. Source and representation ceilings
-apply before search. Invalid patterns are rejected at admission. A pattern that
-exhausts its execution limits is recorded as an invalid-parameters reading failure.
+```json
+{"read_type":"regex","parameters":{"pattern":"(?i)consulting","limit":2,"context_chars":40,"offset":0,"max_chars":3000}}
+```
 
-`boundaries.match` holds the first match's inclusive `start` and exclusive `end`.
-A miss records `match: null`, an empty payload and an empty range at the end of
-the searched representation. It can be acknowledged normally. A zero-width
-match instead records an explicit span with equal coordinates. Each exact
-submitted pattern participates in the request ID. The representation hash covers
-the entire searchable text and the payload hash covers only delivered bytes.
+| Parameter | Meaning |
+| --- | --- |
+| `pattern` | Required bare UTF-8 regex, 1–512 bytes. Optional leading `i`, `m` and `s` flags may be combined. |
+| `limit` | Positive maximum number of occurrences to include. Omit to request them all. |
+| `context_chars` | Unicode characters on **each** side. Defaults to 80 and accepts 0–512. Overlapping context is displayed for each occurrence. |
+| `offset` | Absolute character position in the generated **report**, default 0. Negative offsets are rejected. |
+| `max_chars` | Optional allocation preference for that report window. Use the delivered `boundaries.end` as the next offset. |
 
-Native reader v2 HTML `text` returned markup. Use `raw` to read that source on
-new executions. Pre-refinement executions retain v2 for delivery and
-acknowledgement, including the historical global character allowance. Previously
-recorded presentations and Receipts retain their original versions and hashes.
+The native global matcher returns non-overlapping matches in source order. A
+zero-width match is an occurrence with equal source coordinates, including at
+EOF. A completed search with no matches produces a readable header with both
+counts set to zero. The report remains available through ordinary allocation.
+
+`result_set.total_matches` counts the source occurrences, including when the
+Participant limits the number of rows. `included_matches` counts complete
+records in the report before allocation. To bound enumeration, the worker probes
+one occurrence beyond 4,096. If it finds that occurrence, the total is unknown
+(`null`), the header reports that more than 4,096 exist, and at most 4,096
+records can be included. No estimate is reported as an exact total.
+
+Result construction has a 1 MiB ceiling, or the configured representation-byte
+ceiling if smaller. The header counts toward the ceiling. Only whole records are included. `byte_limited` and the header flag omitted records if another record
+would exceed the allowance. Ordinary delivery windows can begin or end inside
+any included record. Match-count and byte-limit information accompanies each
+window, including when the window omits the header.
+
+The fixed local PHP CLI worker receives untrusted pattern and source data on
+standard input. UTF-8 PCRE runs with JIT disabled, a 100,000 match limit,
+depth 128, a 2 MiB matching heap, a 96 MiB PHP memory limit and a two-second
+wall deadline. Enumeration accepts at most 16 MiB of searchable text, subject
+to the existing source and representation limits. The worker returns bounded
+byte spans and a count. Timeouts and engine-limit errors explicitly fail the
+reading without publishing an incomplete result as successful. Regex supports
+literals, classes, Unicode properties, anchors, alternation, grouping and
+quantifiers. The earlier restrictions on control verbs, byte matching, match
+resets, backreferences and special groups still apply.
+
+The request ID incorporates the exact pattern and authored options. The Artifact
+hash identifies the preserved source. The representation hash covers the entire
+formatted report, and the payload hash covers only the delivered window.
+Selections, source Receipt associations, summary, version and actual allocation
+boundaries are retained at acknowledgement. Source snippets remain transient.
+
+Pre-refinement v2 executions still deliver their historical HTML `text`, which
+contained markup. Existing v3 regex executions retain their first-match source
+windows, signed relative offsets, original version and `boundaries.match`.
+New native regex reports identify themselves as `regex-results` version 4.
+New PDF reports retain the Poppler identity with the `/regex-2` suffix.
 
 ## Allocation and budgets
 

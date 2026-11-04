@@ -79,7 +79,7 @@ final class PreparationService
             $capability = array_find($reader->capabilities($delivery['source_type'], $delivery['delivery_method'], $nativeVersion),
                 fn ($item) => $item['read_type'] === $delivery['read_type']);
             if ($delivery['method'] !== ($capability['method'] ?? null) || $delivery['version'] !== ($capability['version'] ?? null)
-                || $delivery['representation'] !== $delivery['read_type']) {
+                || $delivery['representation'] !== ($capability['representation'] ?? $delivery['read_type'])) {
                 throw new DomainException('Presentation requires an explicitly supported reader, version and representation.');
             }
         }
@@ -374,9 +374,13 @@ final class PreparationService
                 $capability = array_find($reader->capabilities($source, $method, $nativeVersion), fn ($item) => $item['read_type'] === $selection['read_type']);
                 $attempt += array_intersect_key($capability ?? [], array_flip(['method', 'version']));
                 $parameters = $selection['parameters'] ?? [];
-                ReadingParameters::validate($selection['read_type'], $parameters);
-                // Same bytes/read type/source version are parsed once, even with different ranges.
+                ReadingParameters::validate($selection['read_type'], $parameters, $nativeVersion === '3' && $selection['read_type'] === 'regex');
+                // Windows of the same result set share material. Distinct searches must never share results.
                 $key = $selection['artifact_id'].':'.$source.':'.$selection['read_type'];
+                if (($capability['representation'] ?? null) === ArtifactReaderRegistry::REGEX_RESULTS) {
+                    $key .= ':'.hash('sha256', json_encode([$parameters['pattern'], $parameters['limit'] ?? null,
+                        $parameters['context_chars'] ?? ReadingParameters::DEFAULT_CONTEXT], JSON_THROW_ON_ERROR));
+                }
                 $representation = $materials[$key] ??= $reader->represent($body, $artifact['media_type'] ?? '',
                     $selection['read_type'], $parameters, $method, $nativeVersion);
                 $deliveries[] = ['artifact_id' => $selection['artifact_id'], 'request_id' => $id,

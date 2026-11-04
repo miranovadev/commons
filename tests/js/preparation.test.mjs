@@ -84,6 +84,23 @@ test('human content is escaped, acknowledged after rendering, and discarded when
   element.remove();
 });
 
+test('a later regex window exposes the incomplete count even when its header is outside the delivery', async () => {
+  globalThis.preparationHarness = { read: 0, resets: 0, acknowledge() {},
+    delivery: { presentation_token: 'token', deliveries: [{ request_id: 'window', artifact_id: 'hash', source_type: 'html',
+      read_type: 'regex', version: '4', method: 'commons-native-text', parameters: { pattern: 'term' },
+      result_set: { total_matches: null, included_matches: 4096, byte_limited: false },
+      boundaries: { offset: 12000, end: 12004, total: 300000, requested_offset: 12000, length: 4, has_more: true },
+      content: 'term', payload_bytes: 4 }] } };
+  const element = document.createElement('div'); document.body.append(element);
+  const page = mount(element);
+  await act(async () => page.render());
+  assert.match(element.textContent, /unknown \(enumeration ceiling reached\)/);
+  assert.match(element.textContent, /Included: 4096/);
+  assert.match(element.textContent, /Result characters 12000–12004/);
+  assert.doesNotMatch(element.textContent, /No match/);
+  await act(async () => page.close()); element.remove();
+});
+
 test('selection editor bounds associations and defaults to automatic allocation and permits optional ranges', async () => {
   globalThis.preparationHarness = { options: [{ receipt_id: 'receipt', artifact_id: 'hash', source_type: 'plain-text', reference: 'Source', capabilities: [{ read_type: 'raw', parameters: {} }, { read_type: 'text', parameters: { max_chars: 4000 }, max_chars: 8000 }] }] };
   const element = document.createElement('div'); document.body.append(element);
@@ -118,14 +135,16 @@ test('optional ranges remain automatic until a maximum is entered, and clearing 
   assert.deepEqual(item.parameters, { offset: 12 });
 });
 
-test('regex keeps the exact pattern and signed offset, and switching readers clears both', () => {
+test('regex fields keep the authored search and result offset, and switching readers resets them', () => {
   globalThis.preparationHarness = { options: [{ receipt_id: 'receipt', artifact_id: 'hash', source_type: 'html', reference: 'Source',
     capabilities: ['text', 'regex'].map(read_type => ({ read_type })) }] };
   let item = { receipt_id: 'receipt', artifact_id: 'hash', read_type: 'text' };
   item = changeReading(item, 'Read Type', 'regex');
   item = changeReading(item, 'Regex pattern', { currentTarget: { value: '(?i)é.{0,4}💚' } });
-  item = changeReading(item, 'Offset from first match', -3);
-  assert.deepEqual(item.parameters, { offset: -3, pattern: '(?i)é.{0,4}💚' });
+  item = changeReading(item, 'Maximum matches', 2);
+  item = changeReading(item, 'Context characters per side', 0);
+  item = changeReading(item, 'Result character offset', 12000);
+  assert.deepEqual(item.parameters, { offset: 12000, pattern: '(?i)é.{0,4}💚', limit: 2, context_chars: 0 });
   item = changeReading(item, 'Read Type', 'text');
   assert.deepEqual(item.parameters, { offset: 0 });
 });

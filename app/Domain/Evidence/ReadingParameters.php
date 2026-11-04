@@ -9,13 +9,28 @@ final class ReadingParameters
 {
     public const MAX_PATTERN_BYTES = 512;
 
-    public static function validate(string $type, array $parameters): void
+    public const DEFAULT_CONTEXT = 80;
+
+    public const MAX_CONTEXT = 512;
+
+    public static function validate(string $type, array $parameters, bool $legacyRegex = false): void
     {
         $regex = $type === 'regex';
-        if (array_diff(array_keys($parameters), $regex ? ['pattern', 'offset', 'max_chars'] : ['offset', 'max_chars']) !== []
-            || (array_key_exists('offset', $parameters) && (! is_int($parameters['offset']) || (! $regex && $parameters['offset'] < 0)))
-            || (array_key_exists('max_chars', $parameters) && (! is_int($parameters['max_chars']) || $parameters['max_chars'] < 1))) {
-            throw new ArtifactReadingException('invalid_parameters', 'Use integer character offsets and positive character preferences. Only regex offsets may be negative.');
+        $allowed = ['offset', 'max_chars'];
+        if ($regex) {
+            $allowed[] = 'pattern';
+            if (! $legacyRegex) {
+                $allowed[] = 'limit';
+                $allowed[] = 'context_chars';
+            }
+        }
+        if (array_diff(array_keys($parameters), $allowed) !== []
+            || (array_key_exists('offset', $parameters) && (! is_int($parameters['offset']) || (! $legacyRegex && $parameters['offset'] < 0)))
+            || (array_key_exists('max_chars', $parameters) && (! is_int($parameters['max_chars']) || $parameters['max_chars'] < 1))
+            || (array_key_exists('limit', $parameters) && (! is_int($parameters['limit']) || $parameters['limit'] < 1))
+            || (array_key_exists('context_chars', $parameters) && (! is_int($parameters['context_chars'])
+                || $parameters['context_chars'] < 0 || $parameters['context_chars'] > self::MAX_CONTEXT))) {
+            throw new ArtifactReadingException('invalid_parameters', 'Invalid reading parameters. Use a nonnegative result offset, positive limit or maximum, and 0–512 context characters per side.');
         }
         if ($regex) {
             self::expression($parameters['pattern'] ?? null);

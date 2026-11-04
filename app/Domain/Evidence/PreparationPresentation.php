@@ -2,6 +2,8 @@
 
 namespace App\Domain\Evidence;
 
+use App\Services\Evidence\ArtifactReaderRegistry;
+use App\Services\Evidence\RegexSearch;
 use DomainException;
 
 /** Trusted acknowledgement of delivered representations. Never accepts Artifact bodies. */
@@ -17,6 +19,10 @@ final readonly class PreparationPresentation
         foreach ($deliveries as $delivery) {
             $fields = ['request_id', 'artifact_id', 'source_type', 'read_type', 'parameters', 'method', 'version',
                 'representation', 'delivery_method', 'payload_hash', 'payload_bytes', 'delivery_id', 'boundaries', 'representation_hash', 'receipt_ids'];
+            $resultSet = is_array($delivery) && ($delivery['representation'] ?? null) === ArtifactReaderRegistry::REGEX_RESULTS;
+            if ($resultSet) {
+                $fields[] = 'result_set';
+            }
             if (! is_array($delivery) || array_diff(array_keys($delivery), $fields) !== [] || count($delivery) !== count($fields)
                 || ! is_string($delivery['artifact_id'] ?? null) || ! preg_match('/^sha256:[a-f0-9]{64}$/D', $delivery['artifact_id'])
                 || ! is_string($delivery['payload_hash'] ?? null) || ! preg_match('/^sha256:[a-f0-9]{64}$/D', $delivery['payload_hash'])
@@ -41,10 +47,27 @@ final readonly class PreparationPresentation
             if (! is_array($parameters)) {
                 throw new DomainException('Delivery parameters must be a reading request.');
             }
-            ReadingParameters::validate($delivery['read_type'], $parameters);
+            $legacyRegex = $delivery['read_type'] === 'regex' && $delivery['representation'] === 'regex';
+            ReadingParameters::validate($delivery['read_type'], $parameters, $legacyRegex);
+            if ($resultSet) {
+                $summary = $delivery['result_set'];
+                if ($delivery['read_type'] !== 'regex' || ! is_array($summary) || count($summary) !== 3
+                    || ! array_key_exists('total_matches', $summary) || ! is_int($summary['included_matches'] ?? null)
+                    || ! is_bool($summary['byte_limited'] ?? null)) {
+                    throw new DomainException('Regex delivery requires its bounded enumeration summary.');
+                }
+                $total = $summary['total_matches'];
+                if ($total !== null && (! is_int($total) || $total < 0 || $total > RegexSearch::MAX_MATCHES)) {
+                    throw new DomainException('Regex total must be exact or explicitly unknown.');
+                }
+                $wanted = min($total ?? RegexSearch::MAX_MATCHES, $parameters['limit'] ?? RegexSearch::MAX_MATCHES);
+                if ($summary['included_matches'] < 0 || $summary['included_matches'] > $wanted
+                    || $summary['byte_limited'] !== ($summary['included_matches'] < $wanted)) {
+                    throw new DomainException('Regex delivery must account for every omitted result.');
+                }
+            }
             $fields = ['unit', 'requested_offset', 'requested_max_chars', 'offset', 'end', 'length', 'total', 'has_more'];
-            $regex = $delivery['read_type'] === 'regex';
-            if ($regex) {
+            if ($legacyRegex) {
                 $fields[] = 'match';
             }
             if (! is_array($bounds) || count($bounds) !== count($fields) || array_diff(array_keys($bounds), $fields) !== []
@@ -59,7 +82,7 @@ final readonly class PreparationPresentation
                 throw new DomainException('Delivery must preserve its exact requested selection and boundaries.');
             }
             $offset = $parameters['offset'] ?? 0;
-            if ($regex) {
+            if ($legacyRegex) {
                 $match = $bounds['match'];
                 if ($match !== null && (! is_array($match) || count($match) !== 2
                     || ! is_int($match['start'] ?? null) || ! is_int($match['end'] ?? null)

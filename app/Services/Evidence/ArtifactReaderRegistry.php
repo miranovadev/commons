@@ -13,7 +13,9 @@ final class ArtifactReaderRegistry
 {
     public const METHOD = 'commons-native-text';
 
-    public const VERSION = '3';
+    public const VERSION = '4';
+
+    public const REGEX_RESULTS = 'regex-results';
 
     public function __construct(private readonly PdfTextReader $pdf) {}
 
@@ -86,18 +88,23 @@ final class ArtifactReaderRegistry
             'plain-text', 'php', 'source-code', 'markdown', 'json', 'xml' => ['raw', 'text'],
             default => [],
         };
-        if (! in_array($delivery, self::DELIVERIES, true) || ! in_array($nativeVersion, ['2', self::VERSION], true)) {
+        if (! in_array($delivery, self::DELIVERIES, true) || ! in_array($nativeVersion, ['2', '3', self::VERSION], true)) {
             return [];
         }
 
-        if ($types !== [] && $nativeVersion === self::VERSION && RegexSearch::executable() !== false) {
+        if ($types !== [] && $nativeVersion !== '2' && RegexSearch::executable() !== false) {
             $types[] = 'regex';
         }
+
+        // Only regex changes its representation in a v4 execution.
+        $baseVersion = $sourceType === 'pdf' ? $this->pdf->version() : ($nativeVersion === '2' ? '2' : '3');
+        $regexVersion = $sourceType === 'pdf' ? $baseVersion.($nativeVersion === '3' ? '/regex-1' : '/regex-2') : $nativeVersion;
 
         return array_map(fn ($type) => [
             'source_type' => $sourceType, 'read_type' => $type,
             'method' => $sourceType === 'pdf' ? PdfTextReader::METHOD : self::METHOD,
-            'version' => $sourceType === 'pdf' ? $this->pdf->version().($type === 'regex' ? '/regex-1' : '') : $nativeVersion,
+            'version' => $type === 'regex' ? $regexVersion : $baseVersion,
+            ...($type === 'regex' && $nativeVersion === self::VERSION ? ['representation' => self::REGEX_RESULTS] : []),
             'delivery_methods' => self::DELIVERIES,
             'parameters' => ['offset' => 0],
             ...($type === 'regex' ? ['required_parameters' => ['pattern']] : []),
@@ -115,7 +122,7 @@ final class ArtifactReaderRegistry
         if ($capability === null) {
             throw new ArtifactReadingException('missing_capability', 'The requested Source Type, Read Type and delivery combination is unsupported.');
         }
-        ReadingParameters::validate($type, $parameters);
+        ReadingParameters::validate($type, $parameters, $type === 'regex' && $nativeVersion === '3');
         $material = match (true) {
             $source === 'pdf' => $this->pdf->extract($body),
             $source === 'html' && $nativeVersion !== '2' && in_array($type, ['text', 'regex'], true) => $this->readableHtml($body),
@@ -127,8 +134,9 @@ final class ArtifactReaderRegistry
         $this->bounded($material);
 
         return ['source_type' => $source, 'read_type' => $type, 'parameters' => $parameters,
-            'method' => $capability['method'], 'version' => $capability['version'], 'representation' => $type,
-            'delivery_method' => $delivery, 'content' => $material];
+            'method' => $capability['method'], 'version' => $capability['version'], 'representation' => $capability['representation'] ?? $type,
+            'delivery_method' => $delivery, ...(($capability['representation'] ?? null) === self::REGEX_RESULTS
+                ? RegexSearch::results($material, $parameters) : ['content' => $material])];
     }
 
     /** Single-reading convenience; multi-selection delivery allocates the shared budget once. */

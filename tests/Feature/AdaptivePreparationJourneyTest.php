@@ -10,6 +10,8 @@ use App\Services\InputPlanService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\PreparationService;
 use Illuminate\Support\Facades\Storage;
+use Opis\JsonSchema\Helper;
+use Opis\JsonSchema\Validator;
 use Tests\Fixtures\PreparationFixture;
 use Tests\Fixtures\TextPdf;
 use Tests\Support\RefreshEvidenceDatabase;
@@ -81,6 +83,67 @@ class AdaptivePreparationJourneyTest extends TestCase
         $this->assertSame('presented', $execution->fresh()->status);
     }
 
+    public function test_v3_execution_can_still_deliver_and_acknowledge_its_signed_first_match_request(): void
+    {
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        $service = app(PreparationService::class);
+        $input = $fixture->input();
+        $input['artifacts'][0]['read_type'] = 'regex';
+        $input['artifacts'][0]['parameters'] = ['pattern' => 'artifact', 'max_chars' => 5];
+        $execution = $service->start($f->viewer, $f->phase, $input);
+        // Reproduce the immutable request and reader snapshot of a pre-result-set execution.
+        $input['artifacts'][0]['parameters']['offset'] = -2;
+        EvidenceExecution::whereKey($execution->id)->update([
+            'input' => json_encode($input, JSON_THROW_ON_ERROR),
+            'metadata' => json_encode(['reading' => ['text_budget' => 12000, 'native_version' => '3']], JSON_THROW_ON_ERROR),
+        ]);
+        $execution->refresh();
+        $reading = $service->delivery($f->viewer, $execution, 'human-text');
+        $result = $reading['deliveries'][0];
+        $this->assertSame('3', $result['version']);
+        $this->assertSame('d art', $result['content']);
+        $this->assertSame(['start' => 10, 'end' => 18], $result['boundaries']['match']);
+        $this->assertSame(8, $result['boundaries']['offset']);
+        $service->acknowledge($f->viewer, $execution, $reading['presentation_token']);
+        $this->assertSame('presented', $execution->fresh()->status);
+    }
+
+    public function test_windows_share_only_the_result_set_of_the_same_search(): void
+    {
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        $source = $fixture->receipt('hit then hit later');
+        $input = $fixture->input(array_fill(0, 4, $source));
+        $preferences = [
+            ['limit' => 1, 'context_chars' => 0, 'max_chars' => 10],
+            ['limit' => 1, 'context_chars' => 0, 'offset' => 10],
+            ['limit' => 2, 'context_chars' => 0],
+            ['limit' => 2, 'context_chars' => 3],
+        ];
+        foreach ($preferences as $i => $parameters) {
+            $input['artifacts'][$i]['read_type'] = 'regex';
+            $input['artifacts'][$i]['parameters'] = ['pattern' => 'hit'] + $parameters;
+        }
+        $service = app(PreparationService::class);
+        $execution = $service->start($f->viewer, $f->phase, $input);
+        $reading = $service->delivery($f->viewer, $execution, 'inline-text');
+        [$first, $next, $both, $context] = $reading['deliveries'];
+        $this->assertSame($first['representation_hash'], $next['representation_hash']);
+        $this->assertSame($first['representation_hash'], 'sha256:'.hash('sha256', $first['content'].$next['content']));
+        $this->assertSame(1, $next['result_set']['included_matches']);
+        $this->assertSame(2, $both['result_set']['included_matches']);
+        $this->assertNotSame($both['representation_hash'], $context['representation_hash']);
+        $this->assertStringContainsString('After: " th"', $context['content']);
+        $service->acknowledge($f->viewer, $execution, $reading['presentation_token']);
+        $receipt = $service->defer($f->viewer, $execution, 'Compare later.');
+        $this->assertSame($this->canonical($input['artifacts']), $this->canonical($receipt->metadata['selections']));
+        foreach ($reading['deliveries'] as $i => $delivery) {
+            unset($delivery['content']);
+            $this->assertSame($this->canonical($delivery), $this->canonical($receipt->metadata['deliveries'][$i]));
+        }
+    }
+
     public function test_regex_selections_share_the_frozen_participant_allowance_through_acknowledgement(): void
     {
         $fixture = new PreparationFixture;
@@ -88,9 +151,9 @@ class AdaptivePreparationJourneyTest extends TestCase
         $service = app(PreparationService::class);
         $source = $fixture->receipt("💚".str_repeat('a', 16000).'b'.str_repeat('c', 16000));
         $input = $fixture->input([$source, $source, $source]);
-        foreach (['a', 'b', 'missing'] as $i => $pattern) {
+        foreach (['a+', 'c+', 'missing'] as $i => $pattern) {
             $input['artifacts'][$i]['read_type'] = 'regex';
-            $input['artifacts'][$i]['parameters'] = ['pattern' => $pattern, 'offset' => -1];
+            $input['artifacts'][$i]['parameters'] = ['pattern' => $pattern, 'offset' => 0, 'limit' => 1, 'context_chars' => 0];
         }
         foreach ([[null, 12000], [17, 17], [18000, 18000]] as [$limit, $expected]) {
             $f->viewer->forceFill(['max_preparation_chars' => $limit])->save();
@@ -107,10 +170,29 @@ class AdaptivePreparationJourneyTest extends TestCase
         $regex = array_find($prepare['properties']['artifacts']['items']['anyOf'], fn ($option) => $option['properties']['read_type']['enum'] === ['regex']);
         $parameters = $regex['properties']['parameters'];
         $this->assertSame('string', $parameters['properties']['pattern']['type']);
-        $this->assertSame(['integer', 'null'], $parameters['properties']['max_chars']['type']);
+        foreach (['offset', 'max_chars', 'limit', 'context_chars'] as $field) {
+            $this->assertContains($field, $parameters['required']);
+            $this->assertSame(['integer', 'null'], $parameters['properties'][$field]['type']);
+        }
+        $example = array_replace(array_fill_keys($prepare['required'], null), $action);
+        foreach ($example['artifacts'] as &$item) {
+            $item['parameters'] = array_replace(array_fill_keys($parameters['required'], null), $item['parameters']);
+        }
+        unset($item);
+        $valid = fn ($contribution) => app(Validator::class)->validate(Helper::toJSON(['contribution' => $contribution]),
+            Helper::toJSON($transport))->isValid();
+        $this->assertTrue($valid($example));
+        $example['artifacts'][0]['parameters']['limit'] = null;
+        $example['artifacts'][0]['parameters']['context_chars'] = null;
+        $this->assertTrue($valid($example));
+        $example['artifacts'][0]['parameters']['pattern'] = null;
+        $this->assertFalse($valid($example));
         $execution = $service->start($f->viewer, $f->phase, $input);
         $human = $service->delivery($f->viewer, $execution, 'human-text');
-        $this->assertSame([9000, 9000, 0], array_column(array_column($human['deliveries'], 'boundaries'), 'length'));
+        [$first, $second, $empty] = array_column(array_column($human['deliveries'], 'boundaries'), 'length');
+        $this->assertSame(18000, $first + $second + $empty);
+        $this->assertLessThanOrEqual(1, abs($first - $second));
+        $this->assertSame(mb_strlen($human['deliveries'][2]['content']), $empty);
         $f->viewer->forceFill(['max_preparation_chars' => 5])->save();
         $automatic = $service->delivery($f->viewer, $execution, 'inline-text');
         foreach ($human['deliveries'] as $index => $reading) {
@@ -120,7 +202,7 @@ class AdaptivePreparationJourneyTest extends TestCase
             $this->assertSame(PreparationInput::requestId($input['artifacts'][$index]), $reading['request_id']);
             $this->assertSame([$source->id], $reading['receipt_ids']);
         }
-        $this->assertNull($automatic['deliveries'][2]['boundaries']['match']);
+        $this->assertSame(0, $automatic['deliveries'][2]['result_set']['total_matches']);
         $this->assertNull($execution->fresh()->presented_at);
         $service->acknowledge($f->viewer, $execution->fresh(), $human['presentation_token']);
         $receipt = $service->defer($f->viewer, $execution, 'Compare the second section later.');

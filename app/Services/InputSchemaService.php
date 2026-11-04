@@ -106,11 +106,13 @@ final readonly class InputSchemaService
                     if ($capability['read_type'] === 'regex') {
                         $required[] = 'parameters';
                         $properties['parameters']['required'] = ['pattern'];
-                        $properties['parameters']['properties']['offset'] = ['type' => 'integer',
-                            'description' => 'Signed Unicode character offset from the first match.'];
+                        $properties['parameters']['properties']['limit'] = ['type' => 'integer', 'minimum' => 1,
+                            'description' => 'Maximum occurrences to include. Omit for all occurrences.'];
+                        $properties['parameters']['properties']['context_chars'] = ['type' => 'integer', 'minimum' => 0,
+                            'maximum' => ReadingParameters::MAX_CONTEXT, 'description' => 'Readable source characters on each side (default 80).'];
                         $properties['parameters']['properties']['pattern'] = ['type' => 'string', 'minLength' => 1,
                             'maxLength' => ReadingParameters::MAX_PATTERN_BYTES,
-                            'description' => 'Bare UTF-8 regex, up to 512 bytes. Optional leading (?ims) flags. Searches the text representation.'];
+                            'description' => 'Bare UTF-8 regex, up to 512 bytes. Optional leading (?ims) flags. Searches readable text. Offset and max_chars select a window of the formatted results.'];
                     }
                     $selections[] = ['type' => 'object', 'additionalProperties' => false, 'required' => $required, 'properties' => $properties];
                 }

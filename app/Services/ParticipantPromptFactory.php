@@ -46,7 +46,7 @@ final class ParticipantPromptFactory
 
         $layout = (new ParticipantPromptLayout)->make($this->context->inference($state));
         if (! empty($state['plan']['preparation_options'])) {
-            $layout['user'] .= "\n\nAccessible Artifact reading options (omit max_chars for automatic allocation; explicit lengths are preferences clamped to shared character/byte budgets; offsets address the resolved representation; regex offsets are relative to the first match in readable text, and match: null means no source characters matched):\n".json_encode($state['plan']['preparation_options'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+            $layout['user'] .= "\n\nAccessible Artifact reading options (omit max_chars for automatic allocation; explicit lengths are preferences clamped to shared character/byte budgets; offsets address the resolved representation; regex produces ordered matches with readable-source coordinates; offset selects characters in the formatted results. Omit limit for all matches; context_chars defaults to 80 per side):\n".json_encode($state['plan']['preparation_options'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
         }
         if (isset($state['prepared_context'])) {
             $prepared = $state['prepared_context'];

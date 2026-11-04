@@ -345,9 +345,9 @@ class PreparationJourneyTest extends TestCase
                     $this->assertStringContainsString($fixture->input()['purpose'], $payload['input'][1]['content']);
                     $this->assertStringContainsString('untrusted preserved material', $payload['input'][1]['content']);
                     if ($outcome === 'contributed') {
-                        $this->assertStringContainsString('"match":{"start":0,"end":1}', $payload['input'][1]['content']);
-                        $this->assertStringContainsString(str_repeat('z', 11477), $payload['input'][1]['content']);
-                        $this->assertStringNotContainsString(str_repeat('z', 11478), $payload['input'][1]['content']);
+                        $this->assertStringContainsString('[1] Source characters: [0, 1)', $payload['input'][1]['content']);
+                        $this->assertStringContainsString(str_repeat('z', 80), $payload['input'][1]['content']);
+                        $this->assertStringNotContainsString(str_repeat('z', 81), $payload['input'][1]['content']);
                         $this->assertStringContainsString('"requested_max_chars":null', $payload['input'][1]['content']);
                     }
                     $schema = $payload['text']['format']['schema'];

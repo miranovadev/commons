@@ -56,7 +56,7 @@ final class PreparationHistoryService
             // A stored selection or successful extraction is not an acknowledgement.
             'deliveries' => array_map(fn ($delivery) => Arr::only($delivery, [
                 'request_id', 'artifact_id', 'receipt_ids', 'read_type', 'source_type', 'method', 'version',
-                'representation', 'representation_hash', 'delivery_method', 'delivery_id', 'payload_hash', 'payload_bytes', 'boundaries',
+                'representation', 'representation_hash', 'delivery_method', 'delivery_id', 'payload_hash', 'payload_bytes', 'boundaries', 'result_set',
             ]), $execution->presented_at === null ? [] : ($execution->presentation ?? [])),
             'deferment_reason' => $execution->outcome === 'deferred' ? $this->text($metadata['outcome']['reason'] ?? null, 400) : null,
             'failure' => $execution->status !== 'failed' ? null : [
