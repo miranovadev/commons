@@ -163,7 +163,7 @@ class CommitRegionTest extends TestCase
             }
             $this->assertSame([$anchor->id, $matching->id], $service->readsFor($phase)->pluck('id')->all());
             $this->assertEqualsCanonicalizing([$gate->id, $counterpart->id], $service->gatesFor($phase)->pluck('id')->all());
-            $this->reject($phase, ['action' => 'proposition.reconcile', 'other_proposition_id' => $otherGate->id]);
+            $this->reject($phase, ['action' => 'proposition.reconcile', 'other_proposition_id' => $otherGate->id, 'statement' => 'The observations share a common cause.']);
         }
     }
 

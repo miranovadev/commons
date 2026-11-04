@@ -176,7 +176,7 @@ class BiasGateTest extends TestCase
         $this->assertInput($plan['schema'], $input, true);
         $this->assertInput($plan['schema'], [...$input, 'statement' => 'Replacement'], true);
         $this->assertInput($plan['schema'], [...$input, 'other_proposition_id' => $this->gate->id], false);
-        $this->assertInput($plan['schema'], ['action' => 'proposition.reconcile', 'other_proposition_id' => $selected->id], false);
+        $this->assertInput($plan['schema'], ['action' => 'proposition.reconcile', 'other_proposition_id' => $selected->id, 'statement' => 'The observations share a common cause.'], false);
         $this->publishPotentialFixture($this->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, app(ParticipationService::class)->stateFor($this->viewer));
         $this->assertSame($plan['schema'], $prompt['schema']);
@@ -378,7 +378,7 @@ class BiasGateTest extends TestCase
         $this->attest($this->gate, 'support');
         $this->rejectDispatch([...$input, 'other_proposition_id' => $negative->id]);
         $this->rejectDispatch([...$input, 'statement' => '   ']);
-        $this->rejectDispatch(['action' => 'proposition.reconcile', 'other_proposition_id' => $negative->id]);
+        $this->rejectDispatch(['action' => 'proposition.reconcile', 'other_proposition_id' => $negative->id, 'statement' => 'The observations share a common cause.']);
         $this->edge($this->gate, $this->node('Replacement', 'concord', position: PhaseKind::Bias), 'reclassify');
         $this->rejectDispatch($input);
     }

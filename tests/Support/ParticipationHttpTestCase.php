@@ -244,6 +244,9 @@ abstract class ParticipationHttpTestCase extends TestCase
                 if ($action === 'proposition.reclassify') {
                     $input['statement'] = $this->visibleProposition($state, $input['proposition_id'])['statement'];
                 }
+                if ($action === 'proposition.reconcile') {
+                    $input['statement'] = 'The observations share a common cause.';
+                }
                 if ($action === 'proposition.variant') {
                     $input['statement'] = 'Testable opportunity '.count($this->trace);
                 }

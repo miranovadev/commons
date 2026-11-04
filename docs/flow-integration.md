@@ -25,7 +25,7 @@ not region-wide traversal eligibility.
 | 2 Persist | When fresh Variant is lawful, Prepare a causally accessible Artifact or use Instrument fallback; develop the selected Distinguish Proposition through Variant, subject to shared structural viability. |
 | 3 Constrain | Reclassify a grounded, attested Persist source using one Receipt and an authored statement; attach/consume and advance atomically. |
 | 4 Disperse | Choose Instrument or accessible Preparation once per exact Phase/generative opportunity when fresh Variant is lawful; earlier-Phase acquisition in the same Cycle neither fulfills nor blocks it. Retain ordinary Variant / Attest / later-Cycle Traverse rules. |
-| 5 Mediate | Existing directed reconciliation and Correspondence conditions develop Disperse plurality. |
+| 5 Mediate | Interpret the relationship between two eligible Disperse Propositions. The first Mediate birth for the pair determines its Region and selected temporal lineage. |
 | 6 Bias | Reclassify an eligible Mediate source using a Receipt authorized for that source and an authored statement, preserving existing lineage agreement. |
 | 7 Order | Existing grounded, attested, Closure-aligned Commit or established Committal Traverse. |
 

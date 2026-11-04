@@ -44,8 +44,8 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertFalse($boundary['closure_boundary']);
         $this->assertEqualsWithDelta(0, $boundary['depth'], 0.0000001);
         $this->assertEqualsWithDelta(0, $boundary['cadence'], 0.0000001);
-        // Twelve author Cycles at Origin and three still-open observer Cycles.
-        $this->assertSame(15, (int) DB::table('commitment_snapshots')
+        // Eleven author Cycles at Origin and three still-open observer Cycles.
+        $this->assertSame(14, (int) DB::table('commitment_snapshots')
             ->where('proposition_id', $boundary['proposition_id'])->value('cadence_interval'));
         $this->assertSame(['instrument.execute'], array_keys($committed['plan']['schema']['$defs']['actions']));
         $this->assertNull($committed['plan']['rest_reason']);
@@ -55,15 +55,15 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $seed = Proposition::findOrFail($boundary['proposition_id']);
         $entries = DB::table('cycles')->where('entry_committal_id', $origin)
             ->where('context_horizon_id', $seed->phase->cycle->context_horizon_id);
-        $this->assertSame(15, $entries->count());
+        $this->assertSame(14, $entries->count());
         $this->assertTrue($entries->whereNull('completed_at')->exists());
         $this->assertReceiptNeutralChiralityChain($participant->position);
         $this->assertSame($boundary['tension_after'], $seed->commitmentSnapshot->tension);
         $this->assertFalse($seed->commitmentSnapshot->closure_observation['availability']['cadence']);
         $this->assertSame($seed->id, $cycle->entry_committal_id);
         $this->assertSame('settlement', $cycle->contextHorizon->domain->value);
-        $this->assertEqualsWithDelta(-0.3980798, $seed->commitmentSnapshot->correspondence, 1e-7);
-        $this->assertEqualsWithDelta(-0.0997720, $seed->commitmentSnapshot->chirality, 1e-7);
+        $this->assertEqualsWithDelta(-0.2962244, $seed->commitmentSnapshot->correspondence, 1e-7);
+        $this->assertEqualsWithDelta(-0.1068359, $seed->commitmentSnapshot->chirality, 1e-7);
         $path = app(BackwardRecoveryLineage::class)->distances($participant->position, $participant,
             fn ($id, $horizon) => DB::table('supersessions')->where('target_proposition_id', $id)->pluck('source_proposition_id')->all());
         $committals = Proposition::whereIn('id', array_keys($path))->where('tier', 'committal')->pluck('id')->all();

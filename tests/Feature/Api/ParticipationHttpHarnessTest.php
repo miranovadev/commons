@@ -34,13 +34,23 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
             if ($isReconcile) {
                 $consumed = DB::table('receipt_consumptions')->count();
             }
+            if ($isReconcile && $step['result'] === 'leftSynthesis') {
+                $phaseId = $this->readParticipation($actor)['plan']['phase']['id'];
+                $input = $this->persistJourneyInput($index);
+                $ledger = DB::table('substrate_ledger_entries')->count();
+                foreach ([str_repeat('é', 20001), ' '.str_repeat('é', 20000), " \t\n", ['malformed']] as $invalid) {
+                    $this->postContribution($actor, $phaseId, [...$input, 'statement' => $invalid])->assertUnprocessable();
+                }
+                unset($input['statement']);
+                $this->postContribution($actor, $phaseId, $input)->assertUnprocessable();
+                $this->assertSame($ledger, DB::table('substrate_ledger_entries')->count());
+            }
             $state = $this->executePersistJourneyStep($actor, $index);
             if ($isReconcile) {
                 $this->assertSame($consumed, DB::table('receipt_consumptions')->count());
             }
             $packet = $this->auditEvidencePacket($state);
-            if ($this->persistJourneySteps[$index]['result'] === 'rightSynthesis'
-                && $this->persistJourneySteps[$index]['input']['action'] === 'proposition.reconcile') {
+            if ($isReconcile && $step['result'] === 'leftSynthesis') {
                 foreach (['r0', 'leftReading', 'leftPreparation', 'rightReading', 'rightPreparation'] as $reference) {
                     $this->assertContains($this->persistJourneyIds[$reference], array_column($packet['receipts'], 'id'));
                 }
@@ -56,9 +66,10 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
         $this->assertSame($interpretations['leftCanon'], $node('leftCanon')->statement);
         $this->assertSame([$ids['leftCanon']], $node('leftSignal')->parents()->pluck('propositions.id')->all());
         $this->assertEqualsCanonicalizing([$ids['leftSignal'], $ids['rightSignal']],
-            $node('rightSynthesis')->parents()->pluck('propositions.id')->all());
-        $this->assertSame($node('leftSignal')->statement, $node('rightSynthesis')->statement);
-        $this->assertSame([$ids['rightSynthesis']], $node('classification')->parents()->pluck('propositions.id')->all());
+            $node('leftSynthesis')->parents()->pluck('propositions.id')->all());
+        $this->assertSame('The observations share a common cause.', $node('leftSynthesis')->statement);
+        $this->assertNotSame($node('leftSynthesis')->statement, $interpretations['classification']);
+        $this->assertSame([$ids['leftSynthesis']], $node('classification')->parents()->pluck('propositions.id')->all());
         $this->assertSame($interpretations['classification'], $node('classification')->statement);
         $this->assertSame([$ids['classification']], $node('commit')->commitSources()->pluck('propositions.id')->all());
         $this->assertSame($interpretations['classification'], $node('commit')->statement);

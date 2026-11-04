@@ -6,6 +6,7 @@ use App\Contracts\ParticipantInference;
 use App\Contracts\WebSearchProvider;
 use App\Domain\Evidence\SearchObservation;
 use App\Domain\Evidence\VerifiedHyperlink;
+use App\Domain\Observables\CorrespondenceValues;
 use App\Enums\PhaseKind;
 use App\Jobs\WakeParticipant;
 use App\Models\Attestation;
@@ -41,6 +42,7 @@ use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\ReceiptContextService;
+use App\Services\ReconciliationOptionService;
 use App\Services\ReferencePotentialChargeService;
 use App\Services\TragedyService;
 use App\Services\WakeClock;
@@ -53,6 +55,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\Process\Process;
 use Tests\Fixtures\HorizonProofFixture;
+use Tests\Fixtures\PropositionBirth;
 use Tests\TestCase;
 
 class TransactionLockOrderTest extends TestCase
@@ -255,19 +258,29 @@ class TransactionLockOrderTest extends TestCase
         $this->assertSame(1, Proposition::where('tier', 'expressive')->count());
     }
 
+    public static function competingReconciliationDirections(): array
+    {
+        return ['same direction' => [false], 'opposing directions' => [true]];
+    }
+
+    #[DataProvider('competingReconciliationDirections')]
     #[Group('load')]
-    public function test_waiting_reconciliation_rechecks_the_directed_pair_across_participants(): void
+    public function test_waiting_reconciliation_rechecks_the_established_pair_across_participants(bool $opposing): void
     {
         [$substrate, $first, $phase] = $this->fixture();
         $seed = $phase->gate;
         $node = function (string $register, Proposition $parent, PhaseKind $position) use ($phase): Proposition {
             $node = new Proposition;
             $node->forceFill(['phase_id' => $this->phaseAtPositionFixture($phase, $position)->id, 'register' => $register, 'tier' => 'expressive', 'statement' => 'Shared structure'])->save();
-            app(LedgerService::class)->record($node);
+            app(LedgerService::class)->record($node, $parent);
             $edge = new Supersession;
-            $edge->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $parent->id,
+            $edge->forceFill(['phase_id' => $node->phase_id, 'source_proposition_id' => $parent->id,
                 'target_proposition_id' => $node->id, 'type' => 'variant'])->save();
             app(LedgerService::class)->record($edge);
+
+            PropositionBirth::complete($node);
+            app(PropositionMeasurementService::class)->project($node, .8, .8, .8,
+                correspondenceComponents: new CorrespondenceValues(.8, .8));
 
             return $node;
         };
@@ -280,21 +293,30 @@ class TransactionLockOrderTest extends TestCase
         foreach ([$first, $second] as $participant) {
             $cycle = new Cycle;
             $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1,
-                'context_horizon_id' => $phase->cycle->context_horizon_id])->save();
+                'context_horizon_id' => $phase->cycle->context_horizon_id, 'entry_committal_id' => $seed->id])->save();
             $disperse = new Phase;
             $disperse->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Disperse, 'write_register' => 'signal',
                 'gate_proposition_id' => $read->id, 'started_at' => now()])->save();
-            $phases[] = app(PhaseProgressionService::class)->advance($disperse, $a);
+            $phases[] = app(PhaseProgressionService::class)->advance($disperse, $opposing && $participant->is($second) ? $b : $a);
         }
-        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $b->id];
+        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $b->id, 'statement' => 'The observations share a common cause.'];
+        $other = $opposing ? $a : $b;
+        $options = app(ReconciliationOptionService::class);
+        $this->assertContains($b->id, $options->forPhase($phases[0])->pluck('id'));
+        $this->assertContains($other->id, $options->forPhase($phases[1])->pluck('id'));
         $before = Proposition::count();
+        $ledger = $substrate->ledgerEntries()->count();
+        $measurements = DB::table('proposition_measurements')->count();
         $this->whileWorkerWaits($substrate, [
             'operation' => 'dispatch-rejected', 'participant_id' => $second->id, 'phase_id' => $phases[1]->id,
-            'contribution' => $input, 'expected_message' => 'admissible Gate counterpart',
+            'contribution' => [...$input, 'other_proposition_id' => $other->id], 'expected_message' => 'admissible Gate counterpart',
         ], function () use ($first, $phases, $input): void {
             app(ContributionDispatcher::class)->dispatch($first, $phases[0], $input);
         });
         $this->assertSame($before + 1, Proposition::count());
+        $this->assertSame($ledger + 3, $substrate->ledgerEntries()->count());
+        $this->assertSame($measurements + 1, DB::table('proposition_measurements')->count());
+        $this->assertSame(2, Supersession::where('type', 'reconcile')->count());
         $this->assertSame(1, $a->children()->wherePivot('type', 'reconcile')->count());
     }
 

@@ -119,7 +119,7 @@ class PropositionHistorySemanticsTest extends TestCase
             $other = $this->node('Other structure', $gateRegister, position: PhaseKind::Disperse);
             $this->edge($parent, $other);
             $sources->push($other);
-            $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $other->id];
+            $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $other->id, 'statement' => 'The observations share a common cause.'];
         }
         foreach ($sources as $item) {
             $this->giveHistory($item, $operation === 'revise' ? 'refute' : 'support');
@@ -174,7 +174,7 @@ class PropositionHistorySemanticsTest extends TestCase
         $this->assertSame($propositions + 1, Proposition::count());
         $this->assertSame('expressive', $target->tier);
         $this->assertSame($writeRegister, $target->register);
-        $this->assertSame($operation === 'reconcile' ? $gate->statement : $input['statement'], $target->statement);
+        $this->assertSame($input['statement'], $target->statement);
         $edges = Supersession::where('target_proposition_id', $target->id)->get();
         $this->assertEqualsCanonicalizing($sources->pluck('id')->all(), $edges->pluck('source_proposition_id')->all());
         $this->assertCount($sources->count(), $edges);

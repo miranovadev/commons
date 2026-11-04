@@ -313,6 +313,7 @@ class InputSchemaServiceTest extends TestCase
             [
                 'action' => 'proposition.reconcile',
                 'other_proposition_id' => '01m1xab7yakfnhy6tf52a9qg7z',
+                'statement' => 'The observations share a common cause.',
             ],
         );
     }

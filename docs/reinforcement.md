@@ -173,8 +173,8 @@ the Committal-only Cycle-entry rule would make initialization impossible.
 
 Reinforcement does not consume source Propositions. Mediate may reuse structurally
 reachable hard-superseded Reads/Gates in the same region under the existing
-Read-direction and register rules. Each directed pair is generated once: `A+B→X`, `B+A→Y` and `A+C→Z` can coexist;
-each expressive result earns its own subsequent reinforcement. Measurement active
+Read-direction and register rules. The experimental pair policy admits `A+B→X` and `A+C→Z`. After the first birth, `B+A` cannot produce another child.
+Each distinct expressive result earns its own subsequent reinforcement. Measurement active
 head selection, compact lineage presentation and other phase constraints retain
 their existing meanings. No Sybil or coordination policing is introduced.
 

@@ -87,7 +87,7 @@ class MediatedIncomingBiasTest extends TestCase
         $this->publishPotentialFixture($this->actor);
         $this->resolveExpressiveFieldFixture(.8);
         $response = app(ParticipationService::class)->contribute($this->actor, $this->mediate->id,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id, 'statement' => 'The observations share a common cause.']);
         $this->result = Proposition::findOrFail($response['current_proposition_id']);
         $this->mediator = $this->actor;
         $this->actor = (new Participant)->forceFill(['substrate_id' => $this->mediator->substrate_id,
@@ -105,6 +105,7 @@ class MediatedIncomingBiasTest extends TestCase
     public function test_reconcile_retains_ownership_and_only_the_exact_other_operand_opens_the_doorway(): void
     {
         $result = $this->result;
+        $this->assertSame('The observations share a common cause.', $result->statement);
         $this->assertSame($this->mediate->cycle_id, $result->phase->cycle_id);
         $this->assertSame($this->a->id, app(CommitRegionService::class)->seedFor($result)->id);
         $this->assertSame($this->mediate->cycle->context_horizon_id, $result->contextHorizonMembership->context_horizon_id);
@@ -175,6 +176,45 @@ class MediatedIncomingBiasTest extends TestCase
         $this->assertTrue($this->biasOptions()->isEmpty(), 'Shared source/register uniqueness remains authoritative');
         $this->assertDatabaseCount('tragedies', 0);
         $this->publishPotentialFixture($this->actor);
+    }
+
+    public function test_personal_judgment_in_the_owning_region_supports_later_local_continuation(): void
+    {
+        // Give the same reader two independently governed Cycles. The incoming
+        // edge never assigns their entry Region or permits a foreign judgment.
+        $this->actor = (new Participant)->forceFill(['substrate_id' => $this->mediator->substrate_id,
+            'callsign' => 'returning-reader']);
+        $this->actor->save();
+        $readA = $this->gateA->parents()->sole();
+        $phase = app(PhaseProgressionService::class)->advance($this->phase($this->a, $readA, PhaseKind::Disperse), $this->gateA);
+        $this->publishPotentialFixture($this->actor);
+        $participation = app(ParticipationService::class);
+        $vote = ['action' => 'attestation.create', 'proposition_id' => $this->result->id, 'direction' => 'support'];
+        $participation->contribute($this->actor, $phase->id, $vote);
+        $this->assertSame($this->actor->id, $this->result->effectiveAttestations()->sole()->phase->cycle->participant_id);
+        $phase->cycle->phases()->whereNull('completed_at')->update(['completed_at' => now()]);
+        $phase->cycle->forceFill(['completed_at' => now()])->save();
+
+        $local = app(PhaseProgressionService::class)->advance($this->phase($this->b, $this->readB, PhaseKind::Disperse), $this->gateB);
+        $this->publishPotentialFixture($this->actor);
+        $plan = app(InputPlanService::class)->forPhase($this->actor, $local);
+        $this->assertNotContains($this->gateA->id, array_column($plan['gate_options'], 'id'));
+        $this->assertNotContains($this->result->id, array_column($plan['attestation_options'], 'id'));
+        $this->assertNotContains($this->result->id, array_column($plan['traversal_options'], 'id'));
+        $participation->contribute($this->actor, $local->id, [...$vote, 'proposition_id' => $this->bResult->id]);
+        $bias = $local->cycle->phases()->where('kind', PhaseKind::Bias)->sole();
+        $this->assertContains($this->result->id, app(MediatedIncomingBiasService::class)->forPhase($bias)->pluck('id'));
+        $own = $this->loadedReceiptFixture($this->gateB);
+        $this->publishPotentialFixture($this->actor);
+        $statement = 'The local evidence limits this relationship to the onset of the change.';
+        $response = $participation->contribute($this->actor, $bias->id, [...$this->input($own->id), 'statement' => $statement]);
+        $child = Proposition::findOrFail($response['current_proposition_id']);
+        $this->assertSame($statement, $child->statement);
+        $this->assertSame('The observations share a common cause.', $this->result->fresh()->statement);
+        $this->assertSame($bias->cycle->context_horizon_id, $child->contextHorizonMembership->context_horizon_id);
+        $this->assertSame($this->b->id, app(CommitRegionService::class)->seedFor($child)->id);
+        $this->assertSame([$this->result->id], $child->parents()->pluck('propositions.id')->all());
+        $this->assertSame($child->id, $own->fresh()->consumption->proposition_id);
     }
 
     public function test_missing_attestation_still_blocks_with_an_own_region_receipt(): void
@@ -310,7 +350,7 @@ class MediatedIncomingBiasTest extends TestCase
         $mediate = app(PhaseProgressionService::class)->advance($disperse, $gate);
         $this->publishPotentialFixture($this->actor);
         app(ParticipationService::class)->contribute($this->actor, $mediate->id,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $other->id]);
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $other->id, 'statement' => 'The observations share a common cause.']);
 
         return Phase::where('cycle_id', $mediate->cycle_id)->where('kind', PhaseKind::Bias)->sole();
     }

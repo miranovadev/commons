@@ -44,7 +44,7 @@ if ([2, 3].includes(number)) {
   action('proposition.revise', { proposition_id: { enum: cards.map(p => p.id) }, statement: {} }, ['proposition_id', 'statement']);
 }
 if ([3, 4, 6, 7].includes(number)) action('instrument.execute', { proposition_id: { enum: cards.map(p => p.id) }, instrument: {} }, ['proposition_id', 'instrument']);
-if (number === 5) action('proposition.reconcile', { other_proposition_id: { enum: candidates.slice(1).map(p => p.id) } }, ['other_proposition_id']);
+if (number === 5) action('proposition.reconcile', { other_proposition_id: { enum: candidates.slice(1).map(p => p.id) }, statement: { type: 'string' } }, ['other_proposition_id', 'statement']);
 if (number === 6) action('proposition.bias', { proposition_id: { enum: candidates.map(p => p.id) } }, ['proposition_id']);
 if (number === 7 && active && cards.length) action('proposition.commit', { proposition_id: { enum: cards.map(p => p.id) } }, ['proposition_id']);
 const ancestry = [gate, ...Array.from({ length: 9 }, (_, index) => proposition(index + 20, readRegister)), provenance];

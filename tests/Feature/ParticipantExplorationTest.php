@@ -446,7 +446,7 @@ class ParticipantExplorationTest extends TestCase
         }
         $other = app(PhaseProgressionService::class)->advance($this->phase($constrain, PhaseKind::Disperse), $signal);
         $stance = app(ContributionDispatcher::class)->dispatch($other->cycle->participant, $other,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $sibling->id]);
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $sibling->id, 'statement' => 'The observations share a common cause.']);
         $unjudged = $this->node($this->phase($constrain, PhaseKind::Disperse), $constrain);
         $this->measure($unjudged, 0);
         $receipts = app(HorizonReceiptService::class);

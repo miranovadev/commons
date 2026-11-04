@@ -44,7 +44,7 @@ Malformed labels cannot override authoritative Domain identity.
 Candidate discovery filters substrate, Domain and canonical Phase/register before
 batching entry Committals. It does not independently query each candidate's ancestry.
 The structural service deliberately leaves active/exhausted state, retained
-Correspondence, directed-pair uniqueness and other action policies to its consumer.
+Correspondence, unordered-pair uniqueness and other action policies to its consumer.
 
 ## Bias integration (epic Stage 4)
 
@@ -87,7 +87,7 @@ definition without a dependency cycle between local and foreign discovery.
 
 Immediate active canonical Disperse children in each eligible Read's own Region
 and Horizon become operands. ReconciliationOptionService still applies availability
-and directed-pair uniqueness. Foreign exhausted continuations are checked with
+and unordered-pair uniqueness. Foreign exhausted continuations are checked with
 one batched read of complete authoritative Horizon data. Backward completion
 and personal exploration remain independent of comparison populations; a foreign causal
 edge cannot transport another Horizon's exhaustion or failure. The partial
@@ -161,7 +161,7 @@ Stage 3 coverage includes both signs of disagreement between causal Read and fie
 the matching case, same-Region expansion, default-directed zero fields, Reads without
 Gate children contributing to the population, mixed entry creating Domains,
 stale population rejection, and public non-dominant-causal-Read reconciliation.
-Existing graph, Receipt, directed-pair, foreign exhaustion and query-budget proofs
+Existing graph, Receipt, pair identity, foreign exhaustion and query-budget proofs
 remain in force. [Homeostatic populations](homeostatic-populations.md) documents
 the shared aggregation and hydration boundary.
 
