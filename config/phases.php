@@ -29,7 +29,7 @@ return [
     ],
     3 => [
         'name' => 'constrain',
-        'description' => 'Strengthen or classify the selected Proposition. Grounding is acquired during Persist.',
+        'description' => 'Reclassify the Persist Gate by expressing what its evidence supports in the new register. Grounding is acquired during Persist.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.revise',
@@ -75,7 +75,7 @@ return [
     ],
     6 => [
         'name' => 'bias',
-        'description' => 'Preserve the current causal Gate under its ordinary Bias rules. Dominant homologous Chirality may add Reclassify sources; use only the Cycle-entry Receipt catalogue. Existing causal Writes retain their ordinary actions and Traverse rules.',
+        'description' => 'Reclassify an eligible source with an evidence-grounded statement. Dominant homologous Chirality may add sources alongside the causal Gate. Select a Receipt authorized for that source from the Cycle-entry Receipt catalogue. Existing causal Writes retain their ordinary actions and Traverse rules.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reclassify',

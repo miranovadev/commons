@@ -56,15 +56,26 @@ class ReceiptGatedReclassificationTest extends TestCase
     }
 
     #[DataProvider('boundaries')]
-    public function test_reclassification_consumes_selected_shared_receipt_and_preserves_position(PhaseKind $kind): void
+    public function test_authored_reclassification_consumes_one_receipt_and_preserves_its_source(PhaseKind $kind): void
     {
         $this->resolveExpressiveFieldFixture(.8);
         [$source, $receipt, $phase] = $this->boundary($kind);
-        $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id];
+        $original = $source->statement;
+        $interpretation = 'The shared citation supports a common origin for these observations.';
+        $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id,
+            'statement' => "  {$interpretation}\n"];
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);
         app(ContributionService::class)->validateSchema($plan['schema'], $input);
         $result = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase, $input);
-        $this->assertSame($source->statement, $result->statement);
+        $this->assertNotSame($original, $interpretation);
+        $this->assertSame($interpretation, $result->fresh()->statement);
+        $this->assertSame($original, $source->fresh()->statement);
+        $this->assertSame([$source->id], $result->parents()->pluck('propositions.id')->all());
+        $this->assertDatabaseHas('supersessions', ['type' => 'reclassify', 'source_proposition_id' => $source->id,
+            'target_proposition_id' => $result->id]);
+        $this->assertDatabaseHas('reclassification_results', ['source_proposition_id' => $source->id,
+            'register' => $phase->write_register, 'target_proposition_id' => $result->id]);
+        $this->assertDatabaseCount('receipt_consumptions', 1);
         $this->assertSame($phase->write_register, $result->register);
         $this->assertSame($kind, $result->phase->kind);
         $this->assertSame($receipt->id, app(PropositionStateService::class)->receipts($result)->sole()->id);
@@ -75,13 +86,46 @@ class ReceiptGatedReclassificationTest extends TestCase
     }
 
     #[DataProvider('boundaries')]
+    public function test_malformed_contributions_do_not_change_history(PhaseKind $kind): void
+    {
+        [$source, $receipt, $phase] = $this->boundary($kind);
+        $base = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id];
+        $schema = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase)['schema'];
+        $history = fn () => collect(['propositions', 'supersessions', 'substrate_ledger_entries', 'reclassification_results',
+            'receipt_consumptions', 'proposition_receipt_links', 'prospective_closure_states'])
+            ->mapWithKeys(fn ($table) => [$table => DB::table($table)->count()])->all();
+        $before = $history();
+        foreach ([[], ['statement' => ''], ['statement' => " \t\n"], ['statement' => "\u{2003}"], ['statement' => 1],
+            ['statement' => str_repeat('é', Proposition::MAX_STATEMENT_LENGTH + 1)],
+            ['statement' => $source->statement, 'other_proposition_id' => $source->id],
+            ['statement' => $source->statement, 'receipt_id' => (string) str()->ulid()],
+            ['statement' => $source->statement, 'proposition_id' => $this->origin->id],
+        ] as $fields) {
+            $input = array_replace($base, $fields);
+            try {
+                app(ContributionService::class)->validateSchema($schema, $input);
+                $this->fail('The advertised schema accepted an invalid Reclassification.');
+            } catch (InvalidArgumentException) {
+                $this->assertSame($before, $history());
+            }
+            try {
+                app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase, $input);
+                $this->fail('The authoritative writer accepted an invalid Reclassification.');
+            } catch (DomainException) {
+                $this->assertSame($before, $history());
+                $this->assertNull($receipt->fresh()->consumption);
+            }
+        }
+    }
+
+    #[DataProvider('boundaries')]
     public function test_missing_receipt_rejects_without_mutation(PhaseKind $kind): void
     {
         [$source, , $phase] = $this->boundary($kind);
         $count = Proposition::count();
         try {
             app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
-                ['action' => 'proposition.reclassify', 'proposition_id' => $source->id]);
+                ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'statement' => $source->statement]);
             $this->fail('Missing Receipt must reject');
         } catch (DomainException) {
             $this->assertSame($count, Proposition::count());
@@ -95,7 +139,7 @@ class ReceiptGatedReclassificationTest extends TestCase
         [$source, , $phase] = $this->boundary($kind);
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);
         $this->expectException(InvalidArgumentException::class);
-        app(ContributionService::class)->validateSchema($plan['schema'], ['action' => 'proposition.reclassify', 'proposition_id' => $source->id]);
+        app(ContributionService::class)->validateSchema($plan['schema'], ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'statement' => $source->statement]);
     }
 
     #[DataProvider('boundaries')]
@@ -107,7 +151,7 @@ class ReceiptGatedReclassificationTest extends TestCase
         $count = Proposition::count();
         try {
             app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
-                ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id]);
+                ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'statement' => $source->statement, 'receipt_id' => $receipt->id]);
             $this->fail('Foreign Receipt must reject');
         } catch (DomainException) {
             $this->assertSame($count, Proposition::count());
@@ -121,11 +165,11 @@ class ReceiptGatedReclassificationTest extends TestCase
     {
         [$source, $receipt, $phase] = $this->boundary($kind);
         app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
-            ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id]);
+            ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'statement' => $source->statement, 'receipt_id' => $receipt->id]);
         [$other, , $otherPhase] = $this->boundary($kind);
         $this->expectException(DomainException::class);
         app(ContributionDispatcher::class)->dispatch($otherPhase->cycle->participant, $otherPhase,
-            ['action' => 'proposition.reclassify', 'proposition_id' => $other->id, 'receipt_id' => $receipt->id]);
+            ['action' => 'proposition.reclassify', 'proposition_id' => $other->id, 'statement' => $other->statement, 'receipt_id' => $receipt->id]);
     }
 
     public function test_same_label_from_the_wrong_producing_phase_cannot_be_reclassified(): void
@@ -136,6 +180,6 @@ class ReceiptGatedReclassificationTest extends TestCase
         $phase = $this->phase($wrong, PhaseKind::Bias);
         $this->expectException(DomainException::class);
         app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
-            ['action' => 'proposition.reclassify', 'proposition_id' => $wrong->id, 'receipt_id' => $receipt->id]);
+            ['action' => 'proposition.reclassify', 'proposition_id' => $wrong->id, 'statement' => $wrong->statement, 'receipt_id' => $receipt->id]);
     }
 }

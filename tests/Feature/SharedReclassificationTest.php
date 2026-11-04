@@ -11,6 +11,7 @@ use App\Models\Proposition;
 use App\Services\ContributionDispatcher;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
+use App\Services\ParticipationService;
 use App\Services\PhaseGenerationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -34,8 +35,7 @@ class SharedReclassificationTest extends TestCase
         $f = new ParticipantContextFixture(1, 0);
         $source = $f->node($f->seed, $from, position: PhaseKind::from($kind->value - 1));
         [$actor, $phase] = $this->encounter($f, $source, $kind, $to);
-        $action = $kind === PhaseKind::Bias ? 'proposition.reclassify' : 'proposition.reclassify';
-        $input = ['action' => $action] + ($kind === PhaseKind::Bias ? ['proposition_id' => $source->id] : []);
+        $action = 'proposition.reclassify';
         $generation = app(PhaseGenerationService::class);
         $this->assertFalse($generation->available($phase, $action, position: $source));
         $this->receiptFixture($source);
@@ -46,6 +46,7 @@ class SharedReclassificationTest extends TestCase
         $this->assertTrue($generation->available($phase, $action, position: $source));
         $input = $this->reclassificationInputFixture($phase, $source);
         $target = app(ContributionDispatcher::class)->dispatch($actor, $phase, $input);
+        $this->assertSame($source->statement, $input['statement']);
         $this->assertSame($source->statement, $target->statement);
         $this->assertDatabaseHas('reclassification_results', ['source_proposition_id' => $source->id, 'register' => $to, 'target_proposition_id' => $target->id]);
         $this->assertSame(0, $target->attestations()->count());
@@ -69,6 +70,20 @@ class SharedReclassificationTest extends TestCase
         $this->publishPotentialFixture($other);
         $plan = app(InputPlanService::class)->forParticipant($other);
         $this->assertArrayNotHasKey('proposition.traverse', $plan['schema']['$defs']['actions'], 'A same-cycle Attestation becomes traversal next cycle');
+
+        // Return to the same source in a later Cycle. The effective personal Refute now authorizes Traverse.
+        $return->forceFill(['completed_at' => now()])->save();
+        $return->cycle->forceFill(['completed_at' => now()])->save();
+        $later = $this->governedPhaseFixture($return, $f->seed, $source);
+        $later->forceFill(['completed_at' => null])->save();
+        $other->forceFill(['current_proposition_id' => $source->id])->save();
+        $this->publishPotentialFixture($other);
+        $state = app(ParticipationService::class)->stateFor($other);
+        $this->assertContains($target->id, $state['plan']['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum']);
+        $votes = Attestation::count();
+        $next = app(ParticipationService::class)->contribute($other, $later->id, ['action' => 'proposition.traverse', 'proposition_id' => $target->id]);
+        $this->assertSame($target->id, $next['plan']['gate_id']);
+        $this->assertSame($votes, Attestation::count());
     }
 
     private function encounter(ParticipantContextFixture $f, Proposition $source, PhaseKind $kind, string $register): array

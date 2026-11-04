@@ -23,17 +23,17 @@ not region-wide traversal eligibility.
 | --- | --- |
 | 1 Distinguish | Personal Instrument acquisition at the governing Gate before fresh Variant. An admitted Instrument enables Variant or Defer. An eligible unjudged Write offers first Attestation. A personal earlier-Cycle Attestation establishes Traverse on that side. |
 | 2 Persist | When fresh Variant is lawful, Prepare a causally accessible Artifact or use Instrument fallback; develop the selected Distinguish Proposition through Variant, subject to shared structural viability. |
-| 3 Constrain | Reclassify a grounded, attested Persist source with explicit `receipt_id`; attach/consume and advance atomically. |
+| 3 Constrain | Reclassify a grounded, attested Persist source using one Receipt and an authored statement; attach/consume and advance atomically. |
 | 4 Disperse | Choose Instrument or accessible Preparation once per exact Phase/generative opportunity when fresh Variant is lawful; earlier-Phase acquisition in the same Cycle neither fulfills nor blocks it. Retain ordinary Variant / Attest / later-Cycle Traverse rules. |
 | 5 Mediate | Existing directed reconciliation and Correspondence conditions develop Disperse plurality. |
-| 6 Bias | Reclassify an eligible Mediate source with explicit `receipt_id`, preserving existing lineage agreement. |
+| 6 Bias | Reclassify an eligible Mediate source using a Receipt authorized for that source and an authored statement, preserving existing lineage agreement. |
 | 7 Order | Existing grounded, attested, Closure-aligned Commit or established Committal Traverse. |
 
 See [generative acquisition](generative-acquisition.md) for completion, failure and returning-Participant rules.
 
 Ordinary Receipt availability is Commit-Region-scoped and independent of authorship, age, loading and Participant presence. Completed ordinary Instruments create one persistent Receipt. Tragedy creates its one Receipt without a fake EvidenceExecution. Only Reclassify consumes; reading is free and does not advance the Phase. Commit may retain already attached evidence without consuming it again.
 
-Reclassification copies the exact statement and attaches only the selected Receipt. Effective Attestations and phase touches start fresh. It rejects missing, consumed, foreign-Horizon or structurally invalid inputs before publishing any new target. Other historical evidence remains on its original source. Shared classifications are unique per source/destination register.
+At Constrain and Bias, Reclassification writes the Participant’s interpretation of the source and attaches exactly one selected Receipt. Identical source wording is permitted. Effective Attestations and phase touches start fresh. It rejects missing, consumed, foreign-Horizon or structurally invalid inputs before publishing any new target. Other historical evidence remains on its original source. Shared classifications are unique per source/destination register.
 
 During Exploration, another Variant is an option only after every current viable Variant at that position is personally explored under the current active-head frontier and has genuine ordinary evidence and effective Attestation. Evidence may be shared or retained on its causal lineage; exact-Write Instrumentation is not required. Potential Charge does not govern this permission. Receipt consumption alone never reopens Variant. There is no Participant quota, fixed sibling cap or prior Mediate Rest requirement. Mediate still needs a second Proposition. This is the [confirmed Variant clarification](horizon-proof-variant-clarification.md).
 

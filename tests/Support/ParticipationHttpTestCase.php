@@ -241,6 +241,9 @@ abstract class ParticipationHttpTestCase extends TestCase
                         $input[$key] = $actions[$action]['properties'][$key]['enum'][0];
                     }
                 }
+                if ($action === 'proposition.reclassify') {
+                    $input['statement'] = $this->visibleProposition($state, $input['proposition_id'])['statement'];
+                }
                 if ($action === 'proposition.variant') {
                     $input['statement'] = 'Testable opportunity '.count($this->trace);
                 }

@@ -45,7 +45,7 @@ class SoloFailedPreparationFrontierTest extends ParticipationHttpTestCase
         $judge($distinction);
         $judge($persist);
         $state = $this->contribute($actor, ['action' => 'proposition.reclassify',
-            'proposition_id' => $persist, 'receipt_id' => $source->id]);
+            'proposition_id' => $persist, 'statement' => 'First persistence', 'receipt_id' => $source->id]);
         $canon = $state['plan']['gate_id'];
         $this->attemptUnavailableMaterial($actor, $source);
         $signal = $variant('First signal');

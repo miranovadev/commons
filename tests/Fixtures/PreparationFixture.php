@@ -108,7 +108,7 @@ final class PreparationFixture
             $participant->forceFill(['current_proposition_id' => $source->id])->save();
 
             return app(ContributionDispatcher::class)->dispatch($participant, $phase->fresh(),
-                ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id]);
+                ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'statement' => $source->statement, 'receipt_id' => $receipt->id]);
         });
     }
 }

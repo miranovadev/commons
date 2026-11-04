@@ -106,16 +106,13 @@ class PropositionHistorySemanticsTest extends TestCase
         }
         $source = $gate;
         $input = ['action' => 'proposition.'.$operation, 'statement' => 'A fresh contribution'];
-        if ($operation === 'reclassify') {
-            unset($input['statement']);
-        }
         if ($operation === 'revise') {
             $source = $this->node('Owned prior Write', $writeRegister, position: $kind);
             $this->edge($gate, $source);
             $input['proposition_id'] = $source->id;
         }
         if ($operation === 'bias') {
-            $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id];
+            $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'statement' => $source->statement];
         }
         $sources = collect([$source]);
         if ($operation === 'reconcile') {
@@ -177,7 +174,7 @@ class PropositionHistorySemanticsTest extends TestCase
         $this->assertSame($propositions + 1, Proposition::count());
         $this->assertSame('expressive', $target->tier);
         $this->assertSame($writeRegister, $target->register);
-        $this->assertSame(in_array($operation, ['reconcile', 'bias', 'reclassify'], true) ? $gate->statement : $input['statement'], $target->statement);
+        $this->assertSame($operation === 'reconcile' ? $gate->statement : $input['statement'], $target->statement);
         $edges = Supersession::where('target_proposition_id', $target->id)->get();
         $this->assertEqualsCanonicalizing($sources->pluck('id')->all(), $edges->pluck('source_proposition_id')->all());
         $this->assertCount($sources->count(), $edges);

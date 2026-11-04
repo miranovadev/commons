@@ -73,7 +73,7 @@ class PropositionHistoryLifecycleTest extends TestCase
         $closure = app(ProspectiveClosureService::class)->stored($source);
         $input = $operation === 'variant'
             ? ['action' => 'proposition.variant', 'statement' => 'A fresh development with its own judgments.']
-            : ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $availableReceipt->id];
+            : ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'statement' => $source->statement, 'receipt_id' => $availableReceipt->id];
         $target = $dispatcher->dispatch($fixture->actor, $phase, $input);
 
         $this->assertSame('expressive', $target->tier);

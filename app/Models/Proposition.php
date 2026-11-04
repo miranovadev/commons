@@ -18,6 +18,8 @@ class Proposition extends Model
 {
     use HasLedgerEntry, HasUlids;
 
+    public const MAX_STATEMENT_LENGTH = 20000;
+
     public $incrementing = false;
 
     protected $keyType = 'string';

@@ -174,6 +174,7 @@
       "gate": "leftPersist",
       "input": {
         "action": "proposition.reclassify",
+        "statement": "Prepared opportunity 4",
         "proposition_id": {
           "ref": "leftPersist"
         },
@@ -467,6 +468,7 @@
       "gate": "rightPersist",
       "input": {
         "action": "proposition.reclassify",
+        "statement": "Prepared opportunity 20",
         "proposition_id": {
           "ref": "rightPersist"
         },
@@ -746,6 +748,7 @@
       "gate": "rightSynthesis",
       "input": {
         "action": "proposition.reclassify",
+        "statement": "Prepared opportunity 25",
         "proposition_id": {
           "ref": "leftSynthesis"
         },
@@ -831,6 +834,7 @@
       "gate": "leftSynthesis",
       "input": {
         "action": "proposition.reclassify",
+        "statement": "Prepared opportunity 9",
         "proposition_id": {
           "ref": "rightSynthesis"
         },

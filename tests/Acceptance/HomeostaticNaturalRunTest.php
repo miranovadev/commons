@@ -114,6 +114,10 @@ class HomeostaticNaturalRunTest extends ParticipationHttpTestCase
                         $input[$key] = $local[0];
                     }
                 }
+                if ($input['action'] === 'proposition.reclassify') {
+                    $input['statement'] = $this->visibleProposition($state, $input['proposition_id'])['statement'];
+                }
+
                 $action = $input['action'];
                 $key = $action === 'proposition.reconcile' ? 'other_proposition_id' : 'proposition_id';
                 $isAdditional = in_array($input[$key] ?? null, $additional[$action] ?? [], true);

@@ -114,7 +114,7 @@ class TragedyWarrantSeparationTest extends TestCase
         $phase = $this->phase($source, PhaseKind::Constrain);
         DB::transaction(fn () => app(ReceiptContextService::class)->desired($phase->cycle->participant, $phase, ['load' => [$tragedy->receipt_id]]));
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);
-        $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $tragedy->receipt_id];
+        $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'statement' => $source->statement, 'receipt_id' => $tragedy->receipt_id];
         $this->assertNotContains($tragedy->receipt_id, $plan['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum']);
         try {
             app(ContributionService::class)->validateSchema($plan['schema'], $input);

@@ -68,7 +68,7 @@ class ExplorationCompletionJourneyTest extends TestCase
         $next = $this->submit($persist, ['action' => 'acquisition.defer', 'execution_id' => $execution->id, 'reason' => 'Retain this observation.']);
         $other = $this->phase($head, PhaseKind::Constrain);
         $classification = app(ContributionDispatcher::class)->dispatch($other->cycle->participant, $other, [
-            'action' => 'proposition.reclassify', 'proposition_id' => $head->id, 'receipt_id' => $execution->receipt->id]);
+            'action' => 'proposition.reclassify', 'proposition_id' => $head->id, 'statement' => $head->statement, 'receipt_id' => $execution->receipt->id]);
         $exploration = app(ParticipantExplorationService::class);
         $this->assertSame([$classification->id], $exploration->heads($head->id, $next, new ParticipationContext($next))->keys()->all());
         $this->assertFalse($exploration->explored($head, $next));
@@ -100,7 +100,7 @@ class ExplorationCompletionJourneyTest extends TestCase
         // This control needs an exhausted Order head. Its fixed Closure input isolates routing.
         $this->isolateClosureOutput();
         $child = app(ContributionDispatcher::class)->dispatch($biasProducer->cycle->participant, $biasProducer,
-            ['action' => 'proposition.reclassify', 'proposition_id' => $synthesis->id, 'receipt_id' => $this->acquireObservation()->id]);
+            ['action' => 'proposition.reclassify', 'proposition_id' => $synthesis->id, 'statement' => $synthesis->statement, 'receipt_id' => $this->acquireObservation()->id]);
         $this->componentClosureInput($child, ['admissible' => false, 'cadence_direction' => 'positive']);
         $this->assertSame([$child->id], $exploration->heads($synthesis->id, $return, new ParticipationContext($return))->keys()->all());
         $this->assertFalse($exploration->explored($synthesis, $return));

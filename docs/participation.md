@@ -160,7 +160,7 @@ occurs in a subsequent Cycle rather than revising the current Gate in place.
 
 ## Proposition history
 
-Reclassify at Phase 3 Constrain and Phase 6 Bias preserves the exact source statement and requires explicit `proposition_id` and `receipt_id`. It atomically attaches the selected available Commit Region Receipt, consumes it once, and creates the classification. Attestations and phase touches start fresh. Other historical source evidence remains in place.
+Reclassify at Phase 3 Constrain and Phase 6 Bias requires `proposition_id`, `receipt_id` and an authored `statement`. The Participant expresses an interpretation of the selected source in light of the Receipt and causal context, and may retain the original wording. As with Variant and Revision, the new statement is trimmed. The source remains intact. It atomically attaches the selected available Commit Region Receipt, consumes it once, and creates the classification. Attestations and phase touches start fresh. Other historical source evidence remains in place. Existing Reclassifications retain their recorded statements.
 
 Variant, Revise and Reconcile create new content/structure with fresh votes and touches. Commit retains the selected source's participation history by reference and freezes its evaluation. Receipt visibility and consumption are separate from optional loading for Reinforcement.
 
@@ -452,7 +452,7 @@ visibility and historical load rows supply no evidential authority. See the
 
 For ordinary local eligibility, `BiasGateService` compares the current head's retained direction to its own causal ancestry, excluding the head's votes and loads. Shared ancestors and Attestations are counted once across both reconciliation parents. Traversal stops at the governing Committal boundary; unrelated branches do not set the comparison. Ledger replay retains the preceding nonzero direction at zero, starting from the governing Committal direction. Superseded ancestors supply historical judgments without becoming additional active reinforcement copies.
 
-Bias additionally requires its source-specific Receipt authority and an effective source Attestation. The action takes `action: proposition.reclassify`, `proposition_id` and `receipt_id`. It preserves exact content, attaches/consumes the selected Receipt, resets votes/touches, and creates one shared source/register classification. `BiasGateService::forPhase()` remains the existing regional evidence calculation;
+Bias additionally requires its source-specific Receipt authority and an effective source Attestation. The action takes `action: proposition.reclassify`, `proposition_id`, `receipt_id` and `statement`. It writes the authored interpretation, attaches/consumes the selected Receipt, resets votes/touches, and creates one shared source/register classification. `BiasGateService::forPhase()` remains the existing regional evidence calculation;
 `operationalFor()` preserves its eligible current Gate, adds recorded incoming
 sources from `MediatedIncomingBiasService`, and independently adds qualified
 sources from `HomologousBiasService`. The latter uses the shared Homeostatic services to

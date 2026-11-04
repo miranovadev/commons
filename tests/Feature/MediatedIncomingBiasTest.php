@@ -322,7 +322,7 @@ class MediatedIncomingBiasTest extends TestCase
 
     private function input(string $receipt): array
     {
-        return ['action' => 'proposition.reclassify', 'proposition_id' => $this->result->id, 'receipt_id' => $receipt];
+        return ['action' => 'proposition.reclassify', 'proposition_id' => $this->result->id, 'statement' => $this->result->statement, 'receipt_id' => $receipt];
     }
 
     private function attestResult(): void

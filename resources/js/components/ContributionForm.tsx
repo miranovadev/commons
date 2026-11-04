@@ -215,7 +215,7 @@ export function ContributionForm({
 
           {properties.instrument && <InstrumentFields replayIds={replayReceiptIds(plan, values.proposition_id)} error={duplicate ? `This resource already has relevant evidence (Receipt ${duplicate.receipt_id}). Use the existing Receipt or choose another resource.` : undefined} value={values.instrument} onChange={(instrument) => set('instrument', instrument)} />}
 
-          {action === 'proposition.reclassify' && <Text size="sm" c="dimmed">The statement is preserved. The selected Receipt attaches atomically and becomes consumed; the new classification begins without Attestations.</Text>}
+          {action === 'proposition.reclassify' && <Text size="sm" c="dimmed">Select one eligible Receipt and write what it supports about the source. You may keep the original wording. The Receipt attaches to the new Proposition, which starts without Attestations.</Text>}
           {action === 'proposition.reconcile' && <Text size="sm" c="dimmed">The new Proposition copies the current Gate statement exactly. The selected counterpart contributes a second hard parent edge.</Text>}
 
 

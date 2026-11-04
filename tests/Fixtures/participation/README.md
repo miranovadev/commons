@@ -83,3 +83,9 @@ The first branch in `persist-skeptical-commit.json` closes at Mediate. On its re
 The single-Participant bootstrap has a separate limitation. Use `vendor/bin/phpunit tests/Diagnostics/SoloCommitFrontierTest.php` to replay two completed branches in isolation. Both have intervals of 0, 1 and 0. Persist and Disperse generate within their source Gate’s Cycle. Constrain follows a Rest and first judgment in the next Cycle. Both Signals have negative Shape Topology and positive Phase Profile, so neither qualifies for Reconciliation. The author can create a fresh Distinction at Origin. Each prior route remains visible and personally explored. The original positive solo Commit test remains enabled. This reproduction covers healthy, sequential first-Commit participation.
 
 The focused follow-up is documented in [Solo first-Commit design review](../../../docs/solo-commit-design-review.md). It checks alternative judgment and acquisition choices, and a failed-Preparation route whose later Revisions acquire coherent Correspondence but still lack another Reconciliation operand.
+
+## Authored Reclassification
+
+Constrain and Bias inputs in the fixed participation journeys and both Domain replay files now supply the selected source’s original words explicitly. Their expected topology, Phase order, Receipt identities and historical measurements are unchanged. PHP fixture builders make the same choice when exercising existing structural contracts.
+
+The end-to-end Commit test in `ParticipationHttpHarnessTest` uses the same fixed journey with two distinct interpretations. It follows the Constrain result through Disperse and Mediate, checks the exact Gate wording and both parents at Reconciliation, and verifies that the Bias interpretation survives its first Attestation and canonical Commit.

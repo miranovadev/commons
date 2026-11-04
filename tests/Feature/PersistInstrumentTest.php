@@ -46,7 +46,7 @@ class PersistInstrumentTest extends TestCase
         app(PotentialProjectionService::class)->refresh($author->substrate_id);
         $ownerState = $service->stateFor($author);
         $after = $service->contribute($author, $ownerState['plan']['phase']['id'], [
-            'action' => 'proposition.reclassify', 'proposition_id' => $write->id, 'receipt_id' => $receipt->id,
+            'action' => 'proposition.reclassify', 'proposition_id' => $write->id, 'statement' => $write->statement, 'receipt_id' => $receipt->id,
         ]);
         $this->assertSame('disperse', $after['plan']['phase']['kind']);
         $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $receipt->id]);

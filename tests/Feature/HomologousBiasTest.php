@@ -300,7 +300,7 @@ class HomologousBiasTest extends TestCase
         $this->warrant();
         $receipt = app(BiasReceiptAuthorityService::class)->receiptsFor($this->bias, $source)->sole();
         $foreignReceipt = app(PropositionStateService::class)->receipts($source)->firstOrFail();
-        $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id];
+        $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'statement' => $source->statement, 'receipt_id' => $receipt->id];
         $this->assertDatabaseMissing('participant_receipt_contexts', ['receipt_id' => $receipt->id]);
         $this->reject($source, $foreignReceipt->id);
         $this->publishPotentialFixture($this->actor);
@@ -916,7 +916,7 @@ class HomologousBiasTest extends TestCase
 
     private function input(Proposition $source, ?string $receipt = null): array
     {
-        return ['action' => 'proposition.reclassify', 'proposition_id' => $source->id,
+        return ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'statement' => $source->statement,
             'receipt_id' => $receipt ?? (app(BiasReceiptAuthorityService::class)->receiptsFor($this->bias, $source)->first()
                 ?? app(HorizonReceiptService::class)->ordinaryAvailable($this->bias)->firstOrFail())->id];
     }
