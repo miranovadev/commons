@@ -10,7 +10,9 @@ use App\Models\Receipt;
 use App\Services\AcquisitionAttemptService;
 use App\Services\ContributionDispatcher;
 use App\Services\HorizonReceiptService;
+use App\Services\HomologousBiasService;
 use App\Services\InputPlanService;
+use App\Services\MediatedIncomingBiasService;
 use App\Services\ParticipantExplorationService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
@@ -90,10 +92,13 @@ class ExplorationCompletionJourneyTest extends TestCase
         $return = $this->returnAfterRest($bias);
         $this->assertDatabaseHas('exploration_events', ['proposition_id' => $synthesis->id, 'phase_id' => $bias->id]);
         $this->assertTrue($exploration->explored($synthesis, $return));
-        // A third Disperse operand creates a distinct local result at the incoming operand.
+        // A disjoint pair establishes a second local Bias Gate after the first pair is bound.
         $third = $this->node($this->phase($classification, PhaseKind::Disperse), $classification);
-        app(PropositionMeasurementService::class)->project($third, .8, .8, .8, correspondenceComponents: new CorrespondenceValues(.8, .8));
-        $secondProducer = app(PhaseProgressionService::class)->advance($right->phase, $right);
+        $fourth = $this->node($this->phase($classification, PhaseKind::Disperse), $classification);
+        foreach ([$third, $fourth] as $operand) {
+            app(PropositionMeasurementService::class)->project($operand, .8, .8, .8, correspondenceComponents: new CorrespondenceValues(.8, .8));
+        }
+        $secondProducer = app(PhaseProgressionService::class)->advance($fourth->phase, $fourth);
         $alternate = app(ContributionDispatcher::class)->dispatch($secondProducer->cycle->participant, $secondProducer,
             ['action' => 'proposition.reconcile', 'other_proposition_id' => $third->id, 'statement' => 'The observations share a common cause.']);
         $biasProducer = app(PhaseProgressionService::class)->advance($secondProducer, $alternate);
@@ -116,15 +121,19 @@ class ExplorationCompletionJourneyTest extends TestCase
         $closed = $this->returnAfterRest($order);
         $this->assertDatabaseHas('exploration_events', ['phase_id' => $order->id, 'proposition_id' => $child->id]);
         $this->assertTrue($exploration->explored($synthesis, $closed));
-        $lastMediate = $this->traverse($closed, ...$path);
+        $disperse = $this->traverse($closed, $signal, $head, $classification);
         $options = app(PropositionOptionService::class);
-        $this->assertFalse($options->traversalOptionsFor($lastMediate)->contains('id', $synthesis->id));
+        $this->assertFalse($options->traversalOptionsFor($disperse)->contains('id', $left->id));
+        // Fresh evidence makes a downstream Bias action possible and reopens this route.
         $this->acquireObservation();
         $this->publishPotentialFixture($this->substrate);
+        $lastMediate = $this->traverse($disperse, $left);
         $this->assertTrue($exploration->explored($synthesis, $lastMediate));
         $this->assertTrue($options->traversalOptionsFor($lastMediate)->contains('id', $synthesis->id));
         $liveBias = $this->traverse($lastMediate, $synthesis);
         $this->assertTrue($options->gateOptionsFor($liveBias)->contains('id', $alternate->id));
+        $this->assertTrue(app(HomologousBiasService::class)->forPhase($liveBias)->contains('id', $alternate->id));
+        $this->assertFalse(app(MediatedIncomingBiasService::class)->populationFor($liveBias)->contains('id', $alternate->id));
     }
 
     /** Other Participants acquire at independent fresh Persist Gates in this Region. */
