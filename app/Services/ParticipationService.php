@@ -32,11 +32,12 @@ final readonly class ParticipationService
     ) {}
 
     /**
+     * @param-out int|null $fieldVersion Version of the ready plan, for guarded submissions.
      * @return array<string, mixed>
      */
-    public function stateFor(Participant $participant): array
+    public function stateFor(Participant $participant, ?int &$fieldVersion = null): array
     {
-        return $this->state($participant, false);
+        return $this->state($participant, false, $fieldVersion);
     }
 
     /** Human-only display state, fetched separately from autonomous participation. */
@@ -45,10 +46,11 @@ final readonly class ParticipationService
         return $this->state($participant, true);
     }
 
-    private function state(Participant $participant, bool $workspace): array
+    private function state(Participant $participant, bool $workspace, ?int &$fieldVersion = null): array
     {
+        $fieldVersion = null;
         try {
-            $state = $this->currentStateFor($participant, $workspace);
+            $state = $this->currentStateFor($participant, $workspace, $fieldVersion);
         } catch (PotentialProjectionUnavailable) {
             $state = $this->waiting('potential_projection_pending',
                 'The field is updating. Your position is preserved. Please retry shortly.');
@@ -86,7 +88,7 @@ final readonly class ParticipationService
     }
 
     /** @return array<string, mixed> */
-    private function currentStateFor(Participant $participant, bool $workspace): array
+    private function currentStateFor(Participant $participant, bool $workspace, ?int &$fieldVersion): array
     {
         $cycle = Cycle::query()
             ->whereBelongsTo($participant)
@@ -144,6 +146,7 @@ final readonly class ParticipationService
         if ($version !== app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id)) {
             throw new PotentialProjectionUnavailable($participant->substrate_id);
         }
+        $fieldVersion = $version;
         $blocked = $phase->kind === PhaseKind::Order
             && ! isset($plan['schema']['$defs']['actions']['proposition.commit'])
             && ! isset($plan['schema']['$defs']['actions']['proposition.traverse'])
@@ -205,6 +208,7 @@ final readonly class ParticipationService
         array $input,
         ?array $expectedSchema = null,
         ?string $expectedClosureObservation = null,
+        ?int $expectedFieldVersion = null,
     ): array {
         // Invalid model output is still an error; only a formerly valid action
         // rejected by fresh admissibility is a retryable participation conflict.
@@ -275,7 +279,7 @@ final readonly class ParticipationService
         }
 
         try {
-            return $this->applyContribution($participant, $phaseId, $input, $expectedSchema, $expectedClosureObservation, $observed);
+            return $this->applyContribution($participant, $phaseId, $input, $expectedSchema, $expectedClosureObservation, $observed, $expectedFieldVersion);
         } catch (\Throwable $exception) {
             if ($observed !== null) {
                 app(OperationalInstrumentService::class)->resultFailed($observedPhase, $observed);
@@ -285,12 +289,17 @@ final readonly class ParticipationService
     }
 
     private function applyContribution(Participant $participant, string $phaseId, array $input, ?array $expectedSchema,
-        ?string $expectedClosureObservation, ?InstrumentObservation $observed): array
+        ?string $expectedClosureObservation, ?InstrumentObservation $observed, ?int $expectedFieldVersion): array
     {
         // Build admissibility optimistically before acquiring the shared root.
         // The version check below makes this exact schema authoritative for the
         // guarded write without hydrating a graph while other writers wait.
         $validatedVersion = app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id);
+        // An automatic choice is valid only for its observed field, even if Rest
+        // is still offered alongside a newly available action.
+        if ($expectedFieldVersion !== null && $expectedFieldVersion !== $validatedVersion) {
+            throw new ConflictHttpException('The active field changed. Rebuild state before contributing.');
+        }
         $validationPlan = $this->plans->forValidation($participant);
         $expectedClosureObservation ??= $expectedSchema['$comment'] ?? null;
         if (($input['action'] ?? null) === 'proposition.commit' && $expectedClosureObservation !== null

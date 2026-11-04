@@ -17,8 +17,10 @@ use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Models\Tragedy;
+use App\Models\User;
 use App\Services\CycleEntryService;
 use App\Services\DueParticipantWakeDispatcher;
+use App\Services\FieldMutationService;
 use App\Services\InputSchemaService;
 use App\Services\LedgerService;
 use App\Services\OpenAIResponseSchema;
@@ -37,6 +39,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
@@ -390,12 +393,10 @@ class ParticipantWakeTest extends TestCase
             if (isset($actions['proposition.variant'])) {
                 return ['action' => 'proposition.variant', 'statement' => 'Develop this newly entered Region.'];
             }
-            $this->assertSame(['participant.rest'], array_keys($actions));
-
-            return ['action' => 'participant.rest'];
+            $this->fail('Unexpected inference options: '.implode(', ', array_keys($actions)));
         };
         $inference = Mockery::mock(ParticipantInference::class);
-        $inference->shouldReceive('contribute')->times($mode === 'rest' ? 12 : 7)->andReturnUsing(function (Connection $connection, array $state) use (&$calls, $receipt, $nodes, $cycleId, $f, $develop): array {
+        $inference->shouldReceive('contribute')->times($mode === 'rest' ? 11 : 7)->andReturnUsing(function (Connection $connection, array $state) use (&$calls, $receipt, $nodes, $cycleId, $f, $develop): array {
             $activity = app(ParticipantActivityService::class)->snapshot(collect([$f->viewer->fresh()]))['participants'][0];
             $this->assertTrue($activity['is_active']);
             $this->assertNotNull($activity['current_proposition_id']);
@@ -420,11 +421,14 @@ class ParticipantWakeTest extends TestCase
         $this->app->instance(ParticipantInference::class, $inference);
         $this->app->call([new WakeParticipant($connection->id), 'handle']);
         if ($mode === 'rest') {
-            $this->assertSame([1, 2, 3, 4, 5, 6, 7, 1, 1, 2, 2, 3], array_column($calls, 0));
-            $this->assertCount(10, array_unique(array_column($calls, 1)));
+            $this->assertSame([1, 2, 3, 4, 5, 6, 7, 1, 1, 2, 2], array_column($calls, 0));
+            $this->assertCount(9, array_unique(array_column($calls, 1)));
             $this->assertNotNull(Cycle::findOrFail($cycleId)->completed_at);
             $this->assertNull(Cycle::findOrFail($cycleId)->rested_at);
-            $this->assertNotNull(Phase::findOrFail($calls[11][1])->cycle->rested_at);
+            $rested = Phase::findOrFail($calls[10][1])->cycle;
+            $this->assertNotNull($rested->rested_at);
+            $this->assertSame(PhaseKind::Constrain, $rested->currentPhase->kind);
+            $this->assertNotNull($rested->currentPhase->completed_at);
 
             return;
         }
@@ -451,6 +455,125 @@ class ParticipantWakeTest extends TestCase
         $this->app->instance(ParticipantInference::class, $second);
         $this->app->call([new WakeParticipant($connection->id), 'handle']);
         $this->assertNotNull(Phase::findOrFail($nextPhaseId)->completed_at);
+    }
+
+    public function test_rest_only_wake_submits_rest_without_inference(): void
+    {
+        [$f, , $connection] = $this->restOnlyConstrain();
+        $this->postJson('/api/bootstrap', ['name' => 'Owner', 'email' => 'owner@example.test',
+            'password' => 'test-password-1234', 'password_confirmation' => 'test-password-1234'])->assertCreated();
+        $this->actingAs(User::firstOrFail());
+        $participantUrl = '/api/substrates/'.$f->substrate->slug.'/participants/'.$f->viewer->id;
+        foreach (['participate', 'workspace'] as $surface) {
+            $actions = $this->getJson($participantUrl.'/'.$surface)->assertOk()->json('data.plan.schema.$defs.actions');
+            $this->assertSame(['participant.rest'], array_keys($actions));
+        }
+        $this->assertNull($f->phase->cycle->fresh()->rested_at);
+        $connection->forceFill(['last_error' => 'Previous failure'])->save();
+        $this->mock(ParticipantInference::class)->shouldNotReceive('contribute');
+
+        $this->app->call([new WakeParticipant($connection->id), 'handle']);
+
+        $this->assertNotNull($f->phase->fresh()->completed_at);
+        $cycle = $f->phase->cycle->fresh();
+        $this->assertNotNull($cycle->rested_at);
+        $this->assertNotNull($cycle->completed_at);
+        $this->assertSame('no_available_move', $cycle->rest_reason->value);
+        $this->assertNull($connection->fresh()->last_error);
+    }
+
+    public function test_pending_acquisition_with_an_empty_action_inventory_cannot_auto_rest(): void
+    {
+        $f = new ParticipantContextFixture(1, 0, false);
+        $f->phase->forceFill(['kind' => PhaseKind::Distinguish, 'gate_proposition_id' => $f->seed->id,
+            'write_register' => $f->phase->cycle->contextHorizon->domain->registerFor(PhaseKind::Distinguish)])->save();
+        $f->viewer->forceFill(['current_proposition_id' => $f->seed->id])->save();
+        app(OperationalInstrumentService::class)->observeFor($f->phase, $f->seed,
+            ['kind' => 'citation', 'reference' => $f->seed->id]);
+        $this->publishPotentialFixture($f->viewer);
+        $connection = $this->connectionFor($f->viewer);
+        $this->mock(ParticipantInference::class)->shouldReceive('contribute')->once()
+            ->andReturnUsing(function ($connection, $state): never {
+                $this->assertSame([], $state['plan']['schema']['$defs']['actions']);
+                $this->assertSame('pending', $state['plan']['acquisition']['status']);
+                throw new \RuntimeException('No inference choice');
+            });
+
+        try {
+            $this->app->call([new WakeParticipant($connection->id), 'handle']);
+            $this->fail('The wake must propagate inference failure.');
+        } catch (\RuntimeException $error) {
+            $this->assertSame('No inference choice', $error->getMessage());
+        }
+        $this->assertSame('No inference choice', $connection->fresh()->last_error);
+        $execution = EvidenceExecution::where('phase_id', $f->phase->id)->sole();
+        $this->assertSame('pending', $execution->status);
+        $this->assertNull($execution->attempt_resolution);
+        $this->assertNull($execution->receipt);
+        $this->assertNull($f->phase->cycle->fresh()->rested_at);
+    }
+
+    public static function alternativesToRest(): array
+    {
+        return [['attestation.create'], ['proposition.traverse'], ['proposition.revise']];
+    }
+
+    #[DataProvider('alternativesToRest')]
+    public function test_expanding_the_rest_inventory_returns_the_choice_to_inference(string $alternative): void
+    {
+        [$f, , $connection] = $this->restOnlyConstrain();
+        $choices = ['participant.rest', $alternative];
+        $clock = $this->mock(WakeClock::class);
+        $clock->shouldReceive('now')->times(3)->ordered()->andReturn(0);
+        $clock->shouldReceive('now')->once()->ordered()->andReturnUsing(function () use ($f, $choices): float {
+            // Control the advertised inventory independently of the graph rules for each alternative.
+            $kind = $f->phase->kind;
+            $schema = app(InputSchemaService::class)->forPhase($kind, $choices);
+            $key = 'commons:input-schema:v'.config('schemas.version').':phase:'.$kind->value.':'.sha1('participant.rest');
+            Cache::store('array')->forever($key, $schema);
+            app(FieldMutationService::class)->touch($f->phase);
+            $this->publishPotentialFixture($f->viewer);
+
+            return 0;
+        });
+        $clock->shouldReceive('now')->andReturn(0);
+        $this->mock(ParticipantInference::class)->shouldReceive('contribute')->once()
+            ->andReturnUsing(function ($connection, $state) use ($choices): array {
+                $this->assertSame($choices, array_keys($state['plan']['schema']['$defs']['actions']));
+
+                return ['action' => 'participant.rest'];
+            });
+
+        $this->app->call([new WakeParticipant($connection->id), 'handle']);
+        $this->assertNotNull($f->phase->cycle->fresh()->rested_at);
+        $this->assertNull($connection->fresh()->last_error);
+    }
+
+    public function test_stale_automatic_rest_refreshes_and_infers_a_newly_available_contribution(): void
+    {
+        [$f, $gate, $connection] = $this->restOnlyConstrain();
+        $clock = $this->mock(WakeClock::class);
+        $clock->shouldReceive('now')->times(3)->ordered()->andReturn(0);
+        // Change the field at the deadline check between selecting Rest and submitting it.
+        $clock->shouldReceive('now')->once()->ordered()->andReturnUsing(function () use ($f, $gate): float {
+            $this->classificationEvidenceFixture($gate);
+            $this->publishPotentialFixture($f->viewer);
+
+            return 0;
+        });
+        $clock->shouldReceive('now')->andReturn(0);
+        $this->mock(ParticipantInference::class)->shouldReceive('contribute')->once()
+            ->andReturnUsing(function ($connection, $state) use ($f, $gate): array {
+                $this->assertSame($f->phase->id, $state['plan']['phase']['id']);
+                $this->assertArrayHasKey('proposition.reclassify', $state['plan']['schema']['$defs']['actions']);
+
+                return $this->reclassificationInputFixture($f->phase, $gate);
+            });
+
+        $this->app->call([new WakeParticipant($connection->id), 'handle']);
+        $this->assertDatabaseHas('reclassification_results', ['source_proposition_id' => $gate->id]);
+        $this->assertNull($f->phase->cycle->fresh()->rested_at);
+        $this->assertNull($connection->fresh()->last_error);
     }
 
     public function test_stale_inference_rebuilds_state_without_replaying_a_rejected_contribution(): void
@@ -514,7 +637,7 @@ class ParticipantWakeTest extends TestCase
         $connection->forceFill(['configuration' => array_replace_recursive($connection->configuration, ['wake' => ['termination' => 'cycle']])])->save();
         $cycle = $participant->cycles()->whereNull('completed_at')->firstOrFail();
         $inference = Mockery::mock(ParticipantInference::class);
-        $inference->shouldReceive('contribute')->times(4)->andReturnUsing(function ($connection, $state): array {
+        $inference->shouldReceive('contribute')->times(3)->andReturnUsing(function ($connection, $state): array {
             if ($state['plan']['phase']['number'] === 1) {
                 return ['action' => 'proposition.variant', 'statement' => 'A fresh distinction.'];
             }
@@ -534,9 +657,7 @@ class ParticipantWakeTest extends TestCase
                 return ['action' => 'proposition.variant', 'statement' => 'Resolve the independent Persist attempt.',
                     ...isset($state['plan']['preparation']['execution_id']) ? ['execution_id' => $state['plan']['preparation']['execution_id']] : []];
             }
-            $this->assertArrayHasKey('participant.rest', $state['plan']['schema']['$defs']['actions'], json_encode([$state['plan']['phase']['number'], array_keys($state['plan']['schema']['$defs']['actions']), $state['plan']['acquisition'] ?? null, EvidenceExecution::find($state['plan']['acquisition']['execution_id'] ?? null)?->only(['type', 'status', 'outcome', 'metadata'])]));
-
-            return ['action' => 'participant.rest'];
+            $this->fail('Unexpected inference options: '.implode(', ', array_keys($state['plan']['schema']['$defs']['actions'])));
         });
         $this->app->instance(ParticipantInference::class, $inference);
         $this->app->call([new WakeParticipant($connection->id), 'handle']);
@@ -571,7 +692,7 @@ class ParticipantWakeTest extends TestCase
         $phase = $cycle->phases()->whereNull('completed_at')->firstOrFail();
         $this->app->instance(WakeClock::class, new WakeClock);
         $resume = Mockery::mock(ParticipantInference::class);
-        $resume->shouldReceive('contribute')->times(3)->andReturnUsing(function ($connection, $state) use ($phase): array {
+        $resume->shouldReceive('contribute')->twice()->andReturnUsing(function ($connection, $state) use ($phase): array {
             if (isset($state['plan']['schema']['$defs']['actions']['preparation.start'])) {
                 $source = $state['plan']['preparation_options'][0];
 
@@ -590,9 +711,7 @@ class ParticipantWakeTest extends TestCase
                 return ['action' => 'proposition.variant', 'statement' => 'Resolve the independent Persist attempt.',
                     ...isset($state['plan']['preparation']['execution_id']) ? ['execution_id' => $state['plan']['preparation']['execution_id']] : []];
             }
-            $this->assertArrayHasKey('participant.rest', $state['plan']['schema']['$defs']['actions'], json_encode([$state['plan']['phase']['number'], array_keys($state['plan']['schema']['$defs']['actions']), $state['plan']['acquisition'] ?? null, EvidenceExecution::find($state['plan']['acquisition']['execution_id'] ?? null)?->only(['type', 'status', 'outcome', 'metadata'])]));
-
-            return ['action' => 'participant.rest'];
+            $this->fail('Unexpected inference options: '.implode(', ', array_keys($state['plan']['schema']['$defs']['actions'])));
         });
         $this->app->instance(ParticipantInference::class, $resume);
         $this->app->call([new WakeParticipant($connection->id), 'handle']);
@@ -713,6 +832,21 @@ class ParticipantWakeTest extends TestCase
         } finally {
             $lock->release();
         }
+    }
+
+    /** @return array{ParticipantContextFixture, Proposition, ParticipantConnection} */
+    private function restOnlyConstrain(): array
+    {
+        $f = new ParticipantContextFixture(1, 0, false);
+        $gate = $f->node($f->seed, 'frontier', position: PhaseKind::Persist);
+        $f->phase->forceFill(['kind' => PhaseKind::Constrain, 'gate_proposition_id' => $gate->id, 'write_register' => 'canon'])->save();
+        $f->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
+        $this->publishPotentialFixture($f->viewer);
+
+        $state = app(ParticipationService::class)->stateFor($f->viewer);
+        $this->assertSame(['participant.rest'], array_keys($state['plan']['schema']['$defs']['actions']));
+
+        return [$f, $gate, $this->connectionFor($f->viewer)];
     }
 
     /** @return array{Participant, ParticipantConnection} */
