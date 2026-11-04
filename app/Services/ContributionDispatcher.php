@@ -83,8 +83,8 @@ final readonly class ContributionDispatcher
                 && ! in_array($action, ['instrument.execute', 'proposition.variant'], true)) {
                 throw new ConflictHttpException('Resolve the admitted acquisition through Variant or Defer before ordinary participation.');
             }
-            // Reclassification checks its exact fields, including an unexpected null execution ID.
-            if ($action !== 'proposition.reclassify') {
+            // Both authored operations validate unexpected fields, including a null execution ID.
+            if (! in_array($action, ['proposition.reclassify', 'proposition.reconcile'], true)) {
                 unset($input['execution_id']);
             }
             if (! in_array($action, config("phases.{$phase->kind->value}.actions", []), true)
@@ -307,18 +307,23 @@ final readonly class ContributionDispatcher
         Proposition $gate,
         array $input,
     ): Proposition {
-        if (array_key_exists('statement', $input)) {
-            throw new DomainException('Reconcile selects structure; it does not accept a statement.');
+        if (array_diff(array_keys($input), ['action', 'other_proposition_id', 'statement']) !== []
+            || ! is_string($input['other_proposition_id'] ?? null)) {
+            throw new DomainException('Reconcile requires an eligible counterpart and an authored statement.');
         }
-        $other = $this->reconciliation->forPhase($phase)->firstWhere('id', $input['other_proposition_id']);
+        $statement = $input['statement'] ?? null;
+        if (! is_string($statement) || ! preg_match('/\S/u', trim($statement))
+            || mb_strlen($statement) > Proposition::MAX_STATEMENT_LENGTH) {
+            throw new DomainException('Reconcile requires a nonblank statement within the Proposition length limit.');
+        }
+        $other = $this->reconciliation->forPhase($phase)->firstWhere('id', '===', $input['other_proposition_id']);
         if ($other === null) {
             throw new DomainException('Reconcile requires an admissible Gate counterpart.');
         }
         $target = $this->write(
             $phase,
-            $gate->statement,
+            $statement,
             tier: 'expressive',
-            preserveStatement: true,
             temporalSource: $gate,
         );
 

@@ -175,7 +175,7 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 | Phase 2 fresh Variant, readable causal Artifact | Preparation, then Variant or Defer |
 | Phase 2 fresh Variant, no readable causal Artifact | Instrument fallback, then Variant or Defer |
 | Phase 3 | Reclassify an attested Phase-2 source with an available Receipt |
-| Phase 5 | Existing directed reconciliation and Correspondence rules |
+| Phase 5 | First birth per unordered pair under the existing Correspondence rules |
 | Phase 6 | Reclassify an attested Phase-5 source with Receipt and lineage agreement |
 | Phase 7 | Existing grounded, freshly attested and Closure-aligned Commit or Committal Traverse |
 
@@ -344,9 +344,9 @@ change, and the aggregate is never written back into them.
 
 Gate Correspondence and Chirality do not select these children. The current
 causal Gate must remain in the ordinary eligible Gate pool; `gate_options`
-contains its counterparts. Availability, exhaustion and directed-pair uniqueness
-still apply. Reconcile copies the current Gate's statement and creates two hard
-causal edges. Its result uses the acting Cycle's Phase, entry Region and Horizon.
+contains its counterparts. Availability, exhaustion and substrate-wide unordered-pair uniqueness
+still apply. The Participant writes how the two Propositions relate. Both are
+hard causal parents. The acting Cycle supplies the Phase, entry Region and Horizon.
 
 Homologous Gates are Reconcile operands only. They do not become Read choices,
 Traverse destinations or Receipt catalogue sources. The acting Phase Gate remains
@@ -379,7 +379,11 @@ cross-Region Mediate operand establishes the incoming doorway across that
 boundary. Both use the ordinary Bias evidence/ancestry comparison, effective
 Attestation, completed unconsumed own-Region Receipt, source/register uniqueness,
 mutability and independent terminal-exhaustion protections. No Tragedy is
-required. Foreign option visibility never imports its Region's Receipts.
+required. Foreign option visibility never imports its Region's Receipts. A
+Participant can first judge the result as an ordinary Write in its owning Region.
+That judgment persists into a later Cycle in the other Region. At Bias the
+existing prerequisite is an effective Attestation on the source. The incoming
+option itself grants neither a first foreign Attestation nor Traverse.
 
 Mediated incoming discovery and homologous population discovery remain separate
 services and authorities. An option may independently qualify through either;
@@ -527,18 +531,38 @@ Commit copies the selected source's exact statement and participation history by
 ```json
 {
   "action": "proposition.reconcile",
-  "other_proposition_id": "01..."
+  "other_proposition_id": "01...",
+  "statement": "The separate readings place the onset of the change at the same time."
 }
 ```
 
-Mediate alone exposes Reconcile. It accepts no `statement`. It creates one fresh Expressive Proposition in
-the Phase's Write register with the current Gate's statement copied exactly and
-two hard `reconcile` edges, one from each source. These also record the directed
-incoming Bias relationship described above. It inherits no Attestations,
-Receipts or Phase touches. Normal progression earns a new target touch.
-The dispatcher rechecks admissibility before any writes. The Proposition/edge
-ledger records, source history ownership and measurement recalculation remain
-unchanged.
+Mediate creates an Expressive child in the acting Phase's Write register. Its
+statement must be a nonblank string of at most 20,000 characters. Ordinary
+authored-statement trimming applies. The Participant can explicitly submit a
+parent's wording. The child starts with no Attestations, Receipts or inherited
+Phase touches. Normal progression records a new touch. Both operands retain
+their content. Reconcile consumes no Receipt.
+
+The experimental identity policy admits one birth for each exact unordered pair
+in a substrate. A relationship established from B with A precludes its reciprocal
+from A, including across Regions and Horizons. Either operand can still establish
+a relationship with a third Proposition. Both parent edges carry causal provenance.
+The producing Phase Gate supplies the sole selected temporal predecessor.
+Commit preserves the statement of the selected expressive source.
+
+The selector reads the two persisted Reconcile edges of the same Mediate birth
+under its producing substrate. It applies the exclusion even when the original
+child is historical. The submission transaction recomputes the selector while
+holding the substrate row lock. Historical reciprocal children keep their own
+statements, owners, lineages and ledger records. There is no backfill or migration.
+
+To retire the experiment, restore directed admission in
+`ReconciliationOptionService::establishedCounterparts` and adjust the pair and
+contention expectations in Reconciliation, Homologous Mediation, Causal Operational
+Scope, Domain Operational Eligibility and Transaction Lock Order tests. Recheck
+the fixed HTTP Commit journey and Exploration Completion journey against the
+reopened frontier. Statement validation, schemas, forms and recorded edges are
+independent of this selector policy.
 
 ## Bias grounding
 

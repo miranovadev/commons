@@ -83,6 +83,7 @@ class ParticipantContextTest extends TestCase
         Http::fake(['*' => Http::response([
             'output' => [['content' => [['type' => 'output_text', 'text' => json_encode(['contribution' => [
                 'action' => 'proposition.reconcile', 'other_proposition_id' => $plan['gate_options'][1]['id'],
+                'statement' => 'The observations share a common cause.',
             ]])]]]],
         ])]);
         $connection->forceFill(['configuration' => ['model' => 'test-model'], 'credentials' => ['api_key' => 'test-key']]);

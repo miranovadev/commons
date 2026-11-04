@@ -104,6 +104,9 @@ class HomeostaticNaturalRunTest extends ParticipationHttpTestCase
                     }
                     if ($policy === 'field-first') {
                         $input = ['action' => $action];
+                        if ($action === 'proposition.reconcile') {
+                            $input['statement'] = 'The observations share a common cause.';
+                        }
                         foreach (['proposition_id', 'other_proposition_id', 'receipt_id'] as $property) {
                             if (isset($actions[$action]['properties'][$property]['enum'])) {
                                 $input[$property] = $actions[$action]['properties'][$property]['enum'][0];

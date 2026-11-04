@@ -133,12 +133,12 @@ class PhasePositionInvariantTest extends TestCase
         $plan = app(InputPlanService::class)->forPhase($reader, $mediate);
         $this->assertSame([$other->id], $plan['schema']['$defs']['actions']['proposition.reconcile']['properties']['other_proposition_id']['enum']);
         try {
-            app(ContributionDispatcher::class)->dispatch($reader, $mediate, ['action' => 'proposition.reconcile', 'other_proposition_id' => $early->id]);
+            app(ContributionDispatcher::class)->dispatch($reader, $mediate, ['action' => 'proposition.reconcile', 'other_proposition_id' => $early->id, 'statement' => 'The observations share a common cause.']);
             $this->fail('An early first-register node is not a Disperse counterpart.');
         } catch (DomainException $exception) {
             $this->assertStringContainsString('Gate counterpart', $exception->getMessage());
         }
-        $result = app(ContributionDispatcher::class)->dispatch($reader, $mediate, ['action' => 'proposition.reconcile', 'other_proposition_id' => $other->id]);
+        $result = app(ContributionDispatcher::class)->dispatch($reader, $mediate, ['action' => 'proposition.reconcile', 'other_proposition_id' => $other->id, 'statement' => 'The observations share a common cause.']);
         $this->assertSame(PhaseKind::Mediate, $result->phase->kind);
     }
 

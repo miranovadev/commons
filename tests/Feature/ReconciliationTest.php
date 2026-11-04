@@ -26,6 +26,7 @@ use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -132,7 +133,7 @@ class ReconciliationTest extends TestCase
         $this->assertEqualsCanonicalizing([$valid->id, $soft->id, $hard->id], array_column($plan['gate_options'], 'id'));
         $this->assertSame([$child->id], array_column($plan['write_options'], 'id'));
         foreach ([$this->gate, $this->parent, $unrelated, $child, $grandchild, $wrongRegister] as $invalid) {
-            $this->assertInput($plan['schema'], ['action' => 'proposition.reconcile', 'other_proposition_id' => $invalid->id], false);
+            $this->assertInput($plan['schema'], ['action' => 'proposition.reconcile', 'other_proposition_id' => $invalid->id, 'statement' => 'The observations share a common cause.'], false);
         }
     }
 
@@ -157,10 +158,15 @@ class ReconciliationTest extends TestCase
         // Malformed historical edge for substrate-isolation reads; ownership itself stays valid.
         (new Supersession)->forceFill(['phase_id' => $foreignPhase->id, 'source_proposition_id' => $this->parent->id,
             'target_proposition_id' => $foreign->id, 'type' => 'variant'])->save();
+        // Even an imported foreign child naming these exact operands cannot reserve their local identity.
+        foreach ([$this->gate, $valid] as $source) {
+            (new Supersession)->forceFill(['phase_id' => $foreignPhase->id, 'source_proposition_id' => $source->id,
+                'target_proposition_id' => $foreign->id, 'type' => 'reconcile'])->save();
+        }
         $this->assertSame([$valid->id, $wrongHorizon->id], array_column($this->plan()['gate_options'], 'id'));
     }
 
-    public function test_reconcile_is_structural_selection_with_exact_gate_content(): void
+    public function test_participant_authors_the_reconciliation_through_the_published_contract(): void
     {
         // Isolate structural rules from a new Charge-boundary event.
         $this->resolveExpressiveFieldFixture(.8);
@@ -173,13 +179,13 @@ class ReconciliationTest extends TestCase
                 ['kind' => 'hyperlink', 'reference' => 'https://example.test/source/'.$source->id]);
         }
         $plan = $this->plan();
-        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $sibling->id];
+        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $sibling->id, 'statement' => 'The observations share a common cause.'];
         $this->assertSame([$sibling->id], array_column($plan['gate_options'], 'id'));
         $this->assertSame([], $plan['write_options']);
         $this->assertFalse($plan['rest_available']);
-        $this->assertSame(['action', 'other_proposition_id'], $plan['schema']['$defs']['actions']['proposition.reconcile']['required']);
+        $this->assertSame(['action', 'other_proposition_id', 'statement'], $plan['schema']['$defs']['actions']['proposition.reconcile']['required']);
         $this->assertInput($plan['schema'], $input, true);
-        $this->assertInput($plan['schema'], [...$input, 'statement' => 'Synthesis'], false);
+        $this->assertInput($plan['schema'], [...$input, 'unexpected' => true], false);
         $this->publishPotentialFixture($this->viewer);
         $state = app(ParticipationService::class)->stateFor($this->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
@@ -193,17 +199,17 @@ class ReconciliationTest extends TestCase
         $union = $transport['properties']['contribution'];
         $properties = isset($union['anyOf'])
             ? collect($union['anyOf'])->first(fn ($variant) => $variant['properties']['action']['enum'] === ['proposition.reconcile']) : $union;
-        $this->assertArrayNotHasKey('statement', $properties['properties']);
+        $this->assertContains('statement', $properties['required']);
         $wire = array_replace(array_fill_keys($properties['required'], null), $input);
         $this->assertInput($transport, ['contribution' => $wire], true);
-        $this->assertInput($transport, ['contribution' => [...$wire, 'statement' => 'Synthesis']], false);
+        $this->assertInput($transport, ['contribution' => [...$wire, 'statement' => null]], false);
         $count = Proposition::count();
         $ledger = $this->substrate->ledgerEntries()->count();
         $this->publishPotentialFixture($this->viewer);
         app(ParticipationService::class)->contribute($this->viewer, $this->phase->id, $input);
         $created = Proposition::findOrFail($this->viewer->fresh()->current_proposition_id);
         $this->assertSame($count + 1, Proposition::count());
-        $this->assertSame($this->gate->statement, $created->statement);
+        $this->assertSame($input['statement'], $created->statement);
         $this->assertSame('expressive', $created->tier);
         $this->assertSame($this->phase->write_register, $created->register);
         $history = app(PropositionStateService::class);
@@ -245,7 +251,7 @@ class ReconciliationTest extends TestCase
         $unrelated = $this->node('Not a sibling', 'activity', position: PhaseKind::Disperse);
         $count = Proposition::count();
         try {
-            app(ContributionDispatcher::class)->dispatch($this->viewer, $this->phase, ['action' => 'proposition.reconcile', 'other_proposition_id' => $unrelated->id]);
+            app(ContributionDispatcher::class)->dispatch($this->viewer, $this->phase, ['action' => 'proposition.reconcile', 'other_proposition_id' => $unrelated->id, 'statement' => 'The observations share a common cause.']);
             $this->fail('Invalid counterparts must not be dispatched.');
         } catch (DomainException) {
             $this->assertSame($count, Proposition::count());
@@ -279,7 +285,7 @@ class ReconciliationTest extends TestCase
         $this->assertSame([$this->parent->id], array_column($plan['read_options'], 'id'));
         $this->assertEqualsCanonicalizing([$validGate->id, $foreignGate->id, $distantGate->id, $hardGate->id], array_column($plan['gate_options'], 'id'));
         foreach ([$oppositeGate, $wrongGate, $unrelatedGate] as $invalid) {
-            $this->assertInput($plan['schema'], ['action' => 'proposition.reconcile', 'other_proposition_id' => $invalid->id], false);
+            $this->assertInput($plan['schema'], ['action' => 'proposition.reconcile', 'other_proposition_id' => $invalid->id, 'statement' => 'The observations share a common cause.'], false);
         }
     }
 
@@ -292,7 +298,7 @@ class ReconciliationTest extends TestCase
         // Restore controlled Read directions after recording new Phase observations.
         app(PropositionMeasurementService::class)->project($this->parent, -0.8, -1, -1);
         app(PropositionMeasurementService::class)->project($read, -0.5, -1, -1);
-        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $candidate->id];
+        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $candidate->id, 'statement' => 'The observations share a common cause.'];
         $this->assertInput($this->plan()['schema'], $input, true);
         app(PropositionMeasurementService::class)->project($read, 0.5, -1, -1);
         $before = Proposition::count();
@@ -323,14 +329,14 @@ class ReconciliationTest extends TestCase
         return [$read, $gate];
     }
 
-    public function test_directed_reconciliation_is_unique_across_participants_but_inverse_and_distinct_pairs_remain_valid(): void
+    public function test_pair_identity_blocks_reciprocals_across_participants_and_preserves_distinct_partners(): void
     {
         // Isolate structural rules from a new Charge-boundary event.
         $this->resolveExpressiveFieldFixture(.8);
         $this->fixture();
         $b = $this->sibling('B');
         $c = $this->sibling('C');
-        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $b->id];
+        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $b->id, 'statement' => 'The observations share a common cause.'];
         $this->publishPotentialFixture($this->viewer);
         app(ParticipationService::class)->contribute($this->viewer, $this->phase->id, $input);
         $x = Proposition::findOrFail($this->viewer->fresh()->current_proposition_id);
@@ -349,31 +355,77 @@ class ReconciliationTest extends TestCase
         $count = Proposition::count();
         try {
             app(ContributionDispatcher::class)->dispatch($competitor, $phase, $input);
-            $this->fail('The same directed pair cannot be regenerated.');
+            $this->fail('The established pair cannot be regenerated.');
         } catch (DomainException) {
             $this->assertSame($count, Proposition::count());
         }
         // A + C is distinct even though A has already reconciled B.
         $z = app(ContributionDispatcher::class)->dispatch($competitor, $phase,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $c->id]);
-        $this->assertSame($this->gate->statement, $z->statement);
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $c->id, 'statement' => 'The observations share a common cause.']);
+        $this->assertNotSame($x->id, $z->id);
 
-        // Reverse dominance is a distinct directed relationship, including for
-        // a Participant who has already authored the forward relationship.
         $this->phase->forceFill(['completed_at' => now()])->save();
         $this->phase->cycle->forceFill(['completed_at' => now()])->save();
         $disperse = $this->newPhase($this->viewer, PhaseKind::Disperse, 'activity');
         $disperse->forceFill(['gate_proposition_id' => $this->parent->id])->save();
         $inverse = app(PhaseProgressionService::class)->advance($disperse, $b);
-        $reverse = ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gate->id];
-        $this->assertInput($this->plan()['schema'], $reverse, true);
-        $y = app(ContributionDispatcher::class)->dispatch($this->viewer, $inverse, $reverse);
-        $this->assertSame($b->statement, $y->statement);
-        $this->assertNotSame($x->id, $y->id);
-        $this->assertEqualsCanonicalizing($x->parents->pluck('id')->all(), $y->parents->pluck('id')->all());
+        $reverse = ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gate->id, 'statement' => 'The observations share a common cause.'];
         $this->assertInput($this->plan()['schema'], $reverse, false);
+        $this->assertRejectedWithoutWrites($inverse, $reverse);
+        // Import an existing reciprocal as historical data, bypassing new-birth admission.
+        $legacy = (new Proposition)->forceFill(['phase_id' => $inverse->id, 'register' => $inverse->write_register,
+            'tier' => 'expressive', 'statement' => $b->statement]);
+        $legacy->save();
+        app(LedgerService::class)->record($legacy, $b);
+        foreach ([$b, $this->gate] as $source) {
+            $edge = (new Supersession)->forceFill(['phase_id' => $inverse->id, 'source_proposition_id' => $source->id,
+                'target_proposition_id' => $legacy->id, 'type' => 'reconcile']);
+            $edge->save();
+            app(LedgerService::class)->record($edge);
+        }
+        PropositionBirth::complete($legacy);
+        $this->assertRejectedWithoutWrites($inverse, $reverse);
+        $this->assertRejectedWithoutWrites($phase, $input);
+        $this->assertSame($b->statement, $legacy->fresh()->statement);
+        $this->assertEqualsCanonicalizing($x->parents->pluck('id')->all(), $legacy->parents->pluck('id')->all());
         $this->loadedReceiptFixture($x);
-        $this->assertSame([2, 0, 0], array_map(fn ($node) => app(ReinforcementService::class)->count($node), [$x, $y, $z]));
+        $this->assertSame([2, 0], array_map(fn ($node) => app(ReinforcementService::class)->count($node), [$x, $z]));
+    }
+
+    public function test_authored_statement_validation_is_atomic_for_direct_callers(): void
+    {
+        $this->resolveExpressiveFieldFixture(.8);
+        $this->fixture();
+        $other = $this->sibling('Other observation');
+        $base = ['action' => 'proposition.reconcile', 'other_proposition_id' => $other->id];
+        $schema = $this->plan()['schema'];
+        foreach ([[], ['statement' => null], ['statement' => 7], ['statement' => []], ['statement' => ''],
+            ['statement' => " \t\n"], ['statement' => "\u{2003}"], ['statement' => str_repeat('é', 20001)],
+            ['statement' => 'Valid', 'receipt_id' => $other->id], ['statement' => 'Valid', 'execution_id' => null]] as $fields) {
+            $input = [...$base, ...$fields];
+            $this->assertInput($schema, $input, false);
+            $this->assertRejectedWithoutWrites($this->phase, $input);
+        }
+        $this->assertInput($schema, [...$base, 'statement' => str_repeat('é', 20000)], true);
+        $statement = $other->statement;
+        $result = app(ContributionDispatcher::class)->dispatch($this->viewer, $this->phase,
+            [...$base, 'statement' => "  {$statement}\n"]);
+        $this->assertSame($statement, $result->fresh()->statement);
+        $this->assertSame($statement, $other->fresh()->statement);
+    }
+
+    private function assertRejectedWithoutWrites(Phase $phase, array $input): void
+    {
+        $counts = fn () => array_map(fn ($table) => DB::table($table)->count(),
+            ['propositions', 'supersessions', 'substrate_ledger_entries', 'proposition_measurements', 'receipt_consumptions',
+                'phase_profile_observations', 'prospective_closure_states', 'chirality_population_observations']);
+        $before = $counts();
+        try {
+            app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase, $input);
+            $this->fail('Unexpected Reconciliation birth.');
+        } catch (DomainException) {
+            $this->assertSame($before, $counts());
+        }
     }
 
     private function assertInput(array $schema, array $input, bool $valid): void

@@ -56,7 +56,7 @@ test('Mediate counterparts and unary Bias choices use their own schema-authorize
     const gate = markup.slice(markup.indexOf('data-role="gate"'), markup.indexOf('data-role="write"'));
     const write = markup.slice(markup.indexOf('data-role="write"'));
     assert.doesNotMatch(gate, /proposition-card--selected/);
-    if (kind === 'mediate') assert.match(gate, /Current Gate · statement retained/);
+    if (kind === 'mediate') assert.match(gate, /Current Gate · temporal predecessor/);
     assert.match(gate, /Privileged Gate/);
     if (kind === 'mediate') assert.match(gate, /Sibling alternative/);
     else assert.doesNotMatch(gate, /Sibling alternative/);

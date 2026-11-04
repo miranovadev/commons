@@ -1,5 +1,5 @@
 {
-  "description": "Two readers judge at Persist acquisition boundaries. After Reclassification extends an already judged Mediate Write, the author traverses to the unjudged Bias child before acquiring again.",
+  "description": "The first synthesis can be judged from either local operand. Exploring the left branch then admits a third Persist and a distinct Disperse pairing. Bias classifies the original synthesis before Order commits its expression.",
   "steps": [
     {
       "cycle": 2,
@@ -527,6 +527,7 @@
       "gate": "rightSignal",
       "input": {
         "action": "proposition.reconcile",
+        "statement": "The observations share a common cause.",
         "other_proposition_id": {
           "ref": "leftSignal"
         }
@@ -595,75 +596,6 @@
       "phase": 5,
       "gate": "leftSignal",
       "input": {
-        "action": "proposition.reconcile",
-        "other_proposition_id": {
-          "ref": "rightSignal"
-        }
-      },
-      "result": "rightSynthesis"
-    },
-    {
-      "cycle": 9,
-      "phase": 6,
-      "gate": "rightSynthesis",
-      "input": {
-        "action": "participant.rest"
-      },
-      "result": "origin"
-    },
-    {
-      "cycle": 10,
-      "phase": 1,
-      "gate": "origin",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "leftDistinction"
-        }
-      },
-      "result": "leftDistinction"
-    },
-    {
-      "cycle": 10,
-      "phase": 2,
-      "gate": "leftDistinction",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "leftPersist"
-        }
-      },
-      "result": "leftPersist"
-    },
-    {
-      "cycle": 10,
-      "phase": 3,
-      "gate": "leftPersist",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "leftCanon"
-        }
-      },
-      "result": "leftCanon"
-    },
-    {
-      "cycle": 10,
-      "phase": 4,
-      "gate": "leftCanon",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "leftSignal"
-        }
-      },
-      "result": "leftSignal"
-    },
-    {
-      "cycle": 10,
-      "phase": 5,
-      "gate": "leftSignal",
-      "input": {
         "action": "attestation.create",
         "proposition_id": {
           "ref": "leftSynthesis"
@@ -673,9 +605,73 @@
       "result": "leftSynthesis"
     },
     {
-      "cycle": 10,
+      "cycle": 9,
       "phase": 6,
       "gate": "leftSynthesis",
+      "input": {
+        "action": "participant.rest"
+      },
+      "result": "origin"
+    },
+    {
+      "cycle": 10,
+      "phase": 1,
+      "gate": "origin",
+      "input": {
+        "action": "proposition.traverse",
+        "proposition_id": {
+          "ref": "leftDistinction"
+        }
+      },
+      "result": "leftDistinction"
+    },
+    {
+      "cycle": 10,
+      "phase": 2,
+      "gate": "leftDistinction",
+      "input": {
+        "action": "preparation.start",
+        "proposition_id": {
+          "ref": "leftDistinction"
+        },
+        "purpose": "Examine the evidence before developing this continuation.",
+        "artifacts": [
+          {
+            "receipt_id": {
+              "ref": "r0"
+            },
+            "artifact_id": {
+              "artifact_of": "r0"
+            },
+            "read_type": "text",
+            "parameters": {
+              "max_chars": 4000,
+              "offset": 0
+            }
+          }
+        ]
+      },
+      "result": "leftDistinction",
+      "execution": "thirdPersistExecution"
+    },
+    {
+      "cycle": 10,
+      "phase": 2,
+      "gate": "leftDistinction",
+      "input": {
+        "action": "proposition.variant",
+        "statement": "A distinct reading of the left branch.",
+        "execution_id": {
+          "ref": "thirdPersistExecution"
+        }
+      },
+      "result": "thirdPersist",
+      "receipt": "thirdReading"
+    },
+    {
+      "cycle": 10,
+      "phase": 3,
+      "gate": "thirdPersist",
       "input": {
         "action": "participant.rest"
       },
@@ -698,70 +694,106 @@
       "phase": 2,
       "gate": "leftDistinction",
       "input": {
-        "action": "proposition.traverse",
+        "action": "attestation.create",
         "proposition_id": {
-          "ref": "leftPersist"
-        }
+          "ref": "thirdPersist"
+        },
+        "direction": "refute"
       },
-      "result": "leftPersist"
+      "result": "thirdPersist"
     },
     {
       "cycle": 11,
       "phase": 3,
-      "gate": "leftPersist",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "leftCanon"
-        }
-      },
-      "result": "leftCanon"
-    },
-    {
-      "cycle": 11,
-      "phase": 4,
-      "gate": "leftCanon",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "leftSignal"
-        }
-      },
-      "result": "leftSignal"
-    },
-    {
-      "cycle": 11,
-      "phase": 5,
-      "gate": "leftSignal",
-      "input": {
-        "action": "attestation.create",
-        "proposition_id": {
-          "ref": "rightSynthesis"
-        },
-        "direction": "support"
-      },
-      "result": "rightSynthesis"
-    },
-    {
-      "cycle": 11,
-      "phase": 6,
-      "gate": "rightSynthesis",
+      "gate": "thirdPersist",
       "input": {
         "action": "proposition.reclassify",
-        "statement": "Prepared opportunity 25",
+        "statement": "The later reading supports a distinct branch.",
         "proposition_id": {
-          "ref": "leftSynthesis"
+          "ref": "thirdPersist"
         },
         "receipt_id": {
           "ref": "leftPreparation"
         }
       },
-      "result": "p11"
+      "result": "thirdCanon"
+    },
+    {
+      "cycle": 11,
+      "phase": 4,
+      "gate": "thirdCanon",
+      "input": {
+        "action": "preparation.start",
+        "proposition_id": {
+          "ref": "thirdCanon"
+        },
+        "purpose": "Examine the evidence before developing this continuation.",
+        "artifacts": [
+          {
+            "receipt_id": {
+              "ref": "r0"
+            },
+            "artifact_id": {
+              "artifact_of": "r0"
+            },
+            "read_type": "text",
+            "parameters": {
+              "max_chars": 4000,
+              "offset": 0
+            }
+          }
+        ]
+      },
+      "result": "thirdCanon",
+      "execution": "thirdSignalExecution"
+    },
+    {
+      "cycle": 11,
+      "phase": 4,
+      "gate": "thirdCanon",
+      "input": {
+        "action": "proposition.variant",
+        "statement": "A third signal follows the distinct reading.",
+        "execution_id": {
+          "ref": "thirdSignalExecution"
+        }
+      },
+      "result": "thirdSignal",
+      "receipt": "thirdPreparation"
+    },
+    {
+      "cycle": 11,
+      "phase": 5,
+      "gate": "thirdSignal",
+      "input": {
+        "action": "proposition.reconcile",
+        "statement": "The third signal follows the same sequence as the first.",
+        "other_proposition_id": {
+          "ref": "leftSignal"
+        }
+      },
+      "result": "thirdSynthesis"
+    },
+    {
+      "cycle": 11,
+      "phase": 6,
+      "gate": "thirdSynthesis",
+      "input": {
+        "action": "proposition.reclassify",
+        "statement": "The retained observation narrows the relationship to the onset of the change.",
+        "proposition_id": {
+          "ref": "leftSynthesis"
+        },
+        "receipt_id": {
+          "ref": "rightDiscovery"
+        }
+      },
+      "result": "classification"
     },
     {
       "cycle": 11,
       "phase": 7,
-      "gate": "p11",
+      "gate": "classification",
       "input": {
         "action": "participant.rest"
       },
@@ -832,91 +864,6 @@
       "cycle": 12,
       "phase": 6,
       "gate": "leftSynthesis",
-      "input": {
-        "action": "proposition.reclassify",
-        "statement": "Prepared opportunity 9",
-        "proposition_id": {
-          "ref": "rightSynthesis"
-        },
-        "receipt_id": {
-          "ref": "rightDiscovery"
-        }
-      },
-      "result": "classification"
-    },
-    {
-      "cycle": 12,
-      "phase": 7,
-      "gate": "classification",
-      "input": {
-        "action": "participant.rest"
-      },
-      "result": "origin"
-    },
-    {
-      "cycle": 13,
-      "phase": 1,
-      "gate": "origin",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "leftDistinction"
-        }
-      },
-      "result": "leftDistinction"
-    },
-    {
-      "cycle": 13,
-      "phase": 2,
-      "gate": "leftDistinction",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "leftPersist"
-        }
-      },
-      "result": "leftPersist"
-    },
-    {
-      "cycle": 13,
-      "phase": 3,
-      "gate": "leftPersist",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "leftCanon"
-        }
-      },
-      "result": "leftCanon"
-    },
-    {
-      "cycle": 13,
-      "phase": 4,
-      "gate": "leftCanon",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "leftSignal"
-        }
-      },
-      "result": "leftSignal"
-    },
-    {
-      "cycle": 13,
-      "phase": 5,
-      "gate": "leftSignal",
-      "input": {
-        "action": "proposition.traverse",
-        "proposition_id": {
-          "ref": "rightSynthesis"
-        }
-      },
-      "result": "rightSynthesis"
-    },
-    {
-      "cycle": 13,
-      "phase": 6,
-      "gate": "rightSynthesis",
       "input": {
         "action": "attestation.create",
         "proposition_id": {
@@ -927,7 +874,7 @@
       "result": "classification"
     },
     {
-      "cycle": 13,
+      "cycle": 12,
       "phase": 7,
       "gate": "classification",
       "input": {

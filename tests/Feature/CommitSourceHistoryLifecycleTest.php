@@ -31,6 +31,7 @@ class CommitSourceHistoryLifecycleTest extends TestCase
                     'result_id' => $participant->fresh()->current_proposition_id];
                 if ($input['action'] === 'proposition.reconcile') {
                     $head = $participant->fresh()->position;
+                    $this->assertSame($input['statement'], $head->statement);
                     $normal = app(ObservableService::class)->components($head);
                     $actual = $head->fresh()->measurement;
                     $this->assertSame($normal->correspondence, $actual->correspondence);

@@ -99,8 +99,7 @@ expressive register; an actual Traverse or Rest option remains authoritative.
 The universal system contract is 635 bytes and invariant across Phases. The old
 phase essays are removed. Concise descriptions live in the existing action
 schema definitions and are preserved in OpenAI's strict action union. Reconcile
-explicitly preserves the Gate statement and records two parents; it does not
-invite an authored synthesis. No independent action catalog is introduced.
+requires a statement interpreting the relationship and records both parents. No independent action catalog is introduced.
 
 The full operational schema is still used for validation and structured-output
 conversion, including all required fields, target enums, source/Receipt pair

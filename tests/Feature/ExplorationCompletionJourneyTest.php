@@ -83,16 +83,19 @@ class ExplorationCompletionJourneyTest extends TestCase
         }
         $producer = app(PhaseProgressionService::class)->advance($left->phase, $left);
         $synthesis = app(ContributionDispatcher::class)->dispatch($producer->cycle->participant, $producer,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $right->id]);
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $right->id, 'statement' => 'The observations share a common cause.']);
         $this->publishPotentialFixture($this->substrate);
         $mediate = $this->judge($disperse, $left);
         $bias = $this->judge($mediate, $synthesis);
         $return = $this->returnAfterRest($bias);
         $this->assertDatabaseHas('exploration_events', ['proposition_id' => $synthesis->id, 'phase_id' => $bias->id]);
         $this->assertTrue($exploration->explored($synthesis, $return));
+        // A third Disperse operand creates a distinct local result at the incoming operand.
+        $third = $this->node($this->phase($classification, PhaseKind::Disperse), $classification);
+        app(PropositionMeasurementService::class)->project($third, .8, .8, .8, correspondenceComponents: new CorrespondenceValues(.8, .8));
         $secondProducer = app(PhaseProgressionService::class)->advance($right->phase, $right);
         $alternate = app(ContributionDispatcher::class)->dispatch($secondProducer->cycle->participant, $secondProducer,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $left->id]);
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $third->id, 'statement' => 'The observations share a common cause.']);
         $biasProducer = app(PhaseProgressionService::class)->advance($secondProducer, $alternate);
         $this->personalVote($secondProducer, $alternate, 'support');
         $this->coherentChiralityFixture($synthesis);

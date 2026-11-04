@@ -182,7 +182,7 @@ class CausalOperationalScopeTest extends TestCase
         $this->reject(fn () => app(ContributionDispatcher::class)->dispatch($this->reader, $mediate,
             ['action' => 'proposition.traverse', 'proposition_id' => $gateB->id]));
         $result = app(ContributionDispatcher::class)->dispatch($this->reader, $mediate,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $gateB->id]);
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $gateB->id, 'statement' => 'The observations share a common cause.']);
         $this->assertEqualsCanonicalizing([$gateA->id, $gateB->id], $result->parents()->where('supersessions.type', 'reconcile')->pluck('propositions.id')->all());
         $this->assertSame($gateA->id, $this->reader->fresh()->current_proposition_id);
         app(PhaseProgressionService::class)->advance($mediate, $result);
@@ -195,8 +195,8 @@ class CausalOperationalScopeTest extends TestCase
         $inverse = app(PhaseProgressionService::class)->advance($this->phase($this->reader, PhaseKind::Disperse, $readB), $gateB);
         $reverse = app(InputPlanService::class)->forPhase($this->reader, $inverse);
         $this->assertSame([$readB->id], array_column($reverse['read_options'], 'id'));
-        $this->assertSame([$gateA->id], array_column($reverse['gate_options'], 'id'));
-        $this->assertSame([$gateA->id], $reverse['schema']['$defs']['actions']['proposition.reconcile']['properties']['other_proposition_id']['enum']);
+        $this->assertSame([], $reverse['gate_options']);
+        $this->assertArrayNotHasKey('proposition.reconcile', $reverse['schema']['$defs']['actions']);
 
     }
 

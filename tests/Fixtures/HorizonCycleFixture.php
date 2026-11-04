@@ -148,7 +148,7 @@ trait HorizonCycleFixture
             // every new synthesis immature. Revisit an offered classification route
             // before judging another Mediate branch; eligibility is unchanged.
             // The original aligned driver retains its entry-only reconsideration.
-            // On the staggered route, create both directed syntheses while available.
+            // On the staggered route, prefer each available synthesis.
             // Traverse judged Writes until a fresh judgment or a Mediate decision is due.
             $staggered = $additionalEntrants > 0;
             $judgmentDue = ! $staggered || ! isset($actions['proposition.traverse'])
@@ -179,6 +179,9 @@ trait HorizonCycleFixture
             }
             if ($action === 'proposition.reclassify') {
                 $input['statement'] = Proposition::findOrFail($input['proposition_id'])->statement;
+            }
+            if ($action === 'proposition.reconcile') {
+                $input['statement'] = 'The observations share a common cause.';
             }
             if ($action === 'proposition.variant') {
                 $input['statement'] = 'Opportunity '.$step;

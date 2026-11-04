@@ -77,7 +77,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 34,
+    'version' => 35,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -168,14 +168,15 @@ return [
             ],
         ],
         'proposition.reconcile' => [
-            'description' => 'Create a result with the Gate and selected counterpart as causal parents, preserving the Gate statement.',
-            'title' => 'Reconcile an admissible counterpart with the current Gate statement',
+            'description' => 'Write your interpretation of the relationship between the current Gate and the selected counterpart. Both become causal parents. No Receipt is consumed.',
+            'title' => 'Reconcile two Propositions',
             'type' => 'object',
             'additionalProperties' => false,
-            'required' => ['action', 'other_proposition_id'],
+            'required' => ['action', 'other_proposition_id', 'statement'],
             'properties' => [
                 'action' => ['const' => 'proposition.reconcile'],
                 'other_proposition_id' => $ulid,
+                'statement' => [...$statement, 'pattern' => '\S'],
             ],
         ],
         'attestation.create' => [
