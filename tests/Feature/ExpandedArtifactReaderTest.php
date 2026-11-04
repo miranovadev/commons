@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Exceptions\ArtifactReadingException;
 use App\Services\Evidence\ArtifactReaderRegistry;
 use App\Services\Evidence\PdfTextReader;
+use App\Services\Evidence\PreparationAllocation;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Fixtures\TextPdf;
 use Tests\TestCase;
@@ -14,6 +15,83 @@ class ExpandedArtifactReaderTest extends TestCase
     private function read(string $body, string $mime, string $type, array $parameters = []): array
     {
         return app(ArtifactReaderRegistry::class)->read($body, $mime, $type, $parameters, 'inline-text');
+    }
+
+    public function test_html_text_retains_visible_words_and_boundaries_and_regex_uses_the_same_representation(): void
+    {
+        $html = '<html><head><title>metadata</title><style>secret</style></head><body><h5>Résumé</h5>'
+            .'<p>con<em>tract</em> &amp; <b>engineering</b></p><ul><li>First<li>第二</ul><p>One<br>Two</p><p><img alt="Diagram"> <svg><text>visible label</text></svg></p>'
+            .'<table><tr><td>A<td>B</table><pre>  indented'."\n".'    code</pre>'
+            .'<template>secret</template><span hidden>secret</span><script>secret</script></body></html>';
+        $text = $this->read($html, 'text/html', 'text');
+        $this->assertSame("Résumé\ncontract & engineering\nFirst\n第二\nOne\nTwo\nDiagram visible label\nA\nB\n  indented\n    code", $text['content']);
+        $this->assertSame($html, $this->read($html, 'text/html', 'raw')['content']);
+        $hit = $this->read($html, 'text/html', 'regex', ['pattern' => 'contract.{0,30}engineering', 'max_chars' => 8]);
+        $this->assertSame('contract', $hit['content']);
+        $this->assertSame(['start' => 7, 'end' => 29], $hit['boundaries']['match']);
+        $this->assertSame($text['representation_hash'], $hit['representation_hash']);
+        $this->assertSame('3', $text['version']);
+    }
+
+    public static function regexWindows(): array
+    {
+        // Two occurrences of é, one combining mark, one supplementary character.
+        return [
+            'first occurrence' => ['é', 0, 1, [0, 1], 0, 'é'],
+            'middle with preceding context' => ['猫', -1, 3, [2, 3], 1, '💚猫e'],
+            'left clamp' => ['猫', PHP_INT_MIN, 2, [2, 3], 0, 'é💚'],
+            'right clamp' => ['猫', PHP_INT_MAX, 2, [2, 3], 7, ''],
+            'case-insensitive end' => ['(?i)z$', 0, 9, [6, 7], 6, 'Z'],
+            'zero-width EOF' => ['$', 0, 2, [7, 7], 7, ''],
+            'no match' => ['absent', -100, 2, null, 7, ''],
+        ];
+    }
+
+    #[DataProvider('regexWindows')]
+    public function test_first_regex_window(string $pattern, int $offset, int $maximum, ?array $span, int $start, string $expected): void
+    {
+        $body = "é💚猫e\u{301}éZ";
+        $parameters = ['pattern' => $pattern, 'offset' => $offset, 'max_chars' => $maximum];
+        $result = $this->read($body, 'text/plain', 'regex', $parameters);
+        $bounds = $result['boundaries'];
+        $this->assertSame($parameters, $result['parameters']);
+        $this->assertArrayHasKey('match', $bounds);
+        $this->assertSame($span === null ? null : ['start' => $span[0], 'end' => $span[1]], $bounds['match']);
+        $this->assertSame($expected, $result['content']);
+        $this->assertSame($start, $bounds['offset']);
+        $this->assertSame($start + mb_strlen($expected), $bounds['end']);
+        $this->assertSame(7, $bounds['total']);
+        $this->assertSame('sha256:'.hash('sha256', $expected), $result['payload_hash']);
+    }
+
+    public function test_regex_readings_with_a_large_character_allowance_still_share_the_byte_ceiling(): void
+    {
+        config(['preparation.selection_bytes' => 10, 'preparation.delivery_bytes' => 13]);
+        $reader = app(ArtifactReaderRegistry::class);
+        $selections = [];
+        foreach (['💚', 'é', 'x'] as $literal) {
+            $selections[] = $reader->represent(str_repeat($literal, 20), 'text/plain', 'regex', ['pattern' => $literal], 'human-text');
+        }
+        $reads = app(PreparationAllocation::class)->allocate($selections, 90000);
+        $this->assertSame(['💚💚', 'éé', 'x'], array_column($reads, 'content'));
+        $this->assertSame(13, array_sum(array_column($reads, 'payload_bytes')));
+    }
+
+    public static function invalidRegex(): array
+    {
+        return [[null], [''], ['('], [str_repeat('x', 513)], ["\xff"], ["bad\0pattern"], ['(?x)abc'],
+            ['(?R)'], ['(*LIMIT_MATCH=123)x'], ['\\C'], ['(a+)+$']];
+    }
+
+    #[DataProvider('invalidRegex')]
+    public function test_invalid_or_excessive_regex_is_distinct_from_no_match(?string $pattern): void
+    {
+        try {
+            $this->read(str_repeat('a', 5000).'!', 'text/plain', 'regex', ['pattern' => $pattern]);
+            $this->fail('Invalid or excessive pattern was accepted.');
+        } catch (ArtifactReadingException $e) {
+            $this->assertSame('invalid_parameters', $e->classification);
+        }
     }
 
     public function test_pdf_text_pages_unicode_and_representation_relative_ranges_preserve_source(): void

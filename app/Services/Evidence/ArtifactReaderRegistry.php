@@ -2,6 +2,8 @@
 
 namespace App\Services\Evidence;
 
+use App\Domain\Evidence\PreparationInput;
+use App\Domain\Evidence\ReadingParameters;
 use App\Exceptions\ArtifactReadingException;
 use DOMDocument;
 use DOMNode;
@@ -11,7 +13,7 @@ final class ArtifactReaderRegistry
 {
     public const METHOD = 'commons-native-text';
 
-    public const VERSION = '2';
+    public const VERSION = '3';
 
     public function __construct(private readonly PdfTextReader $pdf) {}
 
@@ -75,7 +77,7 @@ final class ArtifactReaderRegistry
         };
     }
 
-    public function capabilities(string $sourceType, string $delivery): array
+    public function capabilities(string $sourceType, string $delivery, string $nativeVersion = self::VERSION): array
     {
         $types = match ($sourceType) {
             'html' => ['raw', 'sanitised', 'text', 'tables', 'lists'],
@@ -84,33 +86,39 @@ final class ArtifactReaderRegistry
             'plain-text', 'php', 'source-code', 'markdown', 'json', 'xml' => ['raw', 'text'],
             default => [],
         };
-        if (! in_array($delivery, self::DELIVERIES, true)) {
+        if (! in_array($delivery, self::DELIVERIES, true) || ! in_array($nativeVersion, ['2', self::VERSION], true)) {
             return [];
+        }
+
+        if ($types !== [] && $nativeVersion === self::VERSION && RegexSearch::executable() !== false) {
+            $types[] = 'regex';
         }
 
         return array_map(fn ($type) => [
             'source_type' => $sourceType, 'read_type' => $type,
             'method' => $sourceType === 'pdf' ? PdfTextReader::METHOD : self::METHOD,
-            'version' => $sourceType === 'pdf' ? $this->pdf->version() : self::VERSION,
+            'version' => $sourceType === 'pdf' ? $this->pdf->version().($type === 'regex' ? '/regex-1' : '') : $nativeVersion,
             'delivery_methods' => self::DELIVERIES,
             'parameters' => ['offset' => 0],
+            ...($type === 'regex' ? ['required_parameters' => ['pattern']] : []),
             'max_chars' => min(1048576, (int) config('preparation.max_chars')),
             'max_bytes' => min(1048576, (int) config('preparation.selection_bytes')),
-            'text_budget' => min(1048576, (int) config('preparation.text_budget')),
+            'text_budget' => PreparationInput::characterBudget(),
         ], $types);
     }
 
     /** Construct once; content is request-local and never ordinary Receipt metadata. */
-    public function represent(string $body, string $mime, string $type, array $parameters, string $delivery): array
+    public function represent(string $body, string $mime, string $type, array $parameters, string $delivery, string $nativeVersion = self::VERSION): array
     {
         $source = $this->sourceType($body, $mime);
-        $capability = array_find($this->capabilities($source, $delivery), fn ($item) => $item['read_type'] === $type);
+        $capability = array_find($this->capabilities($source, $delivery, $nativeVersion), fn ($item) => $item['read_type'] === $type);
         if ($capability === null) {
             throw new ArtifactReadingException('missing_capability', 'The requested Source Type, Read Type and delivery combination is unsupported.');
         }
-        $this->validateParameters($parameters);
+        ReadingParameters::validate($type, $parameters);
         $material = match (true) {
             $source === 'pdf' => $this->pdf->extract($body),
+            $source === 'html' && $nativeVersion !== '2' && in_array($type, ['text', 'regex'], true) => $this->readableHtml($body),
             $type === 'sanitised' => $this->sanitise($body),
             $type === 'tables' && $source === 'csv' => $this->csvTables($body),
             in_array($type, ['tables', 'lists'], true) => $this->htmlStructure($body, $type),
@@ -121,16 +129,6 @@ final class ArtifactReaderRegistry
         return ['source_type' => $source, 'read_type' => $type, 'parameters' => $parameters,
             'method' => $capability['method'], 'version' => $capability['version'], 'representation' => $type,
             'delivery_method' => $delivery, 'content' => $material];
-    }
-
-    public function validateParameters(array $parameters): void
-    {
-        if (array_diff(array_keys($parameters), ['offset', 'max_chars']) !== []
-            || ! is_int($parameters['offset'] ?? 0) || ($parameters['offset'] ?? 0) < 0
-            || (array_key_exists('max_chars', $parameters) && (! is_int($parameters['max_chars'])
-                || $parameters['max_chars'] < 1))) {
-            throw new ArtifactReadingException('invalid_parameters', 'Reading accepts an optional nonnegative offset and optional positive max_chars preference.');
-        }
     }
 
     /** Single-reading convenience; multi-selection delivery allocates the shared budget once. */
@@ -251,6 +249,70 @@ final class ArtifactReaderRegistry
                 }
             }
         }
+    }
+
+    private function readableHtml(string $body): string
+    {
+        if ($body === '') {
+            return '';
+        }
+        $document = new DOMDocument;
+        $previous = libxml_use_internal_errors(true);
+        try {
+            $document->loadHTML('<?xml encoding="UTF-8">'.$body, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+            foreach (libxml_get_errors() as $error) {
+                if (str_contains($error->message, 'Excessive depth')) {
+                    throw new ArtifactReadingException('representation_limit', 'HTML nesting exceeds the supported depth.');
+                }
+            }
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+        $out = '';
+        $separator = '';
+        $walk = function (DOMNode $node, bool $pre = false) use (&$walk, &$out, &$separator): void {
+            $imageAlt = $node instanceof \DOMElement && $node->tagName === 'img' && ! $node->hasAttribute('hidden');
+            if ($node->nodeType === XML_TEXT_NODE || $imageAlt) {
+                $text = $imageAlt ? $node->getAttribute('alt') : $node->nodeValue;
+                if ($pre) {
+                    $out .= ($out === '' ? '' : $separator).$text;
+                    $separator = '';
+                } else {
+                    $text = preg_replace('/[ \t\n\r\f]+/', ' ', $text);
+                    if ($separator === '' && str_starts_with($text, ' ')) {
+                        $separator = ' ';
+                    }
+                    if (($wording = trim($text, ' ')) !== '') {
+                        $out .= ($out === '' ? '' : $separator).$wording;
+                        $separator = str_ends_with($text, ' ') ? ' ' : '';
+                    }
+                }
+                $this->bounded($out);
+
+                return;
+            }
+            $name = strtolower($node->nodeName);
+            if (in_array($name, ['head', 'script', 'style', 'template', 'iframe', 'object', 'embed', 'noscript'], true)
+                || ($node instanceof \DOMElement && $node->hasAttribute('hidden'))) {
+                return;
+            }
+            $block = in_array($name, ['address', 'article', 'aside', 'blockquote', 'br', 'caption', 'dd', 'details',
+                'div', 'dl', 'dt', 'fieldset', 'figcaption', 'figure', 'footer', 'form', 'h1', 'h2', 'h3', 'h4',
+                'h5', 'h6', 'header', 'hr', 'li', 'main', 'nav', 'ol', 'p', 'pre', 'section', 'summary', 'td', 'th', 'tr', 'ul'], true);
+            if ($block) {
+                $separator = "\n";
+            }
+            foreach ($node->childNodes as $child) {
+                $walk($child, $pre || $name === 'pre');
+            }
+            if ($block) {
+                $separator = "\n";
+            }
+        };
+        $walk($document);
+
+        return $out;
     }
 
     private function sanitise(string $body): string

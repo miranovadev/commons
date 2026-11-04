@@ -117,3 +117,15 @@ test('optional ranges remain automatic until a maximum is entered, and clearing 
   item = changeReading(item, 'Character offset', 12);
   assert.deepEqual(item.parameters, { offset: 12 });
 });
+
+test('regex keeps the exact pattern and signed offset, and switching readers clears both', () => {
+  globalThis.preparationHarness = { options: [{ receipt_id: 'receipt', artifact_id: 'hash', source_type: 'html', reference: 'Source',
+    capabilities: ['text', 'regex'].map(read_type => ({ read_type })) }] };
+  let item = { receipt_id: 'receipt', artifact_id: 'hash', read_type: 'text' };
+  item = changeReading(item, 'Read Type', 'regex');
+  item = changeReading(item, 'Regex pattern', { currentTarget: { value: '(?i)é.{0,4}💚' } });
+  item = changeReading(item, 'Offset from first match', -3);
+  assert.deepEqual(item.parameters, { offset: -3, pattern: '(?i)é.{0,4}💚' });
+  item = changeReading(item, 'Read Type', 'text');
+  assert.deepEqual(item.parameters, { offset: 0 });
+});

@@ -140,6 +140,7 @@ export interface Participant {
   designation?: string | null;
   max_read_count: number;
   max_token_count?: number | null;
+  max_preparation_chars?: number | null;
   owned_by_user?: boolean;
   position?: ParticipantPosition | null;
 }
@@ -222,7 +223,7 @@ export type InstrumentInput =
   | { kind: 'load_file'; method: 'download'; reference: string }
   | { replay_receipt_id: string };
 
-export interface PreparationSelection { receipt_id: string; artifact_id: string; read_type: string; parameters?: { offset?: number; max_chars?: number }; }
+export interface PreparationSelection { receipt_id: string; artifact_id: string; read_type: string; parameters?: { pattern?: string; offset?: number; max_chars?: number }; }
 export interface PreparationHistorySummary {
   id: string;
   participant: { id: string; callsign: string };
@@ -245,7 +246,7 @@ export interface PreparationHistoryRecord extends PreparationHistorySummary {
     request_id?: string; artifact_id: string; receipt_ids: string[]; read_type: string; source_type?: string;
     method?: string; version?: string; representation?: string; representation_hash?: string;
     delivery_method?: string; payload_bytes?: number;
-    boundaries?: Partial<{ requested_offset: number; requested_max_chars: number | null; offset: number; end: number; length: number; total: number; has_more: boolean }>;
+    boundaries?: Partial<{ match?: { start: number; end: number } | null; requested_offset: number; requested_max_chars: number | null; offset: number; end: number; length: number; total: number; has_more: boolean }>;
   }>;
   deferment_reason: string | null;
   failure: { stage?: string; classification?: string; method?: string; version?: string; reason: string | null } | null;
@@ -254,9 +255,9 @@ export interface PreparationOption { receipt_id: string; artifact_id: string; re
   capabilities: Array<{ read_type: string; method: string; version: string; max_chars?: number; parameters: { offset?: number; max_chars?: number }; text_budget?: number }>;
 }
 export interface PreparationDelivery { execution_id: string; purpose: string; presentation_token: string;
-  deliveries: Array<{ request_id: string; artifact_id: string; source_type: string; read_type: string; method: string; version: string; content: string;
+  deliveries: Array<{ request_id: string; artifact_id: string; parameters?: PreparationSelection['parameters']; source_type: string; read_type: string; method: string; version: string; content: string;
     payload_bytes: number; representation_hash: string; receipt_ids: string[];
-    boundaries: { requested_offset: number; requested_max_chars: number | null; offset: number; end: number; length: number; total: number; has_more: boolean } }>;
+    boundaries: { match?: { start: number; end: number } | null; requested_offset: number; requested_max_chars: number | null; offset: number; end: number; length: number; total: number; has_more: boolean } }>;
 }
 export interface ContributionInput {
   purpose?: string;
@@ -539,6 +540,7 @@ export interface JoinParticipantInput {
   designation?: string | null;
   max_read_count: number;
   max_token_count?: number | null;
+  max_preparation_chars?: number | null;
   connection?: { id: Identifier };
 }
 

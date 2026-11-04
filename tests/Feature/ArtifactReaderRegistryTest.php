@@ -66,7 +66,7 @@ class ArtifactReaderRegistryTest extends TestCase
             ['<root>', 'application/xml', 'raw', [], 'invalid_source'],
             ['<!DOCTYPE root [<!ENTITY x SYSTEM "file:///etc/passwd">]><root>&x;</root>', 'application/xml', 'raw', [], 'unsupported_source'],
             ['plain', 'text/plain', 'sanitised', [], 'missing_capability'],
-            ['<html>text</html>', 'text/html', 'regex', [], 'missing_capability'],
+            ['<html>text</html>', 'text/html', 'regex', [], 'invalid_parameters'],
             ['text', 'text/plain', 'raw', ['max_chars' => 0], 'invalid_parameters'],
             ['text', 'text/plain', 'text', ['offset' => 10, 'max_chars' => 2], 'invalid_parameters'],
             ['text', 'text/plain', 'text', ['offset' => -1, 'max_chars' => 2], 'invalid_parameters'],
@@ -87,8 +87,8 @@ class ArtifactReaderRegistryTest extends TestCase
     public function test_capabilities_advertise_only_implemented_combinations_and_delivery_methods(): void
     {
         $registry = app(ArtifactReaderRegistry::class);
-        $this->assertSame(['raw', 'sanitised', 'text', 'tables', 'lists'], array_column($registry->capabilities('html', 'inline-text'), 'read_type'));
-        $this->assertSame(['text'], array_column($registry->capabilities('pdf', 'inline-text'), 'read_type'));
+        $this->assertSame(['raw', 'sanitised', 'text', 'tables', 'lists', 'regex'], array_column($registry->capabilities('html', 'inline-text'), 'read_type'));
+        $this->assertSame(['text', 'regex'], array_column($registry->capabilities('pdf', 'inline-text'), 'read_type'));
         config(['preparation.pdf.binary' => '/nonexistent/pdftotext']);
         $this->assertSame([], $registry->capabilities('pdf', 'inline-text'));
         $this->assertSame([], $registry->capabilities('html', 'native-attachment'));

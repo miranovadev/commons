@@ -39,7 +39,9 @@ export function PreparationDetails({ preparation: p, slug }: { preparation: Prep
           ['Source Receipt', selection.receipt_id], ['Artifact hash', selection.artifact_id],
           ['Source type', selection.source?.receipt_type], ['Source reference', selection.source?.reference],
           ['Filename', selection.source?.filename], ['Media type', selection.source?.media_type], ['Artifact bytes', selection.source?.size],
-          ['Read Type', selection.read_type], ['Requested offset', selection.parameters?.offset ?? 0],
+          ['Read Type', selection.read_type],
+          ...(selection.read_type === 'regex' ? [['Regex pattern', selection.parameters?.pattern] as [string, ReactNode]] : []),
+          ['Requested offset', selection.parameters?.offset ?? 0],
           ['Requested maximum characters', selection.parameters?.max_chars ?? 'Automatic allocation'],
         ]} />
       </Box>)}
@@ -49,7 +51,9 @@ export function PreparationDetails({ preparation: p, slug }: { preparation: Prep
       {p.deliveries.map((delivery, index) => <Box key={delivery.request_id ?? index} mb="md">
         <Text fw={600} size="sm">Delivery {index + 1}</Text><Facts rows={[
           ['Artifact hash', delivery.artifact_id], ['Source Receipts', delivery.receipt_ids.join(', ')],
-          ['Read Type', delivery.read_type], ['Source type', delivery.source_type],
+          ['Read Type', delivery.read_type],
+          ...(delivery.read_type === 'regex' ? [['First match', delivery.boundaries?.match ? delivery.boundaries.match.start+'–'+delivery.boundaries.match.end : 'No match'] as [string, ReactNode]] : []),
+          ['Source type', delivery.source_type],
           ['Reader method', delivery.method], ['Reader version', delivery.version],
           ['Representation', delivery.representation], ['Representation hash', delivery.representation_hash],
           ['Delivery method', delivery.delivery_method], ['Effective offset', delivery.boundaries?.offset],

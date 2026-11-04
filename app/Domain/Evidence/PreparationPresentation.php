@@ -7,13 +7,12 @@ use DomainException;
 /** Trusted acknowledgement of delivered representations. Never accepts Artifact bodies. */
 final readonly class PreparationPresentation
 {
-    public function __construct(public array $deliveries)
+    public function __construct(public array $deliveries, ?int $characterBudget = null)
     {
         if (! array_is_list($deliveries) || count($deliveries) < 1 || count($deliveries) > PreparationInput::MAX_SELECTIONS) {
             throw new DomainException('Presentation requires bounded successful deliveries.');
         }
         $bytes = 0;
-        $characters = 0;
         $ids = [];
         foreach ($deliveries as $delivery) {
             $fields = ['request_id', 'artifact_id', 'source_type', 'read_type', 'parameters', 'method', 'version',
@@ -39,9 +38,16 @@ final readonly class PreparationPresentation
             }
             $parameters = $delivery['parameters'];
             $bounds = $delivery['boundaries'];
-            if (! is_array($parameters) || array_diff(array_keys($parameters), ['offset', 'max_chars']) !== []
-                || collect($parameters)->contains(fn ($value) => ! is_int($value) || $value < 0)
-                || ! is_array($bounds) || count($bounds) !== 8 || array_diff(array_keys($bounds), ['unit', 'requested_offset', 'requested_max_chars', 'offset', 'end', 'length', 'total', 'has_more']) !== []
+            if (! is_array($parameters)) {
+                throw new DomainException('Delivery parameters must be a reading request.');
+            }
+            ReadingParameters::validate($delivery['read_type'], $parameters);
+            $fields = ['unit', 'requested_offset', 'requested_max_chars', 'offset', 'end', 'length', 'total', 'has_more'];
+            $regex = $delivery['read_type'] === 'regex';
+            if ($regex) {
+                $fields[] = 'match';
+            }
+            if (! is_array($bounds) || count($bounds) !== count($fields) || array_diff(array_keys($bounds), $fields) !== []
                 || ($bounds['unit'] ?? null) !== 'unicode-characters' || ! is_int($bounds['offset'] ?? null)
                 || ! is_int($bounds['end'] ?? null) || ! is_int($bounds['total'] ?? null)
                 || $bounds['offset'] < 0 || $bounds['end'] < $bounds['offset'] || $bounds['total'] < $bounds['end']
@@ -52,8 +58,18 @@ final readonly class PreparationPresentation
                 || $delivery['request_id'] !== PreparationInput::requestId($delivery)) {
                 throw new DomainException('Delivery must preserve its exact requested selection and boundaries.');
             }
+            $offset = $parameters['offset'] ?? 0;
+            if ($regex) {
+                $match = $bounds['match'];
+                if ($match !== null && (! is_array($match) || count($match) !== 2
+                    || ! is_int($match['start'] ?? null) || ! is_int($match['end'] ?? null)
+                    || $match['start'] < 0 || $match['start'] > $match['end'] || $match['end'] > $bounds['total'])) {
+                    throw new DomainException('Regex match must be a Unicode span in the searched representation.');
+                }
+                $offset = $match === null ? $bounds['total'] : ReadingParameters::relativeStart($match['start'], $offset, $bounds['total']);
+            }
             if ($delivery['payload_bytes'] < $bounds['length'] || $delivery['payload_bytes'] > 4 * $bounds['length']
-                || $bounds['offset'] !== ($parameters['offset'] ?? 0)
+                || $bounds['offset'] !== $offset
                 || $bounds['length'] > min(PreparationInput::MAX_PAYLOAD_BYTES, (int) config('preparation.max_chars'))
                 || (isset($parameters['max_chars']) && ($parameters['max_chars'] < 1
                     || $bounds['length'] > $parameters['max_chars']))) {
@@ -64,11 +80,18 @@ final readonly class PreparationPresentation
             }
             $ids[$delivery['request_id']] = true;
             $bytes += $delivery['payload_bytes'];
-            $characters += $bounds['length'];
         }
-        if ($characters > min(PreparationInput::MAX_PAYLOAD_BYTES, (int) config('preparation.text_budget'))
-            || $bytes > min(PreparationInput::MAX_PAYLOAD_BYTES, (int) config('preparation.delivery_bytes'))) {
+        $this->assertCharacterBudget($characterBudget);
+        if ($bytes > min(PreparationInput::MAX_PAYLOAD_BYTES, (int) config('preparation.delivery_bytes'))) {
             throw new DomainException('Preparation exceeds its combined payload budget; do not truncate silently.');
+        }
+    }
+
+    public function assertCharacterBudget(?int $budget): void
+    {
+        $characters = array_sum(array_column(array_column($this->deliveries, 'boundaries'), 'length'));
+        if ($characters > PreparationInput::characterBudget($budget)) {
+            throw new DomainException('Preparation exceeds its combined character budget.');
         }
     }
 }

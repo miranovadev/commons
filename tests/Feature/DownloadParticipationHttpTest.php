@@ -63,7 +63,7 @@ class DownloadParticipationHttpTest extends ParticipationHttpTestCase
         $disperse = $this->driveUntil($actor, fn ($state) => $state['plan']['phase']['kind'] === 'disperse', 5, $source->id);
         $this->assertNotNull($source->fresh()->consumption);
         $option = collect($disperse['plan']['preparation_options'])->firstWhere('receipt_id', $source->id);
-        $this->assertSame(['raw', 'text', 'tables'], array_column($option['capabilities'], 'read_type'));
+        $this->assertSame(['raw', 'text', 'tables', 'regex'], array_column($option['capabilities'], 'read_type'));
         config(['preparation.text_budget' => 31]);
         $started = $this->contribute($actor, ['action' => 'preparation.start', 'proposition_id' => $disperse['plan']['gate_id'],
             'purpose' => 'Compare the original CSV with its table representation.', 'artifacts' => [

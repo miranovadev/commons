@@ -21,6 +21,7 @@ class Participant extends Model
         return [
             'max_read_count' => 'integer',
             'max_token_count' => 'integer',
+            'max_preparation_chars' => 'integer',
         ];
     }
 

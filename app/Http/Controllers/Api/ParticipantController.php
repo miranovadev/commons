@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Evidence\PreparationInput;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreParticipantRequest;
 use App\Http\Resources\ParticipantResource;
 use App\Models\Participant;
 use App\Models\Substrate;
 use App\Services\SubstrateMembershipService;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 
@@ -42,6 +44,17 @@ class ParticipantController extends Controller
         return new ParticipantResource(
             $participant->load('latestCycle.currentPhase.gate'),
         );
+    }
+
+    public function update(Request $request, Substrate $substrate, Participant $participant): ParticipantResource
+    {
+        Gate::authorize('act', $participant);
+        $attributes = $request->validate(['max_preparation_chars' => [
+            'present', 'nullable', 'integer', 'min:1', 'max:'.PreparationInput::characterCeiling(),
+        ]]);
+        $participant->forceFill($attributes)->save();
+
+        return new ParticipantResource($participant->load('latestCycle.currentPhase.gate'));
     }
 
     public function show(

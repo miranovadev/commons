@@ -68,12 +68,12 @@ final class ReceiptSummary
             'selection_count' => count($selections),
             'selections' => array_map(fn ($item) => [
                 ...Arr::only($item, ['artifact_id', 'read_type']),
-                ...Arr::only($item['parameters'] ?? [], ['offset', 'max_chars']),
+                ...Arr::only($item['parameters'] ?? [], ['offset', 'max_chars', 'pattern']),
             ], array_slice($selections, 0, 3)),
             'delivery_count' => count($deliveries),
             'deliveries' => array_map(fn ($item) => [
                 ...Arr::only($item, ['artifact_id', 'read_type']),
-                ...Arr::only($item['boundaries'] ?? [], ['offset', 'length', 'total', 'has_more']),
+                ...Arr::only($item['boundaries'] ?? [], ['offset', 'length', 'total', 'has_more', 'match']),
             ], array_slice($deliveries, 0, 3)),
             ...(isset($metadata['failure']) ? ['failure' => Arr::only($metadata['failure'], ['stage', 'classification', 'method', 'version'])] : []),
         ];

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Domain\Evidence\PreparationInput;
 use App\Domain\Evidence\PreparationPresentation;
+use App\Domain\Evidence\ReadingParameters;
 use App\Enums\PhaseKind;
 use App\Exceptions\ArtifactReadingException;
 use App\Exceptions\ArtifactStorageException;
@@ -73,8 +74,9 @@ final class PreparationService
     {
         // Runtime capability/version probing stays outside structural write transactions.
         $reader = app(ArtifactReaderRegistry::class);
+        $nativeVersion = EvidenceExecution::findOrFail($execution->id)->metadata['reading']['native_version'] ?? '2';
         foreach ($presentation->deliveries as $delivery) {
-            $capability = array_find($reader->capabilities($delivery['source_type'], $delivery['delivery_method']),
+            $capability = array_find($reader->capabilities($delivery['source_type'], $delivery['delivery_method'], $nativeVersion),
                 fn ($item) => $item['read_type'] === $delivery['read_type']);
             if ($delivery['method'] !== ($capability['method'] ?? null) || $delivery['version'] !== ($capability['version'] ?? null)
                 || $delivery['representation'] !== $delivery['read_type']) {
@@ -237,9 +239,13 @@ final class PreparationService
             if ($reading === null || $reading === []) {
                 continue;
             }
+            // Capability discovery is shared by Artifact. Apply the actor's allowance only to this plan.
+            $budget = PreparationInput::characterBudget($phase->cycle->participant->max_preparation_chars);
+            $capabilities = array_map(fn ($item) => array_replace($item, ['text_budget' => $budget,
+                'max_chars' => min($budget, $item['max_chars'], $item['max_bytes'])]), $reading['capabilities']);
             $result[] = ['receipt_id' => $receipt->id, 'artifact_id' => $artifact['hash'],
                 'reference' => $receipt->reference, 'source_type' => $reading['source_type'],
-                'size' => $artifact['size'], 'capabilities' => $reading['capabilities']];
+                'size' => $artifact['size'], 'capabilities' => $capabilities];
         }
 
         return $result;
@@ -341,6 +347,8 @@ final class PreparationService
         if (! in_array($execution->status, ['pending', 'presented'], true)) {
             throw new ConflictHttpException('This Preparation is already resolved.');
         }
+        $budget = $execution->metadata['reading']['text_budget'] ?? null;
+        $nativeVersion = $execution->metadata['reading']['native_version'] ?? '2';
         $deliveries = [];
         $seen = [];
         $materials = [];
@@ -363,20 +371,20 @@ final class PreparationService
                 $body = $bodies[$selection['artifact_id']] ??= app(ArtifactStore::class)->read($artifact);
                 $source = $reader->sourceType($body, $artifact['media_type'] ?? '');
                 $attempt = ['source_type' => $source];
-                $capability = array_find($reader->capabilities($source, $method), fn ($item) => $item['read_type'] === $selection['read_type']);
+                $capability = array_find($reader->capabilities($source, $method, $nativeVersion), fn ($item) => $item['read_type'] === $selection['read_type']);
                 $attempt += array_intersect_key($capability ?? [], array_flip(['method', 'version']));
                 $parameters = $selection['parameters'] ?? [];
-                $reader->validateParameters($parameters);
+                ReadingParameters::validate($selection['read_type'], $parameters);
                 // Same bytes/read type/source version are parsed once, even with different ranges.
                 $key = $selection['artifact_id'].':'.$source.':'.$selection['read_type'];
                 $representation = $materials[$key] ??= $reader->represent($body, $artifact['media_type'] ?? '',
-                    $selection['read_type'], [], $method);
+                    $selection['read_type'], $parameters, $method, $nativeVersion);
                 $deliveries[] = ['artifact_id' => $selection['artifact_id'], 'request_id' => $id,
                     'receipt_ids' => [$selection['receipt_id']],
                     'delivery_id' => $execution->id.':'.$id, ...$representation, 'parameters' => $parameters];
             }
-            $deliveries = app(PreparationAllocation::class)->allocate($deliveries);
-            $acknowledgement = new PreparationPresentation(array_map(fn ($item) => array_diff_key($item, ['content' => true]), $deliveries));
+            $deliveries = app(PreparationAllocation::class)->allocate($deliveries, $budget);
+            $acknowledgement = new PreparationPresentation(array_map(fn ($item) => array_diff_key($item, ['content' => true]), $deliveries), $budget);
         } catch (Throwable $exception) {
             $classification = $exception instanceof ArtifactReadingException ? $exception->classification
                 : ($exception instanceof ArtifactStorageException ? 'storage_failure' : 'reader_failure');
@@ -412,7 +420,7 @@ final class PreparationService
         if (($ack['participant_id'] ?? null) !== $participant->id || ($ack['execution_id'] ?? null) !== $execution->id) {
             throw new DomainException('Presentation acknowledgement belongs to a different Preparation.');
         }
-        $this->present($participant, $execution, new PreparationPresentation($ack['deliveries']));
+        $this->present($participant, $execution, new PreparationPresentation($ack['deliveries'], $execution->metadata['reading']['text_budget'] ?? null));
     }
 
     public function recover(Participant $participant, Phase $phase): void

@@ -3,14 +3,15 @@
 namespace App\Services\Evidence;
 
 use App\Domain\Evidence\PreparationInput;
+use App\Domain\Evidence\ReadingParameters;
 use App\Exceptions\ArtifactReadingException;
 
 /** Proportional explicit preferences, then automatic Unicode water filling. */
 final class PreparationAllocation
 {
-    public function allocate(array $representations): array
+    public function allocate(array $representations, ?int $characterBudget = null): array
     {
-        $characters = min(PreparationInput::MAX_PAYLOAD_BYTES, (int) config('preparation.text_budget'));
+        $characters = PreparationInput::characterBudget($characterBudget);
         $bytes = min(PreparationInput::MAX_PAYLOAD_BYTES, (int) config('preparation.delivery_bytes'));
         $perBytes = min(PreparationInput::MAX_PAYLOAD_BYTES, (int) config('preparation.selection_bytes'));
         $perChars = min(PreparationInput::MAX_PAYLOAD_BYTES, (int) config('preparation.max_chars'));
@@ -22,6 +23,17 @@ final class PreparationAllocation
             $parameters = $representation['parameters'];
             $total = mb_strlen($representation['content'], 'UTF-8');
             $offset = $parameters['offset'] ?? 0;
+            $matchBoundary = [];
+            if ($representation['read_type'] === 'regex') {
+                try {
+                    $match = RegexSearch::first($representation['content'], $parameters['pattern']);
+                } catch (ArtifactReadingException $error) {
+                    throw new ArtifactReadingException($error->classification, $error->getMessage(),
+                        array_intersect_key($representation, array_flip(['artifact_id', 'read_type', 'source_type', 'method', 'version'])));
+                }
+                $matchBoundary = ['match' => $match];
+                $offset = $match === null ? $total : ReadingParameters::relativeStart($match['start'], $offset, $total);
+            }
             if ($offset > $total) {
                 throw new ArtifactReadingException('invalid_parameters', 'The requested offset is beyond the representation character length.',
                     array_intersect_key($representation, array_flip(['artifact_id', 'read_type', 'source_type', 'method', 'version'])));
@@ -30,7 +42,7 @@ final class PreparationAllocation
             $tail = mb_substr($representation['content'], $offset, min($perChars, $parameters['max_chars'] ?? $perChars), 'UTF-8');
             $length = $size = 0;
             $weight = $parameters['max_chars'] ?? 1;
-            $states[$index] = compact('tail', 'total', 'offset', 'explicit', 'length', 'size', 'weight');
+            $states[$index] = compact('tail', 'total', 'offset', 'explicit', 'length', 'size', 'weight', 'matchBoundary');
         }
         // Weighted fair allocation, one complete UTF-8 character at a time.
         // Short/byte-limited representations leave the pool, redistributing their
@@ -94,7 +106,7 @@ final class PreparationAllocation
                 'requested_offset' => $representation['parameters']['offset'] ?? 0,
                 'requested_max_chars' => $representation['parameters']['max_chars'] ?? null,
                 'offset' => $state['offset'], 'end' => $end, 'length' => $state['length'],
-                'total' => $state['total'], 'has_more' => $end < $state['total']];
+                ...$state['matchBoundary'], 'total' => $state['total'], 'has_more' => $end < $state['total']];
         }
         unset($representation);
 

@@ -25,10 +25,10 @@ actually reference the selected hash. There is no substrate-wide hash lookup.
 
 | Source Type | Read Types | Reader and version |
 | --- | --- | --- |
-| HTML | raw, sanitised, text, tables, lists | commons-native-text / 2 |
-| Plain text, PHP/common UTF-8 source, Markdown, JSON, XML | raw, text | commons-native-text / 2 |
-| CSV | raw, text, tables | commons-native-text / 2 |
-| PDF | text | commons-poppler-text / 1/poppler-`runtime version` |
+| HTML | raw, sanitised, text, tables, lists, regex | commons-native-text / 3 |
+| Plain text, PHP/common UTF-8 source, Markdown, JSON, XML | raw, text, regex | commons-native-text / 3 |
+| CSV | raw, text, tables, regex | commons-native-text / 3 |
+| PDF | text, regex | commons-poppler-text / 1/poppler-`runtime version` (regex adds `/regex-1`) |
 
 Both `inline-text` and `human-text` use identical allocation. A capability is only
 advertised when its reader is available. PDF requires the local executable and its
@@ -36,12 +36,16 @@ resource limiter; it is omitted when unavailable. Format recognition uses preser
 bytes and controlled MIME hints, never acquisition type or filename. A PDF header
 is recognised before UTF-8 validation; actual extraction validates the document.
 CSV uses `text/csv` or `application/csv` after textual validation. Automatic delimiter
-sniffing, semicolon/TSV dialects, OCR, images, archives, provider attachments, regex,
+sniffing, semicolon/TSV dialects, OCR, images, archives, provider attachments,
 JSON-path and source-code variable extraction are not implemented.
 
 - **raw** selects unchanged UTF-8 source characters, preserving original line endings.
-- **text** selects original textual source for existing text formats; PDF text is
-  Poppler's extracted reading-order representation. HTML text still includes markup.
+- **text** on HTML returns decoded text in document order. Headings, paragraphs,
+  list items, table cells and explicit line breaks retain boundaries. Inline words
+  stay together, image alt text is included, and preformatted text keeps its whitespace. The reader omits the
+  document head, hidden elements, scripts, styles, templates and embedded content.
+  It does not compute a browser CSS layout. PDF uses Poppler's reading-order
+  text. Other supported text sources retain their original representation.
 - **sanitised** extracts readable HTML, omitting executable/irrelevant elements.
 - **HTML tables** emit numbered tables and one JSON cell-array per row. Each cell
   retains text, header status, row span and column span (bounded at 1,000). Empty
@@ -59,6 +63,41 @@ partial representation explicit; the allocator does not secretly move a requeste
 
 HTML parsing uses `LIBXML_NONET`, never fetches linked resources or executes script.
 XML DTD/entity declarations remain unsupported. Representation bodies stay transient.
+
+## Regex selection
+
+Use a bare UTF-8 pattern of 1–512 **bytes**. For example,
+`{"read_type":"regex","parameters":{"pattern":"contract.{0,30}engineering","offset":-80,"max_chars":3000}}`
+starts up to 80 Unicode characters before the first match in the **text**
+representation. The default offset is zero. A signed offset is clamped to the
+start or end of the representation. Ordinary readers retain absolute offsets.
+
+The reader supports literals, character classes, Unicode properties, anchors,
+alternation, grouping and quantifiers. It accepts leading inline `i`, `m` and
+`s` flags, alone or combined. Use escapes for literal controls. It does not
+accept PCRE control verbs, byte-level matching, match resets, backreferences,
+lookarounds or other special groups apart from `(?:…)`. Grouping does not capture.
+
+A fixed local PHP CLI worker receives the expression and source on standard
+input. It uses UTF-8 PCRE with JIT disabled, a 100,000 match limit, depth 128,
+a 2 MiB matching heap, a 96 MiB PHP memory limit and a two-second wall deadline.
+The worker returns only byte coordinates. The reader converts these to Unicode
+character positions. Regex is advertised when the CLI is available. PDF regex
+also requires the ordinary PDF extractor. Source and representation ceilings
+apply before search. Invalid patterns are rejected at admission. A pattern that
+exhausts its execution limits is recorded as an invalid-parameters reading failure.
+
+`boundaries.match` holds the first match's inclusive `start` and exclusive `end`.
+A miss records `match: null`, an empty payload and an empty range at the end of
+the searched representation. It can be acknowledged normally. A zero-width
+match instead records an explicit span with equal coordinates. Each exact
+submitted pattern participates in the request ID. The representation hash covers
+the entire searchable text and the payload hash covers only delivered bytes.
+
+Native reader v2 HTML `text` returned markup. Use `raw` to read that source on
+new executions. Pre-refinement executions retain v2 for delivery and
+acknowledgement, including the historical global character allowance. Previously
+recorded presentations and Receipts retain their original versions and hashes.
 
 ## Allocation and budgets
 
@@ -78,6 +117,15 @@ The existing 1 MiB domain ceiling additionally caps delivery, regardless of conf
 limits. It is not the cognitive target. A Download can preserve a larger resource
 than today's reader can inspect. Acquisition remains successful even if reading is
 unsupported or exceeds processing limits.
+
+**Maximum Preparation Characters** (`max_preparation_chars`) is a nullable
+Participant setting on creation and update. Clearing it uses
+`PREPARATION_TEXT_BUDGET`. The largest configurable allowance is the lesser of
+the combined delivery-byte limit and 1 MiB, since every character costs at least
+one byte. With defaults a Participant can request up to 49,152 characters across
+selections. The 12,000-character per-selection cap and both byte limits still
+apply. The effective allowance and native reader version are recorded when the
+execution starts. Editing the Participant affects subsequent Preparations.
 
 For each unique request, construct its representation once, then measure Unicode
 characters after its requested offset. Explicit selections receive proportional
@@ -103,7 +151,7 @@ coincide. The same source representation is reused for different ranges.
 
 Offsets are zero-based Unicode character positions **in the resolved representation**;
 `end` is exclusive. An offset equal to total length produces an empty selection.
-An offset beyond it fails. An automatic allocation can deliver zero characters if
+An absolute offset beyond it fails. An automatic allocation can deliver zero characters if
 explicit selections exhaust the budget; its history records zero and `has_more`
 truthfully rather than claiming the whole source was supplied.
 
@@ -115,7 +163,7 @@ Changing Read Type resets ranges because offsets are representation-relative.
 The presentation shows actual start/end/total, delivered characters and bytes,
 requested maximum or automatic allocation, and remaining-content indication.
 
-The generated action schema accepts omitted parameters or offset-only requests:
+For reads other than regex the generated action schema accepts omitted parameters or offset-only requests:
 
 ```json
 {

@@ -7,6 +7,7 @@ use App\Models\EvidenceExecution;
 use App\Services\ContributionService;
 use App\Services\Evidence\ArtifactStore;
 use App\Services\InputPlanService;
+use App\Services\OpenAIResponseSchema;
 use App\Services\PreparationService;
 use Illuminate\Support\Facades\Storage;
 use Tests\Fixtures\PreparationFixture;
@@ -38,6 +39,94 @@ class AdaptivePreparationJourneyTest extends TestCase
         }
 
         return $value;
+    }
+
+    public function test_small_snapshot_restricts_allocation_and_trusted_presentation_after_a_budget_increase(): void
+    {
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        $f->viewer->forceFill(['max_preparation_chars' => 4])->save();
+        $service = app(PreparationService::class);
+        $execution = $service->start($f->viewer, $f->phase, $fixture->input());
+        $f->viewer->forceFill(['max_preparation_chars' => 30000])->save();
+        $delivery = $service->delivery($f->viewer, $execution, 'human-text');
+        $this->assertSame('pres', $delivery['deliveries'][0]['content']);
+        try {
+            $service->present($f->viewer, $execution, $fixture->presentation());
+            $this->fail('The default-sized presentation exceeded the reserved four characters.');
+        } catch (\DomainException $error) {
+            $this->assertStringContainsString('combined character budget', $error->getMessage());
+        }
+        $this->assertNull($execution->fresh()->presented_at);
+        $service->acknowledge($f->viewer, $execution, $delivery['presentation_token']);
+        $this->assertSame('presented', $execution->fresh()->status);
+    }
+
+    public function test_pre_refinement_pending_html_text_keeps_its_version_and_global_allowance(): void
+    {
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        $service = app(PreparationService::class);
+        $html = '<p>Preserved historical markup</p>';
+        $input = $fixture->input([$fixture->receipt($html)]);
+        $input['artifacts'][0]['read_type'] = 'text';
+        $execution = $service->start($f->viewer, $f->phase, $input);
+        // A pre-refinement execution has no reading snapshot.
+        EvidenceExecution::whereKey($execution->id)->update(['metadata' => null]);
+        $f->viewer->forceFill(['max_preparation_chars' => 1])->save();
+        $delivery = $service->delivery($f->viewer, $execution->fresh(), 'human-text');
+        $this->assertSame($html, $delivery['deliveries'][0]['content']);
+        $this->assertSame('2', $delivery['deliveries'][0]['version']);
+        $service->acknowledge($f->viewer, $execution->fresh(), $delivery['presentation_token']);
+        $this->assertSame('presented', $execution->fresh()->status);
+    }
+
+    public function test_regex_selections_share_the_frozen_participant_allowance_through_acknowledgement(): void
+    {
+        $fixture = new PreparationFixture;
+        $f = $fixture->context;
+        $service = app(PreparationService::class);
+        $source = $fixture->receipt("💚".str_repeat('a', 16000).'b'.str_repeat('c', 16000));
+        $input = $fixture->input([$source, $source, $source]);
+        foreach (['a', 'b', 'missing'] as $i => $pattern) {
+            $input['artifacts'][$i]['read_type'] = 'regex';
+            $input['artifacts'][$i]['parameters'] = ['pattern' => $pattern, 'offset' => -1];
+        }
+        foreach ([[null, 12000], [17, 17], [18000, 18000]] as [$limit, $expected]) {
+            $f->viewer->forceFill(['max_preparation_chars' => $limit])->save();
+            $cap = collect($service->options($f->phase->fresh())[0]['capabilities'])->firstWhere('read_type', 'regex');
+            $this->assertSame($expected, $cap['text_budget']);
+            $this->assertSame(min($expected, 12000), $cap['max_chars']);
+        }
+        $schema = app(InputPlanService::class)->forPhase($f->viewer, $f->phase->fresh())['schema'];
+        $action = ['action' => 'preparation.start', 'proposition_id' => $f->gate->id, ...$input];
+        app(ContributionService::class)->validateSchema($schema, $action);
+        $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
+        $options = $transport['properties']['contribution']['anyOf'];
+        $prepare = array_find($options, fn ($option) => ($option['properties']['action']['enum'] ?? []) === ['preparation.start']);
+        $regex = array_find($prepare['properties']['artifacts']['items']['anyOf'], fn ($option) => $option['properties']['read_type']['enum'] === ['regex']);
+        $parameters = $regex['properties']['parameters'];
+        $this->assertSame('string', $parameters['properties']['pattern']['type']);
+        $this->assertSame(['integer', 'null'], $parameters['properties']['max_chars']['type']);
+        $execution = $service->start($f->viewer, $f->phase, $input);
+        $human = $service->delivery($f->viewer, $execution, 'human-text');
+        $this->assertSame([9000, 9000, 0], array_column(array_column($human['deliveries'], 'boundaries'), 'length'));
+        $f->viewer->forceFill(['max_preparation_chars' => 5])->save();
+        $automatic = $service->delivery($f->viewer, $execution, 'inline-text');
+        foreach ($human['deliveries'] as $index => $reading) {
+            $other = $automatic['deliveries'][$index];
+            unset($reading['delivery_method'], $other['delivery_method']);
+            $this->assertSame($reading, $other);
+            $this->assertSame(PreparationInput::requestId($input['artifacts'][$index]), $reading['request_id']);
+            $this->assertSame([$source->id], $reading['receipt_ids']);
+        }
+        $this->assertNull($automatic['deliveries'][2]['boundaries']['match']);
+        $this->assertNull($execution->fresh()->presented_at);
+        $service->acknowledge($f->viewer, $execution->fresh(), $human['presentation_token']);
+        $receipt = $service->defer($f->viewer, $execution, 'Compare the second section later.');
+        $this->assertSame(18000, $receipt->metadata['reading']['text_budget']);
+        $this->assertSame($this->canonical($input['artifacts']), $this->canonical($receipt->metadata['selections']));
+        $this->assertNull($receipt->consumption);
     }
 
     public function test_shared_allocation_is_identical_for_humans_and_autonomous_delivery_and_history_survives_consumption(): void
