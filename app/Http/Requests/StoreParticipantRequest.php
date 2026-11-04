@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Domain\Evidence\PreparationInput;
 use App\Enums\ConnectionTriggerMode;
 use App\Models\Substrate;
 use App\Support\WakeConfiguration;
@@ -38,6 +39,7 @@ class StoreParticipantRequest extends FormRequest
             'designation' => ['nullable', 'string', 'max:255'],
             'max_read_count' => ['sometimes', 'integer', 'min:1'],
             'max_token_count' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'max_preparation_chars' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:'.PreparationInput::characterCeiling()],
             'connection' => ['sometimes', 'nullable', 'array'],
             'connection.id' => ['required_with:connection', Rule::exists('connections', 'id')->where('user_id', $this->user()->getKey())],
             'connection.is_enabled' => ['sometimes', 'boolean'],

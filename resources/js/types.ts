@@ -140,6 +140,7 @@ export interface Participant {
   designation?: string | null;
   max_read_count: number;
   max_token_count?: number | null;
+  max_preparation_chars?: number | null;
   owned_by_user?: boolean;
   position?: ParticipantPosition | null;
 }
@@ -222,7 +223,8 @@ export type InstrumentInput =
   | { kind: 'load_file'; method: 'download'; reference: string }
   | { replay_receipt_id: string };
 
-export interface PreparationSelection { receipt_id: string; artifact_id: string; read_type: string; parameters?: { offset?: number; max_chars?: number }; }
+export interface RegexResultSet { total_matches: number | null; included_matches: number; byte_limited: boolean }
+export interface PreparationSelection { receipt_id: string; artifact_id: string; read_type: string; parameters?: { pattern?: string; limit?: number; context_chars?: number; offset?: number; max_chars?: number }; }
 export interface PreparationHistorySummary {
   id: string;
   participant: { id: string; callsign: string };
@@ -243,9 +245,9 @@ export interface PreparationHistoryRecord extends PreparationHistorySummary {
   selections: Array<PreparationSelection & { source: { receipt_type: string; reference: string | null; filename: string | null; media_type: string | null; size: number | null } | null }>;
   deliveries: Array<{
     request_id?: string; artifact_id: string; receipt_ids: string[]; read_type: string; source_type?: string;
-    method?: string; version?: string; representation?: string; representation_hash?: string;
+    method?: string; version?: string; result_set?: RegexResultSet; representation?: string; representation_hash?: string;
     delivery_method?: string; payload_bytes?: number;
-    boundaries?: Partial<{ requested_offset: number; requested_max_chars: number | null; offset: number; end: number; length: number; total: number; has_more: boolean }>;
+    boundaries?: Partial<{ match?: { start: number; end: number } | null; requested_offset: number; requested_max_chars: number | null; offset: number; end: number; length: number; total: number; has_more: boolean }>;
   }>;
   deferment_reason: string | null;
   failure: { stage?: string; classification?: string; method?: string; version?: string; reason: string | null } | null;
@@ -254,9 +256,9 @@ export interface PreparationOption { receipt_id: string; artifact_id: string; re
   capabilities: Array<{ read_type: string; method: string; version: string; max_chars?: number; parameters: { offset?: number; max_chars?: number }; text_budget?: number }>;
 }
 export interface PreparationDelivery { execution_id: string; purpose: string; presentation_token: string;
-  deliveries: Array<{ request_id: string; artifact_id: string; source_type: string; read_type: string; method: string; version: string; content: string;
+  deliveries: Array<{ request_id: string; artifact_id: string; parameters?: PreparationSelection['parameters']; source_type: string; read_type: string; result_set?: RegexResultSet; method: string; version: string; content: string;
     payload_bytes: number; representation_hash: string; receipt_ids: string[];
-    boundaries: { requested_offset: number; requested_max_chars: number | null; offset: number; end: number; length: number; total: number; has_more: boolean } }>;
+    boundaries: { match?: { start: number; end: number } | null; requested_offset: number; requested_max_chars: number | null; offset: number; end: number; length: number; total: number; has_more: boolean } }>;
 }
 export interface ContributionInput {
   purpose?: string;
@@ -349,7 +351,7 @@ export interface ReceiptContext {
   preparation_history?: { purpose: string; participant_id: string; originating_gate_id: string; selections: PreparationSelection[];
     execution_id?: string; content_verified?: boolean; failure_reason?: string;
     failure?: { stage: string; classification: string; method: string; version: string };
-    deliveries: Array<{ artifact_id: string; read_type: string; method: string; version: string; payload_bytes: number;
+    deliveries: Array<{ artifact_id: string; read_type: string; result_set?: RegexResultSet; method: string; version: string; payload_bytes: number;
       boundaries: { offset: number; end: number; total: number; length?: number; requested_offset?: number; requested_max_chars?: number | null; has_more?: boolean } }>;
     outcome: { type: string; reason?: string; proposition_id?: string } };
   evidence?: { tragedy_id?: Identifier; terminal_proposition_id?: Identifier; opening_proposition_id?: Identifier; exhausted_committals?: Array<{ id: Identifier; statement: string; statement_truncated: boolean; register: RegisterName; phase_number: number; exhausted_horizon_id: Identifier; exhausted_at: string; actionable: false }>; query?: string; executed_at?: string; results?: Array<{ title: string; url: string; excerpt: string; excerpt_truncated: boolean; source: string; rank: number; relevance: number | null; published_at: string | null }>; proposition_id?: Identifier; statement?: string; direction?: string; rationale?: string | null; resource?: string; title?: string | null; links?: Array<{ url: string; text: string }>; links_count?: number | null; links_truncated?: boolean; links_error?: string; fingerprint?: string; observed_at?: string; content_excerpt?: string | null; excerpt_truncated?: boolean };
@@ -539,6 +541,7 @@ export interface JoinParticipantInput {
   designation?: string | null;
   max_read_count: number;
   max_token_count?: number | null;
+  max_preparation_chars?: number | null;
   connection?: { id: Identifier };
 }
 

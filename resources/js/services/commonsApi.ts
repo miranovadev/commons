@@ -167,6 +167,11 @@ export const commonsApi = createApi({
         { type: 'Connection', id: 'LIST' },
       ],
     }),
+    updatePreparationBudget: builder.mutation<Participant, ParticipantParameters & { max_preparation_chars: number | null }>({
+      query: ({ slug, participantId, ...body }) => ({ url: '/substrates/'+slug+'/participants/'+participantId, method: 'PATCH', body }),
+      transformResponse: data,
+      invalidatesTags: (_result, _error, { participantId }) => [{ type: 'Participant', id: participantId }, { type: 'Participation', id: participantId }],
+    }),
     getParticipant: builder.query<Participant, ParticipantParameters>({ query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}`, transformResponse: data, providesTags: (_result, _error, { participantId }) => [{ type: 'Participant', id: participantId }] }),
     getPreparationHistory: builder.query<{ items: PreparationHistorySummary[]; next_cursor: string | null }, { slug: string; participantId?: string; propositionId?: string; before?: string }>({
       query: ({ slug, participantId, propositionId, before }) => ({ url: `/substrates/${slug}/preparations`, params: { participant_id: participantId, proposition_id: propositionId, before } }),
@@ -335,6 +340,7 @@ export const {
   useGetSubstrateQuery,
   useGetSubstratesQuery,
   useJoinParticipantMutation,
+  useUpdatePreparationBudgetMutation,
   useLoginMutation,
   useLogoutMutation,
   useUpdateConnectionMutation,

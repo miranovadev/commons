@@ -15,6 +15,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
+use App\Services\Evidence\ArtifactReaderRegistry;
 use App\Services\Evidence\ReceiptSummary;
 use App\Services\Evidence\ReinforcementSignatureService;
 use DomainException;
@@ -168,6 +169,8 @@ final readonly class EvidenceExecutionService
         $execution = new EvidenceExecution;
         $execution->forceFill(['type' => 'prepare', 'phase_id' => $phase->id,
             'proposition_id' => $phase->gate_proposition_id, 'status' => 'pending', 'attempt_admitted_at' => now(),
+            'metadata' => ['reading' => ['text_budget' => PreparationInput::characterBudget($phase->cycle->participant->max_preparation_chars),
+                'native_version' => ArtifactReaderRegistry::VERSION]],
             'input' => $input->payload(), 'started_at' => now()])->save();
 
         return $execution;
@@ -179,6 +182,7 @@ final readonly class EvidenceExecutionService
         if (DB::transactionLevel() === 0 || $execution->type !== 'prepare' || $execution->status !== 'pending') {
             throw new DomainException('Only a locked pending Preparation can be presented.');
         }
+        $presentation->assertCharacterBudget($execution->metadata['reading']['text_budget'] ?? null);
         $execution->forceFill(['status' => 'presented', 'presentation' => $presentation->deliveries, 'presented_at' => now()])->save();
     }
 
@@ -193,6 +197,7 @@ final readonly class EvidenceExecutionService
         $execution->outcome = $result === null ? 'deferred' : 'contributed';
         $execution->resulting_proposition_id = $result?->id;
         $metadata = [
+            ...array_intersect_key($execution->metadata ?? [], ['reading' => true]),
             'resolution_hash' => $resolutionHash,
             'originating_gate_id' => $execution->proposition_id,
             'participant_id' => $execution->phase->cycle->participant_id,
@@ -270,6 +275,7 @@ final readonly class EvidenceExecutionService
                 'content_verified' => false, 'reinforcement_version' => 'acquisition-failure',
             ];
             if ($locked->type === 'prepare') {
+                $metadata += array_intersect_key($locked->metadata ?? [], ['reading' => true]);
                 $metadata += ['purpose' => ReceiptSummary::text($input['purpose'] ?? ''), 'selections' => $input['artifacts'] ?? [],
                     'deliveries' => $locked->presentation ?? [], 'presented_at' => $locked->presented_at?->toISOString()];
             }

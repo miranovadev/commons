@@ -130,7 +130,7 @@ class PreparationJourneyTest extends TestCase
     {
         $fixture = new PreparationFixture;
         $input = $fixture->input();
-        $input['artifacts'][0]['read_type'] = 'regex';
+        $input['artifacts'][0]['read_type'] = 'headings';
         try {
             app(PreparationService::class)->start($fixture->context->viewer, $fixture->context->phase, $input);
             $this->fail('Unsupported reading accepted.');
@@ -246,7 +246,7 @@ class PreparationJourneyTest extends TestCase
         $url = '/api/substrates/'.$f->substrate->slug.'/participants/'.$f->viewer->id;
         $plan = $this->getJson($url.'/workspace')->assertOk()->json('data.plan');
         $this->assertArrayHasKey('preparation.start', $plan['schema']['$defs']['actions']);
-        $this->assertSame(['raw', 'text'], array_column($plan['preparation_options'][0]['capabilities'], 'read_type'));
+        $this->assertSame(['raw', 'text', 'regex'], array_column($plan['preparation_options'][0]['capabilities'], 'read_type'));
         $started = $this->postJson($url.'/participate', ['phase_id' => $f->phase->id,
             'contribution' => ['action' => 'preparation.start', 'proposition_id' => $f->gate->id, ...$fixture->input()]])->assertOk();
         $id = $started->json('data.plan.preparation.execution_id');
@@ -319,7 +319,8 @@ class PreparationJourneyTest extends TestCase
             $small = $fixture->receipt(str_repeat('a', 500));
             $large = $fixture->receipt(str_repeat('z', 15000));
             $preparationInput = $fixture->input([$fixture->source, $small, $large]);
-            $preparationInput['artifacts'][2]['read_type'] = 'text';
+            $preparationInput['artifacts'][2]['read_type'] = 'regex';
+            $preparationInput['artifacts'][2]['parameters'] = ['pattern' => '^z'];
         }
         $this->publishPotentialFixture($f->viewer);
         $connection = (new Connection)->forceFill(['name' => 'Preparation transport', 'provider' => 'openai',
@@ -344,8 +345,9 @@ class PreparationJourneyTest extends TestCase
                     $this->assertStringContainsString($fixture->input()['purpose'], $payload['input'][1]['content']);
                     $this->assertStringContainsString('untrusted preserved material', $payload['input'][1]['content']);
                     if ($outcome === 'contributed') {
-                        $this->assertStringContainsString(str_repeat('z', 11477), $payload['input'][1]['content']);
-                        $this->assertStringNotContainsString(str_repeat('z', 11478), $payload['input'][1]['content']);
+                        $this->assertStringContainsString('[1] Source characters: [0, 1)', $payload['input'][1]['content']);
+                        $this->assertStringContainsString(str_repeat('z', 80), $payload['input'][1]['content']);
+                        $this->assertStringNotContainsString(str_repeat('z', 81), $payload['input'][1]['content']);
                         $this->assertStringContainsString('"requested_max_chars":null', $payload['input'][1]['content']);
                     }
                     $schema = $payload['text']['format']['schema'];

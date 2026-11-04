@@ -30,12 +30,10 @@ final readonly class PreparationInput
                 || ! is_string($selection['artifact_id'] ?? null)
                 || ! preg_match('/^sha256:[a-f0-9]{64}$/D', $selection['artifact_id'])
                 || ! is_string($selection['read_type'] ?? null) || ! preg_match('/^[a-z][a-z_]{0,31}$/D', $selection['read_type'])
-                || ! is_array($selection['parameters'] ?? [])
-                || array_diff(array_keys($selection['parameters'] ?? []), ['offset', 'max_chars']) !== []
-                || collect($selection['parameters'] ?? [])->contains(fn ($value) => ! is_int($value) || $value < 0)
-                || (isset($selection['parameters']['max_chars']) && $selection['parameters']['max_chars'] < 1)) {
+                || (array_key_exists('parameters', $selection) && ! is_array($selection['parameters']))) {
                 throw new DomainException('Each selection requires a Receipt ID and canonical Artifact hash.');
             }
+            ReadingParameters::validate($selection['read_type'], $selection['parameters'] ?? []);
             $key = $selection['receipt_id'].':'.self::requestId($selection);
             if (isset($seen[$key])) {
                 throw new DomainException('Duplicate Receipt/Artifact selections are not allowed.');
@@ -54,6 +52,17 @@ final readonly class PreparationInput
         ksort($parameters);
 
         return hash('sha256', json_encode([$selection['artifact_id'], $selection['read_type'], $parameters], JSON_THROW_ON_ERROR));
+    }
+
+    public static function characterCeiling(): int
+    {
+        // Every UTF-8 character needs at least one delivery byte.
+        return min(self::MAX_PAYLOAD_BYTES, (int) config('preparation.delivery_bytes'));
+    }
+
+    public static function characterBudget(?int $configured = null): int
+    {
+        return min(self::characterCeiling(), $configured ?? (int) config('preparation.text_budget'));
     }
 
     public function payload(): array

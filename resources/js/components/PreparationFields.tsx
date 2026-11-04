@@ -1,4 +1,4 @@
-import { Button, Group, NumberInput, Select, Stack, Text } from '@mantine/core';
+import { Button, Group, NumberInput, Select, Stack, Text, TextInput } from '@mantine/core';
 import type { PreparationOption, PreparationSelection } from '../types';
 
 export function PreparationFields({ options, value, onChange }: { options: PreparationOption[]; value: PreparationSelection[]; onChange: (items: PreparationSelection[]) => void }) {
@@ -13,9 +13,22 @@ export function PreparationFields({ options, value, onChange }: { options: Prepa
           onChange={key => { const chosen = options.find(item => `${item.receipt_id}:${item.artifact_id}` === key); if (chosen) update(index, { receipt_id: chosen.receipt_id, artifact_id: chosen.artifact_id, read_type: chosen.capabilities.find(c => c.read_type === 'text')?.read_type ?? chosen.capabilities[0].read_type, parameters: { offset: 0 } }); }} />
         <Select label="Read Type" required value={selection.read_type} data={option?.capabilities.map(item => item.read_type) ?? []}
           onChange={type => { if (type) update(index, { read_type: type, parameters: { offset: 0 } }); }} />
+        {selection.read_type === 'regex' && <TextInput required label="Regex pattern" description="Find occurrences in readable text. Use a bare pattern with optional leading (?ims) flags." value={selection.parameters?.pattern ?? ''}
+          onChange={event => update(index, { parameters: { ...selection.parameters, pattern: event.currentTarget.value } })} />}
+        {selection.read_type === 'regex' && <Group grow>
+          <NumberInput label="Maximum matches" placeholder="All" min={1} allowDecimal={false} value={selection.parameters?.limit ?? ''}
+            onChange={value => { const parameters = { ...selection.parameters }; if (value === '') delete parameters.limit; else if (typeof value === 'number') parameters.limit = value; update(index, { parameters }); }} />
+          <NumberInput label="Context characters per side" placeholder="80" min={0} max={512} allowDecimal={false} value={selection.parameters?.context_chars ?? ''}
+            onChange={value => { const parameters = { ...selection.parameters }; if (value === '') delete parameters.context_chars; else if (typeof value === 'number') parameters.context_chars = value; update(index, { parameters }); }} />
+        </Group>}
+        {option?.capabilities[0]?.text_budget != null && <Text size="xs">Shared Preparation allowance: {option.capabilities[0].text_budget} characters</Text>}
         <Group grow>
-          <NumberInput label="Character offset" min={0} value={selection.parameters?.offset ?? 0} allowDecimal={false}
-            onChange={offset => update(index, { parameters: { ...selection.parameters, offset: Number(offset) } })} />
+          <NumberInput label={selection.read_type === 'regex' ? 'Result character offset' : 'Character offset'} min={0} value={selection.parameters?.offset ?? 0} allowDecimal={false}
+            onChange={offset => {
+              if (offset === '' || (typeof offset === 'number' && Number.isSafeInteger(offset))) {
+                update(index, { parameters: { ...selection.parameters, offset: Number(offset) } });
+              }
+            }} />
           <NumberInput label="Maximum characters (optional)" placeholder="Automatic" min={1} max={Number.MAX_SAFE_INTEGER} allowDecimal={false} value={selection.parameters?.max_chars ?? ''}
             onChange={max => { const parameters = { ...selection.parameters }; if (max === '') delete parameters.max_chars; else parameters.max_chars = Number(max); update(index, { parameters }); }} />
         </Group>

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Domain\Evidence\ReadingParameters;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Participant;
@@ -102,6 +103,17 @@ final readonly class InputSchemaService
                     $properties['parameters'] = ['type' => 'object', 'additionalProperties' => false,
                         'properties' => ['offset' => ['type' => 'integer', 'minimum' => 0],
                             'max_chars' => ['type' => 'integer', 'minimum' => 1]]];
+                    if ($capability['read_type'] === 'regex') {
+                        $required[] = 'parameters';
+                        $properties['parameters']['required'] = ['pattern'];
+                        $properties['parameters']['properties']['limit'] = ['type' => 'integer', 'minimum' => 1,
+                            'description' => 'Maximum occurrences to include. Omit for all occurrences.'];
+                        $properties['parameters']['properties']['context_chars'] = ['type' => 'integer', 'minimum' => 0,
+                            'maximum' => ReadingParameters::MAX_CONTEXT, 'description' => 'Readable source characters on each side (default 80).'];
+                        $properties['parameters']['properties']['pattern'] = ['type' => 'string', 'minLength' => 1,
+                            'maxLength' => ReadingParameters::MAX_PATTERN_BYTES,
+                            'description' => 'Bare UTF-8 regex, up to 512 bytes. Optional leading (?ims) flags. Searches readable text. Offset and max_chars select a window of the formatted results.'];
+                    }
                     $selections[] = ['type' => 'object', 'additionalProperties' => false, 'required' => $required, 'properties' => $properties];
                 }
             }

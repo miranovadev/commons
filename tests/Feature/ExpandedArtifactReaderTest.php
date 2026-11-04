@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Exceptions\ArtifactReadingException;
 use App\Services\Evidence\ArtifactReaderRegistry;
 use App\Services\Evidence\PdfTextReader;
+use App\Services\Evidence\PreparationAllocation;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Fixtures\TextPdf;
 use Tests\TestCase;
@@ -14,6 +15,192 @@ class ExpandedArtifactReaderTest extends TestCase
     private function read(string $body, string $mime, string $type, array $parameters = []): array
     {
         return app(ArtifactReaderRegistry::class)->read($body, $mime, $type, $parameters, 'inline-text');
+    }
+
+    public function test_html_text_retains_visible_words_and_boundaries_and_regex_uses_the_same_representation(): void
+    {
+        $html = '<html><head><title>metadata</title><style>secret</style></head><body><h5>Résumé</h5>'
+            .'<p>con<em>tract</em> &amp; <b>engineering</b></p><ul><li>First<li>第二</ul><p>One<br>Two</p><p><img alt="Diagram"> <svg><text>visible label</text></svg></p>'
+            .'<table><tr><td>A<td>B</table><pre>  indented'."\n".'    code</pre>'
+            .'<template>secret</template><span hidden>secret</span><script>secret</script></body></html>';
+        $text = $this->read($html, 'text/html', 'text');
+        $this->assertSame("Résumé\ncontract & engineering\nFirst\n第二\nOne\nTwo\nDiagram visible label\nA\nB\n  indented\n    code", $text['content']);
+        $this->assertSame($html, $this->read($html, 'text/html', 'raw')['content']);
+        $hit = $this->read($html, 'text/html', 'regex', ['pattern' => 'contract.{0,30}engineering']);
+        $this->assertStringContainsString('[1] Source characters: [7, 29)', $hit['content']);
+        $this->assertStringContainsString('Match: "contract & engineering"', $hit['content']);
+        $this->assertStringNotContainsString('secret', $hit['content']);
+        $this->assertNotSame($text['representation_hash'], $hit['representation_hash']);
+        $this->assertSame('3', $text['version']);
+    }
+
+    public static function regexWindows(): array
+    {
+        // Two occurrences of é, one combining mark, one supplementary character.
+        return [
+            'first occurrence' => ['é', 0, 1, [0, 1], 0, 'é'],
+            'middle with preceding context' => ['猫', -1, 3, [2, 3], 1, '💚猫e'],
+            'left clamp' => ['猫', PHP_INT_MIN, 2, [2, 3], 0, 'é💚'],
+            'right clamp' => ['猫', PHP_INT_MAX, 2, [2, 3], 7, ''],
+            'case-insensitive end' => ['(?i)z$', 0, 9, [6, 7], 6, 'Z'],
+            'zero-width EOF' => ['$', 0, 2, [7, 7], 7, ''],
+            'no match' => ['absent', -100, 2, null, 7, ''],
+        ];
+    }
+
+    #[DataProvider('regexWindows')]
+    public function test_historical_v3_first_regex_window(string $pattern, int $offset, int $maximum, ?array $span, int $start, string $expected): void
+    {
+        $body = "é💚猫e\u{301}éZ";
+        $parameters = ['pattern' => $pattern, 'offset' => $offset, 'max_chars' => $maximum];
+        $representation = app(ArtifactReaderRegistry::class)->represent($body, 'text/plain', 'regex', $parameters, 'human-text', '3');
+        $result = app(PreparationAllocation::class)->allocate([$representation])[0];
+        $bounds = $result['boundaries'];
+        $this->assertSame($parameters, $result['parameters']);
+        $this->assertArrayHasKey('match', $bounds);
+        $this->assertSame($span === null ? null : ['start' => $span[0], 'end' => $span[1]], $bounds['match']);
+        $this->assertSame($expected, $result['content']);
+        $this->assertSame($start, $bounds['offset']);
+        $this->assertSame($start + mb_strlen($expected), $bounds['end']);
+        $this->assertSame(7, $bounds['total']);
+        $this->assertSame('sha256:'.hash('sha256', $expected), $result['payload_hash']);
+    }
+
+    public function test_regex_readings_with_a_large_character_allowance_still_share_the_byte_ceiling(): void
+    {
+        config(['preparation.selection_bytes' => 10, 'preparation.delivery_bytes' => 13]);
+        $reader = app(ArtifactReaderRegistry::class);
+        $selections = [];
+        foreach (['💚', 'é', 'x'] as $literal) {
+            $report = $reader->represent(str_repeat($literal, 20), 'text/plain', 'regex', ['pattern' => $literal.'+'], 'human-text');
+            $report['parameters']['offset'] = mb_strpos($report['content'], 'Match: "'.$literal) + mb_strlen('Match: "');
+            $selections[] = $report;
+        }
+        $reads = app(PreparationAllocation::class)->allocate($selections, 90000);
+        $this->assertSame(['💚💚', 'éé', 'x'], array_column($reads, 'content'));
+        $this->assertSame(13, array_sum(array_column($reads, 'payload_bytes')));
+    }
+
+    public function test_ordered_results_preserve_unicode_source_coordinates_and_overlapping_context(): void
+    {
+        $body = "é💚猫e\u{301}猫💚";
+        $result = $this->read($body, 'text/plain', 'regex', ['pattern' => '猫', 'context_chars' => 3]);
+        $expected = "Pattern: \"猫\"\nTotal matches: 2\nIncluded matches: 2\n"
+            ."\n[1] Source characters: [2, 3)\nBefore: \"é💚\"\nMatch: \"猫\"\nAfter: \"e\u{301}猫\"\n"
+            ."\n[2] Source characters: [5, 6)\nBefore: \"猫e\u{301}\"\nMatch: \"猫\"\nAfter: \"💚\"\n";
+        $this->assertSame($expected, $result['content']);
+        $this->assertSame('4', $result['version']);
+        $this->assertSame('regex-results', $result['representation']);
+        $this->assertSame(mb_strlen($expected), $result['boundaries']['total']);
+        $this->assertSame('sha256:'.hash('sha256', $expected), $result['representation_hash']);
+        $limited = $this->read($body, 'text/plain', 'regex', ['pattern' => '猫', 'limit' => 1, 'context_chars' => 0]);
+        $this->assertSame(['total_matches' => 2, 'included_matches' => 1, 'byte_limited' => false], $limited['result_set']);
+        $this->assertStringContainsString("Before: \"\"\nMatch: \"猫\"\nAfter: \"\"", $limited['content']);
+        $this->assertStringNotContainsString('[2] Source', $limited['content']);
+    }
+
+    public function test_successive_windows_reassemble_a_result_set_larger_than_the_source(): void
+    {
+        $reader = app(ArtifactReaderRegistry::class);
+        $body = str_repeat('💚a', 260);
+        $query = ['pattern' => 'a', 'context_chars' => 2];
+        $full = $reader->represent($body, 'text/plain', 'regex', $query, 'inline-text')['content'];
+        $this->assertGreaterThan(12000, mb_strlen($full));
+        $joined = '';
+        $offset = 0;
+        do {
+            $page = $reader->read($body, 'text/plain', 'regex', $query + ['offset' => $offset, 'max_chars' => 3000], 'inline-text');
+            $this->assertSame($offset, $page['boundaries']['offset']);
+            $this->assertSame(mb_substr($full, $offset, 3000), $page['content']);
+            $this->assertSame('sha256:'.hash('sha256', $full), $page['representation_hash']);
+            $this->assertSame('sha256:'.hash('sha256', $page['content']), $page['payload_hash']);
+            $joined .= $page['content'];
+            $offset = $page['boundaries']['end'];
+        } while ($page['boundaries']['has_more']);
+        $this->assertSame($full, $joined);
+    }
+
+    public function test_zero_results_and_zero_width_global_matches_are_distinct(): void
+    {
+        $none = $this->read('💚', 'text/plain', 'regex', ['pattern' => 'missing']);
+        $this->assertSame("Pattern: \"missing\"\nTotal matches: 0\nIncluded matches: 0\n", $none['content']);
+        $zero = $this->read('💚', 'text/plain', 'regex', ['pattern' => '^|.|$']);
+        $this->assertSame(3, $zero['result_set']['total_matches']);
+        foreach (['[1] Source characters: [0, 0)', '[2] Source characters: [0, 1)', '[3] Source characters: [1, 1)'] as $line) {
+            $this->assertStringContainsString($line, $zero['content']);
+        }
+    }
+
+    public function test_match_and_result_byte_ceilings_never_claim_incomplete_output_is_complete(): void
+    {
+        $cap = \App\Services\Evidence\RegexSearch::MAX_MATCHES;
+        $exact = $this->read(str_repeat('a', $cap), 'text/plain', 'regex', ['pattern' => 'a', 'limit' => 1]);
+        $this->assertSame($cap, $exact['result_set']['total_matches']);
+        $many = $this->read(str_repeat('a', $cap + 1), 'text/plain', 'regex', ['pattern' => 'a', 'limit' => 2]);
+        $this->assertSame(['total_matches' => null, 'included_matches' => 2, 'byte_limited' => false], $many['result_set']);
+        $this->assertStringContainsString('enumeration ceiling reached', $many['content']);
+        $all = $this->read(str_repeat('a', $cap + 1), 'text/plain', 'regex', ['pattern' => 'a', 'context_chars' => 0]);
+        $this->assertSame(['total_matches' => null, 'included_matches' => $cap, 'byte_limited' => false], $all['result_set']);
+        config(['preparation.representation_bytes' => 700]);
+        $long = $this->read(str_repeat('a', 600), 'text/plain', 'regex', ['pattern' => 'a{300}', 'context_chars' => 0]);
+        $this->assertSame(['total_matches' => 2, 'included_matches' => 1, 'byte_limited' => true], $long['result_set']);
+        $this->assertStringContainsString('result byte ceiling reached', $long['content']);
+        $this->assertStringNotContainsString('[2] Source', $long['content']);
+        $this->assertLessThanOrEqual(700, strlen($long['content']));
+    }
+
+    public function test_a_complete_report_that_fits_the_exact_representation_ceiling_is_retained(): void
+    {
+        $query = ['pattern' => 'a', 'context_chars' => 0];
+        $full = $this->read('a', 'text/plain', 'regex', $query);
+        config(['preparation.representation_bytes' => strlen($full['content'])]);
+        $this->assertSame($full, $this->read('a', 'text/plain', 'regex', $query));
+        config(['preparation.representation_bytes' => strlen($full['content']) - 1]);
+        $short = $this->read('a', 'text/plain', 'regex', $query);
+        $this->assertSame(['total_matches' => 1, 'included_matches' => 0, 'byte_limited' => true], $short['result_set']);
+    }
+
+    public function test_pdf_result_version_tracks_poppler_and_preserves_v3_first_match_identity(): void
+    {
+        $body = TextPdf::make(['Café research', 'More research']);
+        $reader = app(ArtifactReaderRegistry::class);
+        $parameters = ['pattern' => 'research'];
+        $current = $reader->read($body, 'application/pdf', 'regex', $parameters, 'human-text');
+        $legacy = $reader->represent($body, 'application/pdf', 'regex', $parameters, 'human-text', '3');
+        $this->assertSame(2, $current['result_set']['total_matches']);
+        $this->assertSame(PdfTextReader::METHOD, $current['method']);
+        $this->assertStringEndsWith('/regex-2', $current['version']);
+        $this->assertStringEndsWith('/regex-1', $legacy['version']);
+        $this->assertSame('regex', $legacy['representation']);
+    }
+
+    public static function invalidResultParameters(): array
+    {
+        return [[['offset' => -1]], [['limit' => 0]], [['limit' => 1.5]], [['context_chars' => -1]], [['context_chars' => 513]]];
+    }
+
+    #[DataProvider('invalidResultParameters')]
+    public function test_invalid_result_parameters_are_rejected(array $parameters): void
+    {
+        $this->expectException(ArtifactReadingException::class);
+        $this->read('abc', 'text/plain', 'regex', ['pattern' => '.'] + $parameters);
+    }
+
+    public static function invalidRegex(): array
+    {
+        return [[null], [''], ['('], [str_repeat('x', 513)], ["\xff"], ["bad\0pattern"], ['(?x)abc'],
+            ['(?R)'], ['(*LIMIT_MATCH=123)x'], ['\\C'], ['(a+)+$']];
+    }
+
+    #[DataProvider('invalidRegex')]
+    public function test_invalid_or_excessive_regex_is_distinct_from_no_match(?string $pattern): void
+    {
+        try {
+            $this->read(str_repeat('a', 5000).'!', 'text/plain', 'regex', ['pattern' => $pattern]);
+            $this->fail('Invalid or excessive pattern was accepted.');
+        } catch (ArtifactReadingException $e) {
+            $this->assertSame('invalid_parameters', $e->classification);
+        }
     }
 
     public function test_pdf_text_pages_unicode_and_representation_relative_ranges_preserve_source(): void

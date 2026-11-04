@@ -522,6 +522,7 @@ final readonly class ParticipationService
         return [
             'max_read_count' => $participant->max_read_count,
             'max_token_count' => $participant->max_token_count,
+            'max_preparation_chars' => $participant->max_preparation_chars,
             'attenuation' => [
                 'status' => 'active',
                 'value' => 1.0,

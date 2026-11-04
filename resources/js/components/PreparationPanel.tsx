@@ -1,3 +1,4 @@
+import { describeRegexResults } from '../preparation';
 import { Alert, Box, Button, Stack, Text } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { useReadPreparationMutation, useAcknowledgePreparationMutation } from '../services/commonsApi';
@@ -33,7 +34,8 @@ export function PreparationPanel({ slug, participantId, preparation, onDefer }: 
     {reading.isLoading && <Text size="sm">Reading selected material…</Text>}
     {reading.data?.deliveries.map(item => <Box key={item.request_id}>
       <Text size="xs">{item.artifact_id} · {item.source_type} / {item.read_type} · {item.method} v{item.version}</Text>
-      <Text size="xs">Representation characters {item.boundaries.offset}–{item.boundaries.end} of {item.boundaries.total}{item.boundaries.has_more ? ' · More content exists' : ''} · Delivered {item.boundaries.length} characters / {item.payload_bytes} bytes</Text>
+      {item.read_type === 'regex' && <Text size="xs">Pattern <code>{item.parameters?.pattern}</code> · {item.result_set ? describeRegexResults(item.result_set) : item.boundaries.match ? 'First match at characters '+item.boundaries.match.start+'–'+item.boundaries.match.end : 'No match in the searched text.'}</Text>}
+      <Text size="xs">{item.result_set ? 'Result characters' : 'Representation characters'} {item.boundaries.offset}–{item.boundaries.end} of {item.boundaries.total}{item.boundaries.has_more ? ' · More content exists' : ''} · Delivered {item.boundaries.length} characters / {item.payload_bytes} bytes</Text>
       <Text size="xs">Requested offset {item.boundaries.requested_offset} · {item.boundaries.requested_max_chars == null ? 'Automatic allocation' : `Maximum ${item.boundaries.requested_max_chars} characters`}</Text>
       <Box component="pre" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', maxHeight: 400, overflow: 'auto' }}>{item.content || '(Empty Artifact representation)'}</Box>
     </Box>)}
