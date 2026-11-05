@@ -37,11 +37,14 @@ class ParticipantPromptCacheTest extends TestCase
     public function test_layers_preserve_all_cognition_and_both_action_schemas(PhaseKind $phase): void
     {
         $state = $this->state($phase);
-        $before = app(ParticipantContextSerializer::class)->inference($state);
+        $public = app(ParticipantContextSerializer::class)->participation($state);
+        $before = $public['context'];
         $connection = $this->connection();
         $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
         $after = $this->reconstruct($prompt);
         $this->assertEquals($before, $after);
+        $this->assertSame($public['schema'], $prompt['schema']);
+        $this->assertArrayNotHasKey('actions', $before);
         // Assert ordered populations separately: recursive object-key equality must
         // never conceal a change to historical, ranked or action ordering.
         foreach (['read', 'gate', 'write'] as $key) {

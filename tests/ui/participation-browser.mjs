@@ -22,7 +22,7 @@ export async function checkParticipation(browser) {
       const counterpart = page.locator('[data-role=read] article').nth(1);
       await counterpart.getByRole('button', { name: 'Reconcile', exact: true }).click();
       await page.getByRole('dialog').waitFor();
-      await page.getByLabel('Statement', { exact: true }).fill('Both proposals preserve the reasoning behind a decision.');
+      await page.getByRole('textbox', { name: /Statement/ }).fill('Both proposals preserve the reasoning behind a decision.');
       assert.ok(await page.getByRole('button', { name: 'Apply contribution' }).isEnabled());
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       assert.doesNotMatch(await page.locator('body').innerText(), /Field State|Chirality|Closure preview|Potential Charge/i);
