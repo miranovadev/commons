@@ -60,9 +60,9 @@ final readonly class ParticipationService
             ->whereHas('proposition.phase.cycle', fn ($query) => $query->where('participant_id', $participant->getKey()))
             ->join('substrate_ledger_entries as entry', 'entry.id', '=', 'commitment_snapshots.ledger_entry_id')
             ->orderByDesc('entry.sequence')->select('commitment_snapshots.*')->first();
-        $horizonId = $state['cycle']['context_horizon_id'] ?? null;
+        $horizonId = $state['context_horizon_id'] ?? null;
         $horizon = $horizonId === null
-            ? $participant->cycles()->latest('sequence')->first()?->contextHorizon
+            ? $participant->cycles()->latest('sequence')->first()?->operatingHorizon()
             : ContextHorizon::findOrFail($horizonId);
 
         return [
@@ -109,7 +109,8 @@ final readonly class ParticipationService
                 $recovering ? ($recoveryReady ? 'The Cycle completed; recovery is ready for the next entry attempt.'
                     : 'The Cycle completed; no valid recovery basin entry can be established.') : 'The Participant is waiting for a Cycle to begin.',
                 entry: $entry,
-            ), 'completion' => $completed !== null && $completed->rested_at === null && $finalPhase?->kind === PhaseKind::Order ? [
+            ), 'context_horizon_id' => $finalPhase?->crossoverCycle?->context_horizon_id ?? $completed?->context_horizon_id,
+                'completion' => $completed !== null && $completed->rested_at === null && $finalPhase?->kind === PhaseKind::Order ? [
                 'cycle_id' => $completed->id,
                 'phase_id' => $finalPhase->id,
                 'completed_at' => $completed->completed_at->toISOString(),
@@ -162,6 +163,7 @@ final readonly class ParticipationService
         return [
             'status' => 'ready',
             'cycle' => $this->cycle($cycle),
+            'context_horizon_id' => $phase->governance()->context_horizon_id,
             'plan' => $workspace ? $plan : $this->contextSerializer->plan($plan),
             'perspective' => $this->perspective($participant),
             'reason' => $blocked ? [

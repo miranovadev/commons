@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\PhaseKind;
 use App\Services\CausalContextService;
 use App\Services\FieldMutationService;
+use App\Services\ReconciliationCrossoverService;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,7 +21,17 @@ class Phase extends Model
 
     protected static function booted(): void
     {
+        static::replicating(function (self $copy): void {
+            unset($copy->operating_cycle_id, $copy->crossover_cycle_id);
+            $copy->unsetRelation('operatingCycle')->unsetRelation('crossoverCycle');
+        });
         static::saving(function (self $phase): void {
+            if ($phase->exists && $phase->isDirty('crossover_cycle_id')) {
+                throw new \DomainException('A Phase cannot change its crossover context.');
+            }
+            if ($phase->crossover_cycle_id !== null && (! $phase->exists || $phase->isDirty(['kind', 'gate_proposition_id']))) {
+                app(ReconciliationCrossoverService::class)->assertArrival($phase);
+            }
             if ($phase->exists && $phase->isDirty('cycle_id')) {
                 throw new \DomainException('A Phase cannot change its creating Cycle.');
             }
@@ -60,6 +71,28 @@ class Phase extends Model
     public function cycle(): BelongsTo
     {
         return $this->belongsTo(Cycle::class);
+    }
+
+    /** Only the governor and Horizon come from this Cycle. The actor, sequence and lifecycle belong to cycle(). */
+    public function governance(): Cycle
+    {
+        return $this->crossover_cycle_id === null ? $this->cycle : $this->crossoverCycle;
+    }
+
+    public function crossoverCycle(): BelongsTo
+    {
+        return $this->belongsTo(Cycle::class, 'crossover_cycle_id');
+    }
+
+    public function operatingCycle(): BelongsTo
+    {
+        return $this->belongsTo(Cycle::class, 'operating_cycle_id');
+    }
+
+    // New and hypothetical Phases have the same scope as the generated SQL join key.
+    public function getOperatingCycleIdAttribute(): ?string
+    {
+        return $this->crossover_cycle_id ?? $this->cycle_id;
     }
 
     public function gate(): BelongsTo

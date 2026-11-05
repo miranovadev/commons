@@ -23,7 +23,7 @@ class PhaseProfileObservationService
             || $entry->kind !== LedgerEntryKind::Proposition || $entry->ledgerable_id !== $proposition->id) {
             throw new DomainException('Phase Profile observations require a new Proposition ledger birth.');
         }
-        $cycle = $proposition->phase->cycle;
+        $cycle = $proposition->phase->governance();
         // Origin's profile is constitutional. Do not create empirical Origin intervals.
         if ($proposition->tier === 'committal' && $cycle->entry_committal_id === null) {
             return;
@@ -70,10 +70,10 @@ class PhaseProfileObservationService
         if ($source === null || $source->tier === 'committal') {
             return null;
         }
-        $cycle = $target->phase->cycle;
+        $cycle = $target->phase->governance();
 
-        return $source->phase->cycle->entry_committal_id === $cycle->entry_committal_id
-            && $source->phase->cycle->context_horizon_id === $cycle->context_horizon_id
+        return $source->phase->governance()->entry_committal_id === $cycle->entry_committal_id
+            && $source->phase->governance()->context_horizon_id === $cycle->context_horizon_id
                 ? $source->id : null;
     }
 
@@ -88,9 +88,9 @@ class PhaseProfileObservationService
         if ($source->tier === 'committal') {
             return [null, 'first_expressive_observation'];
         }
-        $cycle = $target->phase->cycle;
-        if ($source->phase->cycle->entry_committal_id !== $cycle->entry_committal_id
-            || $source->phase->cycle->context_horizon_id !== $cycle->context_horizon_id) {
+        $cycle = $target->phase->governance();
+        if ($source->phase->governance()->entry_committal_id !== $cycle->entry_committal_id
+            || $source->phase->governance()->context_horizon_id !== $cycle->context_horizon_id) {
             return [null, 'no_local_predecessor'];
         }
         $phase = $target->phase->kind->value;

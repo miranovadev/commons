@@ -30,7 +30,7 @@ final class CognitiveEvidenceHorizon
         // Load recorded topology once, including superseded history. Container
         // membership bounds traversal; it never selects a node by itself.
         $nodes = DB::table('propositions as p')->join('phases as ph', 'ph.id', '=', 'p.phase_id')
-            ->join('cycles as c', 'c.id', '=', 'ph.cycle_id')
+            ->join('cycles as c', 'c.id', '=', 'ph.operating_cycle_id')
             ->join('participants as actor', 'actor.id', '=', 'c.participant_id')
             ->where('actor.substrate_id', $substrateId)
             ->get(['p.id', 'p.tier', 'p.phase_id', 'ph.gate_proposition_id', 'c.entry_committal_id', 'c.context_horizon_id'])
@@ -41,7 +41,7 @@ final class CognitiveEvidenceHorizon
         $children = $edges->groupBy('source_proposition_id');
         $local = fn ($id) => ($nodes->get($id)?->tier === 'expressive'
             && $nodes[$id]->entry_committal_id === $governor->id
-            && ($gate->tier === 'committal' || $nodes[$id]->context_horizon_id === $gate->phase->cycle->context_horizon_id));
+            && ($gate->tier === 'committal' || $nodes[$id]->context_horizon_id === $gate->phase->governance()->context_horizon_id));
         $selected = collect([$governor->id => true]);
         // One authoritative closure calculation per projection, never per Receipt.
         // Its narrower continuation graph is not our cognitive ancestry graph.

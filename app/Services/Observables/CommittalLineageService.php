@@ -9,15 +9,15 @@ use DomainException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-/** Closure's read model: creating-Cycle entry is its only ancestry edge. */
+/** Closure's read model: the producing Phase's governor is its only ancestry edge. */
 final class CommittalLineageService
 {
     public function records(Proposition $position, ?ParticipationContext $context = null): Collection
     {
         $load = function () use ($position, $context): Collection {
-            $seeds = $context === null ? collect([$position->id, $position->phase->cycle->entry_committal_id])
-                : $context->propositions->keys()->merge($context->propositions->map(fn ($p) => $p->phase->cycle->entry_committal_id))
-                    ->push($context->phase->cycle->entry_committal_id);
+            $seeds = $context === null ? collect([$position->id, $position->phase->governance()->entry_committal_id])
+                : $context->propositions->keys()->merge($context->propositions->map(fn ($p) => $p->phase->governance()->entry_committal_id))
+                    ->push($context->phase->governance()->entry_committal_id);
 
             return $this->recordsForIds($position->phase->cycle->participant->substrate_id, $seeds);
         };
@@ -39,7 +39,7 @@ final class CommittalLineageService
                 FROM commitment_snapshots s
                 JOIN propositions p ON p.id = s.proposition_id
                 JOIN phases ph ON ph.id = p.phase_id
-                JOIN cycles c ON c.id = ph.cycle_id
+                JOIN cycles c ON c.id = ph.operating_cycle_id
                 WHERE p.id IN ({$placeholders}) AND s.substrate_id = ?
                 UNION
                 SELECT p.id, c.entry_committal_id
@@ -47,7 +47,7 @@ final class CommittalLineageService
                 JOIN commitment_snapshots s ON s.proposition_id = child.entry_committal_id
                 JOIN propositions p ON p.id = s.proposition_id
                 JOIN phases ph ON ph.id = p.phase_id
-                JOIN cycles c ON c.id = ph.cycle_id
+                JOIN cycles c ON c.id = ph.operating_cycle_id
                 WHERE s.substrate_id = ?
             )
             SELECT s.*, chain.entry_committal_id, h.domain AS creating_domain,
@@ -59,7 +59,7 @@ final class CommittalLineageService
             JOIN commitment_snapshots s ON s.proposition_id = chain.id
             JOIN propositions p ON p.id = chain.id
             JOIN phases ph ON ph.id = p.phase_id
-            JOIN cycles c ON c.id = ph.cycle_id
+            JOIN cycles c ON c.id = ph.operating_cycle_id
             JOIN context_horizons h ON h.id = c.context_horizon_id
             JOIN participants participant ON participant.id = c.participant_id
             LEFT JOIN context_horizons opened ON opened.opened_by_proposition_id = p.id
@@ -72,7 +72,7 @@ final class CommittalLineageService
     public function ancestors(Proposition $position, ?ParticipationContext $context = null): Collection
     {
         $records = $this->records($position, $context);
-        $id = $position->phase->cycle->entry_committal_id;
+        $id = $position->phase->governance()->entry_committal_id;
         $chain = collect();
         while ($id !== null) {
             if ($chain->has($id) || ! $records->has($id)) {

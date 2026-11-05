@@ -27,7 +27,7 @@ class InspectRecovery extends Command
         }
         $inspection = $potential->inspectRecoveryFrom(
             $participant->position()->firstOrFail(),
-            $participant->cycles()->latest('sequence')->first()?->contextHorizon,
+            $participant->cycles()->latest('sequence')->first()?->operatingHorizon(),
             $participant,
         );
         $selection = $inspection['selection'];
@@ -41,9 +41,9 @@ class InspectRecovery extends Command
             'participant_id' => $participant->id,
             'position_id' => $participant->current_proposition_id,
             'current_path_explored' => $phase !== null && app(ParticipantExplorationService::class)->explored($participant->position, $phase),
-            'current_horizon_id' => $phase?->cycle->context_horizon_id,
-            'opening_region_exhausted' => $phase !== null && app(ExhaustionService::class)->boundaryExhausted($phase->cycle->contextHorizon),
-            'parent_horizon_id' => $phase?->cycle->contextHorizon->parent_context_horizon_id,
+            'current_horizon_id' => $phase?->governance()->context_horizon_id,
+            'opening_region_exhausted' => $phase !== null && app(ExhaustionService::class)->boundaryExhausted($phase->governance()->contextHorizon),
+            'parent_horizon_id' => $phase?->governance()->contextHorizon->parent_context_horizon_id,
             'exhausted_alternatives' => $phase === null || app(ExhaustionService::class)->unavailable($participant->position)
                 ? $history->position($participant->position) : $history->forPhase($phase),
             'origin_lineages' => DB::table('origin_branch_memberships')->where('proposition_id', $participant->current_proposition_id)->pluck('root_proposition_id')->all(),

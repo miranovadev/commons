@@ -33,16 +33,21 @@ final readonly class GenerativeTraversalService
         $next = PhaseKind::from($from->kind->value + 1);
         $seeds = $context->seedIds();
 
-        return $candidates->filter(fn (Proposition $node) => $this->positions->matches($node, $from, $from->kind)
-            && ($seeds[$node->id] ?? null) === $from->cycle->entry_committal_id)
-            ->mapWithKeys(function (Proposition $gate) use ($from, $next, $context) {
+        $crossings = app(ReconciliationCrossoverService::class)->children($from, $context)->keyBy('id');
+
+        return $candidates->filter(fn (Proposition $node) => $crossings->has($node->id)
+            || ($this->positions->matches($node, $from, $from->kind)
+                && ($seeds[$node->id] ?? null) === $from->governance()->entry_committal_id))
+            ->mapWithKeys(function (Proposition $gate) use ($from, $next, $context, $crossings) {
                 $id = 'traverse:'.$from->cycle_id.':'.$gate->id;
                 if ($next === PhaseKind::Mediate) {
                     $id .= ':'.$from->gate_proposition_id;
                 }
+                $crossed = $crossings->has($gate->id) ? $gate->phase->cycle : $from->crossoverCycle;
                 $phase = (new Phase)->forceFill(['id' => $id, 'cycle_id' => $from->cycle_id, 'kind' => $next,
-                    'gate_proposition_id' => $gate->id, 'write_register' => $from->cycle->contextHorizon->domain->registerFor($next)]);
-                $phase->setRelation('cycle', $from->cycle)->setRelation('gate', $gate);
+                    'crossover_cycle_id' => $crossed?->id,
+                    'gate_proposition_id' => $gate->id, 'write_register' => ($crossed ?? $from->cycle)->contextHorizon->domain->registerFor($next)]);
+                $phase->setRelation('cycle', $from->cycle)->setRelation('crossoverCycle', $crossed)->setRelation('gate', $gate);
                 $phase->setRelation('arrivalAnchor', $context->propositions->get($from->gate_proposition_id));
 
                 return [$id => $phase];

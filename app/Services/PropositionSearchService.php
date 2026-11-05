@@ -35,18 +35,18 @@ final readonly class PropositionSearchService
         );
         unset($distances[$head->id]);
 
-        $domain = $head->phase->cycle->contextHorizon->domain->value;
+        $domain = $head->phase->governance()->contextHorizon->domain->value;
         $visible = $this->serializer->visiblePropositionIds(
             $this->plans->forPhase($phase->cycle->participant, $phase),
         )->flip();
         $nodes = Proposition::query()->whereKey(array_keys($distances))
-            ->with('phase.cycle.contextHorizon')->get()->keyBy('id');
+            ->with('phase.cycle.contextHorizon', 'phase.crossoverCycle.contextHorizon')->get()->keyBy('id');
         $query = $input['query'] ?? null;
         $results = collect(array_keys($distances))->map(function (string $id) use (
             $nodes, $visible, $domain, $query, $distances,
         ): ?array {
             $node = $nodes->get($id);
-            if ($node === null || $node->phase->cycle->contextHorizon->domain->value !== $domain
+            if ($node === null || $node->phase->governance()->contextHorizon->domain->value !== $domain
                 || $visible->has($id)
                 || ($query !== null && mb_stripos($node->statement, $query) === false)) {
                 return null;

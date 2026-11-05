@@ -48,12 +48,12 @@ final class ProspectiveClosureHistory
             SQL, $ids->all());
         $selected = collect($rows)->pluck('id');
         $this->nodes = Proposition::whereIn('id', $selected)
-            ->with(['phase.cycle.contextHorizon', 'phase.cycle.participant', 'ledgerEntry'])->get()->keyBy('id');
+            ->with(['phase.crossoverCycle.contextHorizon', 'phase.cycle.contextHorizon', 'phase.cycle.participant', 'ledgerEntry'])->get()->keyBy('id');
         $this->births = DB::table('phase_profile_observations')->whereIn('proposition_id', $selected)->get()->keyBy('proposition_id');
         $this->parents = DB::table('supersessions')->whereIn('target_proposition_id', $selected)
             ->whereIn('source_proposition_id', $selected)->get()->groupBy('target_proposition_id');
         $this->orientations = DB::table('local_chirality_states')->whereIn('proposition_id', $selected)->get()->keyBy('proposition_id');
-        $entries = $heads->map(fn ($head) => $head->phase->cycle->entry_committal_id)->filter()->unique();
+        $entries = $heads->map(fn ($head) => $head->phase->governance()->entry_committal_id)->filter()->unique();
         $this->counts = DB::table('cycles')->whereIn('entry_committal_id', $entries)
             ->selectRaw('entry_committal_id, context_horizon_id, count(*) AS aggregate, count(chirality_entry_after_sequence) AS stamped')
             ->groupBy('entry_committal_id', 'context_horizon_id')->get()
@@ -62,7 +62,7 @@ final class ProspectiveClosureHistory
 
     public function interval(Proposition $head): int
     {
-        return (int) $this->counts->get($head->phase->cycle->entry_committal_id.':'.$head->phase->cycle->context_horizon_id)?->aggregate;
+        return (int) $this->counts->get($head->phase->governance()->entry_committal_id.':'.$head->phase->governance()->context_horizon_id)?->aggregate;
     }
 
     /** Raw selected intervals, including revisions, never averages of averages. */
@@ -83,18 +83,18 @@ final class ProspectiveClosureHistory
             }
             $observations[$id] = ['phase' => $node->phase->kind->value,
                 'interval' => $row?->cycle_interval === null ? null : (int) $row->cycle_interval,
-                'domain' => $node->phase->cycle->contextHorizon->domain->value,
+                'domain' => $node->phase->governance()->contextHorizon->domain->value,
                 'source' => 'expressive_birth', 'proposition_id' => $id,
                 'unavailable_reason' => $row === null ? 'missing_birth_history' : $row->unavailable_reason];
             $id = $row?->temporal_predecessor_proposition_id;
         }
         if ($head->phase->kind === PhaseKind::Bias) {
             $birth = $this->births->get($head->id);
-            $clock = $this->counts->get($head->phase->cycle->entry_committal_id.':'.$head->phase->cycle->context_horizon_id);
+            $clock = $this->counts->get($head->phase->governance()->entry_committal_id.':'.$head->phase->governance()->context_horizon_id);
             $interval = $birth?->birth_cycle_coordinate === null || $clock === null || (int) $clock->aggregate !== (int) $clock->stamped
                 ? null : (int) $clock->aggregate - (int) $birth->birth_cycle_coordinate;
             $observations['order:'.$head->id] = ['phase' => 7, 'interval' => $interval,
-                'domain' => $head->phase->cycle->contextHorizon->domain->value,
+                'domain' => $head->phase->governance()->contextHorizon->domain->value,
                 'source' => 'prospective_phase7', 'proposition_id' => $head->id,
                 'unavailable_reason' => $interval === null ? 'missing_cycle_history' : null];
         }
@@ -130,7 +130,7 @@ final class ProspectiveClosureHistory
             if ($state === null) {
                 throw new ClosureHistoryUnavailable('Closure requires authoritative event-born local Orientation.');
             }
-            $observations[$id] = ['domain' => $node->phase->cycle->contextHorizon->domain->value,
+            $observations[$id] = ['domain' => $node->phase->governance()->contextHorizon->domain->value,
                 'value' => (float) $state->orientation, 'last_attestation_id' => $state->last_attestation_id];
         }
 

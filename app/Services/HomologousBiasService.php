@@ -52,7 +52,7 @@ final readonly class HomologousBiasService
             // entry chain. Equal owners, entries, Horizons and members give the same history
             // for these canonical Mediate Gates, even with different expressive parents.
             $fieldKey = implode(':', ['bias-population-direction', $context->seedIds()[$gate->id] ?? $gate->id,
-                $gate->phase->cycle->entry_committal_id, $gate->phase->cycle->context_horizon_id, $population->pluck('id')->sort()->implode(',')]);
+                $gate->phase->governance()->entry_committal_id, $gate->phase->governance()->context_horizon_id, $population->pluck('id')->sort()->implode(',')]);
             $field = $context->remember($fieldKey, fn () => $this->directions->forPopulation($gate, $population, 'chirality', $context));
             if ($field->direction === null) {
                 return collect(); // No measured members, rather than a numeric zero.
@@ -66,8 +66,8 @@ final readonly class HomologousBiasService
                     return $value !== null && $this->availability->mutable($node, $context)
                         && app(PropositionMeasurementService::class)->chiralityDirectionFor($node, $context) === $field->direction;
                 });
-            $horizons = $candidates->map(fn ($node) => $node->phase->cycle->context_horizon_id)
-                ->reject(fn ($id) => $id === $phase->cycle->context_horizon_id)->unique()->sort()->values();
+            $horizons = $candidates->map(fn ($node) => $node->phase->governance()->context_horizon_id)
+                ->reject(fn ($id) => $id === $phase->governance()->context_horizon_id)->unique()->sort()->values();
             // A comparison subset cannot prove exhaustion in another Horizon.
             $exhausted = app(ExhaustedContinuationService::class)->ids($phase, $context)
                 ->union($context->remember('foreign-terminal-continuations:'.$horizons->implode(','),
@@ -82,6 +82,6 @@ final readonly class HomologousBiasService
         $seeds = $context->seedIds();
 
         return $this->forPhase($phase, $context)
-            ->filter(fn ($node) => ($seeds[$node->id] ?? null) !== $phase->cycle->entry_committal_id)->pluck('id');
+            ->filter(fn ($node) => ($seeds[$node->id] ?? null) !== $phase->governance()->entry_committal_id)->pluck('id');
     }
 }

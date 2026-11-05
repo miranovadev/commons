@@ -21,7 +21,7 @@ final class InspectPotential extends Command
         $position = $participant->position()->firstOrFail();
         $cycle = $participant->cycles()->latest('sequence')->first();
         try {
-            $result = $potential->inspectRecoveryFrom($position, $cycle?->contextHorizon, $participant);
+            $result = $potential->inspectRecoveryFrom($position, $cycle?->operatingHorizon(), $participant);
         } catch (PotentialProjectionUnavailable $exception) {
             $this->error($exception->getMessage());
 
@@ -36,7 +36,7 @@ final class InspectPotential extends Command
         $result['substrate_field_version'] = (int) $participant->substrate->fresh()->field_version;
         $result['would_tragedy'] = false; // Potential and inspection never publish terminal encounters.
         if ($this->option('verify')) {
-            $reference = app(ReferencePotentialChargeService::class)->inspectRecoveryFrom($position, $cycle?->contextHorizon, $participant)['selection'];
+            $reference = app(ReferencePotentialChargeService::class)->inspectRecoveryFrom($position, $cycle?->operatingHorizon(), $participant)['selection'];
             $result['reference_matches'] = ($selection['proposition_id'] ?? null) === ($reference['proposition']->id ?? null)
                 && ($selection['raw_potential_charge'] ?? null) === ($reference['raw_potential_charge'] ?? null)
                 && ($selection['distance'] ?? null) === ($reference['distance'] ?? null)

@@ -13,7 +13,13 @@ final class LegacyCommitRegionOwnership
     public function seedFor(Proposition $position): ?Proposition
     {
         if (Schema::hasColumn('cycles', 'entry_committal_id')) {
-            return app(CommitRegionService::class)->seedFor($position);
+            $regions = app(CommitRegionService::class);
+            if (Schema::hasColumn('phases', 'operating_cycle_id')) {
+                return $regions->seedFor($position);
+            }
+            $id = $regions->entryOnlySeedIds(collect([$position]))[$position->id];
+
+            return $id === null ? null : Proposition::find($id);
         }
         if (! $position->exists) {
             return null;

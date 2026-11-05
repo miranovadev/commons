@@ -17,7 +17,7 @@ final readonly class ProjectedRecoveryService
     {
         $substrateId = $position->phase->cycle->participant->substrate_id;
         $start ??= $position->tier === 'committal' && $position->commitmentSnapshot !== null
-            ? app(ContextHorizonProjector::class)->forEntry($position) : $position->phase->cycle->contextHorizon;
+            ? app(ContextHorizonProjector::class)->forEntry($position) : $position->phase->governance()->contextHorizon;
         if ($start->substrate_id !== $substrateId) {
             throw new DomainException('Recovery cannot cross substrates.');
         }
@@ -37,7 +37,7 @@ final readonly class ProjectedRecoveryService
                 }
 
                 return $parents[$horizonId][$id] ?? [];
-            });
+            }, forRecovery: true);
         $horizons = collect();
         $horizon = $start;
         while ($horizon !== null && ! $horizons->has($horizon->id)) {

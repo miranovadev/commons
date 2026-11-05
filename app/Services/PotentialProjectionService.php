@@ -201,7 +201,7 @@ final class PotentialProjectionService
 
     private function derive(ContextHorizon $horizon, bool $recalculate): array
     {
-        $owned = Proposition::whereHas('phase.cycle', fn ($q) => $q->where('context_horizon_id', $horizon->id))
+        $owned = Proposition::whereHas('phase.operatingCycle', fn ($q) => $q->where('context_horizon_id', $horizon->id))
             ->with(['measurement', 'commitmentSnapshot', 'phase.cycle.participant'])->get()->keyBy('id');
         $nodes = clone $owned;
         if ($horizon->opened_by_proposition_id !== null) {
@@ -209,7 +209,7 @@ final class PotentialProjectionService
             $nodes->put($boundary->id, $boundary);
         }
         $active = Proposition::active()->whereKey($nodes->keys())->pluck('id')->flip();
-        $phase = Phase::whereHas('cycle', fn ($q) => $q->where('context_horizon_id', $horizon->id))->latest('id')->first();
+        $phase = Phase::whereHas('operatingCycle', fn ($q) => $q->where('context_horizon_id', $horizon->id))->latest('id')->first();
         // Projection retains historical geometry after a fresh foreign-source boundary
         // retires its Region. Operational working sets remain active-only.
         $context = $phase === null ? null : new ParticipationContext($phase, $owned->keys(), includeUnavailableAdditional: true);

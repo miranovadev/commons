@@ -41,8 +41,8 @@ final readonly class ReconciliationOptionService
 
         // Complete foreign Horizon data is queried in one batch; the comparison
         // working set is not an authoritative inventory of foreign continuations.
-        $horizons = $gates->map(fn ($node) => $node->phase->cycle->context_horizon_id)
-            ->unique()->reject(fn ($horizon) => $horizon === $phase->cycle->context_horizon_id)->sort()->values();
+        $horizons = $gates->map(fn ($node) => $node->phase->governance()->context_horizon_id)
+            ->unique()->reject(fn ($horizon) => $horizon === $phase->governance()->context_horizon_id)->sort()->values();
         $foreignExhausted = $context->remember('mediate-foreign-exhausted:'.$horizons->implode(','),
             fn () => app(ExhaustedContinuationService::class)->idsForHorizons($horizons));
         $gates = $gates->reject(fn ($node) => $foreignExhausted->has($node->id));

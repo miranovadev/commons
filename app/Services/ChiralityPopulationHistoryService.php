@@ -35,7 +35,7 @@ final readonly class ChiralityPopulationHistoryService
         if ($direction !== null) {
             return ObservableDirection::from($direction);
         }
-        $horizon = $position->phase->cycle->contextHorizon;
+        $horizon = $position->phase->governance()->contextHorizon;
         $ancestors = $this->lineage->ancestors($position);
         // Follow the actual entry lineage into successive preceding Horizons.
         // The boundary itself opens the current Horizon; its preceding entry owns
@@ -69,7 +69,7 @@ final readonly class ChiralityPopulationHistoryService
         }
         Substrate::whereKey($substrateId)->lockForUpdate()->firstOrFail();
         $positions = Proposition::whereHas('phase.cycle.participant', fn ($q) => $q->where('substrate_id', $substrateId))
-            ->whereHas('ledgerEntry')->with('phase.cycle.contextHorizon', 'phase.cycle.participant', 'commitmentSnapshot')->get();
+            ->whereHas('ledgerEntry')->with('phase.crossoverCycle.contextHorizon', 'phase.cycle.contextHorizon', 'phase.cycle.participant', 'commitmentSnapshot')->get();
         $keys = $this->homology->populationKeys($positions);
         // The validated key partitions the same full structural population. Rows
         // without ledger membership are unmeasurable, not synthetic zero members.

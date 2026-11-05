@@ -24,14 +24,14 @@ final class TragedyMemoryService
             return null;
         }
 
-        // Same canonical edge as CommittalLineageService: creating Cycle -> entry.
+        // Same canonical edge as CommittalLineageService: producing Phase -> governor.
         // Bounded SQL, not graph hydration or Supersession/foreign-input traversal.
         $rows = collect(DB::select(<<<'SQL'
             WITH RECURSIVE chain (id, predecessor, position, root) AS (
                 SELECT p.id, c.entry_committal_id, 0, p.id
                 FROM propositions p
                 JOIN phases ph ON ph.id = p.phase_id
-                JOIN cycles c ON c.id = ph.cycle_id
+                JOIN cycles c ON c.id = ph.operating_cycle_id
                 JOIN commitment_snapshots s ON s.proposition_id = p.id
                 WHERE p.id IN (?, ?) AND s.substrate_id = ?
                 UNION ALL
@@ -39,7 +39,7 @@ final class TragedyMemoryService
                 FROM chain child
                 JOIN propositions p ON p.id = child.predecessor
                 JOIN phases ph ON ph.id = p.phase_id
-                JOIN cycles c ON c.id = ph.cycle_id
+                JOIN cycles c ON c.id = ph.operating_cycle_id
                 JOIN commitment_snapshots s ON s.proposition_id = p.id
                 WHERE s.substrate_id = ? AND child.position < ?
             )
@@ -49,11 +49,11 @@ final class TragedyMemoryService
             JOIN propositions p ON p.id = chain.id
             JOIN commitment_snapshots s ON s.proposition_id = chain.id
             ORDER BY chain.position
-            SQL, [$tragedy->governing_committal_id, $phase->cycle->entry_committal_id, $phase->cycle->participant->substrate_id,
+            SQL, [$tragedy->governing_committal_id, $phase->governance()->entry_committal_id, $phase->cycle->participant->substrate_id,
             $phase->cycle->participant->substrate_id, self::CHAIN_LIMIT - 1]));
         $ownerChain = $rows->where('root', $tragedy->governing_committal_id)->values();
-        $currentChain = $rows->where('root', $phase->cycle->entry_committal_id)->values();
-        $current = $ownerChain->search(fn ($row) => $row->id === $phase->cycle->entry_committal_id);
+        $currentChain = $rows->where('root', $phase->governance()->entry_committal_id)->values();
+        $current = $ownerChain->search(fn ($row) => $row->id === $phase->governance()->entry_committal_id);
         $owner = $currentChain->search(fn ($row) => $row->id === $tragedy->governing_committal_id);
         $backward = $current === false && $owner !== false;
         if ($current !== false) {

@@ -24,7 +24,7 @@ final readonly class MediatedIncomingBiasService
             $gate = $phase->gate;
             if ($phase->kind !== PhaseKind::Bias || $gate === null
                 || ! $this->positions->acceptsGate($phase, $gate)
-                || $this->regions->seedFor($gate)?->id !== $phase->cycle->entry_committal_id) {
+                || $this->regions->seedFor($gate)?->id !== $phase->governance()->entry_committal_id) {
                 return collect();
             }
             // Bias keeps its real Mediate-produced Gate. Resolve only that
@@ -57,7 +57,7 @@ final readonly class MediatedIncomingBiasService
             $nodes = Proposition::whereKey($ids)->with('phase.cycle.contextHorizon')->orderBy('id')->get();
             $seeds = $this->regions->seedIdsFor($nodes, $nodes);
 
-            return $nodes->filter(fn ($node) => $node->register === $node->phase->cycle->contextHorizon->domain->registerFor(PhaseKind::Mediate)
+            return $nodes->filter(fn ($node) => $node->register === $node->phase->governance()->contextHorizon->domain->registerFor(PhaseKind::Mediate)
                 && ($seeds[$node->id] ?? null) !== null)->values();
         };
 
@@ -75,7 +75,7 @@ final readonly class MediatedIncomingBiasService
             $operand = $context->propositions->get($gate?->phase->gate_proposition_id);
             $valid = $gate !== null && $operand !== null && $phase->kind === PhaseKind::Bias
                 && $this->positions->acceptsGate($phase, $gate)
-                && $this->regions->seedFor($gate, $context)?->id === $phase->cycle->entry_committal_id
+                && $this->regions->seedFor($gate, $context)?->id === $phase->governance()->entry_committal_id
                 && $this->positions->acceptsGate($gate->phase, $operand)
                 && $context->parents->get($gate->id, collect())->contains(fn ($edge) => $edge->source_proposition_id === $operand->id
                     && $edge->phase_id === $gate->phase_id && $edge->type === 'reconcile');
@@ -101,7 +101,7 @@ final readonly class MediatedIncomingBiasService
             ->get(['operand.source_proposition_id', 'result.id']);
         $nodes = Proposition::whereKey($pairs->pluck('id'))->with('phase.cycle.contextHorizon')->orderBy('id')->get();
         $seeds = $this->regions->seedIdsFor($nodes, $nodes);
-        $nodes = $nodes->filter(fn ($node) => $node->register === $node->phase->cycle->contextHorizon->domain->registerFor(PhaseKind::Mediate)
+        $nodes = $nodes->filter(fn ($node) => $node->register === $node->phase->governance()->contextHorizon->domain->registerFor(PhaseKind::Mediate)
             && ($seeds[$node->id] ?? null) !== null);
         $result = [];
         foreach ($phases as $phase) {
@@ -131,8 +131,8 @@ final readonly class MediatedIncomingBiasService
             if ($candidates->isEmpty()) {
                 return collect();
             }
-            $horizons = $candidates->map(fn ($node) => $node->phase->cycle->context_horizon_id)
-                ->push($phase->cycle->context_horizon_id)->unique()->sort()->values();
+            $horizons = $candidates->map(fn ($node) => $node->phase->governance()->context_horizon_id)
+                ->push($phase->governance()->context_horizon_id)->unique()->sort()->values();
             $exhausted = $context->remember('foreign-terminal-continuations:'.$horizons->implode(','),
                 fn () => app(ExhaustedContinuationService::class)->idsForHorizons($horizons));
 
@@ -146,6 +146,6 @@ final readonly class MediatedIncomingBiasService
         $seeds = $context->seedIds();
 
         return $this->forPhase($phase, $context)
-            ->filter(fn ($node) => ($seeds[$node->id] ?? null) !== $phase->cycle->entry_committal_id)->pluck('id');
+            ->filter(fn ($node) => ($seeds[$node->id] ?? null) !== $phase->governance()->entry_committal_id)->pluck('id');
     }
 }

@@ -203,7 +203,7 @@ final readonly class CycleEntryService
         }
         $position = $participant->position()->firstOrFail();
         $latest = $participant->cycles()->latest('sequence')->first();
-        $selection = $this->potential->recoverFrom($position, $latest?->contextHorizon, $participant);
+        $selection = $this->potential->recoverFrom($position, $latest?->operatingHorizon(), $participant);
         if ($selection !== null) {
             return $selection;
         }

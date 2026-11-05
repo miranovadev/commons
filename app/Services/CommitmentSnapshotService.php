@@ -94,13 +94,13 @@ final readonly class CommitmentSnapshotService
                 throw new DomainException('Commitment requires effective Attestation and completed evidence.');
             }
 
-            $horizon = $proposition->phase->cycle->contextHorizon;
+            $horizon = $proposition->phase->governance()->contextHorizon;
             // Re-evaluate the actual persisted candidate before allowing a snapshot.
             $closure = $this->closureGate->forCommitment($proposition);
             if ($measurement->closure !== $closure['closure']) {
                 throw new DomainException('Commitment measurement must match its preserved authorised Closure state.');
             }
-            $initialOrigin = $proposition->phase->cycle->entry_committal_id === null
+            $initialOrigin = $proposition->phase->governance()->entry_committal_id === null
                 && $horizon->parent_context_horizon_id === null
                 && ! $proposition->parents()->exists()
                 && ! CommitmentSnapshot::where('substrate_id', $substrate->id)->exists();

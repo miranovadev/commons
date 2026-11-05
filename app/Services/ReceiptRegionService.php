@@ -16,7 +16,7 @@ final class ReceiptRegionService
 
     public function current(Phase $phase, ParticipationContext $context): ?string
     {
-        return $phase->cycle->entry_committal_id
+        return $phase->governance()->entry_committal_id
             ?? ($this->seeds($context)[$phase->gate_proposition_id] ?? null); // Origin bootstrap has no prior entry.
     }
 
@@ -30,7 +30,7 @@ final class ReceiptRegionService
             return (app(TragedyReceiptScopeService::class)->seeds($context)[$receipt->id] ?? null) === $seed;
         }
 
-        return $receipt->context_horizon_id === $phase->cycle->context_horizon_id
+        return $receipt->context_horizon_id === $phase->governance()->context_horizon_id
             && ($this->seeds($context)[$receipt->evidenceExecution?->proposition_id] ?? null) === $seed;
     }
 }

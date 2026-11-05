@@ -352,6 +352,25 @@ Homologous Gates are Reconcile operands only. They do not become Read choices,
 Traverse destinations or Receipt catalogue sources. The acting Phase Gate remains
 traversed provenance; recognition alone never moves the Participant.
 
+## Crossing at Mediate
+
+An established Reconciliation is a possible Write at either exact Disperse
+operand. From its producing side, use the ordinary local path. From the other
+Region, discovery checks the recorded child and both Reconcile inputs in the
+substrate ledger, the producing Gate and the canonical Disperse/Mediate
+positions. The Participant may Attest the child or Traverse with a qualifying
+prior personal judgment when the schema offers that action. Personal
+Exploration and terminal exclusions still apply.
+
+When a B Participant selects an A-owned child X, B → X records the personal
+arrival and the producing A Gate remains X's temporal predecessor. Bias follows
+Mediate in the same Cycle. Bias and Order now operate in A. Their ordinary
+Receipts, registers, actions and new births use A's context. Rest starts with
+A's eligible recovery hierarchy even if the actual arrival bypassed A's
+governor. The Phase’s `crossover` field identifies the actual operand and child,
+plus the operating Committal and Horizon. The original Cycle retains its B entry and Horizon. A later successful
+recovery creates its own entry.
+
 ## Mediate-created incoming Bias
 
 A completed Reconcile creates a directed incoming relationship from its exact
@@ -367,7 +386,7 @@ input. Only an incoming relationship for that exact operand can expose `A_result
 It does not search arbitrary ancestors or substitute a structural homologue.
 An unrelated Mediate/Bias chain does not acquire this mediated authority.
 
-Under operand exclusivity this exact doorway is reachable when its two births
+Under operand exclusivity this receiving-side Bias doorway is reachable when its two births
 already exist in history. A fresh relationship binds B on its first use. B can
 no longer produce a second child to supply the receiving Bias Gate. A different
 local pair can reach Bias, but that pair does not confer this incoming authority.
@@ -405,9 +424,9 @@ never creates a traversal edge. Context visibility, Homeostatic populations and
 movement topology are separate contracts. Order's explicit committed-position
 rule is required for its additional Traverse options.
 
-`CommitRegionService` resolves ownership from immutable Cycle entry. A
-Committal owns itself. An expressive Proposition belongs to its creating Cycle's
-`entry_committal_id`; Supersession records causal provenance independently.
+`CommitRegionService` resolves ownership from the producing Phase. A
+Committal owns itself. An expressive Proposition belongs to that Phase's
+governing Committal; Supersession records causal provenance independently.
 Multiple parent Regions do not erase a valid owner. Missing or invalid Cycle entry
 fails closed without ancestry inference. Causal history preserves superseded
 intermediates; active populations, movement and operational admissibility remain

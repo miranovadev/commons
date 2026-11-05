@@ -83,8 +83,8 @@ final readonly class LocalChiralityStateService
 
         // Retain the own scoped population count for diagnostics. Cross-boundary
         // interval spacing uses the portable event-born branch cursor below.
-        $position = $proposition->phase->cycle->entry_committal_id === null ? 0 : Cycle::where('context_horizon_id', $comparison->current->horizon->id)
-            ->where('entry_committal_id', $proposition->phase->cycle->entry_committal_id)->count();
+        $position = $proposition->phase->governance()->entry_committal_id === null ? 0 : Cycle::where('context_horizon_id', $comparison->current->horizon->id)
+            ->where('entry_committal_id', $proposition->phase->governance()->entry_committal_id)->count();
         $intervals = json_decode($state->intervals, true, flags: JSON_THROW_ON_ERROR);
         if ((int) $state->act_count === 0) {
             // Select the beat and two-interval reference together at the first
@@ -116,7 +116,7 @@ final readonly class LocalChiralityStateService
 
     private function fresh(Proposition $proposition, ?ParticipationContext $context = null): array
     {
-        $entry = $proposition->phase->cycle->entry_committal_id;
+        $entry = $proposition->phase->governance()->entry_committal_id;
         $snapshot = $entry === null ? null : ($context === null ? CommitmentSnapshot::find($entry) : $context->snapshots->firstWhere('proposition_id', $entry));
 
         return ['orientation' => 0.0, 'attestation_cadence' => 0.0, 'chirality' => 0.0,
