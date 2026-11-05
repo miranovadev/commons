@@ -21,11 +21,11 @@ final class ParticipantExplorationService
     {
         $context ??= new ParticipationContext($phase);
         $foreign = collect();
-        $crossings = app(ReconciliationCrossoverService::class)->children($phase, $context)->whereIn('id', $ids);
+        $crossings = app(CausalCrossoverService::class)->children($phase, $context)->whereIn('id', $ids);
         foreach ($crossings->groupBy(fn ($node) => $node->phase->governance()->entry_committal_id) as $group) {
             $arrival = $this->probe($group->first(), $phase, $context);
-            $arrival->crossover_cycle_id = $group->first()->phase->cycle_id;
-            $arrival->setRelation('crossoverCycle', $group->first()->phase->cycle);
+            $arrival->crossover_cycle_id = $group->first()->phase->operating_cycle_id;
+            $arrival->setRelation('crossoverCycle', $group->first()->phase->governance());
             $foreign = $foreign->union($this->exploredIds($arrival, $group->pluck('id'), $context));
         }
         $ids = $ids->diff($crossings->pluck('id'));
@@ -63,8 +63,7 @@ final class ParticipantExplorationService
 
     /**
      * Follow forward producing positions in this Cycle's Region/Horizon only.
-     * A foreign Reconcile operand grants no movement; local results retain their
-     * existing Attestation routes. Revisions replace
+     * Exact foreign Writes are evaluated separately in their destination context. Revisions replace
      * their source at the same position. A Committal ends this excursion.
      * Full frontier evaluation precedes every presentation limit.
      */

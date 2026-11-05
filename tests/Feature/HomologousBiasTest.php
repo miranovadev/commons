@@ -17,18 +17,21 @@ use App\Models\Tragedy;
 use App\Services\ActiveParticipantLineage;
 use App\Services\BiasGateService;
 use App\Services\BiasReceiptAuthorityService;
+use App\Services\CausalCrossoverService;
 use App\Services\CausalWriteService;
 use App\Services\ChiralityGateService;
 use App\Services\ChiralityPopulationHistoryService;
 use App\Services\CommitRegionService;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
+use App\Services\ExhaustionService;
 use App\Services\GraphProjectionService;
 use App\Services\HomeostaticDirectionService;
 use App\Services\HomologousBiasService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
+use App\Services\Observables\AttestationBeatCursorService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ObservableService;
 use App\Services\Observables\PhaseProfileObservationService;
@@ -37,17 +40,20 @@ use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantExplorationService;
 use App\Services\ParticipantPromptLayout;
-use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseGenerationService;
 use App\Services\PhasePositionService;
 use App\Services\PhaseProgressionService;
+use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
 use App\Services\PropositionStateService;
 use App\Services\ReceiptContextService;
+use App\Services\ReferencePotentialChargeService;
 use DomainException;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -403,7 +409,304 @@ class HomologousBiasTest extends TestCase
         }
     }
 
-    public function test_same_horizon_foreign_result_is_not_adopted_as_the_source_regions_write(): void
+    /** Produce the only new Proposition in B using its own eligible Receipt. */
+    private function foreignClassification(): Proposition
+    {
+        $this->bias = $this->biasAt($this->b, $this->gateB);
+        $this->warrant();
+        foreach ([$this->gateA, $this->gateB, $this->gateC] as $node) {
+            $this->measure($node, -.5);
+        }
+        $input = $this->input($this->gateA);
+        $input['statement'] = 'The B evidence supports a narrower reading of A.';
+        $this->publishPotentialFixture($this->actor);
+        $state = app(ParticipationService::class)->contribute($this->actor, $this->bias->id, $input);
+        $child = Proposition::findOrFail($state['current_proposition_id']);
+        $this->assertSame($this->b->id, $child->phase->governance()->entry_committal_id);
+        $this->assertSame($this->gateA->id, $child->parents()->sole()->id);
+        $this->assertSame($input['statement'], $child->statement);
+        $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $input['receipt_id'], 'proposition_id' => $child->id]);
+
+        return $child;
+    }
+
+    /** Reconstruct only the persisted structure used for historical discovery. */
+    private function recordedClassification(Proposition $owner, Proposition $gate, Proposition $source): Proposition
+    {
+        $producer = $this->phase($owner, $gate, PhaseKind::Bias);
+        $child = (new Proposition)->forceFill(['phase_id' => $producer->id, 'tier' => 'expressive',
+            'register' => $producer->write_register, 'statement' => 'Historical classification']);
+        $child->save();
+        app(LedgerService::class)->record($child, $source);
+        $this->edge($source, $child, 'reclassify');
+        DB::table('reclassification_results')->insert(['source_proposition_id' => $source->id,
+            'target_proposition_id' => $child->id, 'register' => $child->register]);
+
+        return $child;
+    }
+
+    public function test_rest_at_foreign_classification_cannot_recover_into_open_sibling_after_destination_exhaustion(): void
+    {
+        $a = $this->committedCoordinate($this->a, 'settlement');
+        $b = $this->committedCoordinate($this->a, 'settlement');
+        $source = $this->source($a);
+        $gate = $this->source($b);
+        $child = $this->recordedClassification($b, $gate, $source);
+        $this->actor = $this->newReader('sibling-reader');
+        $phase = $this->biasAt($a, $source);
+        $this->publishPotentialFixture($this->actor);
+        $service = app(ParticipationService::class);
+        $state = $service->contribute($this->actor, $phase->id,
+            ['action' => 'attestation.create', 'proposition_id' => $child->id, 'direction' => 'support']);
+        $order = Phase::findOrFail($state['plan']['phase']['id']);
+        $this->assertSame($phase->cycle->context_horizon_id, $order->governance()->context_horizon_id);
+        $this->assertSame($b->id, $order->governance()->entry_committal_id);
+        // The producer has only a Bias Phase, so moving Order there would
+        // otherwise satisfy both the foreign key and Cycle-position uniqueness.
+        foreach ([[$phase, 'gate_proposition_id', $gate->id], [$order, 'cycle_id', $child->phase->cycle_id]] as [$row, $column, $value]) {
+            try {
+                DB::transaction(fn () => DB::table('phases')->where('id', $row->id)->update([$column => $value]));
+                $this->fail('A recorded arrival could be rewritten.');
+            } catch (QueryException $exception) {
+                $this->assertStringContainsString('recorded Bias crossover', $exception->getMessage());
+                $this->assertSame($row->$column, $row->fresh()->$column);
+            }
+        }
+        $this->boundaryTragedyFixture($gate);
+        $this->boundaryTragedyFixture($child);
+        $this->assertTrue(app(ExhaustionService::class)->unavailable($b));
+        $this->assertFalse(app(ExhaustionService::class)->unavailable($a));
+        foreach ([PotentialChargeService::class, ReferencePotentialChargeService::class] as $selector) {
+            $inspection = app($selector)->inspectRecoveryFrom($child, $order->governance()->contextHorizon, $this->actor->fresh());
+            $this->assertSame([], $inspection['eligible_candidate_ids']);
+        }
+        $entries = Cycle::count();
+        $state = $service->contribute($this->actor, $order->id, ['action' => 'participant.rest']);
+        $this->assertSame('recovery_unavailable', $state['reason']['code']);
+        $this->assertSame($entries, Cycle::count());
+        $migration = require database_path('migrations/2026_11_05_010000_protect_bias_crossover_arrival.php');
+        $this->expectExceptionMessage('Recorded Bias crossovers require their immutable arrival history.');
+        $migration->down();
+    }
+
+    #[Group('query')]
+    public function test_recorded_classification_inventory_batches_distinct_sources_and_foreign_children(): void
+    {
+        $ids = $children = $counts = [];
+        foreach (range(1, 8) as $i) {
+            $source = $this->source($this->a, attest: false);
+            $child = $this->recordedClassification($this->b, $this->gateB, $source);
+            $phase = $this->phase($this->a, $source, PhaseKind::Bias);
+            $ids[] = $phase->id;
+            $children[$phase->id] = $child->id;
+            if ($i !== 1 && $i !== 8) {
+                continue;
+            }
+            $phases = Phase::whereKey($ids)->get();
+            DB::enableQueryLog();
+            DB::flushQueryLog();
+            try {
+                $inventory = app(CausalCrossoverService::class)->childrenFor($phases);
+                $counts[] = count(DB::getQueryLog());
+            } finally {
+                DB::disableQueryLog();
+            }
+            foreach ($children as $id => $expected) {
+                $this->assertSame($expected, $inventory[$id]->sole()->id);
+            }
+        }
+        fwrite(STDERR, "\nCLASSIFICATION inventory (1, 8): ".implode(', ', $counts)." queries\n");
+        $this->assertSame($counts[0], $counts[1]);
+    }
+
+    private function newReader(string $callsign): Participant
+    {
+        $reader = (new Participant)->forceFill(['substrate_id' => $this->actor->substrate_id, 'callsign' => $callsign]);
+        $reader->save();
+
+        return $reader;
+    }
+
+    /** Run this fixture unchanged on either policy. Each choice uses the offered action schema. */
+    public function test_scripted_reclassification_crossover_control(): void
+    {
+        $child = $this->foreignClassification();
+        $first = $this->newReader('first-reader');
+        $second = $this->newReader('second-reader');
+        $service = app(ParticipationService::class);
+        $entries = fn () => collect(['A' => $this->a, 'B' => $this->b])
+            ->map(fn ($region) => Cycle::where('entry_committal_id', $region->id)->count())->all();
+        $initial = $entries();
+        $births = Proposition::count();
+        $actions = $recovery = $commitOffered = [];
+        foreach ([$first, $second, $first] as $index => $reader) {
+            $this->actor = $reader;
+            $phase = $this->biasAt($this->a, $this->gateA);
+            $this->publishPotentialFixture($reader);
+            $schema = $service->stateFor($reader)['plan']['schema']['$defs']['actions'];
+            $action = $index === 2 ? 'proposition.traverse' : 'attestation.create';
+            if (in_array($child->id, $schema[$action]['properties']['proposition_id']['enum'] ?? [], true)) {
+                $input = ['action' => $action, 'proposition_id' => $child->id];
+                if ($action === 'attestation.create') {
+                    $input['direction'] = 'support';
+                }
+            } else {
+                $this->assertArrayHasKey('participant.rest', $schema);
+                $input = ['action' => 'participant.rest'];
+            }
+            $state = $service->contribute($reader, $phase->id, $input);
+            $actions[] = $input['action'];
+            if ($input['action'] === 'participant.rest') {
+                $governor = $reader->cycles()->latest('sequence')->value('entry_committal_id');
+                $recovery[] = match ($governor) {
+                    $this->a->id => 'A', $this->b->id => 'B', default => 'other',
+                };
+            } else {
+                $commitOffered[] = isset($state['plan']['schema']['$defs']['actions']['proposition.commit']);
+            }
+        }
+        $this->assertSame($births, Proposition::count());
+        $this->assertSame(1, Supersession::where('type', 'reclassify')->count());
+        $this->assertSame(0, Supersession::where('type', 'reconcile')->count());
+        $profile = app(PhaseProfileObservationService::class)->stored($child->id);
+        $intervals = DB::table('local_chirality_states')->where('proposition_id', $child->id)->value('intervals');
+        fwrite(STDERR, "\nRECLASSIFICATION CONTROL ".json_encode([
+            'actions' => $actions, 'recoveries' => $recovery, 'initial_entries' => $initial, 'final_entries' => $entries(),
+            'attestations' => $child->attestations()->count(), 'cadence_intervals' => json_decode($intervals, true),
+            'phase_interval' => $profile->cycle_interval, 'unavailable_reason' => $profile->unavailable_reason,
+            'explorations' => DB::table('exploration_events')->count(), 'commit_offered_at_order' => $commitOffered,
+            'commits' => Supersession::where('type', 'commit')->count(), 'measurement' => $child->fresh()->measurement
+                ->only(['shape_topology', 'phase_profile', 'correspondence', 'orientation', 'attestation_cadence', 'chirality', 'closure']),
+        ], JSON_THROW_ON_ERROR)."\n");
+    }
+
+    public function test_reclassification_crossover_attestations_and_prior_cycle_traverse_preserve_entries_and_beats(): void
+    {
+        $child = $this->foreignClassification();
+        $beforeBirth = app(PhaseProfileObservationService::class)->stored($child->id);
+        $this->assertNull($beforeBirth->cycle_interval);
+        $this->assertSame('no_local_predecessor', $beforeBirth->unavailable_reason);
+        $this->assertNull($beforeBirth->temporal_predecessor_proposition_id);
+        $readers = [$this->newReader('first-reader'), $this->newReader('second-reader')];
+        $entriesB = Cycle::where('entry_committal_id', $this->b->id)->count();
+        $service = app(ParticipationService::class);
+        foreach ([$readers[0], $readers[1], $readers[0]] as $index => $reader) {
+            $this->actor = $reader;
+            $phase = $this->biasAt($this->a, $this->gateA);
+            $this->publishPotentialFixture($reader);
+            $plan = $service->stateFor($reader)['plan'];
+            $actions = $plan['schema']['$defs']['actions'];
+            $votes = $child->attestations()->count();
+            $cursor = app(AttestationBeatCursorService::class)->for($child);
+            $input = ['action' => 'attestation.create', 'proposition_id' => $child->id, 'direction' => 'support'];
+            if ($index < 2) {
+                $this->assertNotContains($child->id, $actions['proposition.traverse']['properties']['proposition_id']['enum'] ?? []);
+            } else {
+                $input = ['action' => 'proposition.traverse', 'proposition_id' => $child->id];
+            }
+            $this->assertContains($child->id, $actions[$input['action']]['properties']['proposition_id']['enum']);
+            $write = collect($plan['write_options'])->firstWhere('id', $child->id);
+            $this->assertNotNull($write);
+            $this->assertSame([], $write['receipts'] ?? []);
+            $state = $service->contribute($reader, $phase->id, $input);
+            $order = Phase::findOrFail($state['plan']['phase']['id']);
+            $this->assertSame(PhaseKind::Order, $order->kind);
+            $this->assertSame($phase->cycle_id, $order->cycle_id);
+            $this->assertSame($phase->cycle->context_horizon_id, $state['cycle']['context_horizon_id']);
+            $this->assertSame($child->phase->governance()->context_horizon_id, $state['context_horizon_id']);
+            $this->assertSame($this->a->id, $order->cycle->entry_committal_id);
+            $this->assertSame($entriesB, Cycle::where('entry_committal_id', $this->b->id)->count());
+            $this->assertSame(['operand_id' => $this->gateA->id, 'child_id' => $child->id, 'governing_committal_id' => $this->b->id,
+                'context_horizon_id' => $child->phase->governance()->context_horizon_id], $state['plan']['phase']['crossover']);
+            if ($index === 2) {
+                $this->assertSame($votes, $child->attestations()->count());
+                $this->assertEquals($cursor, app(AttestationBeatCursorService::class)->for($child));
+            }
+        }
+        $rhythm = DB::table('local_chirality_states')->where('proposition_id', $child->id)->first();
+        $this->assertSame(2, (int) $rhythm->act_count);
+        $this->assertSame([0], json_decode($rhythm->intervals, true));
+        $this->assertEquals($beforeBirth, app(PhaseProfileObservationService::class)->stored($child->id));
+        $this->assertSame(1, Supersession::where('type', 'reclassify')->count());
+        $this->assertSame(0, Supersession::where('type', 'reconcile')->count());
+
+        $service->contribute($reader, $order->id, ['action' => 'participant.rest']);
+        $this->assertSame($entriesB + 1, Cycle::where('entry_committal_id', $this->b->id)->count());
+        $this->assertSame($this->b->id, $reader->cycles()->latest('sequence')->firstOrFail()->entry_committal_id);
+        $event = DB::table('exploration_events')->where('phase_id', $order->id)->first();
+        $this->assertSame($this->gateA->id, json_decode($event->witness, true)['arrival_source_id']);
+        $revisit = $this->biasAt($this->a, $this->gateA);
+        $this->assertFalse(app(PropositionOptionService::class)->traversalOptionsFor($revisit)->contains('id', $child->id));
+    }
+
+    public function test_bias_crossover_requires_the_ledgered_unary_edge_and_exact_phase_positions(): void
+    {
+        $producer = $this->biasAt($this->b, $this->gateB);
+        $child = (new Proposition)->forceFill(['phase_id' => $producer->id, 'tier' => 'expressive',
+            'register' => $producer->write_register, 'statement' => 'Incomplete historical relationship']);
+        $child->save();
+        app(LedgerService::class)->record($child, $this->gateA);
+        $edge = (new Supersession)->forceFill(['source_proposition_id' => $this->gateA->id, 'target_proposition_id' => $child->id,
+            'phase_id' => $producer->id, 'type' => 'reclassify']);
+        $edge->save();
+        DB::table('reclassification_results')->insert(['source_proposition_id' => $this->gateA->id,
+            'target_proposition_id' => $child->id, 'register' => $child->register]);
+        $from = $this->biasAt($this->a, $this->gateA);
+        $discovery = app(CausalCrossoverService::class);
+        $this->assertTrue($discovery->children($from)->isEmpty());
+        app(LedgerService::class)->record($edge);
+        $this->assertSame($child->id, $discovery->children($from)->sole()->id);
+        $wrongPosition = $this->phase($this->a, $this->gateA, PhaseKind::Mediate);
+        $this->assertTrue($discovery->children($wrongPosition)->isEmpty());
+        $from->write_register = $wrongPosition->write_register;
+        $this->assertTrue($discovery->children($from)->isEmpty());
+
+        $from = $from->fresh();
+        $from->forceFill(['completed_at' => now()])->save();
+        $forged = (new Phase)->forceFill(['kind' => PhaseKind::Order, 'cycle_id' => $from->cycle_id,
+            'gate_proposition_id' => $child->id, 'crossover_cycle_id' => $producer->operating_cycle_id,
+            'write_register' => $wrongPosition->write_register, 'started_at' => now()]);
+        try {
+            $forged->save();
+            $this->fail('A crossover accepted a register from the wrong Phase.');
+        } catch (DomainException $exception) {
+            $this->assertStringContainsString('destination Phase register', $exception->getMessage());
+            $this->assertFalse($forged->exists);
+        }
+
+        // A second input would contradict the unary classification record.
+        $this->edge($this->gateB, $child, 'variant');
+        $this->assertTrue($discovery->children($from->fresh())->isEmpty());
+    }
+
+    public function test_missing_classification_record_invalidates_offered_crossover_without_partial_contribution(): void
+    {
+        $child = $this->foreignClassification();
+        $this->actor = $this->newReader('reader');
+        $unrelated = $this->biasAt($this->c, $this->gateC);
+        $this->assertTrue(app(CausalCrossoverService::class)->children($unrelated)->isEmpty());
+        $phase = $this->biasAt($this->a, $this->gateA);
+        $this->publishPotentialFixture($this->actor);
+        $service = app(ParticipationService::class);
+        $schema = $service->stateFor($this->actor)['plan']['schema'];
+        $this->assertContains($child->id, $schema['$defs']['actions']['attestation.create']['properties']['proposition_id']['enum']);
+        DB::table('reclassification_results')->where('target_proposition_id', $child->id)->delete();
+        $this->assertTrue(app(CausalCrossoverService::class)->children($phase)->isEmpty());
+        $before = DB::table('substrate_ledger_entries')->count();
+        try {
+            $service->contribute($this->actor, $phase->id, ['action' => 'attestation.create', 'direction' => 'support',
+                'proposition_id' => $child->id], expectedSchema: $schema);
+            $this->fail('An obsolete observed schema admitted a missing classification.');
+        } catch (\Symfony\Component\HttpKernel\Exception\ConflictHttpException) {
+            $this->assertSame($before, DB::table('substrate_ledger_entries')->count());
+            $this->assertSame(0, $child->attestations()->count());
+            $this->assertNull($phase->fresh()->completed_at);
+            $this->assertSame($this->gateA->id, $this->actor->fresh()->current_proposition_id);
+            $this->assertFalse($phase->cycle->phases()->where('kind', PhaseKind::Order->value)->exists());
+        }
+    }
+
+    public function test_same_horizon_foreign_result_is_an_exact_crossing_and_keeps_its_original_ownership(): void
     {
         $this->warrant();
         $a = $this->committedCoordinate($this->a, 'settlement');
@@ -421,6 +724,7 @@ class HomologousBiasTest extends TestCase
         $heads = app(ParticipantExplorationService::class)->heads($right->id, $other, new ParticipationContext($other));
         $this->assertFalse($heads->has($target->id));
         foreach ([null, new ParticipationContext($other)] as $context) {
+            $this->assertContains($target->id, app(PropositionOptionService::class)->writeOptionsFor($other, $context)->pluck('id'));
             $this->assertNotContains($target->id, app(CausalWriteService::class)->forPhase($other, $context)->pluck('id'));
             $this->assertNotContains($target->id, app(PropositionOptionService::class)->traversalOptionsFor($other, $context)->pluck('id'));
         }

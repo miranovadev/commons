@@ -22,8 +22,8 @@ final class ContinuationOpportunityService
         foreach ($pools as $pool) {
             $additional = $additional->merge($pool['reads']->pluck('id'))->merge($pool['gates']->pluck('id'));
         }
-        $arrivals = $probes->filter(fn ($probe) => $probe->kind === PhaseKind::Mediate);
-        foreach (app(ReconciliationCrossoverService::class)->childrenFor($arrivals) as $phaseId => $children) {
+        $arrivals = $probes->whereIn('kind', [PhaseKind::Mediate, PhaseKind::Bias]);
+        foreach (app(CausalCrossoverService::class)->childrenFor($arrivals) as $phaseId => $children) {
             $additional = $additional->merge($children->pluck('id'));
             $pools['crossover:'.$phaseId] = $children;
         }

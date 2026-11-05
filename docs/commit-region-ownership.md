@@ -6,9 +6,12 @@ Committal and Horizon of the Participant's actual Cycle.
 
 When B is the receiving operand of an A-owned Reconciliation X, choosing X
 at Mediate records B as the Gate of the completed Phase and X as the Gate of
-Bias in that same Cycle. Bias and the following Order carry an immutable
-`phases.crossover_cycle_id` referencing X's producing Cycle. Its existing
-entry supplies the operating Region and Horizon for those Phases. Rows from
+Bias in that same Cycle. Bias records the governing Cycle of X's producing
+Phase in the immutable `phases.crossover_cycle_id`. Order inherits that
+context on local progression. If the Bias Gate is the exact source of a
+foreign Reclassification Y, choosing Y gives Order the governing Cycle of
+Y's producing Phase instead. This also applies when Y's author crossed
+earlier in their own Cycle. Rows from
 before crossover have a null witness. The generated `operating_cycle_id`
 resolves the appropriate ownership join for either case. Actor identity,
 Phase sequence and participation history always use `phases.cycle_id`.
@@ -21,7 +24,7 @@ entry. The original Cycle keeps its B entry.
 
 The migration can be rolled back before the first crossed Phase. Once a crossing
 has been recorded, retain the Phase context for historical ownership. Future
-admission can be disabled separately in Mediate option discovery.
+admission can be disabled separately in Mediate and Bias option discovery.
 
 ## Resolution and failure policy
 

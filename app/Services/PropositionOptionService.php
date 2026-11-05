@@ -137,8 +137,8 @@ final class PropositionOptionService
     public function writeOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         $writes = $this->resolveWrites($phase, $context);
-        if ($phase->kind === PhaseKind::Mediate) {
-            $children = app(ReconciliationCrossoverService::class)->children($phase, $context);
+        if (in_array($phase->kind, [PhaseKind::Mediate, PhaseKind::Bias], true)) {
+            $children = app(CausalCrossoverService::class)->children($phase, $context);
             if ($children->isNotEmpty()) {
                 $writes = $writes->concat($children)->unique('id')->sortBy('id')->values();
             }

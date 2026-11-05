@@ -36,7 +36,7 @@ Three relationships must not be treated as interchangeable:
    both selected lineages; a sibling does not enter merely through that shared
    ancestor. A genuine multi-parent Write may join causal branches.
 3. **Governing Cycle-entry basin:** the producing Phase identifies its operating Committal. After a
-   crossover this is the selected Reconciliation child's governor. Multiple Participants and separate causal branches can enter Cycles
+   crossover this is the selected Reconciliation or Reclassification child’s governor. Multiple Participants and separate causal branches can enter Cycles
    governed by the same Committal. This does not manufacture a Supersession
    between those branches or make the whole Horizon one basin.
 

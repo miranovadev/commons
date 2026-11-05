@@ -63,7 +63,7 @@ class Receipt extends Model
             $horizonId = $receipt->phase?->governance()->context_horizon_id;
             if ($receipt->type === 'tragedy' && $receipt->context_horizon_id !== $horizonId
                 && $receipt->phase !== null && $receipt->receiptable_type === (new Proposition)->getMorphClass()) {
-                $child = app(\App\Services\ReconciliationCrossoverService::class)->children($receipt->phase)->firstWhere('id', $receipt->receiptable_id);
+                $child = app(\App\Services\CausalCrossoverService::class)->children($receipt->phase)->firstWhere('id', $receipt->receiptable_id);
                 if ($child !== null) {
                     $horizonId = $child->phase->governance()->context_horizon_id;
                 }

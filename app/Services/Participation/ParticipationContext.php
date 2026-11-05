@@ -21,7 +21,7 @@ use App\Services\HomologousBiasService;
 use App\Services\HomologousMediationService;
 use App\Services\HomologousOrderService;
 use App\Services\MediatedIncomingBiasService;
-use App\Services\ReconciliationCrossoverService;
+use App\Services\CausalCrossoverService;
 use App\Services\Observables\CommittalLineageService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -161,14 +161,14 @@ final class ParticipationContext
     private function workingSetIds(?Collection $additionalPropositionIds = null, bool $includeUnavailableAdditional = false): Collection
     {
         $destinationOwners = collect();
-        if ($this->phase->kind === PhaseKind::Mediate) {
-            // Comparison operands are hydrated, not granted evidence or movement scope.
-            $pool = app(HomologousMediationService::class)->structuralPoolFor($this->phase, $this);
-            $crossings = app(ReconciliationCrossoverService::class)->children($this->phase, $this);
+        if (in_array($this->phase->kind, [PhaseKind::Mediate, PhaseKind::Bias], true)) {
+            $crossings = app(CausalCrossoverService::class)->children($this->phase, $this);
             $destinationOwners = $crossings->map(fn ($node) => $node->phase->governance()->entry_committal_id)->unique();
-            $additionalPropositionIds = ($additionalPropositionIds ?? collect())
-                ->merge($crossings->pluck('id'))
-                ->merge($pool['reads']->pluck('id'))->merge($pool['gates']->pluck('id'));
+            $additionalPropositionIds = ($additionalPropositionIds ?? collect())->merge($crossings->pluck('id'));
+        }
+        if ($this->phase->kind === PhaseKind::Mediate) {
+            $pool = app(HomologousMediationService::class)->structuralPoolFor($this->phase, $this);
+            $additionalPropositionIds = $additionalPropositionIds->merge($pool['reads']->pluck('id'))->merge($pool['gates']->pluck('id'));
         }
         if ($this->phase->kind === PhaseKind::Bias) {
             $population = app(HomologousBiasService::class)->populationFor($this->phase, $this);

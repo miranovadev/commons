@@ -62,10 +62,11 @@ class InputSchemaServiceTest extends TestCase
     public function test_bias_retires_the_local_only_cached_guidance(): void
     {
         $actions = config('phases.6.actions');
-        $key = 'commons:input-schema:v35:phase:6:'.sha1(implode('|', $actions));
+        $key = 'commons:input-schema:v36:phase:6:'.sha1(implode('|', $actions));
         Cache::store('array')->forever($key, ['stale_local_only_bias' => true]);
         $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Bias);
         $this->assertArrayNotHasKey('stale_local_only_bias', $schema);
+        $this->assertStringContainsString('recorded source', $schema['x-commons']['description']);
         $this->assertStringContainsString('Dominant homologous Chirality', $schema['x-commons']['description']);
         $this->assertStringContainsString('operating Region’s Receipt catalogue', $schema['x-commons']['description']);
     }

@@ -15,6 +15,7 @@ use App\Services\CommitRegionService;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
+use App\Services\Observables\PhaseProfileObservationService;
 use App\Services\Observables\ProspectiveClosureHistory;
 use App\Services\Observables\ProspectiveClosureService;
 use App\Services\PhaseProgressionService;
@@ -317,6 +318,66 @@ class ProspectiveClosureStateTest extends TestCase
         $mediate->save();
 
         return $mediate;
+    }
+
+    public function test_grounded_order_after_a_foreign_reclassification_preserves_the_observed_child(): void
+    {
+        // Both basins have recorded history. Create a Mediate source in the receiving
+        // basin, then stage its unary classification at a genuine local Bias Gate.
+        $parallel = $this->enter();
+        $receiving = $this->receivingMediate();
+        $producer = $this->cycle;
+        $this->cycle = $receiving->cycle;
+        $partner = $this->born(PhaseKind::Disperse, $receiving->gate->parents()->sole());
+        $source = $this->born(PhaseKind::Mediate, $receiving->gate, 'reconcile', $partner);
+        $bias = app(PhaseProgressionService::class)->advance($receiving, $source);
+        $this->cycle = $producer;
+        $local = $this->bias(staggered: true);
+        $child = $this->born(PhaseKind::Bias, $source, 'reclassify');
+        DB::table('reclassification_results')->insert(['source_proposition_id' => $source->id,
+            'target_proposition_id' => $child->id, 'register' => $child->register]);
+        $this->assertSame($local->phase_id, $child->phase_id);
+        $this->assertSame($source->id, $child->parents()->sole()->id);
+
+        $reader = $receiving->cycle->participant;
+        $reader->forceFill(['current_proposition_id' => $source->id])->save();
+        $this->loadedReceiptFixture($child);
+        // Stage two adjacent births on an already-open, independent path in
+        // the destination basin, one on each side of the reader's crossover.
+        $this->cycle = $parallel;
+        $beforeCrossing = $this->born(PhaseKind::Distinguish, $this->origin);
+        $beforeArrival = $this->service()->stored($child);
+        app(ContributionDispatcher::class)->dispatch($reader, $bias, [
+            'action' => 'attestation.create', 'direction' => 'support', 'proposition_id' => $child->id]);
+        $order = app(PhaseProgressionService::class)->advance($bias, $child);
+        $this->assertSame($receiving->cycle_id, $order->cycle_id);
+        $this->assertSame($producer->entry_committal_id, $order->governance()->entry_committal_id);
+        $atArrival = $this->service()->stored($child);
+        $this->assertFalse($atArrival['admissible']);
+        $this->assertSame($beforeArrival, $atArrival);
+        $afterCrossing = $this->born(PhaseKind::Persist, $beforeCrossing);
+        $birth = app(PhaseProfileObservationService::class)->stored($afterCrossing->id);
+        $this->assertSame($beforeCrossing->id, $birth->preceding_phase_proposition_id);
+        $this->assertSame(0, $birth->cycle_interval);
+        $this->cycle = $producer;
+        // Only a genuine entry into the owning basin may refresh prospective Closure.
+        $entry = $this->enter();
+        $observation = $this->service()->stored($child);
+        $this->assertSame($entry->id, $observation['trigger']['id']);
+        $this->assertTrue($observation['admissible']);
+        $this->assertSame('positive', $observation['historical_extent_direction']);
+        $this->assertSame('positive', $observation['historical_rhythm_direction']);
+        $resolved = app(PropositionMeasurementService::class)->recalculate($child);
+        $canonical = app(ContributionDispatcher::class)->dispatch($reader, $order,
+            ['action' => 'proposition.commit', 'proposition_id' => $child->id]);
+        $this->assertSame($child->statement, $canonical->statement);
+        $this->assertSame($order->id, $canonical->phase_id);
+        $this->assertSame($observation, $this->service()->stored($canonical));
+        $this->assertEquals($observation, $canonical->fresh()->commitmentSnapshot->closure_observation);
+        foreach (['correspondence', 'chirality', 'orientation_direction', 'attestation_cadence_direction',
+            'shape_topology_direction', 'phase_profile_direction'] as $key) {
+            $this->assertSame($resolved->$key, $canonical->fresh()->measurement->$key, $key);
+        }
     }
 
     public static function commitPaths(): array

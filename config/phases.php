@@ -75,7 +75,7 @@ return [
     ],
     6 => [
         'name' => 'bias',
-        'description' => 'Reclassify an eligible source with an evidence-grounded statement. Dominant homologous Chirality may add sources alongside the causal Gate. Select a Receipt authorized for that source from the operating Region’s Receipt catalogue. Existing causal Writes retain their ordinary actions and Traverse rules.',
+        'description' => 'Reclassify an eligible source with an evidence-grounded statement. Dominant homologous Chirality may add sources alongside the causal Gate. Select a Receipt authorized for that source from the operating Region’s Receipt catalogue. When your Gate is the recorded source of an offered Reclassification child, Attest the child or Traverse with a qualifying prior-Cycle judgment. Order continues in the child’s Region.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reclassify',

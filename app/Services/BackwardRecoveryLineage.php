@@ -125,9 +125,9 @@ final class BackwardRecoveryLineage
             } else {
                 $previous->where('phase.cycle_id', $arrival->cycle_id)->where('phase.kind', $arrival->kind - 1);
             }
-            $phase = $previous->first(['cycle.participant_id', 'cycle.sequence', 'phase.kind', 'phase.gate_proposition_id']);
+            $phase = $previous->first(['cycle.participant_id', 'cycle.sequence', 'phase.kind', 'phase.gate_proposition_id', 'phase.crossover_cycle_id']);
             if ($phase !== null) {
-                $phase->crossed = (int) $arrival->kind === PhaseKind::Bias->value && $arrival->crossover_cycle_id !== null;
+                $phase->crossed = $arrival->crossover_cycle_id !== null && $arrival->crossover_cycle_id !== $phase->crossover_cycle_id;
 
                 return $phase;
             }

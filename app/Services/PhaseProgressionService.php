@@ -16,11 +16,11 @@ final class PhaseProgressionService
         $horizon = $causality->assertPhase($phase);
         $homologousOrder = $phase->kind === PhaseKind::Order
             && app(HomologousOrderService::class)->forPhase($phase)->contains('id', $gate->id);
-        $crossover = $phase->kind === PhaseKind::Mediate
+        $crossover = in_array($phase->kind, [PhaseKind::Mediate, PhaseKind::Bias], true)
             && $gate->phase->governance()->entry_committal_id !== $phase->governance()->entry_committal_id;
         if ($crossover) {
-            if (! app(ReconciliationCrossoverService::class)->children($phase)->contains('id', $gate->id)) {
-                throw new \DomainException('A foreign Mediate Write requires the exact recorded reconciliation.');
+            if (! app(CausalCrossoverService::class)->children($phase)->contains('id', $gate->id)) {
+                throw new \DomainException('A foreign Write requires its exact recorded causal relationship.');
             }
             $horizon = $gate->phase->governance()->contextHorizon;
         }
@@ -32,7 +32,7 @@ final class PhaseProgressionService
             throw new \DomainException('Progression requires a Write at the current producing Phase position.');
         }
         $continuations = match ($phase->kind) {
-            PhaseKind::Bias => app(CausalWriteService::class)->forPhase($phase),
+            PhaseKind::Bias => $crossover ? null : app(CausalWriteService::class)->forPhase($phase),
             PhaseKind::Order => app(PhaseGenerationService::class)->committedWrites($phase),
             default => null,
         };
@@ -63,7 +63,7 @@ final class PhaseProgressionService
         $next = new Phase;
         $next->forceFill([
             'cycle_id' => $phase->cycle_id,
-            'crossover_cycle_id' => $crossover ? $gate->phase->cycle_id : $phase->crossover_cycle_id,
+            'crossover_cycle_id' => $crossover ? $gate->phase->operating_cycle_id : $phase->crossover_cycle_id,
             'gate_proposition_id' => $gate->getKey(),
             'kind' => $kind,
             'write_register' => $horizon->domain->registerFor($kind),
