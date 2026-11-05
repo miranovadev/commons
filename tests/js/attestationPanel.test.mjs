@@ -69,9 +69,9 @@ export const useGetParticipantWorkspaceQuery = () => ({ data: globalThis.attesta
   let resolve, reject;
   const actions = { 'attestation.create': { properties: { proposition_id: { enum: ['p'] }, direction: { enum: ['support', 'refute'] } } } };
   const harness = {
-    participation: { status: 'ready', plan: { gate: { id: 'gate', statement: 'Gate' }, phase: { id: 'phase', kind: 'persist' }, schema: {
+    participation: { status: 'ready', context: {participant: { callsign:'Viewer' }, gate:{}}, gate: { id: 'gate', statement: 'Gate' }, phase: { id: 'phase', kind: 'persist' }, schema: {
       oneOf: [{ $ref: '#/$defs/actions/attestation.create' }], $defs: { actions },
-    } } },
+    } },
     contribute(input) {
       calls.push(input);
       return { unwrap: () => new Promise((yes, no) => { resolve = yes; reject = no; }) };

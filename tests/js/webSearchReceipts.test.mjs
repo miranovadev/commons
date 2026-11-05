@@ -23,8 +23,9 @@ const result = await build({ stdin: { contents: `
   import { ReceiptContextPanel } from './resources/js/components/ReceiptContextPanel';
   import { InstrumentFields } from './resources/js/components/InstrumentFields';
   export const panel = (plan, enabled = true) => renderToStaticMarkup(<MantineProvider env="test"><ReceiptContextPanel plan={plan} /></MantineProvider>);
-  export const fields = (value, includeCitation = true, replayIds = []) => renderToStaticMarkup(<MantineProvider env="test"><InstrumentFields value={value} onChange={() => {}} includeCitation={includeCitation} replayIds={replayIds} /></MantineProvider>);
-  export const change = (value, kind, replayIds = []) => { let next; const tree = InstrumentFields({ value, replayIds, onChange: value => { next = value; } }); tree.props.children[0].props.onChange(kind); return next; };
+  const kinds = ['citation', 'hyperlink', 'load_file', 'web_search', 'proposition_search'];
+  export const fields = (value, includeCitation = true, replayIds = []) => renderToStaticMarkup(<MantineProvider env="test"><InstrumentFields value={value} onChange={() => {}} kinds={includeCitation ? kinds : kinds.filter(kind => kind !== 'citation')} replayIds={replayIds} /></MantineProvider>);
+  export const change = (value, kind, replayIds = []) => { let next; const tree = InstrumentFields({ value, replayIds, kinds, onChange: value => { next = value; } }); tree.props.children[0].props.onChange(kind); return next; };
 `, resolveDir: process.cwd(), loader: 'tsx' }, bundle: true, platform: 'node', format: 'cjs', write: false, jsx: 'automatic' });
 const module = { exports: {} };
 new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
@@ -93,6 +94,13 @@ test('Search has a bounded query field and switches create disjoint Instrument p
   assert.deepEqual(module.exports.change({ kind: 'hyperlink', reference: 'https://example.com' }, 'web_search'), { kind: 'web_search', query: '' });
   assert.deepEqual(module.exports.change({ kind: 'web_search', query: 'discarded' }, 'citation'), { kind: 'citation', reference: '' });
   assert.match(module.exports.fields({ kind: 'web_search', query: '' }, false), /Web Search/);
+});
+
+test('Proposition Search accepts an optional query and bounded result count', () => {
+  assert.deepEqual(module.exports.change({ kind: 'web_search', query: 'old' }, 'proposition_search'), { kind: 'proposition_search' });
+  const html = module.exports.fields({ kind: 'proposition_search', limit: 2 });
+  assert.match(html, /Result limit/);
+  assert.match(html, /Leave the query empty to browse/);
 });
 
 test('Replay is a disjoint Instrument form only where the schema supplies choices', () => {

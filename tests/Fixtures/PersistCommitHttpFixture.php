@@ -86,9 +86,9 @@ trait PersistCommitHttpFixture
             }
         }
         $before = $this->readParticipation($actor);
-        $this->assertSame($step['phase'], $before['plan']['phase']['number'], 'Fixed Phase at step '.$index);
+        $this->assertSame($step['phase'], $before['phase']['number'], 'Fixed Phase at step '.$index);
         $this->assertSame($step['cycle'], $before['cycle']['sequence'], 'Fixed Cycle at step '.$index);
-        $this->assertSame($this->persistJourneyIds[$step['gate']], $before['plan']['gate_id']);
+        $this->assertSame($this->persistJourneyIds[$step['gate']], $before['context']['gate']['acting_id']);
         $after = $this->contribute($actor, $this->persistJourneyInput($index), $before);
         if (! isset($this->persistJourneyIds[$step['result']])) {
             $this->assertNotContains($after['current_proposition_id'], $this->persistJourneyIds);
@@ -96,8 +96,8 @@ trait PersistCommitHttpFixture
         }
         $this->assertSame($this->persistJourneyIds[$step['result']], $after['current_proposition_id']);
         if (isset($step['deferred_receipt'])) {
-            $receipt = Receipt::whereHas('evidenceExecution', fn ($q) => $q->where('phase_id', $before['plan']['phase']['id']))->sole();
-            $this->assertSame($before['plan']['gate_id'], $receipt->evidenceExecution->proposition_id);
+            $receipt = Receipt::whereHas('evidenceExecution', fn ($q) => $q->where('phase_id', $before['phase']['id']))->sole();
+            $this->assertSame($before['context']['gate']['acting_id'], $receipt->evidenceExecution->proposition_id);
             $this->assertNotNull($receipt->evidenceExecution->cycle->deferred_at);
             $this->assertNull($receipt->evidenceExecution->cycle->rested_at);
             $this->persistJourneyIds[$step['deferred_receipt']] = $receipt->id;
@@ -105,23 +105,23 @@ trait PersistCommitHttpFixture
             $instrument = $step['input']['action'] === 'instrument.execute';
             $this->assertContains($step['phase'], $instrument ? [1, 2, 4] : [2, 4]);
             if ($instrument || $step['input']['action'] === 'preparation.defer') {
-                $this->assertSame($before['plan']['phase'], $after['plan']['phase']);
+                $this->assertSame($before['phase'], $after['phase']);
                 $this->assertSame($before['cycle'], $after['cycle']);
             } else {
-                $this->assertNotSame($before['plan']['phase']['id'], $after['plan']['phase']['id']);
+                $this->assertNotSame($before['phase']['id'], $after['phase']['id']);
             }
-            $receipt = Receipt::whereHas('evidenceExecution', fn ($q) => $q->where('phase_id', $before['plan']['phase']['id']))->sole();
-            $this->assertSame($before['plan']['gate_id'], $receipt->evidenceExecution->proposition_id);
+            $receipt = Receipt::whereHas('evidenceExecution', fn ($q) => $q->where('phase_id', $before['phase']['id']))->sole();
+            $this->assertSame($before['context']['gate']['acting_id'], $receipt->evidenceExecution->proposition_id);
             $this->assertNotContains($receipt->id, $this->persistJourneyIds);
             $this->persistJourneyIds[$step['receipt']] = $receipt->id;
         } elseif (isset($step['execution'])) {
-            $this->assertSame($before['plan']['phase'], $after['plan']['phase']);
-            $id = $after['plan']['preparation']['execution_id'];
+            $this->assertSame($before['phase'], $after['phase']);
+            $id = $after['preparation']['execution_id'];
             $this->persistJourneyIds[$step['execution']] = $id;
             $this->readAndAcknowledgePreparation($actor, $id);
             $after = $this->readParticipation($actor);
         } else {
-            $this->assertNotSame($before['plan']['phase']['id'], $after['plan']['phase']['id']);
+            $this->assertNotSame($before['phase']['id'], $after['phase']['id']);
         }
 
         return $after;

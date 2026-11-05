@@ -249,7 +249,7 @@ class ParticipantWakeTest extends TestCase
             ->withArgs(function (Connection $connection, array $state): bool {
                 return $connection->provider->value === 'openai'
                     && $state['status'] === 'ready'
-                    && $state['plan']['phase']['kind'] === 'distinguish';
+                    && $state['phase']['kind'] === 'distinguish';
             })
             ->andReturn([
                 'action' => 'proposition.variant',
@@ -324,8 +324,8 @@ class ParticipantWakeTest extends TestCase
         $inference->shouldReceive('contribute')
             ->twice()
             ->withArgs(fn (Connection $connection, array $state): bool => $state['status'] === 'ready'
-                && $state['plan']['gate_id'] === $origin->getKey())
-            ->andReturnUsing(fn (Connection $connection, array $state) => $state['plan']['acquisition']['status'] === 'required'
+                && $state['context']['gate']['acting_id'] === $origin->getKey())
+            ->andReturnUsing(fn (Connection $connection, array $state) => $state['context']['gate']['acquisition']['status'] === 'required'
                 ? ['action' => 'instrument.execute', 'proposition_id' => $origin->id, 'instrument' => ['kind' => 'proposition_search', 'limit' => 1]]
                 : ['action' => 'proposition.variant', 'statement' => 'The second participant is awake.']);
         $this->app->instance(ParticipantInference::class, $inference);
@@ -385,9 +385,9 @@ class ParticipantWakeTest extends TestCase
         $cycleId = $f->phase->cycle_id;
         $calls = [];
         $develop = function (array $state): array {
-            $actions = $state['plan']['schema']['$defs']['actions'];
+            $actions = $state['schema']['$defs']['actions'];
             if (isset($actions['instrument.execute'])) {
-                return ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+                return ['action' => 'instrument.execute', 'proposition_id' => $state['context']['gate']['acting_id'],
                     'instrument' => ['kind' => 'proposition_search', 'limit' => 3]];
             }
             if (isset($actions['proposition.variant'])) {
@@ -401,17 +401,17 @@ class ParticipantWakeTest extends TestCase
             $this->assertTrue($activity['is_active']);
             $this->assertNotNull($activity['current_proposition_id']);
             if ($state['cycle']['id'] !== $cycleId) {
-                $calls[] = [$state['plan']['phase']['number'], $state['plan']['phase']['id']];
+                $calls[] = [$state['phase']['number'], $state['phase']['id']];
 
                 return $develop($state);
             }
-            $kind = $state['plan']['phase']['number'];
-            $calls[] = [$kind, $state['plan']['phase']['id']];
+            $kind = $state['phase']['number'];
+            $calls[] = [$kind, $state['phase']['id']];
             if ($kind === 1) {
-                $this->assertTrue(collect($state['plan']['receipts'])->firstWhere('id', $receipt->id)['loaded']);
+                $this->assertTrue(collect($state['context']['receipts'])->firstWhere('id', $receipt->id)['loaded']);
             }
             if ($kind === 3) {
-                $this->assertTrue(collect($state['plan']['receipts'])->firstWhere('id', $receipt->id)['loaded']);
+                $this->assertTrue(collect($state['context']['receipts'])->firstWhere('id', $receipt->id)['loaded']);
             }
 
             return $kind === 7 ? ['action' => 'proposition.commit', 'proposition_id' => $nodes[5]->id]
@@ -450,7 +450,7 @@ class ParticipantWakeTest extends TestCase
         $connection->forceFill(['configuration' => array_replace_recursive($connection->configuration, ['wake' => ['termination' => 'phase']])])->save();
         $second = Mockery::mock(ParticipantInference::class);
         $this->assertSame(['instrument.execute'], array_keys($next['plan']['schema']['$defs']['actions']));
-        $second->shouldReceive('contribute')->twice()->withArgs(fn ($connection, $state) => $state['plan']['phase']['id'] === $nextPhaseId)
+        $second->shouldReceive('contribute')->twice()->withArgs(fn ($connection, $state) => $state['phase']['id'] === $nextPhaseId)
             ->andReturnUsing(fn ($connection, $state) => $develop($state));
         $this->app->instance(ParticipantInference::class, $second);
         $this->app->call([new WakeParticipant($connection->id), 'handle']);
@@ -465,7 +465,7 @@ class ParticipantWakeTest extends TestCase
         $this->actingAs(User::firstOrFail());
         $participantUrl = '/api/substrates/'.$f->substrate->slug.'/participants/'.$f->viewer->id;
         foreach (['participate', 'workspace'] as $surface) {
-            $actions = $this->getJson($participantUrl.'/'.$surface)->assertOk()->json('data.plan.schema.$defs.actions');
+            $actions = $this->getJson($participantUrl.'/'.$surface)->assertOk()->json('data.schema.$defs.actions');
             $this->assertSame(['participant.rest'], array_keys($actions));
         }
         $this->assertNull($f->phase->cycle->fresh()->rested_at);
@@ -494,8 +494,8 @@ class ParticipantWakeTest extends TestCase
         $connection = $this->connectionFor($f->viewer);
         $this->mock(ParticipantInference::class)->shouldReceive('contribute')->once()
             ->andReturnUsing(function ($connection, $state): never {
-                $this->assertSame([], $state['plan']['schema']['$defs']['actions']);
-                $this->assertSame('pending', $state['plan']['acquisition']['status']);
+                $this->assertSame([], $state['schema']['$defs']['actions']);
+                $this->assertSame('pending', $state['context']['gate']['acquisition']['status']);
                 throw new \RuntimeException('No inference choice');
             });
 
@@ -539,7 +539,7 @@ class ParticipantWakeTest extends TestCase
         $clock->shouldReceive('now')->andReturn(0);
         $this->mock(ParticipantInference::class)->shouldReceive('contribute')->once()
             ->andReturnUsing(function ($connection, $state) use ($choices): array {
-                $this->assertSame($choices, array_keys($state['plan']['schema']['$defs']['actions']));
+                $this->assertSame($choices, array_keys($state['schema']['$defs']['actions']));
 
                 return ['action' => 'participant.rest'];
             });
@@ -564,8 +564,8 @@ class ParticipantWakeTest extends TestCase
         $clock->shouldReceive('now')->andReturn(0);
         $this->mock(ParticipantInference::class)->shouldReceive('contribute')->once()
             ->andReturnUsing(function ($connection, $state) use ($f, $gate): array {
-                $this->assertSame($f->phase->id, $state['plan']['phase']['id']);
-                $this->assertArrayHasKey('proposition.reclassify', $state['plan']['schema']['$defs']['actions']);
+                $this->assertSame($f->phase->id, $state['phase']['id']);
+                $this->assertArrayHasKey('proposition.reclassify', $state['schema']['$defs']['actions']);
 
                 return $this->reclassificationInputFixture($f->phase, $gate);
             });
@@ -594,8 +594,8 @@ class ParticipantWakeTest extends TestCase
 
                 return ['action' => 'instrument.execute', 'proposition_id' => $target->id, 'instrument' => $input];
             }
-            $this->assertArrayNotHasKey('instrument.execute', $state['plan']['schema']['$defs']['actions']);
-            $this->assertSame($f->phase->id, $state['plan']['phase']['id']);
+            $this->assertArrayNotHasKey('instrument.execute', $state['schema']['$defs']['actions']);
+            $this->assertSame($f->phase->id, $state['phase']['id']);
 
             return ['action' => 'proposition.variant', 'statement' => 'Continue after the completed observation.'];
         });
@@ -638,26 +638,26 @@ class ParticipantWakeTest extends TestCase
         $cycle = $participant->cycles()->whereNull('completed_at')->firstOrFail();
         $inference = Mockery::mock(ParticipantInference::class);
         $inference->shouldReceive('contribute')->times(3)->andReturnUsing(function ($connection, $state): array {
-            if ($state['plan']['phase']['number'] === 1) {
+            if ($state['phase']['number'] === 1) {
                 return ['action' => 'proposition.variant', 'statement' => 'A fresh distinction.'];
             }
-            if (isset($state['plan']['schema']['$defs']['actions']['preparation.start'])) {
-                $source = $state['plan']['preparation_options'][0];
+            if (isset($state['schema']['$defs']['actions']['preparation.start'])) {
+                $source = $state['context']['gate']['preparation_options'][0];
 
-                return ['action' => 'preparation.start', 'proposition_id' => $state['plan']['gate_id'],
+                return ['action' => 'preparation.start', 'proposition_id' => $state['context']['gate']['acting_id'],
                     'purpose' => 'Read before developing in this Phase', 'artifacts' => [[
                         'receipt_id' => $source['receipt_id'], 'artifact_id' => $source['artifact_id'],
                         'read_type' => 'text', 'parameters' => ['max_chars' => 4000]]]];
             }
-            if (isset($state['plan']['schema']['$defs']['actions']['instrument.execute'])) {
-                return ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+            if (isset($state['schema']['$defs']['actions']['instrument.execute'])) {
+                return ['action' => 'instrument.execute', 'proposition_id' => $state['context']['gate']['acting_id'],
                     'instrument' => ['kind' => 'proposition_search', 'limit' => 3]];
             }
-            if (isset($state['plan']['schema']['$defs']['actions']['proposition.variant'])) {
+            if (isset($state['schema']['$defs']['actions']['proposition.variant'])) {
                 return ['action' => 'proposition.variant', 'statement' => 'Resolve the independent Persist attempt.',
-                    ...isset($state['plan']['preparation']['execution_id']) ? ['execution_id' => $state['plan']['preparation']['execution_id']] : []];
+                    ...isset($state['preparation']['execution_id']) ? ['execution_id' => $state['preparation']['execution_id']] : []];
             }
-            $this->fail('Unexpected inference options: '.implode(', ', array_keys($state['plan']['schema']['$defs']['actions'])));
+            $this->fail('Unexpected inference options: '.implode(', ', array_keys($state['schema']['$defs']['actions'])));
         });
         $this->app->instance(ParticipantInference::class, $inference);
         $this->app->call([new WakeParticipant($connection->id), 'handle']);
@@ -693,25 +693,25 @@ class ParticipantWakeTest extends TestCase
         $this->app->instance(WakeClock::class, new WakeClock);
         $resume = Mockery::mock(ParticipantInference::class);
         $resume->shouldReceive('contribute')->twice()->andReturnUsing(function ($connection, $state) use ($phase): array {
-            if (isset($state['plan']['schema']['$defs']['actions']['preparation.start'])) {
-                $source = $state['plan']['preparation_options'][0];
+            if (isset($state['schema']['$defs']['actions']['preparation.start'])) {
+                $source = $state['context']['gate']['preparation_options'][0];
 
-                return ['action' => 'preparation.start', 'proposition_id' => $state['plan']['gate_id'],
+                return ['action' => 'preparation.start', 'proposition_id' => $state['context']['gate']['acting_id'],
                     'purpose' => 'Read before developing in this Phase', 'artifacts' => [[
                         'receipt_id' => $source['receipt_id'], 'artifact_id' => $source['artifact_id'],
                         'read_type' => 'text', 'parameters' => ['max_chars' => 4000]]]];
             }
-            if (isset($state['plan']['schema']['$defs']['actions']['instrument.execute'])) {
-                $this->assertSame($phase->id, $state['plan']['phase']['id']);
+            if (isset($state['schema']['$defs']['actions']['instrument.execute'])) {
+                $this->assertSame($phase->id, $state['phase']['id']);
 
-                return ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+                return ['action' => 'instrument.execute', 'proposition_id' => $state['context']['gate']['acting_id'],
                     'instrument' => ['kind' => 'proposition_search', 'limit' => 3]];
             }
-            if (isset($state['plan']['schema']['$defs']['actions']['proposition.variant'])) {
+            if (isset($state['schema']['$defs']['actions']['proposition.variant'])) {
                 return ['action' => 'proposition.variant', 'statement' => 'Resolve the independent Persist attempt.',
-                    ...isset($state['plan']['preparation']['execution_id']) ? ['execution_id' => $state['plan']['preparation']['execution_id']] : []];
+                    ...isset($state['preparation']['execution_id']) ? ['execution_id' => $state['preparation']['execution_id']] : []];
             }
-            $this->fail('Unexpected inference options: '.implode(', ', array_keys($state['plan']['schema']['$defs']['actions'])));
+            $this->fail('Unexpected inference options: '.implode(', ', array_keys($state['schema']['$defs']['actions'])));
         });
         $this->app->instance(ParticipantInference::class, $resume);
         $this->app->call([new WakeParticipant($connection->id), 'handle']);

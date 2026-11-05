@@ -22,15 +22,16 @@ class DownloadParticipationHttpTest extends ParticipationHttpTestCase
         $this->discoverGate($actor);
         $persist = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'A distinction to investigate.']);
         $instrument = ['kind' => 'load_file', 'method' => 'download', 'reference' => 'https://evidence.example.test/file.txt?edition=2'];
-        $action = ['action' => 'instrument.execute', 'proposition_id' => $persist['plan']['gate_id'], 'instrument' => $instrument];
-        $this->postContribution($actor, $persist['plan']['phase']['id'], [...$action,
+        $action = ['action' => 'instrument.execute', 'proposition_id' => $persist['context']['gate']['acting_id'], 'instrument' => $instrument];
+        $this->postContribution($actor, $persist['phase']['id'], [...$action,
             'instrument' => [...$instrument, 'method' => 'upload']])->assertUnprocessable();
         $observed = $this->contribute($actor, $action);
-        $this->assertSame($persist['plan']['phase'], $observed['plan']['phase']);
+        $this->assertSame($persist['phase'], $observed['phase']);
         $this->assertSame($persist['cycle'], $observed['cycle']);
         $receipt = Receipt::where('type', 'load_file')->sole();
-        $item = collect($observed['plan']['receipts'])->firstWhere('id', $receipt->id);
-        $this->assertFalse($item['capabilities']['readable']);
+        $item = collect($observed['context']['receipts'])->firstWhere('id', $receipt->id);
+        $this->assertArrayNotHasKey('loaded_inline_content', $item);
+        $this->assertNotContains($receipt->id, $observed['schema']['$defs']['actions']['proposition.variant']['properties']['receipt_options']['properties']['load']['items']['enum'] ?? []);
         $this->assertFalse($item['loaded']);
         $this->assertSame('download', $item['acquisition']['method']);
         $body = 'Deterministic external observation for '.$instrument['reference'];
@@ -40,7 +41,7 @@ class DownloadParticipationHttpTest extends ParticipationHttpTestCase
         $this->assertActionAvailable($observed, 'proposition.variant');
         $this->assertActionUnavailable($observed, 'instrument.execute');
         $constrain = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Develop the acquired observation.']);
-        $this->assertSame('constrain', $constrain['plan']['phase']['kind']);
+        $this->assertSame('constrain', $constrain['phase']['kind']);
         $this->assertSame($persist['cycle']['id'], $constrain['cycle']['id']);
         Http::assertSentCount(1);
     }
@@ -56,22 +57,22 @@ class DownloadParticipationHttpTest extends ParticipationHttpTestCase
         $this->enterParticipant($actor, true);
         $this->discoverGate($actor);
         $persist = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Investigate the dataset.']);
-        $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $persist['plan']['gate_id'],
+        $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $persist['context']['gate']['acting_id'],
             'instrument' => ['kind' => 'load_file', 'method' => 'download', 'reference' => 'https://evidence.example.test/data.csv']]);
         $source = Receipt::where('type', 'load_file')->sole();
         $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Develop the observed dataset.']);
-        $disperse = $this->driveUntil($actor, fn ($state) => $state['plan']['phase']['kind'] === 'disperse', 5, $source->id);
+        $disperse = $this->driveUntil($actor, fn ($state) => $state['phase']['kind'] === 'disperse', 5, $source->id);
         $this->assertNotNull($source->fresh()->consumption);
-        $option = collect($disperse['plan']['preparation_options'])->firstWhere('receipt_id', $source->id);
+        $option = collect($disperse['context']['gate']['preparation_options'])->firstWhere('receipt_id', $source->id);
         $this->assertSame(['raw', 'text', 'tables', 'regex'], array_column($option['capabilities'], 'read_type'));
         config(['preparation.text_budget' => 31]);
-        $started = $this->contribute($actor, ['action' => 'preparation.start', 'proposition_id' => $disperse['plan']['gate_id'],
+        $started = $this->contribute($actor, ['action' => 'preparation.start', 'proposition_id' => $disperse['context']['gate']['acting_id'],
             'purpose' => 'Compare the original CSV with its table representation.', 'artifacts' => [
                 ['receipt_id' => $source->id, 'artifact_id' => $option['artifact_id'], 'read_type' => 'raw', 'parameters' => ['offset' => 2, 'max_chars' => 10]],
                 ['receipt_id' => $source->id, 'artifact_id' => $option['artifact_id'], 'read_type' => 'tables'],
             ]]);
-        $this->assertSame($disperse['plan']['phase'], $started['plan']['phase']);
-        $id = $started['plan']['preparation']['execution_id'];
+        $this->assertSame($disperse['phase'], $started['phase']);
+        $id = $started['preparation']['execution_id'];
         $url = '/api/substrates/'.$this->substrateSlug.'/participants/'.$actor.'/preparations/'.$id;
         $delivery = $this->getJson($url.'/reading')->assertOk()->json('data');
         $this->assertSame([10, 21], array_column(array_column($delivery['deliveries'], 'boundaries'), 'length'));
@@ -88,7 +89,7 @@ class DownloadParticipationHttpTest extends ParticipationHttpTestCase
         $this->assertSame(31, array_sum(array_column(array_column($receipt->metadata['deliveries'], 'boundaries'), 'length')));
         $this->assertStringNotContainsString('research,42', json_encode($receipt->metadata));
         $this->assertActionUnavailable($resolved, 'proposition.variant');
-        $this->assertSame('not_required', $resolved['plan']['acquisition']['status']);
+        $this->assertSame('not_required', $resolved['context']['gate']['acquisition']['status']);
         $this->assertActionAvailable($resolved, 'proposition.traverse');
         Http::assertSentCount(1);
     }

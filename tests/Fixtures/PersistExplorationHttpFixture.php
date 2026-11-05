@@ -25,15 +25,15 @@ trait PersistExplorationHttpFixture
         // The first observation is still available until Constrain consumes it.
         $this->assertActionUnavailable($this->readParticipation($actor), 'instrument.execute');
         $state = $this->judge($actor, $persist);
-        $receipt = $state['plan']['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'][0];
+        $receipt = $state['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'][0];
         $slot = $this->contribute($actor, ['action' => 'proposition.reclassify', 'proposition_id' => $persist, 'statement' => 'Persist development', 'receipt_id' => $receipt]);
         $constrain = $slot['current_proposition_id'];
         // Admit the author's Preparation before another Participant reaches the same empty position.
-        $source = $slot['plan']['preparation_options'][0];
+        $source = $slot['context']['gate']['preparation_options'][0];
         $started = $this->contribute($actor, ['action' => 'preparation.start', 'proposition_id' => $constrain,
             'purpose' => 'Examine this fresh continuation', 'artifacts' => [['receipt_id' => $source['receipt_id'],
                 'artifact_id' => $source['artifact_id'], 'read_type' => 'text', 'parameters' => ['max_chars' => 4000]]]]);
-        $execution = $started['plan']['preparation']['execution_id'];
+        $execution = $started['preparation']['execution_id'];
         $this->readAndAcknowledgePreparation($actor, $execution);
         $observer = $this->joinParticipant('disperse-observer');
         $this->enterParticipant($observer);
@@ -44,7 +44,7 @@ trait PersistExplorationHttpFixture
             $observed = $this->contribute($observer, ['action' => 'instrument.execute', 'proposition_id' => $constrain,
                 'instrument' => ['kind' => 'citation', 'reference' => $a]]);
             $this->contribute($observer, ['action' => 'acquisition.defer',
-                'execution_id' => $observed['plan']['acquisition']['execution_id'], 'reason' => 'Preserve observation without a new claim']);
+                'execution_id' => $observed['context']['gate']['acquisition']['execution_id'], 'reason' => 'Preserve observation without a new claim']);
         } else {
             $this->resolvePersonalReading($observer);
         }
@@ -74,12 +74,12 @@ trait PersistExplorationHttpFixture
     {
         $state = $this->readParticipation($participant);
         $this->assertActionAvailable($state, 'preparation.start');
-        $source = $state['plan']['preparation_options'][0];
+        $source = $state['context']['gate']['preparation_options'][0];
         $started = $this->contribute($participant, ['action' => 'preparation.start',
-            'proposition_id' => $state['plan']['gate_id'], 'purpose' => 'Personally examine this route.',
+            'proposition_id' => $state['context']['gate']['acting_id'], 'purpose' => 'Personally examine this route.',
             'artifacts' => [['receipt_id' => $source['receipt_id'], 'artifact_id' => $source['artifact_id'],
                 'read_type' => 'text', 'parameters' => ['max_chars' => 4000]]]], $state);
-        $id = $started['plan']['preparation']['execution_id'];
+        $id = $started['preparation']['execution_id'];
         $this->readAndAcknowledgePreparation($participant, $id);
 
         return $this->contribute($participant, ['action' => 'preparation.defer', 'execution_id' => $id,
@@ -89,10 +89,10 @@ trait PersistExplorationHttpFixture
     private function observePersist(string $participant, string $gate, string $reference): void
     {
         $before = $this->readParticipation($participant);
-        $this->assertSame('persist', $before['plan']['phase']['kind']);
+        $this->assertSame('persist', $before['phase']['kind']);
         $after = $this->contribute($participant, ['action' => 'instrument.execute', 'proposition_id' => $gate,
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://evidence.example.test/staggered/'.$reference]]);
-        $this->assertSame($before['plan']['phase'], $after['plan']['phase']);
+        $this->assertSame($before['phase'], $after['phase']);
         $this->assertSame($before['cycle'], $after['cycle']);
         $this->assertSame($gate, $after['current_proposition_id']);
     }

@@ -18,7 +18,8 @@ final class ParticipantPromptFactory
      */
     public function make(Connection $connection, array $state): array
     {
-        $schema = data_get($state, 'plan.schema');
+        $source = $state['plan'] ?? $state;
+        $schema = $source['schema'] ?? null;
 
         if (! is_array($schema)) {
             throw new DomainException(
@@ -26,11 +27,14 @@ final class ParticipantPromptFactory
             );
         }
 
-        $phase = array_find(PhaseKind::cases(), fn (PhaseKind $kind): bool => strtolower($kind->name) === data_get($state, 'plan.phase.kind'));
-        $number = data_get($state, 'plan.phase.number');
+        $phase = array_find(PhaseKind::cases(), fn (PhaseKind $kind): bool => strtolower($kind->name) === data_get($source, 'phase.kind'));
+        $number = data_get($source, 'phase.number');
         if ($phase === null || $number !== $phase->value) {
             throw new DomainException('A known, consistent participation Phase is required.');
         }
+
+        // Diagnostic callers may provide an operational snapshot. Validate its Phase before projection.
+        $context = $state['context'] ?? $this->context->inference($state);
 
         $system = ParticipantPromptCore::TEXT."\n\n".ParticipantPromptLayout::FORMAT_INSTRUCTION;
 
@@ -44,10 +48,7 @@ final class ParticipantPromptFactory
             $system .= "\n\nConnection instructions:\n{$instructions}";
         }
 
-        $layout = (new ParticipantPromptLayout)->make($this->context->inference($state));
-        if (! empty($state['plan']['preparation_options'])) {
-            $layout['user'] .= "\n\nAccessible Artifact reading options (omit max_chars for automatic allocation; explicit lengths are preferences clamped to shared character/byte budgets; offsets address the resolved representation; regex produces ordered matches with readable-source coordinates; offset selects characters in the formatted results. Omit limit for all matches; context_chars defaults to 80 per side):\n".json_encode($state['plan']['preparation_options'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-        }
+        $layout = (new ParticipantPromptLayout)->make($context);
         if (isset($state['prepared_context'])) {
             $prepared = $state['prepared_context'];
             unset($prepared['presentation_token']);

@@ -10,7 +10,7 @@ use App\Services\Observables\CommittalLineageService;
 use DomainException;
 use Illuminate\Support\Collection;
 
-/** Inference visibility only. Never supplies candidates, measurements or movement. */
+/** Participation visibility only. Never supplies candidates, measurements or movement. */
 final class ParticipantCognitiveProjection
 {
     public function registers(array $plan): array
@@ -115,16 +115,15 @@ final class ParticipantCognitiveProjection
             ? $position['structural_source_id'] : null;
     }
 
-    /** Hydrate only missing contextual records; consume stored measurements. */
+    /** Hydrate only missing contextual records. */
     private function nodes(Collection $ids, Collection $pool): Collection
     {
         $ids = $ids->unique()->values();
         $missing = $ids->reject(fn ($id) => $pool->has($id));
         if ($missing->isNotEmpty()) {
-            foreach (Proposition::with(['parents', 'measurement'])->whereKey($missing)->get() as $node) {
+            foreach (Proposition::with('parents')->whereKey($missing)->get() as $node) {
                 $pool->put($node->id, [...$node->only(['id', 'statement', 'register', 'tier']),
-                    'parent_ids' => $node->parents->pluck('id')->sort(SORT_STRING)->values()->all(),
-                    'observables' => $node->measurement?->only(['correspondence', 'chirality', 'closure']) ?? []]);
+                    'parent_ids' => $node->parents->pluck('id')->sort(SORT_STRING)->values()->all()]);
             }
         }
 

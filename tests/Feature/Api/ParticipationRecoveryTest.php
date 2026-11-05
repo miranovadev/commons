@@ -24,7 +24,7 @@ class ParticipationRecoveryTest extends ScriptedParticipationTestCase
         $source = DB::table('supersessions')->where('type', 'commit')->where('target_proposition_id', $commit)->sole()->source_proposition_id;
         $biasGate = DB::table('supersessions')->where('type', 'reclassify')->where('target_proposition_id', $source)->sole()->source_proposition_id;
         $before = $this->revisitPersistCommit($observer);
-        $this->assertSame($biasGate, $before['plan']['gate_id']);
+        $this->assertSame($biasGate, $before['context']['gate']['acting_id']);
         // Stage 5 supersedes the Stage 4 expectation of Rest at this broken
         // Bias position: a successful route now has a valid forward Traverse.
         $this->assertActionUnavailable($before, 'participant.rest');
@@ -47,13 +47,13 @@ class ParticipationRecoveryTest extends ScriptedParticipationTestCase
         $this->assertNotContains($commit, $inspection['eligible_candidate_ids']);
         $owners = DB::table('cycles')->orderBy('id')->pluck('context_horizon_id', 'id')->all();
         $authorPosition = $this->readParticipation($author)['current_proposition_id'];
-        $this->postContribution($observer, $before['plan']['phase']['id'], ['action' => 'participant.rest'])->assertUnprocessable();
+        $this->postContribution($observer, $before['phase']['id'], ['action' => 'participant.rest'])->assertUnprocessable();
         $after = $this->readParticipation($observer);
-        $this->assertSame($biasGate, $after['plan']['gate_id']);
+        $this->assertSame($biasGate, $after['context']['gate']['acting_id']);
         $this->assertSame($before['context_horizon_id'], $after['context_horizon_id']);
         $this->assertSame($origin, DB::table('cycles')->where('id', $before['cycle']['id'])->value('entry_committal_id'));
         $this->assertSame($origin, DB::table('cycles')->where('id', $after['cycle']['id'])->value('entry_committal_id'));
-        $this->assertSame('bias', $after['plan']['phase']['kind']);
+        $this->assertSame('bias', $after['phase']['kind']);
         $this->assertSame($authorPosition, $this->readParticipation($author)['current_proposition_id']);
         $this->assertSame($owners, DB::table('cycles')->whereIn('id', array_keys($owners))->orderBy('id')->pluck('context_horizon_id', 'id')->all());
     }
@@ -71,7 +71,7 @@ class ParticipationRecoveryTest extends ScriptedParticipationTestCase
         $this->assertSame([$origin], $inspection['eligible_candidate_ids']);
         $this->assertSame(2, $inspection['selection']['distance']);
         $after = $this->contribute($actor, ['action' => 'participant.rest']);
-        $this->assertSame('distinguish', $after['plan']['phase']['kind']);
+        $this->assertSame('distinguish', $after['phase']['kind']);
         $this->assertSame($origin, $after['current_proposition_id']);
         $this->assertSame($before['context_horizon_id'], $after['context_horizon_id']);
         $this->assertNotSame($before['cycle']['id'], $after['cycle']['id']);

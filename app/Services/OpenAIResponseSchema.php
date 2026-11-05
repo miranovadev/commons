@@ -45,7 +45,7 @@ final class OpenAIResponseSchema
             if (($action['properties']['action']['const'] ?? null) === 'instrument.execute'
                 && ! empty($schema['x-commons']['instrument_exclusions'])) {
                 // Structured Outputs rejects `not`. The full exclusion schema is
-                // still supplied in input and enforced by Commons after inference.
+                // enforced by Commons after inference. Describe it here for the provider.
                 $action['properties']['instrument']['description'] = ($action['properties']['instrument']['description'] ?? '')
                     .' Do not repeat these invocations, keyed by target Proposition ID: '
                     .json_encode($schema['x-commons']['instrument_exclusions'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);

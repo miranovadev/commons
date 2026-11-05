@@ -24,12 +24,13 @@ The participation endpoint is scoped to a Substrate and Participant:
 - GET /api/substrates/{substrate}/participants/{participant}/participate
 - POST /api/substrates/{substrate}/participants/{participant}/participate
 - POST /api/substrates/{substrate}/participants/{participant}/participate/enter
-- GET /api/substrates/{substrate}/participants/{participant}/workspace (human display)
+- GET /api/substrates/{substrate}/participants/{participant}/plan (alias of the participation GET)
+- GET /api/substrates/{substrate}/participants/{participant}/workspace (same alias)
 
-GET returns a resumable state. A ready state contains the active Cycle, the
-current input plan and the Participant's Perspective bounds. Expected
-incomplete states, such as a Cycle awaiting Potential selection, return a
-successful response with status waiting and a machine-readable reason.
+All three GETs, successful entry and successful contributions return the same
+`data` envelope. A ready state contains the active Cycle, Phase, cognitive
+context and contribution schema. A waiting state has a machine-readable reason
+and entry information, with null Phase, context and schema.
 
 When a substrate has no proposition history, the waiting state advertises an
 available `origin` entry. POSTing to `/participate/enter` with the Origin
@@ -88,69 +89,34 @@ HTTP 409 and cannot progress the Phase twice. The contribution, its ledger
 entries, Phase completion and creation of the next Phase share one database
 transaction.
 
-The contribution object is validated against the JSON Schema returned in the
-current plan. The React interface uses the same schema to render its controls.
-ULID inputs accept both upper- and lowercase Crockford encodings; Laravel's
-persisted ULIDs are normally lowercase.
+## Reading the participation response
 
-The separate `/workspace` endpoint exposes a human presentation plan with a
-`workspace` projection for the active Cycle UI. `/participate` and `/plan` use the
-[compact autonomous contract](participant-context.md), with no Horizon populations.
-The human projection names the active Domain and Context Horizon, returns the
-current Commit Region's governing Committal Proposition, and groups the visible measurement population
-by Classification Register. The human workspace presents these as operational
-Read, Gate and Write rows. Mediate exposes the authoritative `read_options`
-population. Order shows the nearest Mediate-position ancestors along the current
-Gate paths; other phases retain their single Read card. Mediate Gate privileges
-the current Proposition and adds admissible reconciliation counterparts. Bias
-Gate preserves the current causal Proposition and adds authorized dominant-Chirality homologous Reclassify sources;
-Lineage is available on demand; and Write separates existing actionable
-Propositions from moves that create a new Proposition from the Gate. In phases 1–5,
-an existing Write card is a valid Expressive descendant of the current Gate in the
-phase's Write register, including structurally valid revisions. Bias Traverse
-offers only causal Write continuations of the current Gate. Other regional
-Writes may be calculation or permitted historical context; they are not
-Traverse cards. Order retains every causally local expressive Write in Write,
-including inadmissible and frozen sources, alongside their own traversable direct
-Committal results. Commit is available per admissible expressive Write; Closure
-refusal does not remove that Write or override its ordinary expressive rules.
-Instruments are offered on the current Persist Gate or the eligible Disperse fallback Gate. `write_options` is authoritative for Write targets; `workspace.registers` remains
-broader inspection context and must never be merged into selectable Write cards.
-Revise remains limited to owned, revisable descendants. Commit cards and the
-Commit form select an explicit authorized `proposition_id`.
+| Field in `data` | Client use |
+| --- | --- |
+| `status`, `reason`, `entry`, `completion` | Resume, show waiting or recovery, enter the next Cycle |
+| `participant`, `cycle`, `phase` | Identify the actor and submit with this exact `phase.id` |
+| `current_proposition_id`, `context_horizon_id`, `horizon_sequence`, `domain`, `last_commitment` | Track position and completion |
+| `context.participant`, `context.receipts` | Read the Participant identity, evidence summaries, and scoped loaded observations |
+| `context.read`, `context.gate`, `context.write` | Render the ordered cognitive registers and their questions. `gate.acting_id` identifies the causal position |
+| `schema` | Validate exactly one contribution, including per-target directions, source/Receipt pairings, exclusions and acquisition execution IDs |
+| `preparation` | Resume an existing Preparation through the trusted read and acknowledgement endpoints |
 
-Expressive Propositions include an `impact` projection containing the parent
-measurement as `from` and the expressive measurement as `to`. This makes the
-size and direction of the structural transition visible; the destination is
-not inferred from a centre point. The human rails use lighter indigo for
-movement toward Prominence and darker indigo for movement toward Turbulence.
+The C1–C3 selectors determine the visible Propositions, authorship, relationships
+and evidence. Receipt references resolve by ID into the shared catalogue. Seeing
+an item gives it no independent action authority. The schema is the complete
+Commons JSON Schema. External clients can adapt it at their provider boundary
+and validate the resulting contribution against the original before posting.
 
-The plan also includes the viewing Participant's effective `attestation` on
-each Proposition. A later eligible Write may change that direction while the
-Proposition remains a valid Write descendant. The replacement links to the
-prior Attestation for auditability, derived measurements use only the effective
-leaf, and at most one Attestation can be recorded for a Proposition in a given
-Phase.
+### Migrating existing clients
 
-The governing provenance is displayed separately from register browsing. It may
-be a later same-Horizon Commit, not the Horizon-opening Closure Boundary.
-Register propositions are returned newest-first and bounded by the
-Participant's current read limit. Each compact Proposition includes its
-observable values, so the active workspace does not need to fetch the
-substrate's complete public graph before it can render.
-
-    {
-      "workspace": {
-        "domain": "settlement",
-        "horizon": { "id": "01...", "sequence": 2 },
-        "provenance": { "id": "01...", "register": "canon" },
-        "registers": {
-          "signal": [],
-          "stance": [],
-          "concord": []
-        }
-      }
-    }
+Move `plan.phase` to `phase` and `plan.schema` to `schema`. Replace operational
+option lists, lineage and `workspace.registers` with the ordered
+`context.{read,gate,write}.propositions` arrays. Use the action definitions for
+target IDs and Receipt options. A GET or POST response does not acknowledge or
+present an Artifact. Observation and Preparation history have separate interfaces.
+On Order, clients can copy the schema’s `$comment` into the optional
+`expected_closure` field beside `phase_id` to guard the evaluated Closure snapshot.
+On a 409, refresh the state and reconsider the draft against the current Phase.
 
 Revision is bound to a specific `proposition_id`. The server only advertises
 owned, unsuperseded expressive Propositions in the current write register and
@@ -256,7 +222,7 @@ Rest while their first Variant opportunity remains admissible. After generation,
 existing Write support determines whether local actions remain. An empty
 traversal set alone says nothing about complete action exhaustion.
 
-The plan reports `traversal_options` and `instrument_options` separately from
+The internal operational plan reports `traversal_options` and `instrument_options` separately from
 `rest_available`. Complete Write and traversal target sets are not truncated by the
 Horizon display limit. A successful Commit is a recovery candidate only if it
 lies on the Participant's recorded backward lineage. A nearer unresolved
@@ -305,7 +271,7 @@ Calculation geometry does not grant movement. See
 [observables](observables.md) for the full calculation.
 
 Order returns an actionable `ready` plan even when Commit is inadmissible.
-`plan.commitment` and `commitment_preconditions_unsatisfied` preserve diagnostics
+The internal plan’s `commitment` and `commitment_preconditions_unsatisfied` preserve diagnostics
 for missing Attestation, Receipt and Closure alignment. An existing Committal
 produced directly from the current classification Gate can still offer Traverse
 when a new Commit is refused. A Committal elsewhere in the region cannot.
@@ -561,7 +527,7 @@ Order permits local Commit and direct Committal Traverse under their ordinary ru
 
 This adds no Attestation, Instrument or revision at Order. Commit still requires every local prerequisite. Frozen sources remain immutable. Homologous comparison imports no Receipt stock or Read scope and writes no causal edge. The action chooses the next Cycle entry directly: created Committal for Commit, selected existing Committal for Traverse. The previous Cycle's entry never changes.
 
-Commit copies the selected source's exact statement and participation history by reference, creates an immutable snapshot, and consumes the direct source globally. Later evidence reads cannot rewrite that snapshot. Reinforcement is evidential metadata; Depth/Cadence remain the admissibility gate. `plan.commitment` describes the current position and `commitment_options` describes every local expressive Write, including inadmissible ones. The same rules govern schema, UI and execution.
+Commit copies the selected source's exact statement and participation history by reference, creates an immutable snapshot, and consumes the direct source globally. Later evidence reads cannot rewrite that snapshot. Reinforcement is evidential metadata; Depth/Cadence remain the admissibility gate. The internal plan’s `commitment` describes the current position and `commitment_options` describes every local expressive Write, including inadmissible ones. The same rules govern schema, UI and execution.
 
 ## Binary Reconcile
 
@@ -613,19 +579,15 @@ through the existing participation endpoint. Pending submissions disable the
 workspace controls; errors are shown without advancing the local view.
 Other contribution actions retain their forms.
 
-Click a writable Proposition card to open its inspector and submit an Attestation
-with an optional rationale. The drawer's direction choices use the same schema
-as the card footer. Cards show separate effective Support and Refute counts from
-all participants, including Commit inheritance, beside the field values. These
-counts do not establish the current participant's traversal permissions.
-Violet Support spins clockwise and teal Refute counterclockwise; reduced-motion
-preferences disable animation.
+Use “Attest with rationale” on an eligible Proposition to select an offered
+direction and record a reason. The card displays the Participant’s own effective
+judgment. The graph inspector provides the population measurements.
 
 ## Terminal Order and next-Cycle entry
 
 Order admits only `proposition.commit` and `proposition.traverse`, or exclusive Rest when neither remains. Commit and Committal Traverse both complete the Cycle at the exact Committal result. Natural completion leaves `rested_at` unset. Ordinary rollover prepares Phase 1 at that same Proposition, respecting its applicable Context Horizon. If entry is pending, the normal entry endpoint retains the same continuity rule. There is no post-Order field selector.
 
-The waiting state has `plan: null`, entry availability and the completed Cycle identity. The workspace can retain completed cards as read-only context. Return to Participants opens the Substrate collection; Enter another Cycle uses the normal entry endpoint. Rest is the separate backward-lineage recovery path: the nearest eligible non-exhausted ancestral Committal within the permitted Horizon is selected, regardless of older values. Region-wide calculation or visibility cannot relocate the Participant.
+The waiting state has null `phase`, `context` and `schema`, entry availability and the completed Cycle identity. The workspace can retain completed cards as read-only context. Return to Participants opens the Substrate collection; Enter another Cycle uses the normal entry endpoint. Rest is the separate backward-lineage recovery path: the nearest eligible non-exhausted ancestral Committal within the permitted Horizon is selected, regardless of older values. Region-wide calculation or visibility cannot relocate the Participant.
 
 ### Receipt memory and Instrument replay
 
