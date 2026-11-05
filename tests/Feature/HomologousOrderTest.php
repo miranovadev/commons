@@ -186,9 +186,9 @@ class HomologousOrderTest extends TestCase
             ['action' => 'proposition.commit', 'proposition_id' => $this->gate->id]);
     }
 
-    public function test_navigation_only_head_can_complete_exploration_without_losing_homologous_traverse(): void
+    public function test_judged_head_with_a_lawful_order_exit_traverses_without_a_completion_rest(): void
     {
-        // Authored component geometry with real arrival, qualified Rest and event publication.
+        // Authored component geometry with real arrival and an available homologous Committal exit.
         // The natural Commit suites separately prove full unmocked history.
         Phase::query()->update(['completed_at' => now()]);
         Cycle::query()->update(['completed_at' => now()]);
@@ -214,14 +214,14 @@ class HomologousOrderTest extends TestCase
         $actions = $plan['schema']['$defs']['actions'];
         $this->assertArrayNotHasKey('proposition.commit', $actions);
         $this->assertSame([$this->negative->id], $actions['proposition.traverse']['properties']['proposition_id']['enum']);
-        $this->assertArrayHasKey('participant.rest', $actions);
+        $this->assertArrayNotHasKey('participant.rest', $actions);
         $workspace = app(InputPlanService::class)->forPhase($this->actor->fresh(), $order, workspace: true);
         $this->assertSame($plan['schema'], $workspace['schema'], 'Human and autonomous plans share the generation/movement distinction');
         $this->assertFalse(app(ContinuationOpportunityService::class)->nonVariantGenerationAvailable($order));
-        $this->assertNotNull(app(ExplorationEventService::class)->inspect($order)['witness']);
+        $this->assertNull(app(ExplorationEventService::class)->inspect($order)['witness']);
         $before = [Proposition::count(), Supersession::count(), DB::table('receipt_consumptions')->count()];
-        app(ParticipationService::class)->contribute($this->actor->fresh(), $order->id, ['action' => 'participant.rest']);
-        $this->assertDatabaseHas('exploration_events', ['phase_id' => $order->id, 'proposition_id' => $head->id]);
+        app(ParticipationService::class)->contribute($this->actor->fresh(), $order->id, ['action' => 'proposition.traverse', 'proposition_id' => $this->negative->id]);
+        $this->assertDatabaseMissing('exploration_events', ['phase_id' => $order->id, 'proposition_id' => $head->id]);
         $history = DB::table('exploration_events')->get()->toJson();
         foreach ([null, new ParticipationContext($order->fresh())] as $context) {
             $this->assertContains($this->negative->id, app(PropositionOptionService::class)->traversalOptionsFor($order->fresh(), $context)->pluck('id'));

@@ -1,5 +1,7 @@
 # Participatory Exploration Completion — Stage 3
 
+The [current Exploration rules](participant-relative-exploration.md) separate personal judgment from meaningful movement. The implementation and measurements below describe the earlier experiment.
+
 This implements Claire's Stage 3 handoff after Personal Gate Acquisition. Exploration is personal completion of an authorised route, not shared spentness or arrival alone. No live population migration, event rewrite, automatic judgment, acquisition reset or new movement authority is introduced.
 
 ## Completion and current status

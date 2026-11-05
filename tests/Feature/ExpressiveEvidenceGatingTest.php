@@ -153,7 +153,8 @@ class ExpressiveEvidenceGatingTest extends TestCase
             'kind' => $kind, 'write_register' => $phase->write_register, 'started_at' => now()]);
         $next->save();
         $actions = $this->actions($next);
-        $this->assertSame([$write->id], $actions['proposition.traverse']['properties']['proposition_id']['enum']);
+        $this->assertSame($kind === PhaseKind::Disperse ? [] : [$write->id], $actions['proposition.traverse']['properties']['proposition_id']['enum'] ?? [],
+            'The empty Mediate arrival has no onward action.');
         $this->assertArrayNotHasKey('proposition.variant', $actions);
         $this->assertArrayNotHasKey('instrument.execute', $actions, 'Existing exploration needs no acquisition');
         $this->assertEmpty(app(HorizonReceiptService::class)->ordinaryAvailable($next));

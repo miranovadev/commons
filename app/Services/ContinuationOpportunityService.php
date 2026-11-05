@@ -12,6 +12,8 @@ use Illuminate\Support\Collection;
 /** Base action lawfulness only. No exploration suppression, Variant or complete plan recursion. */
 final class ContinuationOpportunityService
 {
+    private const FORWARD_ACTIONS = ['proposition.reconcile', 'proposition.reclassify', 'proposition.commit'];
+
     /** Batch comparison operands for projected Phases without granting movement to them. */
     public function comparisonContext(Phase $acting, Collection $probes, ParticipationContext $context): ParticipationContext
     {
@@ -59,6 +61,31 @@ final class ContinuationOpportunityService
         return $evaluation;
     }
 
+    /** Non-Variant generation at the current viable heads, independent of Rest history. */
+    public function advancingHeads(Phase $acting, Collection $heads, ParticipationContext $context): Collection
+    {
+        $probes = collect();
+        foreach ($heads as $head) {
+            if ($head->tier !== 'expressive' || $head->phase->kind === PhaseKind::Order
+                || $head->phase->governance()->entry_committal_id !== $acting->governance()->entry_committal_id) {
+                continue;
+            }
+            $next = PhaseKind::from($head->phase->kind->value + 1);
+            if (array_intersect(config('phases.'.$next->value.'.actions', []), self::FORWARD_ACTIONS) === []) {
+                continue;
+            }
+            $probes->push(app(PhasePositionService::class)->prospectiveArrival($acting, $head, $next,
+                $acting->crossoverCycle, $context->propositions->get($head->phase->gate_proposition_id)));
+        }
+        if ($probes->isEmpty()) {
+            return collect();
+        }
+        $evaluation = $this->comparisonContext($acting, $probes, $context);
+
+        return $probes->filter(fn ($probe) => $this->nonVariantGenerationAvailable($probe, $evaluation))
+            ->pluck('gate_proposition_id');
+    }
+
     public function pendingEvidence(Phase $phase, ?ParticipationContext $context = null): bool
     {
         $query = fn () => EvidenceExecution::where('cycle_id', $phase->cycle_id)
@@ -77,7 +104,7 @@ final class ContinuationOpportunityService
         $generation = app(PhaseGenerationService::class);
         $options = app(PropositionOptionService::class);
         $actions = config('phases.'.$phase->kind->value.'.actions', []);
-        foreach (array_intersect($actions, ['proposition.reconcile', 'proposition.reclassify', 'proposition.commit']) as $action) {
+        foreach (array_intersect($actions, self::FORWARD_ACTIONS) as $action) {
             if (! $generation->available($phase, $action, $context)) {
                 continue;
             }

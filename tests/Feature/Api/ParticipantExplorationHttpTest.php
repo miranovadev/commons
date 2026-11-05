@@ -51,9 +51,9 @@ class ParticipantExplorationHttpTest extends ScriptedParticipationTestCase
             $actions = $state['plan']['schema']['$defs']['actions'];
             self::assertContains($id, $actions['proposition.traverse']['properties']['proposition_id']['enum']);
             if ($key === 'constrain') {
-                self::assertSame(['proposition.traverse'], array_keys($actions), 'P2 is already classified. Its only continuation leads to P3.');
+                self::assertArrayNotHasKey('proposition.reclassify', $actions, 'P2 is already classified.');
             }
-            self::assertNotContains($id, $actions['attestation.create']['properties']['proposition_id']['enum'] ?? []);
+            self::assertContains($id, $actions['attestation.create']['properties']['proposition_id']['enum']);
             self::assertNotContains($id, $actions['proposition.revise']['properties']['proposition_id']['enum'] ?? []);
             self::assertSame($state['plan']['schema'], app(ParticipantPromptFactory::class)->make(new Connection, $state)['schema']);
             $state = $this->contribute($actor, ['action' => 'proposition.traverse', 'proposition_id' => $id], $state);

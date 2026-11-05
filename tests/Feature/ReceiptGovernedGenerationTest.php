@@ -269,7 +269,7 @@ class ReceiptGovernedGenerationTest extends TestCase
         }
     }
 
-    public function test_consumed_shared_evidence_preserves_independent_attestation_and_traverse(): void
+    public function test_consumed_evidence_preserves_reconsideration_without_an_empty_traverse(): void
     {
         $f = $this->fixture();
         $head = $f->node($f->gate, 'frontier', position: PhaseKind::Persist);
@@ -284,13 +284,12 @@ class ReceiptGovernedGenerationTest extends TestCase
         $this->consume($f, $receipt);
         app(PotentialProjectionService::class)->refresh($f->substrate->id);
         $plan = app(InputPlanService::class)->forPhase($f->viewer, $f->phase);
-        foreach (['instrument.execute', 'proposition.variant', 'proposition.revise'] as $action) {
+        // The personal judgment permits a new acquisition. The empty Constrain arrival has no onward action.
+        foreach (['proposition.variant', 'proposition.revise', 'proposition.traverse'] as $action) {
             $this->assertArrayNotHasKey($action, $plan['schema']['$defs']['actions']);
         }
-        foreach (['attestation.create', 'proposition.traverse'] as $action) {
-            $this->assertArrayHasKey($action, $plan['schema']['$defs']['actions']);
-            $this->assertStringContainsString($head->id, json_encode($plan['schema']['$defs']['actions'][$action]));
-        }
+        $this->assertArrayHasKey('instrument.execute', $plan['schema']['$defs']['actions']);
+        $this->assertContains($head->id, $plan['schema']['$defs']['actions']['attestation.create']['properties']['proposition_id']['enum']);
         $this->assertFalse($plan['rest_available']);
         app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase,
             ['action' => 'attestation.create', 'proposition_id' => $head->id, 'direction' => 'support']);

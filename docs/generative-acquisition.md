@@ -1,6 +1,6 @@
 # Exploration-first generative acquisition
 
-Acquisition prepares one current generative attempt. It is not a permanent Participant × Gate × role allowance. Existing personally unexplored structure takes precedence: lawful Attestation, Traverse and ordinary Revision do not require acquisition. Explored Writes retain their badges and suppress repeat judgments and Revision. The Participant can [Traverse through an explored Write](generative-traversal.md) toward a lawful generating opportunity.
+Acquisition prepares one current generative attempt. It is not a permanent Participant × Gate × role allowance. Existing personally unexplored structure takes precedence: lawful Attestation, Traverse and ordinary Revision do not require acquisition. A judged Write retains its explored badge. A later Cycle can Traverse through it toward a lawful new judgment or generating opportunity. See [Participant-relative exploration](participant-relative-exploration.md).
 
 ## Admission and resolution
 
@@ -19,7 +19,7 @@ One execution per **exact Phase/generative opportunity** is marked with `attempt
 
 Defer requires a reason, closes the Phase and Cycle with `deferred_at`, preserves the observation at its exact Gate, and creates no Proposition or Exploration Event. It is not recorded as Rest. Subsequent entry uses existing backward recovery; it does not promise return to a Gate that has become unavailable. Repeated lawful acquisition/Defer Cycles have no lifetime limit.
 
-Prepared Revision is retired: an acquisition admits a fresh Variant opportunity, not reconsideration. Ordinary lawful Revision remains independent, with its existing evidence and explored-Write restrictions.
+Prepared Revision is retired: an acquisition admits a fresh Variant opportunity, not reconsideration. Ordinary lawful Revision remains independent, with its exact ownership, judgment and evidence requirements.
 
 ## Failure, concurrency and storage
 

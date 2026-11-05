@@ -157,21 +157,32 @@ final readonly class PhaseGenerationService
                 return true;
             }
             $context ??= new ParticipationContext($phase);
-            // Personal completion belongs to this Cycle, including during a
-            // projected arrival. Reuse its actual Phase's batched encounter probes.
-            $acting = $batch && $context->phase->cycle_id === $phase->cycle_id
-                && $context->phase->governance()->entry_committal_id === $phase->governance()->entry_committal_id ? $context->phase : $phase;
-            $existing = $existing->filter(fn ($id) => app(ParticipantExplorationService::class)->heads($id, $acting, $context)->isNotEmpty());
+            $exploration = app(ParticipantExplorationService::class);
+            $heads = $existing->mapWithKeys(fn ($id) => [$id => $exploration->heads($id, $phase, $context)]);
+            $existing = $heads->filter(fn ($frontier) => $frontier->isNotEmpty())->keys();
             if ($existing->isEmpty()) {
                 return true;
             }
             if ($action !== 'proposition.variant') {
                 return false;
             }
-            $explored = app(ParticipantExplorationService::class)->exploredIds($acting, $existing, $context)->keys();
-            if ($existing->diff($explored)->isNotEmpty()) {
-                // Every existing reachable active head must be personally explored
-                // before considering fresh generation. Variant is not its own prerequisite.
+            // Judge the current viable positions and their active frontier before fresh acquisition.
+            $frontier = $existing->flatMap(fn ($id) => $exploration->judgmentFrontier($id, $phase, $context))->unique();
+            if ($frontier->diff($exploration->exploredIds($phase, $frontier, $context)->keys())->isNotEmpty()) {
+                return false;
+            }
+            // Existing forward generation at a head has priority over another Variant.
+            // Project sibling heads together, keeping fresh acquisition out of its own prerequisite.
+            $scope = $batch
+                ? $phase->cycle_id.':'.$phase->governance()->entry_committal_id.':'.$phase->kind->value
+                : $phase->id.':'.$sources->implode(',');
+            $advancing = $context->remember('advancing-frontier:'.$scope, function () use ($writes, $phase, $context, $exploration) {
+                $allRoots = $writes->flatten(1)->pluck('id')->unique();
+                $allHeads = $allRoots->flatMap(fn ($id) => $exploration->heads($id, $phase, $context)->values())->unique('id');
+
+                return app(ContinuationOpportunityService::class)->advancingHeads($phase, $allHeads, $context);
+            });
+            if ($heads->flatMap(fn ($nodes) => $nodes->keys())->intersect($advancing)->isNotEmpty()) {
                 return false;
             }
             if (in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)) {

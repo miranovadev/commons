@@ -59,6 +59,15 @@ class EvidenceFirstInteractionTest extends TestCase
         $later = $f->phase->replicate();
         $later->forceFill(['cycle_id' => $cycle->id, 'completed_at' => null])->save();
         $f->phase = $later;
+        if ($kind === PhaseKind::Mediate) {
+            $f->node($write, $later->governance()->contextHorizon->domain->registerFor(PhaseKind::Bias), 'reclassify', position: PhaseKind::Bias);
+        }
+        if ($kind === PhaseKind::Bias) {
+            $this->assertTrue(app(\App\Services\PropositionOptionService::class)->traversalOptionsFor($later, base: true)->contains('id', $write->id));
+            $this->assertNotContains($write->id, $targets('proposition.traverse'), 'Order has no Commit or Committal exit.');
+            $this->assertContains($write->id, $targets('attestation.create'));
+            return;
+        }
         $this->assertContains($write->id, $targets('proposition.traverse'));
         $previous = $write->effectiveAttestations()->sole();
         $next = $service->contribute($f->viewer, $f->phase->id, ['action' => 'proposition.traverse', 'proposition_id' => $write->id]);

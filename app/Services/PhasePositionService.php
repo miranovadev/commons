@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
+use App\Models\Cycle;
 use App\Models\Phase;
 use App\Models\Proposition;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,6 +12,20 @@ use Illuminate\Support\Collection;
 /** Labels classify. Producing Phase and causal context determine operational position. */
 final class PhasePositionService
 {
+    public function prospectiveArrival(Phase $from, Proposition $gate, PhaseKind $next, ?Cycle $crossed, ?Proposition $anchor): Phase
+    {
+        $id = 'traverse:'.$from->cycle_id.':'.$gate->id;
+        if ($next === PhaseKind::Mediate) {
+            $id .= ':'.$anchor?->id;
+        }
+        $phase = (new Phase)->forceFill(['id' => $id, 'cycle_id' => $from->cycle_id, 'kind' => $next,
+            'crossover_cycle_id' => $crossed?->id,
+            'gate_proposition_id' => $gate->id, 'write_register' => ($crossed ?? $from->cycle)->contextHorizon->domain->registerFor($next)]);
+
+        return $phase->setRelation('cycle', $from->cycle)->setRelation('crossoverCycle', $crossed)
+            ->setRelation('gate', $gate)->setRelation('arrivalAnchor', $anchor);
+    }
+
     public function candidatePosition(PhaseKind $operation): ?PhaseKind
     {
         return match ($operation) {

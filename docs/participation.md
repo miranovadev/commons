@@ -179,7 +179,7 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 | Phase 6 | Reclassify an attested Phase-5 source with Receipt and lineage agreement |
 | Phase 7 | Existing grounded, freshly attested and Closure-aligned Commit or Committal Traverse |
 
-During Exploration, Variant eligibility does not depend on Potential Charge or Participant count. Discover existing lawful continuations first; a further Variant requires the acting Participant to have explored all relevant reachable active heads, with the existing evidence and Attestation prerequisites. A new reachable head or a newly lawful advancing move releases the corresponding personal restriction. A repeated Attestation reversal alone does not reopen exploration. Variant adds shared structure without erasing personal history. See [Participant-relative exploration](participant-relative-exploration.md).
+During Exploration, Variant eligibility does not depend on Potential Charge or Participant count. Discover existing lawful continuations first; a further Variant requires the acting Participant to have explored all relevant reachable active heads, with the existing evidence and Attestation prerequisites. A new reachable head or lawful advancing move can reopen movement through a previously judged position. A repeated Attestation reversal alone does not reopen exploration. Variant adds shared structure without erasing personal history. See [Participant-relative exploration](participant-relative-exploration.md).
 
 [Generative acquisition](generative-acquisition.md) admits one evidence execution per exact Phase/generative opportunity when prospective fresh Variant is lawful. The exact Gate owns its Receipt. An admitted attempt survives an ordinary competing Variant but still respects terminal, hard Supersession and canonical boundaries. Variant requires that attempt and its independent evidence prerequisites; Defer preserves evidence and completes the Cycle without an Exploration Event. Later Cycles may acquire again. Ordinary Revision, Attestation, Traverse and Reclassification have no acquisition prerequisite.
 
@@ -232,7 +232,7 @@ In phases 1–4 and Bias, a receipted Write exposes the following direction slot
 The specialized `attestation.create.anyOf` branches bind each direction to its
 permitted Proposition IDs. Same-direction re-attestation is unavailable; the
 opposite direction uses the existing Attestation supersession mechanism.
-The card footer, form and inference schema use these same choices. At Mediate, an earlier Cycle’s effective Attestation can authorize Traverse to an unexplored Write or toward lawful generation at Bias. Order uses one Committal Traverse action without Attestation controls. Traverse
+The card footer, form and inference schema use these same choices. At Mediate, an earlier Cycle’s effective Attestation can authorize Traverse through its exact Write toward a new judgment or other lawful continuation at Bias. Order uses one Committal Traverse action without Attestation controls. Traverse
 creates neither a Proposition nor a Supersession and advances through the
 existing personal path. Reconciliation counterparts belong to Gate, as described below.
 
@@ -243,7 +243,7 @@ remain in place, and middle actions wrap without moving the directional slots.
 The UI renders Rest only from the authoritative schema, never from its own
 interpretation of the rest_available flag or visible cards.
 
-**No available move** is the reason recorded when the action schema leaves only Rest. Potential Charge remains a numerical observation. Historical Cycles retain the former `no_remaining_potential` reason. The schema also retains its existing Rest option for a qualified local exploration encounter. Rest itself supplies no regional Tragedy or Exhaustion proof.
+**No available move** is the reason recorded when the action schema leaves only Rest. Potential Charge remains a numerical observation. Historical Cycles retain the former `no_remaining_potential` reason. When only optional Attestation reconsideration remains, the schema also offers Rest. Rest itself supplies no regional Tragedy or Exhaustion proof.
 The server first applies all phase-native, ownership, target and Commitment
 constraints, then specializes the complete action schema. When no admissible contribution
 remains it sets `rest_available: true` and injects `participant.rest`.

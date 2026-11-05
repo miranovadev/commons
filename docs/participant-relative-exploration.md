@@ -1,5 +1,23 @@
 # Participant-relative exploration
 
+A Participant explores an expressive position by judging it. Both Support and Refute count. The plan derives the explored badge from the Participant’s effective Attestations in the hydrated graph. Same-position Revision ancestry carries the position judgment forward. A known judgment in another Horizon is still personal history. Movement from the current Gate has its own eligibility checks. Authorship, votes by other Participants and Rest never cast a vote on the Participant’s behalf.
+
+| Decision | Authority |
+| --- | --- |
+| Offer a first judgment | A mutable, eligible Write at this Phase. A hard relationship can retire an independent head while its operand still qualifies as a Write. |
+| Offer reconsideration | The ordinary opposite direction on a later encounter. Revision retains its exact prior-Cycle self-Refute, ownership, evidence and structural constraints. A changed expression can be judged on its own. |
+| Offer expressive Traverse | A base-authorised hop that leads to a lawful new judgment, acquisition, Revision, Reconcile, Reclassification, Commit or Committal exit. Each subsequent hop must qualify in its own operating context. |
+| Offer fresh acquisition | The Participant has judged the viable frontier, its heads offer no advancing generation, and the ordinary structural and evidence requirements are met. An admitted attempt retains its own resolution contract. |
+| Offer Rest | The only remaining choice is optional reconsideration, or no action remains. Pending evidence retains its resolution priority. |
+
+Judging a new child leaves its parents’ judgment histories intact. A new child can make a return through a judged parent worthwhile. Actual expressive Traverse uses the effective judgment on the **exact** Write from an earlier Cycle. Committed-source passage and Order’s canonical Committal exits retain their independent authority. The two causal crossover routes use the recorded edge and the destination’s governing context.
+
+An Exploration Event records a qualifying Rest encounter. Publication still checks the actual arrival, personal route, exact head judgment and field version inside the contribution transaction. Historical witnesses remain available for inspection. Recovery follows the current causal Region.
+
+## Historical Stage B design and validation
+
+The following records the preceding event-based policy for comparison. The rules above govern current participation.
+
 > Personal route completion and witness provenance are refined by [Participatory Exploration Completion — Stage 3](participatory-exploration-completion.md). Its requirements supersede the earlier head-only encounter predicate below.
 
 Stage B replaces shared continuation failures and Exploration Epochs on a **fresh database**. Authority: Claire's approved 25 October 2026 handoff, “Exploration Events, Active Heads and Recovery”, the subsequent forward-generation correction, and the ten Core Invariants. The separate rolling Attestation Cadence correction is outside this change.

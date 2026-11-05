@@ -9,7 +9,7 @@ use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-/** Personal history over a complete, directed continuation frontier. Never a structural flag. */
+/** Personal judgment and the local structural frontier. Rest witnesses are historical observations. */
 final class ParticipantExplorationService
 {
     public function explored(Proposition $node, Phase $phase, ?ParticipationContext $context = null): bool
@@ -19,51 +19,23 @@ final class ParticipantExplorationService
 
     public function exploredIds(Phase $phase, Collection $ids, ?ParticipationContext $context = null): Collection
     {
-        $context ??= new ParticipationContext($phase);
-        $foreign = collect();
-        $crossings = app(CausalCrossoverService::class)->children($phase, $context)->whereIn('id', $ids);
-        foreach ($crossings->groupBy(fn ($node) => $node->phase->governance()->entry_committal_id) as $group) {
-            $arrival = $this->probe($group->first(), $phase, $context);
-            $arrival->crossover_cycle_id = $group->first()->phase->operating_cycle_id;
-            $arrival->setRelation('crossoverCycle', $group->first()->phase->governance());
-            $foreign = $foreign->union($this->exploredIds($arrival, $group->pluck('id'), $context));
-        }
-        $ids = $ids->diff($crossings->pluck('id'));
         if ($ids->isEmpty()) {
-            return $foreign;
+            return collect();
         }
-        $events = $context->remember('personal-exploration-events:'.$phase->cycle->participant_id, fn () => DB::table('exploration_events as event')
-            ->join('phases as rest', 'rest.id', '=', 'event.phase_id')
-            ->join('cycles as cycle', 'cycle.id', '=', 'rest.cycle_id')
-            ->join('cycles as scope', 'scope.id', '=', 'rest.operating_cycle_id')
-            ->where('cycle.participant_id', $phase->cycle->participant_id)
-            ->whereIn('event.proposition_id', $context->propositions->keys())
-            ->get(['event.*', 'scope.entry_committal_id', 'scope.context_horizon_id', 'rest.cycle_id as encounter_cycle_id'])->groupBy('proposition_id'));
-        if ($events->isEmpty()) {
-            return $foreign;
+        if ($context === null || $ids->contains(fn ($id) => ! $context->propositions->has($id))) {
+            // Known historical positions may lie outside the operational working set.
+            // Expand only this judgment read. Movement retains its original context.
+            $context = new ParticipationContext($phase, $ids, includeUnavailableAdditional: true);
         }
+        $personal = $context->personalAttestationsByProposition($phase->cycle->participant_id);
 
-        $evaluation = $this->withProbeBoundaries($phase, $context, $events->keys());
-
-        return $ids->filter(function ($id) use ($phase, $context, $events, $evaluation): bool {
-            return $context->remember('explored:'.$phase->id.':'.$id, function () use ($id, $phase, $context, $events, $evaluation): bool {
-                $heads = $this->heads($id, $phase, $context);
-
-                return $heads->isNotEmpty() && $heads->every(function ($head) use ($id, $phase, $context, $events, $evaluation): bool {
-                    $encounters = $this->encounters($head, $phase, $context, $events);
-
-                    return $encounters->contains(fn ($event) => $event->context_horizon_id === $phase->governance()->context_horizon_id
-                        && $event->entry_committal_id === $phase->governance()->entry_committal_id
-                        && $this->participationComplete($head, $phase, $context, $id, $event->encounter_cycle_id))
-                        && ! $this->canGenerateFromHead($head, $phase, $evaluation);
-                });
-            });
-        })->flip()->union($foreign);
+        return $context->nodes($ids)->filter(fn (Proposition $node) => $this->judgedPosition($node, $personal, $context))
+            ->pluck('id')->flip();
     }
 
     /**
      * Follow forward producing positions in this Cycle's Region/Horizon only.
-     * Exact foreign Writes are evaluated separately in their destination context. Revisions replace
+     * Foreign movement is evaluated separately at its actual destination. Revisions replace
      * their source at the same position. A Committal ends this excursion.
      * Full frontier evaluation precedes every presentation limit.
      */
@@ -130,33 +102,47 @@ final class ParticipantExplorationService
         });
     }
 
-    /** Selected movement route, never the union of Reconciliation evidence ancestors. */
-    public function participationComplete(Proposition $head, Phase $phase, ParticipationContext $context, ?string $via = null, ?string $encounterCycleId = null): bool
+    /** Current expressive positions on a viable local route, before presentation limits. */
+    public function judgmentFrontier(string $root, Phase $phase, ParticipationContext $context): Collection
     {
-        return $context->remember('route-complete:'.$phase->id.':'.$head->id.':'.$via.':'.$encounterCycleId, function () use ($head, $phase, $context, $via, $encounterCycleId): bool {
+        $heads = $this->heads($root, $phase, $context);
+        $parents = $context->remember('exploration-route-parents:'.$phase->id.':'.$root, fn () => []);
+        $pending = $heads->keys()->all();
+        $visited = [];
+        while ($pending !== []) {
+            $id = array_pop($pending);
+            if (isset($visited[$id])) {
+                continue;
+            }
+            $visited[$id] = true;
+            array_push($pending, ...array_keys($parents[$id] ?? []));
+        }
+
+        // A Revision replaces its source at one position. Its earlier expression
+        // must not become a second quota for a Participant who judged the replacement.
+        return $context->nodes(array_keys($visited))->reject(fn ($node) => $context->children->get($node->id, collect())
+            ->contains(fn ($edge) => $edge->type === 'revise' && isset($visited[$edge->target_proposition_id])))
+            ->pluck('id');
+    }
+
+    /** Selected movement route, never the union of Reconciliation evidence ancestors. */
+    public function participationComplete(Proposition $head, Phase $phase, ParticipationContext $context, ?string $via = null): bool
+    {
+        return $context->remember('route-complete:'.$phase->id.':'.$head->id.':'.$via, function () use ($head, $phase, $context, $via): bool {
             $overrides = [];
             if ($via !== null) {
-                $this->heads($via, $phase, $context);
                 if (! $this->heads($via, $phase, $context)->has($head->id)) {
                     return false;
                 }
                 $overrides = $context->remember('exploration-route-parents:'.$phase->id.':'.$via, fn () => []);
             }
             // An actual arrival wins over a multi-parent producer's acting Gate.
-            $arrivals = $context->remember('exploration-arrivals', function () use ($phase, $context): Collection {
-                // All encounter routes in one batch; no history query per head.
-                $cycleIds = DB::table('exploration_events as event')->join('phases as rest', 'rest.id', '=', 'event.phase_id')
-                    ->whereIn('event.proposition_id', $context->propositions->keys())->select('rest.cycle_id');
-
-                return DB::table('phases as arrival')
-                    ->join('cycles as cycle', 'cycle.id', '=', 'arrival.cycle_id')
-                    ->join('phases as previous', fn ($join) => $join->on('previous.cycle_id', '=', 'arrival.cycle_id')
-                        ->whereRaw('previous.kind = arrival.kind - 1')->whereNotNull('previous.completed_at'))
-                    ->where('cycle.participant_id', $phase->cycle->participant_id)
-                    ->where(fn ($q) => $q->where('cycle.id', $phase->cycle_id)->orWhereIn('cycle.id', $cycleIds))
-                    ->get(['arrival.cycle_id', 'arrival.gate_proposition_id as target', 'previous.gate_proposition_id as source'])
-                    ->groupBy('cycle_id')->map(fn ($rows) => $rows->pluck('source', 'target'));
-            })->get($encounterCycleId ?? $phase->cycle_id, collect());
+            $arrivals = $context->remember('exploration-arrivals:'.$phase->cycle_id, fn () => DB::table('phases as arrival')
+                ->join('phases as previous', fn ($join) => $join->on('previous.cycle_id', '=', 'arrival.cycle_id')
+                    ->whereRaw('previous.kind = arrival.kind - 1')->whereNotNull('previous.completed_at'))
+                ->where('arrival.cycle_id', $phase->cycle_id)
+                ->get(['previous.gate_proposition_id as source', 'arrival.gate_proposition_id as target'])
+                ->pluck('source', 'target'));
             $personal = $context->personalAttestationsByProposition($phase->cycle->participant_id);
             if (! $this->judgedPosition($head, $personal, $context)) {
                 return false;
@@ -226,89 +212,13 @@ final class ParticipantExplorationService
             foreach ($context->parents->get($id, collect())->where('type', 'revise') as $edge) {
                 $source = $context->propositions->get($edge->source_proposition_id);
                 if ($source !== null && $source->phase->kind === $node->phase->kind && $source->register === $node->register
-                    && $source->phase->governance()->entry_committal_id === $node->phase->governance()->entry_committal_id) {
+                    && $source->phase->governance()->entry_committal_id === $node->phase->governance()->entry_committal_id
+                    && $source->phase->governance()->context_horizon_id === $node->phase->governance()->context_horizon_id) {
                     $pending[] = $source->id;
                 }
             }
         }
 
         return false;
-    }
-
-    /** Pure look-ahead: never creates a Cycle/Phase or recursively asks InputPlan. */
-    public function canGenerateFromHead(Proposition $head, Phase $acting, ParticipationContext $context): bool
-    {
-        return $context->remember('head-generation:'.$acting->id.':'.$head->id, function () use ($head, $acting, $context): bool {
-            if ($head->tier !== 'expressive' || $head->phase->kind === PhaseKind::Order) {
-                return false;
-            }
-            $phase = $this->probe($head, $acting, $context);
-
-            return app(ContinuationOpportunityService::class)->nonVariantGenerationAvailable($phase, $context);
-        });
-    }
-
-    /** Revision changes the same position; it does not erase a personal encounter there. */
-    private function encounters(Proposition $head, Phase $phase, ParticipationContext $context, Collection $events): Collection
-    {
-        $ids = collect();
-        $pending = [$head->id];
-        while ($pending !== []) {
-            $id = array_pop($pending);
-            if ($ids->has($id)) {
-                continue;
-            }
-            $ids->put($id, true);
-            foreach ($context->parents->get($id, collect())->where('type', 'revise') as $edge) {
-                $source = $context->propositions->get($edge->source_proposition_id);
-                if ($source !== null && $source->phase->kind === $head->phase->kind && $source->register === $head->register
-                    && $source->phase->governance()->context_horizon_id === $phase->governance()->context_horizon_id
-                    && ($context->seedIds()[$source->id] ?? null) === $phase->governance()->entry_committal_id) {
-                    $pending[] = $source->id;
-                }
-            }
-        }
-
-        return $ids->keys()->flatMap(fn ($id) => $events->get($id, collect()));
-    }
-
-    private function probe(Proposition $head, Phase $acting, ParticipationContext $context): Phase
-    {
-        $phase = new Phase;
-        $kind = $head->tier === 'committal' ? PhaseKind::Distinguish : PhaseKind::from($head->phase->kind->value + 1);
-        $phase->forceFill(['id' => 'exploration:'.$acting->id.':'.$head->id, 'cycle_id' => $acting->cycle_id,
-            'crossover_cycle_id' => $acting->crossover_cycle_id, 'kind' => $kind, 'gate_proposition_id' => $head->id,
-            'write_register' => $acting->governance()->contextHorizon->domain->registerFor($kind)]);
-        $phase->setRelation('cycle', $acting->cycle)->setRelation('crossoverCycle', $acting->crossoverCycle);
-        $phase->setRelation('gate', $head);
-        if ($kind === PhaseKind::Mediate) {
-            $events = $context->remember('personal-exploration-events:'.$acting->cycle->participant_id, fn () => DB::table('exploration_events as event')
-                ->join('phases as rest', 'rest.id', '=', 'event.phase_id')->join('cycles as cycle', 'cycle.id', '=', 'rest.cycle_id')
-            ->join('cycles as scope', 'scope.id', '=', 'rest.operating_cycle_id')
-                ->where('cycle.participant_id', $acting->cycle->participant_id)
-                ->whereIn('event.proposition_id', $context->propositions->keys())
-                ->get(['event.*', 'scope.entry_committal_id', 'scope.context_horizon_id', 'rest.cycle_id as encounter_cycle_id'])->groupBy('proposition_id'));
-            $encounter = $this->encounters($head, $acting, $context, $events)->first(fn ($event) => $event->entry_committal_id === $acting->governance()->entry_committal_id
-                && $event->context_horizon_id === $acting->governance()->context_horizon_id);
-            $witness = $encounter === null ? [] : json_decode($encounter->witness, true, flags: JSON_THROW_ON_ERROR);
-            $phase->setRelation('arrivalAnchor', $context->propositions->get($witness['arrival_source_id'] ?? null));
-        }
-
-        return $phase;
-    }
-
-    /** Hydrate all relevant comparison boundaries together, not one graph per head. */
-    private function withProbeBoundaries(Phase $phase, ParticipationContext $context, Collection $ids): ParticipationContext
-    {
-        return $context->remember('exploration-boundaries:'.$phase->id, function () use ($phase, $context, $ids): ParticipationContext {
-            $heads = $ids->flatMap(fn ($id) => $this->heads($id, $phase, $context)->values())->unique('id')->filter(fn ($head) => $head->tier === 'expressive'
-                && $head->phase->kind !== PhaseKind::Order
-                && $head->phase->governance()->context_horizon_id === $phase->governance()->context_horizon_id
-                && ($context->seedIds()[$head->id] ?? null) === $phase->governance()->entry_committal_id
-                && $this->heads($head->id, $phase, $context)->keys()->all() === [$head->id]);
-            $probes = $heads->map(fn ($head) => $this->probe($head, $phase, $context));
-
-            return app(ContinuationOpportunityService::class)->comparisonContext($phase, $probes, $context);
-        });
     }
 }

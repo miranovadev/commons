@@ -87,7 +87,7 @@ class ParticipantExplorationTest extends TestCase
         $this->assertFalse($exploration->explored($signal, $luna));
         $options = app(PropositionOptionService::class);
         $this->assertContains($signal->id, $options->attestationOptionsFor($luna)->pluck('id'));
-        $this->assertNotContains($signal->id, $options->attestationOptionsFor($return)->pluck('id'));
+        $this->assertContains($signal->id, $options->attestationOptionsFor($return)->pluck('id'), 'A prior voter may reconsider.');
         $this->assertContains($signal->id, $options->traversalOptionsFor($return, base: true)->pluck('id'), 'Base navigation remains lawful');
         $this->assertContains($signal->id, $options->traversalOptionsFor($return)->pluck('id'), 'The explored Write leads to fresh generation');
         $this->assertTrue($exploration->explored($signal, $return), 'Base Traverse cannot reopen the explored destination');
@@ -182,7 +182,7 @@ class ParticipantExplorationTest extends TestCase
         $this->assertDatabaseCount('exploration_events', 1);
     }
 
-    public function test_prior_cycle_refute_cannot_revise_an_explored_write_or_block_fresh_variant(): void
+    public function test_prior_cycle_self_refute_preserves_revision_and_does_not_block_fresh_variant(): void
     {
         [$signal, $persist, $constrain, $head, $terminal] = $this->personalJourney('refute');
         $return = $this->returnAfterRest($terminal);
@@ -195,8 +195,8 @@ class ParticipantExplorationTest extends TestCase
             $phase = app(PhaseProgressionService::class)->advance($phase, $node);
         }
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);
-        self::assertArrayNotHasKey('proposition.revise', $plan['schema']['$defs']['actions']);
-        self::assertArrayNotHasKey('attestation.create', $plan['schema']['$defs']['actions']);
+        self::assertArrayHasKey('proposition.revise', $plan['schema']['$defs']['actions']);
+        self::assertArrayHasKey('attestation.create', $plan['schema']['$defs']['actions']);
         self::assertArrayHasKey('instrument.execute', $plan['schema']['$defs']['actions']);
         $packet = app(ParticipantContextSerializer::class)->inference([
             'participant' => $phase->cycle->participant->only(['id', 'callsign', 'designation']),
@@ -205,9 +205,9 @@ class ParticipantExplorationTest extends TestCase
         $write = collect($packet['write']['propositions'])->firstWhere('id', $head->id);
         self::assertNotNull($write, 'Explored Writes remain visible to autonomous Participants');
         self::assertTrue($write['explored'] ?? false);
-        foreach (['attestation.create', 'proposition.revise', 'proposition.traverse'] as $action) {
-            self::assertArrayNotHasKey($action, $packet['actions']['$defs']['actions']);
-        }
+        self::assertArrayHasKey('proposition.revise', $packet['actions']['$defs']['actions']);
+        self::assertArrayHasKey('attestation.create', $packet['actions']['$defs']['actions']);
+        self::assertArrayNotHasKey('proposition.traverse', $packet['actions']['$defs']['actions']);
     }
 
     public function test_rest_is_available_with_an_explored_write(): void
@@ -261,7 +261,7 @@ class ParticipantExplorationTest extends TestCase
         $this->assertDatabaseCount('exploration_events', 1);
     }
 
-    public function test_branching_ancestor_requires_all_active_heads_and_a_new_head_reopens_it(): void
+    public function test_new_sibling_reopens_movement_without_resetting_the_ancestors_judgment(): void
     {
         config(['schemas.options.limit' => 1]);
         [$signal, $persist, $constrain, $head, $terminal] = $this->personalJourney();
@@ -272,7 +272,7 @@ class ParticipantExplorationTest extends TestCase
         // This branch is active but cannot Reconcile with the first head.
         app(PropositionMeasurementService::class)->project($sibling, .8, .8, .8,
             correspondenceComponents: new CorrespondenceValues(.8, -.8));
-        $this->assertFalse($exploration->explored($signal, $return));
+        $this->assertTrue($exploration->explored($signal, $return));
         $this->assertContains($signal->id, app(PropositionOptionService::class)->traversalOptionsFor($return)->pluck('id'), 'Navigation reaches the remaining unexplored head');
         $this->assertFalse(app(InputPlanService::class)->forPhase($return->cycle->participant, $return)['rest_available']);
         $this->assertCount(2, $exploration->heads($signal->id, $return, new ParticipationContext($return)), 'Evaluate the complete frontier before display limits');
@@ -286,7 +286,7 @@ class ParticipantExplorationTest extends TestCase
         $options = app(PropositionOptionService::class);
         $targets = $options->attestationOptionsFor($phase)->pluck('id');
         $this->assertContains($sibling->id, $targets);
-        $this->assertNotContains($head->id, $targets);
+        $this->assertContains($head->id, $targets, 'The earlier head still allows a reversal.');
         $this->personalVote($phase, $sibling, 'support');
         $terminal = app(PhaseProgressionService::class)->advance($phase, $sibling);
         $this->measure($sibling, 0);
@@ -380,8 +380,8 @@ class ParticipantExplorationTest extends TestCase
         $current = app(PhaseProgressionService::class)->advance($phase, $changed);
         $this->assertTrue(app(PhaseGenerationService::class)->available($current, 'proposition.reclassify'));
         foreach ([null, new ParticipationContext($current)] as $context) {
-            $this->assertFalse($exploration->explored($stance, $current, $context));
-            $this->assertFalse($exploration->explored($signal, $current, $context));
+            $this->assertTrue($exploration->explored($stance, $current, $context));
+            $this->assertTrue($exploration->explored($signal, $current, $context));
         }
         $this->assertSame($history, DB::table('exploration_events')->get()->toJson());
     }
@@ -403,7 +403,8 @@ class ParticipantExplorationTest extends TestCase
             'reads' => app(MediationReadService::class)->readsFor($terminal->fresh())->pluck('id'),
             'gates' => app(MediationReadService::class)->gatesFor($terminal->fresh())->pluck('id'),
         ]));
-        $this->assertFalse(app(ParticipantExplorationService::class)->explored($head, $return), 'The returning Cycle has no Disperse Phase; use the recorded personal arrival');
+        $this->assertTrue(app(ParticipantExplorationService::class)->explored($head, $return));
+        $this->assertTrue(app(PropositionOptionService::class)->traversalOptionsFor($return)->isNotEmpty());
         $service = app(HomologousMediationService::class);
         $cold = $service->structuralPoolFor($terminal->fresh());
         $batch = $service->structuralPoolsFor(collect([$terminal->fresh()]), new ParticipationContext($terminal->fresh()));
@@ -432,8 +433,8 @@ class ParticipantExplorationTest extends TestCase
             ['action' => 'attestation.create', 'proposition_id' => $head->id, 'direction' => 'support']);
         $order = app(PhaseProgressionService::class)->advance($bias, $changed);
         self::assertContains($head->id, app(ClosureOptionService::class)->committableFor($order)->pluck('id'));
-        self::assertFalse($exploration->explored($head, $order));
-        self::assertFalse($exploration->explored($signal, $order));
+        self::assertTrue($exploration->explored($head, $order));
+        self::assertTrue($exploration->explored($signal, $order));
         self::assertSame($history, DB::table('exploration_events')->get()->toJson());
     }
 
@@ -474,7 +475,8 @@ class ParticipantExplorationTest extends TestCase
         self::assertArrayNotHasKey('receipt_id', $witness);
         $exploration = app(ParticipantExplorationService::class);
         self::assertTrue($exploration->explored($signal, $return));
-        self::assertFalse($exploration->explored($constrain, $return), 'The other Signal still needs personal exploration');
+        self::assertTrue($exploration->explored($constrain, $return));
+        self::assertFalse($exploration->explored($unjudged, $return));
         $disperse = $return;
         foreach ([$distinction, $persist, $constrain] as $target) {
             app(ParticipationService::class)->contribute($actor, $disperse->id, ['action' => 'proposition.traverse', 'proposition_id' => $target->id]);
@@ -539,7 +541,7 @@ class ParticipantExplorationTest extends TestCase
         $instruments = app(EvidenceExecutionService::class);
         $instruments->complete($instruments->start($observation, $signal, 'citation', $this->origin->id), $signal);
         $this->assertTrue(app(PhaseGenerationService::class)->available($bias, 'proposition.reclassify'));
-        $this->assertFalse(app(ParticipantExplorationService::class)->explored($stance, $bias));
+        $this->assertTrue(app(ParticipantExplorationService::class)->explored($stance, $bias));
         $this->assertSame($history, DB::table('exploration_events')->get()->toJson());
     }
 
@@ -555,7 +557,7 @@ class ParticipantExplorationTest extends TestCase
         self::assertTrue($exploration->explored($signal, $return, $context));
         self::assertTrue($exploration->explored($revision, $return));
         $forward = $this->node($this->phase($revision, PhaseKind::Mediate), $revision);
-        self::assertFalse($exploration->explored($signal, $return));
+        self::assertTrue($exploration->explored($signal, $return));
         self::assertFalse($exploration->explored($forward, $return));
         $this->assertDatabaseHas('exploration_events', ['proposition_id' => $head->id]);
     }

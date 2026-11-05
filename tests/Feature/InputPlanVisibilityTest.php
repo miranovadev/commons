@@ -176,6 +176,10 @@ class InputPlanVisibilityTest extends TestCase
         $sourcePhase = $this->governedPhaseFixture($sourcePhase, $seed, $gate);
         $child = $this->proposition($sourcePhase, $register, 'expressive', 'Child', 0, source: $gate);
         $untouched = $this->proposition($sourcePhase, $register, 'expressive', 'Untouched neighbour', 0, source: $gate);
+        if ($kind === PhaseKind::Mediate) {
+            $next = $this->governedPhaseFixture($this->phaseAtPositionFixture($sourcePhase, PhaseKind::Bias), $seed, $child);
+            $this->proposition($next, $next->write_register, 'expressive', 'Unjudged Bias continuation', 0, source: $child);
+        }
         $viewer = $this->participant($substrate, 'viewer');
         $phase = $this->phase($viewer, $kind, $register, $gate);
 

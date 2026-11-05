@@ -238,14 +238,14 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
             ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')->where('attestations.id', $proof['attestation_id'])->sole();
         $this->assertSame($observer, $judgment->participant_id);
         $this->assertTrue($this->visibleProposition($returned, $a)['explored']);
-        $this->assertActionUnavailable($returned, 'attestation.create');
+        $attestation = $returned['plan']['schema']['$defs']['actions']['attestation.create'];
+        $this->assertSame([['properties' => ['proposition_id' => ['enum' => [$a]], 'direction' => ['enum' => ['refute']]]]], $attestation['anyOf']);
         $this->assertSame([$a], $returned['plan']['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum']);
         $history = DB::table('exploration_events')->orderBy('phase_id')->get()->toJson();
-        foreach (['support', 'refute'] as $direction) {
-            $response = $this->postContribution($observer, $returned['plan']['phase']['id'],
-                ['action' => 'attestation.create', 'proposition_id' => $a, 'direction' => $direction]);
-            $this->assertContains($response->status(), [409, 422]);
-        }
+        $duplicate = $this->postContribution($observer, $returned['plan']['phase']['id'],
+            ['action' => 'attestation.create', 'proposition_id' => $a, 'direction' => 'support']);
+        $this->assertContains($duplicate->status(), [409, 422]);
+        $this->contribute($observer, ['action' => 'attestation.create', 'proposition_id' => $a, 'direction' => 'refute']);
         $this->assertSame($history, DB::table('exploration_events')->orderBy('phase_id')->get()->toJson());
     }
 }

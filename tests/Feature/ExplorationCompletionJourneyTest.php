@@ -48,20 +48,17 @@ class ExplorationCompletionJourneyTest extends TestCase
         $next = $this->returnAfterRest($firstArrival);
         $this->assertDatabaseCount('exploration_events', 0);
         $persist = $this->judge($next, $signal);
-        foreach ([$head, $sibling] as $write) {
-            $constrain = $write->is($head) ? $this->traverse($persist, $head) : $this->judge($persist, $sibling);
-            self::assertSame($write->id, $constrain->gate_proposition_id);
-            self::assertEmpty(app(HorizonReceiptService::class)->ordinaryAvailable($constrain));
-            $next = $this->returnAfterRest($constrain);
-            $this->assertDatabaseHas('exploration_events', ['phase_id' => $constrain->id, 'proposition_id' => $write->id]);
-            $persist = $this->traverse($next, $signal);
-            $actions = app(InputPlanService::class)->forPhase($actor, $persist)['schema']['$defs']['actions'];
-            self::assertNotContains($write->id, $actions['proposition.traverse']['properties']['proposition_id']['enum'] ?? []);
-            if ($write->is($head)) {
-                self::assertContains($sibling->id, $actions['attestation.create']['properties']['proposition_id']['enum']);
-                self::assertArrayNotHasKey('instrument.execute', $actions);
-            }
-        }
+        $actions = app(InputPlanService::class)->forPhase($actor, $persist)['schema']['$defs']['actions'];
+        self::assertNotContains($head->id, $actions['proposition.traverse']['properties']['proposition_id']['enum'] ?? []);
+        self::assertContains($sibling->id, $actions['attestation.create']['properties']['proposition_id']['enum']);
+        self::assertArrayNotHasKey('instrument.execute', $actions);
+        $constrain = $this->judge($persist, $sibling);
+        self::assertSame($sibling->id, $constrain->gate_proposition_id);
+        self::assertEmpty(app(HorizonReceiptService::class)->ordinaryAvailable($constrain));
+        $next = $this->returnAfterRest($constrain);
+        $this->assertDatabaseHas('exploration_events', ['phase_id' => $constrain->id, 'proposition_id' => $sibling->id]);
+        $persist = $this->traverse($next, $signal);
+        $actions = app(InputPlanService::class)->forPhase($actor, $persist)['schema']['$defs']['actions'];
         self::assertArrayHasKey('instrument.execute', $actions);
         // Resolve the fresh opportunity by Defer. Its ordinary observation reopens Constrain.
         $this->submit($persist, ['action' => 'instrument.execute', 'proposition_id' => $signal->id,
@@ -73,7 +70,7 @@ class ExplorationCompletionJourneyTest extends TestCase
             'action' => 'proposition.reclassify', 'proposition_id' => $head->id, 'statement' => $head->statement, 'receipt_id' => $execution->receipt->id]);
         $exploration = app(ParticipantExplorationService::class);
         $this->assertSame([$classification->id], $exploration->heads($head->id, $next, new ParticipationContext($next))->keys()->all());
-        $this->assertFalse($exploration->explored($head, $next));
+        $this->assertTrue($exploration->explored($head, $next));
         $this->publishPotentialFixture($this->substrate);
         $constrain = $this->traverse($next, $signal, $head);
         $disperse = $this->judge($constrain, $classification);
@@ -111,7 +108,7 @@ class ExplorationCompletionJourneyTest extends TestCase
             ['action' => 'proposition.reclassify', 'proposition_id' => $synthesis->id, 'statement' => $synthesis->statement, 'receipt_id' => $this->acquireObservation()->id]);
         $this->componentClosureInput($child, ['admissible' => false, 'cadence_direction' => 'positive']);
         $this->assertSame([$child->id], $exploration->heads($synthesis->id, $return, new ParticipationContext($return))->keys()->all());
-        $this->assertFalse($exploration->explored($synthesis, $return));
+        $this->assertTrue($exploration->explored($synthesis, $return));
         $this->publishPotentialFixture($this->substrate);
         $path = [$signal, $head, $classification, $left];
         $mediate = $this->traverse($return, ...$path);

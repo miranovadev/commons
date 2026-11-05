@@ -109,7 +109,7 @@ class WriteOnceTest extends TestCase
         $phase = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
         $write = app(ContributionDispatcher::class)->dispatch($participant, $phase, ['action' => 'proposition.variant', 'statement' => 'Structural development']);
         $this->receiptFixture($write);
-        $return = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
+        $return = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate, acquire: false);
         $plan = $this->plan($participant);
         $this->assertArrayNotHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
         $this->assertSame([], $this->targets($plan, 'proposition.revise'));
@@ -123,7 +123,7 @@ class WriteOnceTest extends TestCase
         $plan = $this->plan($participant);
         $this->assertNotContains($write->id, $this->targets($plan, 'proposition.traverse'));
         $this->assertSame([], $this->targets($plan, 'proposition.revise'));
-        $later = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
+        $later = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate, acquire: false);
         $this->assertContains($write->id, $this->targets($this->plan($participant), 'proposition.revise'));
         $this->assertUnavailable($participant, $later, ['action' => 'proposition.variant', 'statement' => 'Still cannot self Variant']);
     }
@@ -141,16 +141,16 @@ class WriteOnceTest extends TestCase
         app(ContributionDispatcher::class)->dispatch($participant, $phase, [
             'action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'refute',
         ]);
-        $later = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
+        $later = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate, acquire: false);
         $revised = app(ContributionDispatcher::class)->dispatch($participant, $later, [
             'action' => 'proposition.revise', 'proposition_id' => $write->id, 'statement' => 'Corrected Variant',
         ]);
         $this->receiptFixture($revised);
-        $return = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
+        $return = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate, acquire: false);
         $this->assertUnavailable($participant, $return, $input);
         $plan = $this->plan($participant);
         $this->assertContains($revised->id, $this->targets($plan, 'attestation.create'));
-        $this->assertSame([], $this->targets($plan, 'instrument.execute'));
+        $this->assertContains($gate->id, $this->targets($plan, 'instrument.execute'), 'The judged position may acquire again.');
         $this->assertSame([], $this->targets($plan, 'proposition.revise'));
         $this->assertFalse($plan['rest_available']);
     }
@@ -238,16 +238,16 @@ class WriteOnceTest extends TestCase
         $first = app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
         foreach (['Second draft', 'Third draft'] as $statement) {
             $this->receiptFixture($first);
-            $refutePhase = $this->phase($participant, PhaseKind::Disperse, 'activity', $gate);
+            $refutePhase = $this->phase($participant, PhaseKind::Disperse, 'activity', $gate, acquire: false);
             $this->assertSame([], $this->targets($this->plan($participant), 'proposition.revise'));
             app(ContributionDispatcher::class)->dispatch($participant, $refutePhase, [
                 'action' => 'attestation.create', 'proposition_id' => $first->id, 'direction' => 'refute',
             ]);
             $this->assertSame([], $this->targets($this->plan($participant), 'proposition.revise'));
-            $return = $this->phase($participant, PhaseKind::Disperse, 'activity', $gate);
+            $return = $this->phase($participant, PhaseKind::Disperse, 'activity', $gate, acquire: false);
             $plan = $this->plan($participant);
             $this->assertSame([$first->id], $this->targets($plan, 'proposition.revise'));
-            $this->assertNotContains($gate->id, $this->targets($plan, 'instrument.execute'));
+            $this->assertContains($gate->id, $this->targets($plan, 'instrument.execute'));
             app(ContributionService::class)->validate($participant, [
                 'action' => 'proposition.revise', 'proposition_id' => $first->id, 'statement' => $statement,
             ]);
@@ -256,7 +256,7 @@ class WriteOnceTest extends TestCase
             ]);
         }
         $this->receiptFixture($first);
-        $this->phase($participant, PhaseKind::Disperse, 'activity', $gate);
+        $this->phase($participant, PhaseKind::Disperse, 'activity', $gate, acquire: false);
         $plan = $this->plan($participant);
         $this->assertContains($first->id, $this->targets($plan, 'attestation.create'));
         $this->assertNotContains($first->id, $this->targets($plan, 'instrument.execute'), 'An available shared Receipt enables Attest');
@@ -402,7 +402,7 @@ class WriteOnceTest extends TestCase
         return $participant;
     }
 
-    private function phase(Participant $participant, PhaseKind $kind, string $register, ?Proposition $gate = null): Phase
+    private function phase(Participant $participant, PhaseKind $kind, string $register, ?Proposition $gate = null, bool $acquire = true): Phase
     {
         $participant->cycles()->whereNull('completed_at')->each(function ($cycle): void {
             $cycle->phases()->whereNull('completed_at')->update(['completed_at' => now()]);
@@ -418,7 +418,7 @@ class WriteOnceTest extends TestCase
             'gate_proposition_id' => $gate?->id, 'started_at' => now()])->save();
 
         // These cases isolate structural rules after a real personal acquisition.
-        if ($gate !== null && ($kind === PhaseKind::Distinguish || $gate->tier === 'expressive')) {
+        if ($acquire && $gate !== null && ($kind === PhaseKind::Distinguish || $gate->tier === 'expressive')) {
             $this->instrumentGateFixture($phase);
         }
 

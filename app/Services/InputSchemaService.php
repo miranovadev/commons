@@ -213,15 +213,11 @@ final readonly class InputSchemaService
             $schema['$defs']['actions']['attestation.create']['anyOf'] = $choices;
         }
 
-        // Forward movement and reconsideration may coexist with a qualified exploration Rest.
-        $generationOrAcquisition = array_diff(array_keys($schema['$defs']['actions']), ['proposition.traverse', 'attestation.create', 'proposition.revise']);
-        if ($generationOrAcquisition === [] && $schema['$defs']['actions'] !== []) {
-            $ids = collect($attestationOptionIds ?? $writeOptionIds)->merge($revisionOptionIds)->merge($traversalOptionIds)->unique();
-            $explored = app(ParticipantExplorationService::class)->exploredIds($occurrence, $ids, $context);
-            // An explored Traverse target now leads to actual generation. Its
-            // completion alone cannot justify an otherwise actionless Rest.
-            if (($traversalOptionIds === [] && $ids->diff($explored->keys())->isEmpty())
-                || app(ExplorationEventService::class)->completionWitness($occurrence, $context ?? new ParticipationContext($occurrence)) !== null) {
+        // Changing a previous judgment is a choice. Never force a reversal to finish the Cycle.
+        if (array_keys($schema['$defs']['actions']) === ['attestation.create']) {
+            $ids = collect($attestationOptionIds);
+            $judged = app(ParticipantExplorationService::class)->exploredIds($occurrence, $ids, $context);
+            if ($ids->diff($judged->keys())->isEmpty()) {
                 $rest = $this->forPhase($kind, ['participant.rest']);
                 $schema['$defs']['actions']['participant.rest'] = $rest['$defs']['actions']['participant.rest'];
                 $schema['oneOf'][] = ['$ref' => '#/$defs/actions/participant.rest'];

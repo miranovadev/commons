@@ -39,19 +39,15 @@ final class PropositionOptionService
     {
         $load = fn () => $this->baseTraversalOptions($phase, $context);
         $candidates = $context === null ? $load() : $context->remember('base-traversal:'.$phase->id, $load);
-        if ($base || $candidates->isEmpty()) {
+        if ($base || $candidates->isEmpty() || $phase->kind === PhaseKind::Order) {
             return $candidates;
         }
         $context ??= new ParticipationContext($phase);
 
         return $context->remember('actionable-traversal:'.$phase->id, function () use ($phase, $context, $candidates) {
-            $explored = app(ParticipantExplorationService::class)->exploredIds($phase, $candidates->pluck('id'), $context);
-            if ($explored->isEmpty()) {
-                return $candidates;
-            }
-            $towardGeneration = app(GenerativeTraversalService::class)->destinations($phase, $context->nodes($explored->keys()), $context);
+            $reachable = app(GenerativeTraversalService::class)->destinations($phase, $candidates, $context);
 
-            return $candidates->filter(fn ($node) => ! $explored->has($node->id) || $towardGeneration->has($node->id))->values();
+            return $candidates->filter(fn ($node) => $reachable->has($node->id))->values();
         });
     }
 
@@ -182,16 +178,6 @@ final class PropositionOptionService
         return $this->writeDescendants($phase, $context)->orderBy('id')->get();
     }
 
-    private function unexplored(Phase $phase, Collection $options, ?ParticipationContext $context): Collection
-    {
-        if ($options->isEmpty()) {
-            return $options;
-        }
-        $explored = app(ParticipantExplorationService::class)->exploredIds($phase, $options->pluck('id'), $context);
-
-        return $options->reject(fn ($node) => $explored->has($node->id))->values();
-    }
-
     /** Every valid Write descendant offers the as-yet-unattested direction(s). */
     public function attestationOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
@@ -201,9 +187,8 @@ final class PropositionOptionService
 
         $context ??= new ParticipationContext($phase);
         $judgedHere = $context->personalAttestationsByProposition($phase->cycle->participant_id)->where('phase_id', $phase->id);
-        $writes = $this->availableWrites($phase, $context)->reject(fn (Proposition $write) => $judgedHere->has($write->id));
 
-        return $this->unexplored($phase, $writes, $context);
+        return $this->availableWrites($phase, $context)->reject(fn (Proposition $write) => $judgedHere->has($write->id))->values();
     }
 
     /**
@@ -233,13 +218,11 @@ final class PropositionOptionService
                     && $attestation->phase->cycle->sequence < $phase->cycle->sequence)->pluck('proposition_id')->flip();
             $terminal = app(ExhaustedContinuationService::class)->ids($phase, $context);
 
-            $eligible = $context->nodes($this->descendantIds($phase, $context))->filter(fn ($node) => $context->activeIds->has($node->id)
+            return $context->nodes($this->descendantIds($phase, $context))->filter(fn ($node) => $context->activeIds->has($node->id)
                 && ! $parents->has($node->id) && ! $terminal->has($node->id) && $refuted->has($node->id)
                 && $node->id !== $phase->gate_proposition_id && $node->register === $phase->write_register
                 && $node->tier === 'expressive' && $node->phase->cycle->participant_id === $participant->id)
                 ->sortByDesc('created_at')->values();
-
-            return $this->unexplored($phase, $eligible, $context);
         }
 
         $query = Proposition::query()->active()->whereDoesntHave('children')
@@ -257,10 +240,8 @@ final class PropositionOptionService
                 ->whereBelongsTo($participant)
                 ->where('sequence', '<', $phase->cycle->sequence)));
 
-        $eligible = $query->latest('created_at')
+        return $query->latest('created_at')
             ->get()->reject(fn (Proposition $node) => app(ExhaustedContinuationService::class)->ids($phase, $context)->has($node->id))->values();
-
-        return $this->unexplored($phase, $eligible, $context);
     }
 
     /**
