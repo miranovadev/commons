@@ -42,7 +42,7 @@ final class ContextHorizonProjector
     public function forEntry(Proposition $gate, ?ContextHorizon $expected = null): ContextHorizon
     {
         $gate = $gate->fresh(['phase.cycle.contextHorizon', 'commitmentSnapshot']);
-        $owner = $gate?->phase?->cycle?->contextHorizon;
+        $owner = $gate?->phase?->governance()?->contextHorizon;
         if ($owner === null || $gate->tier !== 'committal' || $gate->commitmentSnapshot === null) {
             throw new DomainException('Cycle entry requires a persisted Committal with a Context Horizon and commitment snapshot.');
         }
@@ -86,7 +86,7 @@ final class ContextHorizonProjector
     {
         return DB::transaction(function () use ($snapshot): ContextHorizon {
             $this->lockSubstrate($snapshot->substrate);
-            $ownerId = $snapshot->proposition->phase->cycle->context_horizon_id;
+            $ownerId = $snapshot->proposition->phase->governance()->context_horizon_id;
             $horizon = ContextHorizon::query()->lockForUpdate()->findOrFail($ownerId);
             if ($horizon->substrate_id !== $snapshot->substrate_id) {
                 throw new DomainException('A commitment cannot cross Context Horizon substrates.');
@@ -124,9 +124,9 @@ final class ContextHorizonProjector
     private function includeLocked(SubstrateLedgerEntry $entry): ContextHorizonMembership
     {
         $proposition = Proposition::with('phase.cycle.contextHorizon')->findOrFail($entry->ledgerable_id);
-        $horizon = $proposition->phase->cycle->contextHorizon;
+        $horizon = $proposition->phase->governance()->contextHorizon;
         if ($horizon === null || $horizon->substrate_id !== $entry->substrate_id) {
-            throw new DomainException('A proposition must belong to its creating Cycle Context Horizon.');
+            throw new DomainException('A proposition must belong to its producing Phase’s operating Horizon.');
         }
         $membership = ContextHorizonMembership::find($proposition->id);
         if ($membership !== null) {

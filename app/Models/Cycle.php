@@ -93,6 +93,11 @@ class Cycle extends Model
         });
     }
 
+    public function operatingHorizon(): ContextHorizon
+    {
+        return $this->currentPhase?->crossoverCycle?->contextHorizon ?? $this->contextHorizon;
+    }
+
     public function contextHorizon(): BelongsTo
     {
         return $this->belongsTo(ContextHorizon::class);

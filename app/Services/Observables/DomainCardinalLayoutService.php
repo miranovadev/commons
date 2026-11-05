@@ -55,7 +55,7 @@ final class DomainCardinalLayoutService
             ->merge($horizons->pluck('opened_by_proposition_id')->filter())
             ->unique()->values();
         $nodes = Proposition::query()->whereIn('id', $allIds)
-            ->with(['phase.cycle', 'ledgerEntry'])->get()->keyBy('id');
+            ->with(['phase.cycle', 'phase.crossoverCycle', 'ledgerEntry'])->get()->keyBy('id');
         $edges = Supersession::query()
             ->whereIn('target_proposition_id', $memberships->pluck('proposition_id'))
             ->with('ledgerEntry')->get();
@@ -194,7 +194,7 @@ final class DomainCardinalLayoutService
 
             $phase = $node->phase;
             $gateId = $phase?->gate_proposition_id;
-            if ($phase?->cycle?->context_horizon_id !== $horizon->id
+            if ($phase?->governance()?->context_horizon_id !== $horizon->id
                 || $gateId === null || $gateId === $node->id || ! $nodes->has($gateId)) {
                 throw new DomainException('A foreign-input result requires an acting Gate in its owning Domain: '.$node->id);
             }

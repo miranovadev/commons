@@ -14,7 +14,7 @@ final class RegionalExhaustionMembership
     public function capture(string $horizonId, string $seed): array
     {
         return DB::table('propositions as node')->join('phases as phase', 'phase.id', '=', 'node.phase_id')
-            ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
+            ->join('cycles as cycle', 'cycle.id', '=', 'phase.operating_cycle_id')
             ->where('cycle.context_horizon_id', $horizonId)->where('cycle.entry_committal_id', $seed)
             ->where('node.tier', 'expressive')->pluck('node.id')->all();
     }
@@ -35,9 +35,12 @@ final class RegionalExhaustionMembership
             'horizon.id', '=', 'proof.context_horizon_id')->get(['proof.governing_committal_id', 'horizon.substrate_id']);
         foreach ($proofs->groupBy('substrate_id') as $substrateId => $regional) {
             $nodes = Proposition::whereHas('phase.cycle.participant', fn ($q) => $q->where('substrate_id', $substrateId))->get()->keyBy('id');
-            $seeds = Schema::hasColumn('cycles', 'entry_committal_id')
-                ? app(CommitRegionService::class)->seedIdsFor($nodes, $nodes)
-                : $nodes->mapWithKeys(fn ($node) => [$node->id => app(LegacyCommitRegionOwnership::class)->seedFor($node)?->id])->all();
+            $regions = app(CommitRegionService::class);
+            $seeds = match (true) {
+                Schema::hasColumn('phases', 'operating_cycle_id') => $regions->seedIdsFor($nodes, $nodes),
+                Schema::hasColumn('cycles', 'entry_committal_id') => $regions->entryOnlySeedIds($nodes),
+                default => $nodes->mapWithKeys(fn ($node) => [$node->id => app(LegacyCommitRegionOwnership::class)->seedFor($node)?->id])->all(),
+            };
             DB::transaction(function () use ($regional, $seeds): void {
                 DB::table('exhausted_region_memberships')->whereIn('governing_committal_id', $regional->pluck('governing_committal_id'))->delete();
                 foreach ($regional as $proof) {

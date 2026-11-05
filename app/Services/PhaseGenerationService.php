@@ -53,8 +53,8 @@ final readonly class PhaseGenerationService
             return false;
         }
         if (in_array($action, ['proposition.variant', 'proposition.revise'], true)) {
-            $terminalRegion = fn () => DB::table('tragedies')->where('governing_committal_id', $phase->cycle->entry_committal_id)->exists();
-            if ($context === null ? $terminalRegion() : $context->remember('generation-terminal-region:'.$phase->cycle->entry_committal_id, $terminalRegion)) {
+            $terminalRegion = fn () => DB::table('tragedies')->where('governing_committal_id', $phase->governance()->entry_committal_id)->exists();
+            if ($context === null ? $terminalRegion() : $context->remember('generation-terminal-region:'.$phase->governance()->entry_committal_id, $terminalRegion)) {
                 return false;
             }
         }
@@ -149,9 +149,9 @@ final readonly class PhaseGenerationService
                 ->where('propositions.register', $phase->write_register)
                 ->where('propositions.tier', $phase->kind === PhaseKind::Order ? 'committal' : 'expressive')
                 ->whereHas('phase', fn ($query) => $query->where('kind', $phase->kind->value)
-                    ->whereHas('cycle', fn ($query) => $query->where('context_horizon_id', $phase->cycle->context_horizon_id)))
+                    ->whereHas('operatingCycle', fn ($query) => $query->where('context_horizon_id', $phase->governance()->context_horizon_id)))
                 ->toBase()->get(['result.source_proposition_id', 'propositions.id'])->groupBy('source_proposition_id');
-            $writes = $batch ? $context->remember('prospective-writes:'.$phase->cycle_id.':'.$phase->kind->value.':'.$phase->write_register, $load) : $load();
+            $writes = $batch ? $context->remember('prospective-writes:'.$phase->governance()->context_horizon_id.':'.$phase->kind->value.':'.$phase->write_register, $load) : $load();
             $existing = $sources->flatMap(fn ($id) => $writes->get($id, collect())->pluck('id'))->unique();
             if ($existing->isEmpty()) {
                 return true;
@@ -159,7 +159,8 @@ final readonly class PhaseGenerationService
             $context ??= new ParticipationContext($phase);
             // Personal completion belongs to this Cycle, including during a
             // projected arrival. Reuse its actual Phase's batched encounter probes.
-            $acting = $batch && $context->phase->cycle_id === $phase->cycle_id ? $context->phase : $phase;
+            $acting = $batch && $context->phase->cycle_id === $phase->cycle_id
+                && $context->phase->governance()->entry_committal_id === $phase->governance()->entry_committal_id ? $context->phase : $phase;
             $existing = $existing->filter(fn ($id) => app(ParticipantExplorationService::class)->heads($id, $acting, $context)->isNotEmpty());
             if ($existing->isEmpty()) {
                 return true;

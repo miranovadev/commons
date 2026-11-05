@@ -30,7 +30,7 @@ final class ValidatePhasePositions extends Command
                     if ($node->tier === 'committal' && $node->phase->kind === PhaseKind::Distinguish) {
                         continue;
                     }
-                    $expected = $node->phase->cycle->contextHorizon->domain->registerFor($node->phase->kind);
+                    $expected = $node->phase->governance()->contextHorizon->domain->registerFor($node->phase->kind);
                     if ($node->register !== $expected || $node->phase->write_register !== $expected) {
                         $report('register_phase_mismatch', $node->id, ['producing_phase' => $node->phase->kind->value,
                             'register' => $node->register, 'expected_register' => $expected]);

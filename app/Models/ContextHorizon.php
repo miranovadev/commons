@@ -94,7 +94,7 @@ class ContextHorizon extends Model
         $snapshot = $this->openedBy()->with('proposition.phase.cycle')->first();
         $parent = $this->parent()->firstOrFail();
         if ($snapshot === null || $snapshot->direction_before !== $parent->domain || $snapshot->direction_after !== $this->domain
-            || $snapshot->proposition->phase->cycle->context_horizon_id !== $parent->id
+            || $snapshot->proposition->phase->governance()->context_horizon_id !== $parent->id
             || $parent->substrate_id !== $this->substrate_id || $this->domain !== $parent->domain->opposite()) {
             throw new \DomainException('A Horizon requires its own parent boundary commitment.');
         }

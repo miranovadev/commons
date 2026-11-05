@@ -84,7 +84,7 @@ final readonly class ParticipantHistoricalContext
     private function exhaustedAt(Phase $phase, PhaseKind $position, string $tier = 'expressive'): Builder
     {
         return $this->withExhaustion($this->positions->scope(Proposition::query(), $phase, $position, $tier))
-            ->whereHas('phase.cycle', fn ($query) => $query->where('context_horizon_id', $phase->cycle->context_horizon_id));
+            ->whereHas('phase.operatingCycle', fn ($query) => $query->where('context_horizon_id', $phase->governance()->context_horizon_id));
     }
 
     private function withExhaustion(Builder $query): Builder

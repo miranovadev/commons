@@ -13,7 +13,7 @@ final class FieldMutationService
     public function touch(Phase $phase, array $propositionIds = [], bool $measurementsDirty = true): void
     {
         $this->mark($phase->cycle->participant->substrate_id,
-            [$phase->cycle->context_horizon_id], array_filter($propositionIds), $measurementsDirty);
+            [$phase->governance()->context_horizon_id], array_filter($propositionIds), $measurementsDirty);
     }
 
     public function mark(string $substrateId, array $horizonIds = [], array $propositionIds = [], bool $measurementsDirty = true): void

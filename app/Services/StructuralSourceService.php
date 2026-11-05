@@ -18,7 +18,7 @@ final class StructuralSourceService
             throw new DomainException('Exploration requires a structural source.');
         }
 
-        return ['context_horizon_id' => $phase->cycle->context_horizon_id,
+        return ['context_horizon_id' => $phase->governance()->context_horizon_id,
             'structural_position' => $phase->kind->value, 'structural_source_id' => $phase->gate_proposition_id];
     }
 
@@ -34,7 +34,7 @@ final class StructuralSourceService
             return $context->remember('structural-sources', fn () => $this->resolve(
                 $context->propositions->map(fn ($node) => (object) [
                     'id' => $node->id, 'tier' => $node->tier, 'kind' => $node->phase->kind->value,
-                    'context_horizon_id' => $node->phase->cycle->context_horizon_id,
+                    'context_horizon_id' => $node->phase->governance()->context_horizon_id,
                     'gate_proposition_id' => $node->phase->gate_proposition_id,
                 ]), $context->parents,
             ))->only($ids->all());
@@ -43,7 +43,7 @@ final class StructuralSourceService
         $pending = $ids->unique()->values();
         while ($pending->isNotEmpty()) {
             $batch = DB::table('propositions as node')->join('phases as phase', 'phase.id', '=', 'node.phase_id')
-                ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')->whereIn('node.id', $pending)
+                ->join('cycles as cycle', 'cycle.id', '=', 'phase.operating_cycle_id')->whereIn('node.id', $pending)
                 ->get(['node.id', 'node.tier', 'phase.kind', 'phase.gate_proposition_id', 'cycle.context_horizon_id'])->keyBy('id');
             $incoming = DB::table('supersessions')->whereIn('target_proposition_id', $batch->keys())->get();
             $nodes = $nodes->union($batch);

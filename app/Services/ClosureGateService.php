@@ -39,7 +39,7 @@ class ClosureGateService
         return $this->states->stored($target);
     }
 
-    /** The creating Cycle's entry Committal is the sole committed directional predecessor. */
+    /** The producing Phase's governing Committal is the sole committed directional predecessor. */
     public function historyFor(Proposition $position, ?ParticipationContext $context = null, ?ContextHorizon $horizon = null): ?CommitmentSnapshot
     {
         return $this->lineage->ancestors($position, $context)->first();

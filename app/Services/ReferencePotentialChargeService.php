@@ -167,7 +167,7 @@ final readonly class ReferencePotentialChargeService
         // Callers with a completed Cycle supply that Cycle's durable Horizon.
         $startingBasin ??= $position->tier === 'committal' && $position->commitmentSnapshot !== null
             ? app(ContextHorizonProjector::class)->forEntry($position)
-            : $position->phase->cycle->contextHorizon;
+            : $position->phase->governance()->contextHorizon;
         if ($startingBasin->substrate_id !== $substrateId) {
             throw new DomainException('Recovery cannot cross substrates.');
         }
@@ -176,7 +176,7 @@ final readonly class ReferencePotentialChargeService
         $opened = $horizons->whereNotNull('opened_by_proposition_id')->keyBy('opened_by_proposition_id');
         $propositions = Proposition::query()->active()
             ->whereHas('phase.cycle.participant', fn ($query) => $query->where('substrate_id', $substrateId))
-            ->with(['measurement', 'commitmentSnapshot', 'phase.cycle'])
+            ->with(['measurement', 'commitmentSnapshot', 'phase.cycle', 'phase.crossoverCycle'])
             ->get()->keyBy('id');
         $historicalIds = Proposition::whereHas('phase.cycle.participant', fn ($query) => $query->where('substrate_id', $substrateId))->select('id');
         $edges = DB::table('supersessions')
@@ -186,15 +186,15 @@ final readonly class ReferencePotentialChargeService
         $outgoing = $edges->groupBy('source_proposition_id');
         $incoming = $edges->groupBy('target_proposition_id');
         $distances = app(BackwardRecoveryLineage::class)->distances($position, $observer,
-            fn (string $id, string $horizonId) => $incoming->get($id, collect())->pluck('source_proposition_id')->all());
-        $members = $propositions->groupBy(fn (Proposition $node) => $node->phase->cycle->context_horizon_id);
+            fn (string $id, string $horizonId) => $incoming->get($id, collect())->pluck('source_proposition_id')->all(), forRecovery: true);
+        $members = $propositions->groupBy(fn (Proposition $node) => $node->phase->governance()->context_horizon_id);
         $entries = $propositions->filter(fn (Proposition $node) => $node->tier === 'committal'
             && $node->commitmentSnapshot?->substrate_id === $substrateId)
             ->groupBy(function (Proposition $node) use ($opened): string {
                 // A boundary's entry belongs exclusively to its direct child.
                 return $node->commitmentSnapshot->isClosureBoundary()
                     ? ($opened->get($node->id)?->id ?? '')
-                    : $node->phase->cycle->context_horizon_id;
+                    : $node->phase->governance()->context_horizon_id;
             });
         $excluded = app(ExhaustionService::class)->unavailable($position) ? $position->id : null;
         $restedHere = app(BackwardRecoveryLineage::class)->restedAtEntry($position, $startingBasin, $observer);

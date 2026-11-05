@@ -35,8 +35,8 @@ class ProspectiveClosureService
             throw new \DomainException('Closure birth requires complete ledger context.');
         }
         if ($head->tier === 'committal') {
-            if ($head->phase->cycle->entry_committal_id !== null
-                || $head->phase->cycle->contextHorizon->parent_context_horizon_id !== null) {
+            if ($head->phase->governance()->entry_committal_id !== null
+                || $head->phase->governance()->contextHorizon->parent_context_horizon_id !== null) {
                 throw new \DomainException('Ordinary canonical Closure must preserve its expressive source.');
             }
             $phases = [];
@@ -64,9 +64,9 @@ class ProspectiveClosureService
         if (! $cycle->wasRecentlyCreated || ! $cycle->exists || DB::transactionLevel() === 0) {
             throw new \DomainException('Prospective Closure updates require a genuine transactional Cycle entry.');
         }
-        $heads = Proposition::where('tier', 'expressive')->whereHas('phase.cycle',
+        $heads = Proposition::where('tier', 'expressive')->whereHas('phase.operatingCycle',
             fn ($query) => $query->where('entry_committal_id', $cycle->entry_committal_id))
-            ->with(['phase.cycle.contextHorizon', 'phase.cycle.participant', 'ledgerEntry'])->get();
+            ->with(['phase.crossoverCycle.contextHorizon', 'phase.cycle.contextHorizon', 'phase.cycle.participant', 'ledgerEntry'])->get();
         if ($heads->isEmpty()) {
             return;
         }
@@ -94,7 +94,7 @@ class ProspectiveClosureService
     {
         $this->assertTransaction($target);
         if ($target->tier !== 'committal' || $source->tier !== 'expressive'
-            || $source->phase->cycle->entry_committal_id !== $target->phase->cycle->entry_committal_id) {
+            || $source->phase->governance()->entry_committal_id !== $target->phase->governance()->entry_committal_id) {
             throw new \DomainException('Canonical Closure requires the selected local expressive source.');
         }
         $state = $this->stored($source);
@@ -107,7 +107,7 @@ class ProspectiveClosureService
 
     private function measure(Proposition $head, ProspectiveClosureHistory $history, array $entry, array $previous, array $trigger): array
     {
-        $domain = $head->phase->cycle->contextHorizon->domain->value;
+        $domain = $head->phase->governance()->contextHorizon->domain->value;
         $depths = $entry['domain_depths'];
         $depths[$domain]++;
         $intervals = $entry['domain_intervals'];
@@ -127,12 +127,12 @@ class ProspectiveClosureService
         return [...$this->calculator->calculate($domain, $depths, $intervals, $phaseGroups, $orientationGroups, $previous),
             'creating_domain' => $domain, 'domain_depths' => $depths, 'domain_intervals' => $intervals,
             'cadence_interval' => $interval, 'phase_observations' => $phases, 'orientation_observations' => $orientations,
-            'history_proposition_id' => $head->phase->cycle->entry_committal_id, 'trigger' => $trigger];
+            'history_proposition_id' => $head->phase->governance()->entry_committal_id, 'trigger' => $trigger];
     }
 
     private function entry(Proposition $head): array
     {
-        $row = DB::table('prospective_closure_states')->where('proposition_id', $head->phase->cycle->entry_committal_id)->first();
+        $row = DB::table('prospective_closure_states')->where('proposition_id', $head->phase->governance()->entry_committal_id)->first();
         if ($row === null || ! $row->frozen) {
             throw new ClosureHistoryUnavailable('Prospective Closure requires frozen selected committed history.');
         }

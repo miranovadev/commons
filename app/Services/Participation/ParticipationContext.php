@@ -21,6 +21,7 @@ use App\Services\HomologousBiasService;
 use App\Services\HomologousMediationService;
 use App\Services\HomologousOrderService;
 use App\Services\MediatedIncomingBiasService;
+use App\Services\ReconciliationCrossoverService;
 use App\Services\Observables\CommittalLineageService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -87,7 +88,7 @@ final class ParticipationContext
         $this->substrate = $phase->cycle->participant->substrate;
         $this->propositions = Proposition::query()
             ->whereIn('id', $this->workingSetIds($additionalPropositionIds, $includeUnavailableAdditional))
-            ->with(['phase.cycle.participant', 'measurement', 'ledgerEntry'])->get()->keyBy('id');
+            ->with(['phase.cycle.participant', 'phase.crossoverCycle', 'measurement', 'ledgerEntry'])->get()->keyBy('id');
         foreach ($this->propositions as $proposition) {
             $proposition->phase->cycle->participant->setRelation('substrate', $this->substrate);
         }
@@ -100,8 +101,8 @@ final class ParticipationContext
             ->with('ledgerEntry')->get();
         $this->parents = $this->edges->groupBy('target_proposition_id');
         $this->children = $this->edges->groupBy('source_proposition_id');
-        $horizonIds = $this->propositions->toBase()->map(fn ($node) => $node->phase->cycle->context_horizon_id)
-            ->push($phase->cycle->context_horizon_id)->unique();
+        $horizonIds = $this->propositions->toBase()->map(fn ($node) => $node->phase->governance()->context_horizon_id)
+            ->push($phase->governance()->context_horizon_id)->unique();
         $this->horizons = ContextHorizon::where('substrate_id', $this->substrate->id)->whereKey($horizonIds)->get()->keyBy('id');
         foreach ($this->horizons as $horizon) {
             $horizon->setRelation('substrate', $this->substrate);
@@ -109,9 +110,9 @@ final class ParticipationContext
         foreach ($this->horizons as $horizon) {
             $horizon->setRelation('parent', $this->horizons->get($horizon->parent_context_horizon_id));
         }
-        $phase->cycle->setRelation('contextHorizon', $this->horizons->get($phase->cycle->context_horizon_id));
+        $phase->governance()->setRelation('contextHorizon', $this->horizons->get($phase->governance()->context_horizon_id));
         foreach ($this->propositions as $proposition) {
-            $proposition->phase->cycle->setRelation('contextHorizon', $this->horizons->get($proposition->phase->cycle->context_horizon_id));
+            $proposition->phase->governance()->setRelation('contextHorizon', $this->horizons->get($proposition->phase->governance()->context_horizon_id));
         }
         $this->memberships = ContextHorizonMembership::whereIn('proposition_id', $ids)->get()->keyBy('proposition_id');
         $this->membershipsByHorizon = $this->memberships->groupBy('context_horizon_id');
@@ -159,10 +160,14 @@ final class ParticipationContext
      */
     private function workingSetIds(?Collection $additionalPropositionIds = null, bool $includeUnavailableAdditional = false): Collection
     {
+        $destinationOwners = collect();
         if ($this->phase->kind === PhaseKind::Mediate) {
             // Comparison operands are hydrated, not granted evidence or movement scope.
             $pool = app(HomologousMediationService::class)->structuralPoolFor($this->phase, $this);
+            $crossings = app(ReconciliationCrossoverService::class)->children($this->phase, $this);
+            $destinationOwners = $crossings->map(fn ($node) => $node->phase->governance()->entry_committal_id)->unique();
             $additionalPropositionIds = ($additionalPropositionIds ?? collect())
+                ->merge($crossings->pluck('id'))
                 ->merge($pool['reads']->pluck('id'))->merge($pool['gates']->pluck('id'));
         }
         if ($this->phase->kind === PhaseKind::Bias) {
@@ -178,7 +183,7 @@ final class ParticipationContext
         // relation can produce pathological PostgreSQL plans as table statistics grow.
         $owned = DB::table('propositions')
             ->join('phases', 'phases.id', '=', 'propositions.phase_id')
-            ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
+            ->join('cycles', 'cycles.id', '=', 'phases.operating_cycle_id')
             ->join('participants', 'participants.id', '=', 'cycles.participant_id')
             ->where('participants.substrate_id', $this->substrate->id);
         // Opt-in measurement hydration can include historical population members.
@@ -191,21 +196,23 @@ final class ParticipationContext
             // read model. Ownership and active membership still constrain the seeds.
             $gate->union((clone ($includeUnavailableAdditional ? $allOwned : $owned))->whereIn('propositions.id', $additionalPropositionIds)->select('propositions.id'));
         }
-        $ids = $owned->where('cycles.context_horizon_id', $this->phase->cycle->context_horizon_id)
+        // Exploration evaluates the complete continuation in each exact destination Region.
+        $ids = $owned->where(fn ($q) => $q->where('cycles.context_horizon_id', $this->phase->governance()->context_horizon_id)
+            ->when($destinationOwners->isNotEmpty(), fn ($q) => $q->orWhereIn('cycles.entry_committal_id', $destinationOwners)))
             ->selectRaw('propositions.id /* participation working set */')->union($gate)->pluck('id');
         $seen = array_fill_keys($ids->all(), true);
         $frontier = $ids;
         while ($frontier->isNotEmpty()) {
             $boundaries = DB::table('propositions')
                 ->join('phases', 'phases.id', '=', 'propositions.phase_id')
-                ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
+                ->join('cycles', 'cycles.id', '=', 'phases.operating_cycle_id')
                 ->join('context_horizons', 'context_horizons.id', '=', 'cycles.context_horizon_id')
                 ->whereIn('propositions.id', $frontier)
                 ->whereNotNull('context_horizons.opened_by_proposition_id')
                 ->select('context_horizons.opened_by_proposition_id as id');
             $entries = DB::table('propositions')
                 ->join('phases', 'phases.id', '=', 'propositions.phase_id')
-                ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
+                ->join('cycles', 'cycles.id', '=', 'phases.operating_cycle_id')
                 ->whereIn('propositions.id', $frontier)->whereNotNull('cycles.entry_committal_id')
                 ->select('cycles.entry_committal_id as id');
             $dependencies = DB::table('supersessions')->whereIn('target_proposition_id', $frontier)

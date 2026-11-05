@@ -46,9 +46,10 @@ class InputSchemaServiceTest extends TestCase
     public function test_mediate_retires_cached_regional_guidance_for_dominant_homologous_correspondence(): void
     {
         $actions = config('phases.5.actions');
-        $key = 'commons:input-schema:v21:phase:5:'.sha1(implode('|', $actions));
+        $key = 'commons:input-schema:v35:phase:5:'.sha1(implode('|', $actions));
         Cache::store('array')->forever($key, ['stale_regional_guidance' => true]);
         $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Mediate);
+        $this->assertStringContainsString('At either recorded operand', $schema['x-commons']['description']);
         $this->assertArrayNotHasKey('stale_regional_guidance', $schema);
         $this->assertStringContainsString('ordinary local Reconcile path', $schema['x-commons']['description']);
         $this->assertStringContainsString('Dominant Correspondence across homologous Reads', $schema['x-commons']['description']);
@@ -61,12 +62,12 @@ class InputSchemaServiceTest extends TestCase
     public function test_bias_retires_the_local_only_cached_guidance(): void
     {
         $actions = config('phases.6.actions');
-        $key = 'commons:input-schema:v22:phase:6:'.sha1(implode('|', $actions));
+        $key = 'commons:input-schema:v35:phase:6:'.sha1(implode('|', $actions));
         Cache::store('array')->forever($key, ['stale_local_only_bias' => true]);
         $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Bias);
         $this->assertArrayNotHasKey('stale_local_only_bias', $schema);
         $this->assertStringContainsString('Dominant homologous Chirality', $schema['x-commons']['description']);
-        $this->assertStringContainsString('Cycle-entry Receipt catalogue', $schema['x-commons']['description']);
+        $this->assertStringContainsString('operating Region’s Receipt catalogue', $schema['x-commons']['description']);
     }
 
     public function test_both_reclassification_phases_replace_the_cached_statement_preserving_contract(): void

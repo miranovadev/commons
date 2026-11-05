@@ -256,7 +256,7 @@ final class PropositionMeasurementService
         }
         $prior = $this->priorChiralityObservation($proposition, $context)
             ?? ($context === null ? PropositionMeasurement::find($proposition->id) : $context->propositions->get($proposition->id)?->measurement);
-        $entry = $proposition->phase->cycle->entry_committal_id;
+        $entry = $proposition->phase->governance()->entry_committal_id;
         $previous = $entry === null ? null : ($context === null ? CommitmentSnapshot::find($entry) : $context->snapshots->firstWhere('proposition_id', $entry));
 
         return ['orientation' => $values->orientation, 'attestation_cadence' => $values->cadence,
@@ -270,7 +270,7 @@ final class PropositionMeasurementService
     private function correspondenceComponentAttributes(Proposition $proposition, CorrespondenceValues $values, ?ParticipationContext $context = null): array
     {
         $prior = $context === null ? PropositionMeasurement::find($proposition->id) : $context->propositions->get($proposition->id)?->measurement;
-        $entry = $proposition->phase->cycle->entry_committal_id;
+        $entry = $proposition->phase->governance()->entry_committal_id;
         $previous = $entry === null ? null : ($context === null ? CommitmentSnapshot::find($entry) : $context->snapshots->firstWhere('proposition_id', $entry));
 
         return ['shape_topology' => $values->shapeTopology, 'phase_profile' => $values->phaseProfile,
@@ -330,7 +330,7 @@ final class PropositionMeasurementService
         }
         $prior = $this->priorChiralityObservation($position, $context)
             ?? ($context === null ? PropositionMeasurement::find($position->id) : $position->measurement);
-        $entry = $position->phase->cycle->entry_committal_id;
+        $entry = $position->phase->governance()->entry_committal_id;
         $snapshot = $entry === null ? null : ($context === null ? CommitmentSnapshot::find($entry) : $context->snapshots->firstWhere('proposition_id', $entry));
         $previous = $prior?->chirality_direction ?? $snapshot?->chirality_direction;
 

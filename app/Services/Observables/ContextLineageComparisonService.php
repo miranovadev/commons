@@ -39,7 +39,7 @@ final class ContextLineageComparisonService
     /** Build the same lineage as a Commit write, without persisting a candidate. */
     public function prospectiveCommit(Proposition $gate, Phase $phase, ?ParticipationContext $context = null): LineageComparison
     {
-        $horizon = $context !== null ? $context->horizons->get($phase->cycle->context_horizon_id) : $phase->cycle->contextHorizon;
+        $horizon = $context !== null ? $context->horizons->get($phase->governance()->context_horizon_id) : $phase->governance()->contextHorizon;
         if ($horizon === null) {
             throw new DomainException('A prospective Commit requires its Cycle Context Horizon.');
         }

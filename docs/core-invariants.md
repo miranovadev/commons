@@ -168,7 +168,7 @@ lineage. Do not replace those directed relationships with a single global
 Separate branches may be governed by the same immutable entry Committal; that
 shared governance does not imply a Supersession edge between their expressive
 Propositions. Conversely, a multi-input result may have foreign causal parents
-without changing its creating Cycle's governing Committal.
+while keeping the governing Committal of its producing Phase.
 
 Participant authorship does not define any of these relationships. Different
 Participants may enter Cycles at the same governing Committal and lawfully
@@ -178,7 +178,7 @@ author.
 ### Commit Region ownership
 
 A persisted Committal owns itself. An Expressive Proposition belongs to the
-immutable entry Committal of its creating Cycle. Supersession records causal
+immutable governing Committal of its producing Phase. Supersession records causal
 provenance and may be multi-parent without making Region ownership ambiguous.
 
 Region-level semantics derive from the governing Committal where the model
@@ -191,7 +191,7 @@ provenance governs.
 
 Proposition membership follows its creating structure:
 
-`Proposition → Phase → Cycle → Context Horizon → Domain`
+`Proposition → producing Phase → operating context → Context Horizon → Domain`
 
 A Horizon opener identifies a boundary; it does not duplicate that boundary
 Proposition into the child's measurement history or rewrite its creating
@@ -200,7 +200,9 @@ ownership.
 ### Participant path provenance
 
 Where a multi-input Write creates several causal parents, participant recovery
-uses the recorded arrival path where required. An unused parent cannot become a
+ordinarily uses the recorded arrival path. At an exact Reconciliation crossover,
+the completed Mediate Gate records the receiving operand. The chosen child's
+operating Region supplies the eligible recovery hierarchy from Bias onward. An unused parent cannot become a
 shortcut merely because it is also an ancestor of the result.
 
 ## 6. Local Change Does Not Rewrite History
@@ -467,8 +469,8 @@ new Core Invariant.
 | --- | --- | --- |
 | Support/Refute label Attestations rather than Propositions or measurement axes. | 1, 3, 7, 9 | [Attestation polarity](attestation-polarity.md) |
 | Zero-valued hysteretic observables retain their established direction. | 4, 7 | [Attestation polarity](attestation-polarity.md); [Closure hysteresis](closure-hysteresis.md) |
-| Commit Region ownership comes from immutable Cycle entry and the governing Committal. | 5 | [Commit Region ownership](commit-region-ownership.md) |
-| Context Horizon membership comes from creating Cycle ownership and does not create causal movement. | 5, 10 | [Causal Context Horizons](causal-context-horizons.md) |
+| Commit Region ownership comes from the producing Phase’s governing Committal. | 5 | [Commit Region ownership](commit-region-ownership.md) |
+| Context Horizon membership comes from the producing Phase’s operating context. | 5, 10 | [Causal Context Horizons](causal-context-horizons.md) |
 | Every observable is calculated from its own causal lineage; shared Horizon/Region membership never substitutes for lineage ancestry. | 7 | [Observable calculation](observables.md) |
 | Homologous populations compare independent measurements; population membership does not rewrite those measurements. | 7, 8 | [Structural homology](structural-homology.md) |
 | Receipts, participant memory and Reinforcement have distinct evidentiary/authority roles and do not enter measurements merely by existing. | 1, 7, 8, 9 | [Receipt context](receipt-region-context.md); [Reinforcement](reinforcement.md) |

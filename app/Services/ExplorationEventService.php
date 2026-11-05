@@ -33,7 +33,7 @@ final class ExplorationEventService
         $gate = $context->propositions->get($phase->gate_proposition_id);
         if ($phase->kind === PhaseKind::Constrain && ($gate === null
             || ! app(PhasePositionService::class)->acceptsGate($phase, $gate)
-            || ($context->seedIds()[$gate->id] ?? null) !== $phase->cycle->entry_committal_id)) {
+            || ($context->seedIds()[$gate->id] ?? null) !== $phase->governance()->entry_committal_id)) {
             return null;
         }
         $arrival = $phase->cycle->phases()->where('kind', $phase->kind->value - 1)->whereNotNull('completed_at')->first();

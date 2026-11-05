@@ -35,11 +35,16 @@ Three relationships must not be treated as interchangeable:
    ancestry selected for its measured head. A shared ancestor may appear in
    both selected lineages; a sibling does not enter merely through that shared
    ancestor. A genuine multi-parent Write may join causal branches.
-3. **Governing Cycle-entry basin:** a creating Cycle's immutable
-   `entry_committal_id` identifies the Committal that governs its operational
-   Region. Multiple Participants and separate causal branches can enter Cycles
+3. **Governing Cycle-entry basin:** the producing Phase identifies its operating Committal. After a
+   crossover this is the selected Reconciliation child's governor. Multiple Participants and separate causal branches can enter Cycles
    governed by the same Committal. This does not manufacture a Supersession
    between those branches or make the whole Horizon one basin.
+
+At crossover the destination's actual Cycle entries supply the Phase Profile
+coordinate and the Attested Proposition's beat clock. A new Bias birth may
+share its Mediate predecessor's coordinate. Two genuine Attestations may also
+share a coordinate. Both yield measured zero intervals. Missing references
+remain unavailable. Traverse records movement without adding a beat.
 
 **Selecting Proposition observations and counting Cycle-entry events are
 separate operations.** Where a calculation explicitly uses a represented-basin
@@ -254,7 +259,7 @@ Orientation uses effective Attestation state, hard-Supersession active positions
 Attestation Cadence instead counts every historical Attestation act targeting propositions in each compared DomainLineage, including replaced Attestations.
 
 The participation basins represented by a DomainLineage are the canonical
-`entry_committal_id` values of its propositions' creating Cycles, together with its represented Committals. Each counted Cycle must enter that compared Domain/Horizon through one of these explicit seeds. Count **all**
+governing Committals of its Propositions' producing Phases, together with its represented Committals. Each counted Cycle must enter that compared Domain/Horizon through one of these explicit seeds. Count **all**
 persisted Cycles entering those basins, including unfinished, Attestation-only,
 contribution-free and Rested Cycles. A Committal remaining in the Domain also represents its own basin immediately; a boundary's outgoing Cycles enter the child Domain and do not count in the parent's population.
 Origin additionally represents its actual parentless producing Cycle. Never count
@@ -360,7 +365,7 @@ The hierarchy and initial equal weights are:
 - Closure = 0.5 × Committed Cardinal Position + 0.5 × Committal Cadence.
 - Committed Cardinal Position = 0.5 × Committal Depth + 0.5 × Lateral Committal Position.
 
-The creating Cycle's `entry_committal_id` defines the direct committed ancestry.
+The producing Phase's governing Committal defines the direct committed ancestry.
 Supersession-parent unions, latest-Horizon Commits and abandoned descendants do not
 supply historical samples. Full ancestry is used; there is no decay, truncation or
 rolling window. Those choices are intentionally deferred until long-run empirical
@@ -377,7 +382,7 @@ opposite-Domain committed history exists, comparative Depth remains 0.
 
 ### Committed lateral geometry
 
-Use only Committals, connected through their creating Cycle entry Committals.
+Use only Committals, connected through the governing Committals of their producing Phases.
 Breadth-first rows expand parents left-to-right; committed siblings follow their
 immutable ledger sequence. Existing sibling positions occupy gaps. Expressive
 Domain morphology, Phase positions and Supersession placement are not reused.

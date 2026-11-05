@@ -58,7 +58,7 @@ final readonly class CausalWriteService
             // a local Write when the selected source is encountered elsewhere.
             $nodes = $context !== null ? $context->nodes($ids) : Proposition::whereKey($ids)->get();
             $seeds = $context !== null ? $context->seedIds() : app(CommitRegionService::class)->seedIdsFor($nodes, $nodes);
-            $ids = $nodes->filter(fn ($node) => ($seeds[$node->id] ?? null) === $phase->cycle->entry_committal_id)->pluck('id');
+            $ids = $nodes->filter(fn ($node) => ($seeds[$node->id] ?? null) === $phase->governance()->entry_committal_id)->pluck('id');
         }
         return $context !== null
             ? $this->positions->filter($context->nodes($ids)->filter(fn ($node) => $context->activeIds->has($node->id)), $phase, $position)
@@ -84,5 +84,12 @@ final readonly class CausalWriteService
             ->where('target.phase_id', $phase->id)->where('edge.phase_id', $phase->id)
             ->where('edge.type', 'reclassify')->pluck('target.id');
     }
-}
 
+    /** A fresh classification may close its own Region before Order is recorded. */
+    public function classifiedIn(Proposition $write, Phase $bias): bool
+    {
+        return $bias->kind === PhaseKind::Bias && $write->phase_id === $bias->id
+            && Supersession::where('phase_id', $bias->id)->where('target_proposition_id', $write->id)
+                ->where('type', 'reclassify')->exists();
+    }
+}

@@ -14,7 +14,7 @@ final class CausalContextService
 {
     public function assertGate(Proposition $gate, ContextHorizon $horizon): void
     {
-        $owner = $gate->phase()->firstOrFail()->cycle()->firstOrFail()->contextHorizon()->firstOrFail();
+        $owner = $gate->phase()->firstOrFail()->operatingCycle()->firstOrFail()->contextHorizon()->firstOrFail();
         if ($owner->substrate_id !== $horizon->substrate_id) {
             throw new DomainException('A Gate cannot cross Context Horizon substrates.');
         }
@@ -32,14 +32,14 @@ final class CausalContextService
     {
         $registers = array_map($horizon->domain->registerAt(...), RegisterPosition::cases());
         if (! in_array($register, $registers, true)) {
-            throw new DomainException('The register must belong to the creating Cycle Context Horizon Domain.');
+            throw new DomainException('The register must belong to the producing Phase’s operating Domain.');
         }
     }
 
     public function assertPhase(Phase $phase): ContextHorizon
     {
         // Query ownership afresh: a stale/injected Eloquent relation cannot select Domain.
-        $horizon = $phase->cycle()->firstOrFail()->contextHorizon()->firstOrFail();
+        $horizon = $phase->operatingCycle()->firstOrFail()->contextHorizon()->firstOrFail();
         if ($phase->write_register !== null) {
             $this->assertRegister($phase->write_register, $horizon);
         }

@@ -27,7 +27,7 @@ final readonly class PhaseProfileService
 
     private function buildProfile(Proposition $head, ?ParticipationContext $context = null): array
     {
-        $horizon = $head->phase->cycle->contextHorizon;
+        $horizon = $head->phase->governance()->contextHorizon;
         if ($head->ledgerEntry === null) {
             throw new DomainException('Phase Profile inspection requires a ledgered Proposition.');
         }
@@ -56,7 +56,7 @@ final readonly class PhaseProfileService
                 SQL, [$head->id]));
             $stored = $rows->whereNotNull('proposition_id')->keyBy('proposition_id');
             $nodes = Proposition::whereIn('id', $rows->pluck('selected_id'))->where('id', '!=', $head->id)
-                ->with(['phase.cycle', 'ledgerEntry'])->get()->keyBy('id');
+                ->with(['phase.cycle', 'phase.crossoverCycle', 'ledgerEntry'])->get()->keyBy('id');
             $nodes->put($head->id, $head);
         } else {
             $nodes = collect();
@@ -74,7 +74,7 @@ final readonly class PhaseProfileService
                 $stored->put($node->id, $row);
                 $node = $row->temporal_predecessor_proposition_id === null ? null
                     : ($context?->propositions->get($row->temporal_predecessor_proposition_id)
-                        ?? Proposition::with(['phase.cycle', 'ledgerEntry'])->findOrFail($row->temporal_predecessor_proposition_id));
+                        ?? Proposition::with(['phase.cycle', 'phase.crossoverCycle', 'ledgerEntry'])->findOrFail($row->temporal_predecessor_proposition_id));
             }
         }
         $sums = $counts = array_fill(0, 7, 0);
@@ -96,7 +96,7 @@ final readonly class PhaseProfileService
             $observations[] = [
                 'proposition_id' => $node->id, 'phase' => $slot + 1,
                 'kind' => $node->tier === 'committal' ? 'commit_boundary' : 'expressive_birth',
-                'clock_entry_committal_id' => $node->phase->cycle->entry_committal_id,
+                'clock_entry_committal_id' => $node->phase->governance()->entry_committal_id,
                 'birth_cycle_coordinate' => $row?->birth_cycle_coordinate === null ? null : (int) $row->birth_cycle_coordinate,
                 'temporal_predecessor_proposition_id' => $row?->temporal_predecessor_proposition_id,
                 'preceding_phase_proposition_id' => $row?->preceding_phase_proposition_id,
@@ -115,7 +115,7 @@ final readonly class PhaseProfileService
     public function calculate(Proposition $head, ?ParticipationContext $context = null): float
     {
         $current = $this->profile($head, $context);
-        $boundaryId = $head->phase->cycle->contextHorizon->opened_by_proposition_id;
+        $boundaryId = $head->phase->governance()->contextHorizon->opened_by_proposition_id;
         $boundary = $boundaryId === null ? null : ($context?->propositions->get($boundaryId)
             ?? Proposition::findOrFail($boundaryId));
         $reference = $boundary === null ? null : $this->profile($boundary, $context);
@@ -127,7 +127,7 @@ final readonly class PhaseProfileService
     public function inspect(Proposition $head): array
     {
         $current = $this->profile($head);
-        $horizon = $head->phase->cycle->contextHorizon;
+        $horizon = $head->phase->governance()->contextHorizon;
         // The completed immediately preceding Domain ends at this opening boundary,
         // not at whichever Proposition was most recently created in its container.
         $boundary = $horizon->opened_by_proposition_id === null ? null : Proposition::findOrFail($horizon->opened_by_proposition_id);
@@ -147,7 +147,7 @@ final readonly class PhaseProfileService
         if ($head->tier !== 'expressive' || $head->phase->kind !== PhaseKind::Bias) {
             return null;
         }
-        $cycle = $head->phase->cycle;
+        $cycle = $head->phase->governance();
         $birth = DB::table('phase_profile_observations')->where('proposition_id', $head->id)->first();
         $cycles = DB::table('cycles')->where('entry_committal_id', $cycle->entry_committal_id)
             ->where('context_horizon_id', $cycle->context_horizon_id);

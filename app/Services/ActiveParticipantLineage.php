@@ -92,11 +92,11 @@ final readonly class ActiveParticipantLineage
             }
             $parent = $context !== null ? $context->propositions->get($edge->source_proposition_id)
                 : Proposition::find($edge->source_proposition_id);
-            if ($bridges !== null && $parent !== null && $node->phase->cycle->entry_committal_id !== $parent->phase->cycle->entry_committal_id
+            if ($bridges !== null && $parent !== null && $node->phase->governance()->entry_committal_id !== $parent->phase->governance()->entry_committal_id
                 && app(RecordedBiasSourceService::class)->recordedSourceFor($node, $edges, $context)?->id === $parent->id) {
-                // Accounting stays at the creating Cycle entry. A recorded unary
+                // Accounting stays at the producing Phase's governor. A recorded unary
                 // Bias transition follows its actual selected source's provenance.
-                $bridges->push([$node->phase->cycle->entry_committal_id, $parent->phase->cycle->entry_committal_id]);
+                $bridges->push([$node->phase->governance()->entry_committal_id, $parent->phase->governance()->entry_committal_id]);
             }
             $node = $parent;
         }

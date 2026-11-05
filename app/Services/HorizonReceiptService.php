@@ -21,7 +21,7 @@ final class HorizonReceiptService
     {
         $context ??= new ParticipationContext($phase);
 
-        return $context->remember('available-region-receipts', function () use ($phase, $context): Collection {
+        return $context->remember('available-region-receipts:'.$phase->governance()->entry_committal_id, function () use ($phase, $context): Collection {
             $regions = app(ReceiptRegionService::class);
             $seed = $regions->current($phase, $context);
             if ($seed === null) {
@@ -41,7 +41,7 @@ final class HorizonReceiptService
     {
         $context ??= new ParticipationContext($phase);
 
-        return $context->remember('accessible-region-receipts', fn () => $this->ordinaryQuery($phase, $context)
+        return $context->remember('accessible-region-receipts:'.$phase->governance()->entry_committal_id, fn () => $this->ordinaryQuery($phase, $context)
             ->with(['evidenceExecution', 'consumption', 'phase'])->orderBy('created_at')->orderBy('id')->get());
     }
 
@@ -52,7 +52,7 @@ final class HorizonReceiptService
         $subjects = $seed === null ? [] : array_keys(array_filter($regions->seeds($context), fn ($id) => $id === $seed));
 
         return Receipt::whereNotIn('type', Receipt::SPECIAL_RECEIPT_TYPES)
-            ->where('context_horizon_id', $phase->cycle->context_horizon_id)
+            ->where('context_horizon_id', $phase->governance()->context_horizon_id)
             ->whereHas('evidenceExecution', fn ($execution) => $execution->recordedObservation()->whereIn('proposition_id', $subjects));
     }
 
@@ -66,12 +66,12 @@ final class HorizonReceiptService
     public function tragedyWarrant(Phase $phase, ?ParticipationContext $context = null): ?Receipt
     {
         $context ??= new ParticipationContext($phase);
-        if ($phase->cycle->entry_committal_id === null) {
+        if ($phase->governance()->entry_committal_id === null) {
             return null;
         }
         $id = $context->remember('bias-tragedy-warrant:'.$phase->id, fn () => DB::table('tragedies')
-            ->where('governing_committal_id', $phase->cycle->entry_committal_id)
-            ->where('context_horizon_id', $phase->cycle->context_horizon_id)
+            ->where('governing_committal_id', $phase->governance()->entry_committal_id)
+            ->where('context_horizon_id', $phase->governance()->context_horizon_id)
             ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('commit_region_exhaustions as exhausted')
                 ->whereColumn('exhausted.tragedy_id', 'tragedies.id'))
             ->value('receipt_id'));
@@ -85,7 +85,7 @@ final class HorizonReceiptService
         return DB::table('evidence_executions as execution')
             ->join('receipts as receipt', 'receipt.evidence_execution_id', '=', 'execution.id')
             ->where('execution.type', 'instrument')->whereNotIn('receipt.type', Receipt::SPECIAL_RECEIPT_TYPES)->where('execution.status', 'completed')
-            ->where('receipt.context_horizon_id', $phase->cycle->context_horizon_id)
+            ->where('receipt.context_horizon_id', $phase->governance()->context_horizon_id)
             ->whereIn('execution.proposition_id', $ids)->distinct()->pluck('execution.proposition_id');
     }
 
@@ -108,7 +108,7 @@ final class HorizonReceiptService
                 throw new DomainException('Bias requires an ordinary own-Region Receipt for local/mediated sources, or its exact unresolved Tragedy Receipt for homologous escape.');
             }
         } elseif (! $this->ordinaryAvailable($phase, $context)->contains('id', $receipt->id)
-            || $source->phase->cycle->context_horizon_id !== $receipt->context_horizon_id) {
+            || $source->phase->governance()->context_horizon_id !== $receipt->context_horizon_id) {
             throw new DomainException('Receipt attachment requires an authorized source in this Horizon.');
         }
         if ($target->phase_id !== $phase->id) {

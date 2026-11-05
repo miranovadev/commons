@@ -13,7 +13,7 @@ use App\Models\Tragedy;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-/** Direct expressive zero-Charge encounter, scoped to immutable creating-Cycle ownership. */
+/** Direct expressive zero-Charge encounter, scoped to immutable producing-Phase ownership. */
 final class TragedyService
 {
     /** Caller owns the substrate contribution lock. Unique governing-Committal and Receipt keys back it. */
@@ -40,7 +40,7 @@ final class TragedyService
             return null;
         }
         $phase = $proposition->phase;
-        $horizon = ContextHorizon::whereKey($phase->cycle->context_horizon_id)->lockForUpdate()->firstOrFail();
+        $horizon = ContextHorizon::whereKey($phase->governance()->context_horizon_id)->lockForUpdate()->firstOrFail();
         $seed = app(CommitRegionService::class)->seedFor($proposition)
             ?? throw new \DomainException('Tragedy requires an unambiguous governing Committal.');
         $participant = $encounterPhase->cycle->participant;

@@ -23,7 +23,7 @@ final class BiasReceiptAuthorityService
         }
 
         // Another expressive path in this same basin does not cross a Commit boundary.
-        return ($context->seedIds()[$source->id] ?? null) === $phase->cycle->entry_committal_id
+        return ($context->seedIds()[$source->id] ?? null) === $phase->governance()->entry_committal_id
             ? 'ordinary' : 'tragedy';
     }
 

@@ -21,7 +21,7 @@ final readonly class PotentialChargeService
     public function hasRemainingInHorizon(Phase $phase): bool
     {
         $this->projection->assertCurrent($phase->cycle->participant->substrate_id);
-        $local = $this->projection->region($phase->cycle->context_horizon_id)['local'];
+        $local = $this->projection->region($phase->governance()->context_horizon_id)['local'];
         foreach (app(ExhaustedContinuationService::class)->ids($phase)->keys() as $id) {
             if (isset($local['nodes'][$id])) {
                 $local['nodes'][$id]['active'] = false;
@@ -44,7 +44,7 @@ final readonly class PotentialChargeService
                 return true; // Ambiguous membership supplies no local exhaustion proof.
             }
             $this->projection->assertCurrent($phase->cycle->participant->substrate_id);
-            $local = $this->projection->region($phase->cycle->context_horizon_id)['local'];
+            $local = $this->projection->region($phase->governance()->context_horizon_id)['local'];
             foreach (app(ExhaustedContinuationService::class)->ids($phase, $context)->keys() as $id) {
                 if (isset($local['nodes'][$id])) {
                     $local['nodes'][$id]['active'] = false;

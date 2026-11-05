@@ -69,15 +69,15 @@ final readonly class HomologousPositionService
     /** Existing Writes at the next committed depth; no synthetic proposition is persisted. */
     public function committedWritesFor(Phase $phase): Collection
     {
-        if ($phase->kind !== PhaseKind::Order || $phase->cycle->entry_committal_id === null) {
+        if ($phase->kind !== PhaseKind::Order || $phase->governance()->entry_committal_id === null) {
             return collect();
         }
-        $entry = Proposition::find($phase->cycle->entry_committal_id);
+        $entry = Proposition::find($phase->governance()->entry_committal_id);
         if ($entry === null) {
             return collect();
         }
-        $cycle = $phase->cycle;
-        $substrate = $cycle->participant->substrate_id;
+        $cycle = $phase->governance();
+        $substrate = $phase->cycle->participant->substrate_id;
         $domain = $cycle->contextHorizon->domain;
         $register = $domain->registerFor(PhaseKind::Order);
         if ($phase->write_register !== $register || $cycle->contextHorizon->substrate_id !== $substrate) {
@@ -85,14 +85,14 @@ final readonly class HomologousPositionService
         }
         $candidates = Proposition::where('tier', 'committal')->where('register', $register)
             ->whereHas('phase', fn ($q) => $q->where('kind', PhaseKind::Order->value)->where('write_register', $register)
-                ->whereHas('cycle', fn ($q) => $q->whereNotNull('entry_committal_id')
+                ->whereHas('operatingCycle', fn ($q) => $q->whereNotNull('entry_committal_id')
                     ->whereHas('participant', fn ($q) => $q->where('substrate_id', $substrate))
                     ->whereHas('contextHorizon', fn ($q) => $q->where('domain', $domain->value))))
-            ->with('phase.cycle.contextHorizon', 'phase.cycle.participant', 'commitmentSnapshot')->orderBy('id')->get();
+            ->with('phase.crossoverCycle.contextHorizon', 'phase.cycle.contextHorizon', 'phase.cycle.participant', 'commitmentSnapshot')->orderBy('id')->get();
         if ($candidates->isEmpty()) {
             return collect();
         }
-        $entries = Proposition::whereKey($candidates->map(fn ($node) => $node->phase->cycle->entry_committal_id)->unique())->get();
+        $entries = Proposition::whereKey($candidates->map(fn ($node) => $node->phase->governance()->entry_committal_id)->unique())->get();
         // The candidate's creating Domain matters; its entry may have opened that Domain.
         $coordinates = $this->committedCoordinates($entry, $entries, sameCreatingDomain: false);
         $records = $this->lineage->recordsForIds($substrate, $candidates->pluck('id')->push($entry->id));
@@ -106,7 +106,7 @@ final readonly class HomologousPositionService
         return $candidates->filter(function ($node) use ($coordinates, $records, $substrate, $history): bool {
             $candidateHistory = $this->distances($node->id, $records, $substrate);
 
-            return isset($coordinates[$node->phase->cycle->entry_committal_id]) && $candidateHistory !== null
+            return isset($coordinates[$node->phase->governance()->entry_committal_id]) && $candidateHistory !== null
                 && count($candidateHistory) === count($history) + 1;
         })->values();
     }
@@ -156,16 +156,16 @@ final readonly class HomologousPositionService
             return collect();
         }
         $nodes = (new Proposition)->newCollection($candidates->concat([$anchor])->unique('id')->all());
-        $nodes->loadMissing('phase.cycle.contextHorizon', 'phase.cycle.participant');
+        $nodes->loadMissing('phase.crossoverCycle.contextHorizon', 'phase.cycle.contextHorizon', 'phase.cycle.participant');
         if (! $this->canonical($anchor)) {
             return collect();
         }
-        $cycle = $anchor->phase->cycle;
+        $cycle = $anchor->phase->governance();
         $eligible = $nodes->filter(fn ($node) => $this->canonical($node)
             && $node->tier === $anchor->tier
             && $node->phase->kind === $anchor->phase->kind
-            && $node->phase->cycle->participant->substrate_id === $cycle->participant->substrate_id
-            && $node->phase->cycle->contextHorizon->domain === $cycle->contextHorizon->domain);
+            && $node->phase->cycle->participant->substrate_id === $anchor->phase->cycle->participant->substrate_id
+            && $node->phase->governance()->contextHorizon->domain === $cycle->contextHorizon->domain);
         $owners = $this->regions->seedIdsFor($eligible, $eligible);
         $ownerId = $owners[$anchor->id] ?? null;
         if ($ownerId === null) {
@@ -212,7 +212,7 @@ final readonly class HomologousPositionService
     public function populationKeys(Collection $positions): array
     {
         $positions = (new Proposition)->newCollection($positions->all());
-        $positions->loadMissing('phase.cycle.contextHorizon', 'phase.cycle.participant');
+        $positions->loadMissing('phase.crossoverCycle.contextHorizon', 'phase.cycle.contextHorizon', 'phase.cycle.participant');
         $eligible = $positions->filter(fn ($position) => $this->canonical($position));
         if ($eligible->isEmpty()) {
             return [];
@@ -243,7 +243,7 @@ final readonly class HomologousPositionService
     private function keyForCoordinate(Proposition $position, string $substrate, array $history, ?string $domain = null): string
     {
         return hash('sha256', implode(':', [$substrate, array_key_last($history), count($history),
-            $domain ?? $position->phase->cycle->contextHorizon->domain->value,
+            $domain ?? $position->phase->governance()->contextHorizon->domain->value,
             $position->phase->kind->value, $position->tier]));
     }
 
@@ -253,15 +253,15 @@ final readonly class HomologousPositionService
         if (! $this->canonical($anchor) || $anchor->phase->kind !== $position) {
             return collect();
         }
-        $cycle = $anchor->phase->cycle;
+        $cycle = $anchor->phase->governance();
         $domain = $cycle->contextHorizon->domain;
         $register = $domain->registerFor($position);
         $candidates = Proposition::where('tier', $anchor->tier)->where('register', $register)
-            ->when($foreignRegionsOnly, fn ($q) => $q->whereHas('phase.cycle', fn ($q) => $q
+            ->when($foreignRegionsOnly, fn ($q) => $q->whereHas('phase.operatingCycle', fn ($q) => $q
                 ->whereNotNull('entry_committal_id')->where('entry_committal_id', '!=', $cycle->entry_committal_id)))
             ->whereHas('phase', fn ($q) => $q->where('kind', $position->value)->where('write_register', $register)
-                ->whereHas('cycle', fn ($q) => $q
-                    ->whereHas('participant', fn ($q) => $q->where('substrate_id', $cycle->participant->substrate_id))
+                ->whereHas('operatingCycle', fn ($q) => $q
+                    ->whereHas('participant', fn ($q) => $q->where('substrate_id', $anchor->phase->cycle->participant->substrate_id))
                     ->whereHas('contextHorizon', fn ($q) => $q->where('domain', $domain->value))))
             ->when(! $includeAnchor, fn ($q) => $q->where('id', '!=', $anchor->id))->orderBy('id')->get();
 
@@ -274,9 +274,9 @@ final readonly class HomologousPositionService
             return false;
         }
         $phase = $node->phase;
-        $cycle = $phase?->cycle;
-        if ($cycle?->contextHorizon === null || $cycle->participant === null
-            || $cycle->contextHorizon->substrate_id !== $cycle->participant->substrate_id
+        $cycle = $phase?->governance();
+        if ($cycle?->contextHorizon === null || $phase->cycle?->participant === null
+            || $cycle->contextHorizon->substrate_id !== $phase->cycle->participant->substrate_id
             || ($node->tier === 'committal' && $phase->kind !== PhaseKind::Order)) {
             return false;
         }

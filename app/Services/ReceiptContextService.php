@@ -33,7 +33,7 @@ final readonly class ReceiptContextService
     {
         $context ??= new ParticipationContext($phase);
 
-        return $context->remember('receipt-context', function () use ($phase, $context): Collection {
+        return $context->remember('receipt-context:'.$phase->id, function () use ($phase, $context): Collection {
             $gate = $context->propositions->get($phase->gate_proposition_id);
             $foreignOperands = match ($phase->kind) {
                 PhaseKind::Mediate => app(HomologousMediationService::class)->foreignGateIdsFor($phase, $context),
@@ -44,7 +44,8 @@ final readonly class ReceiptContextService
             $exposed = $gate === null ? collect() : $this->lineage->endingAt($gate, $context)->concat([$gate])
                 ->concat($this->mediation->visibleReadsFor($phase, $context))
                 ->concat($this->options->gateOptionsFor($phase, $context)->whereNotIn('id', $foreignOperands))
-                ->concat($this->options->writeOptionsFor($phase, $context))
+                ->concat($this->options->writeOptionsFor($phase, $context)->whereNotIn('id',
+                    app(ReconciliationCrossoverService::class)->children($phase, $context)->pluck('id')))
                 ->concat($this->options->instrumentOptionsFor($phase, $context))
                 ->unique('id')->filter(fn ($node) => $context->activeIds->has($node->id));
             $present = $exposed->pluck('id');
@@ -64,7 +65,7 @@ final readonly class ReceiptContextService
                         fn ($q) => $q->where('substrate_id', $context->substrate->id))->get());
             $receipts = $available
                 ->concat($memories)
-                ->concat($context->receipts->where('context_horizon_id', $phase->cycle->context_horizon_id)
+                ->concat($context->receipts->where('context_horizon_id', $phase->governance()->context_horizon_id)
                     ->whereIn('id', $context->receiptContexts->where('participant_id', $phase->cycle->participant_id)->whereNull('cleared_at')->pluck('receipt_id')))
                 ->concat($exposed->flatMap(fn ($node) => $this->state->receipts($node, $context)))->unique('id');
             (new \Illuminate\Database\Eloquent\Collection($receipts->all()))->loadMissing(['consumption', 'phase', 'evidenceExecution']);
@@ -163,7 +164,7 @@ final readonly class ReceiptContextService
     {
         $context ??= new ParticipationContext($phase);
 
-        return $context->remember('gate-receipt-options', function () use ($phase, $context): Collection {
+        return $context->remember('gate-receipt-options:'.$phase->id, function () use ($phase, $context): Collection {
             $gate = $context->propositions->get($phase->gate_proposition_id);
             if ($gate === null) {
                 return collect();
@@ -181,13 +182,14 @@ final readonly class ReceiptContextService
     {
         $context ??= new ParticipationContext($phase);
 
-        return $context->remember('receipt-load-options', function () use ($phase, $context) {
+        return $context->remember('receipt-load-options:'.$phase->id, function () use ($phase, $context) {
             $parentIds = $context->parents->get($phase->gate_proposition_id, collect())->pluck('source_proposition_id');
             $nodes = collect([$context->propositions->get($phase->gate_proposition_id)])->filter()
                 ->concat($context->propositions->only($parentIds->all())->values())
                 ->concat($this->mediation->visibleReadsFor($phase, $context))
                 ->concat($this->options->gateOptionsFor($phase, $context))
-                ->concat($this->options->writeOptionsFor($phase, $context))
+                ->concat($this->options->writeOptionsFor($phase, $context)->whereNotIn('id',
+                    app(ReconciliationCrossoverService::class)->children($phase, $context)->pluck('id')))
                 ->concat($this->options->traversalOptionsFor($phase, $context))
                 ->unique('id');
             $references = $nodes->flatMap(fn ($node) => $this->state->evidenceReceipts($node, $context))
