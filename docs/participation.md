@@ -371,6 +371,22 @@ governor. The Phase’s `crossover` field identifies the actual operand and chil
 plus the operating Committal and Horizon. The original Cycle retains its B entry and Horizon. A later successful
 recovery creates its own entry.
 
+## Crossing at Bias
+
+If B Reclassifies an eligible foreign Mediate Proposition A with a B Receipt,
+the authored Bias child Y belongs to B. Y has one parent, A. At a later Bias
+Gate positioned at that exact A, the recorded Reclassification can offer Y as
+a Write. Discovery verifies the child and unary Supersession in the substrate
+ledger, the source/register classification record and both producing positions.
+Homologous recognition alone only offers sources for Reclassification.
+
+An Attestation on Y or a Traverse with an effective prior-Cycle judgment
+advances directly to Order at Y in the same Cycle. Order uses B’s registers,
+Committal hierarchy and Horizon. The Phase reports A → Y as its arrival even
+when this Cycle crossed earlier at Mediate. Personal Exploration, terminal
+exclusions and normal recovery eligibility still apply. Y keeps its birth
+observation. A subsequent vote uses B’s clock without adding a B Cycle entry.
+
 ## Mediate-created incoming Bias
 
 A completed Reconcile creates a directed incoming relationship from its exact
@@ -521,15 +537,13 @@ advances to that new classification. `CausalWriteService` recognizes this exact
 Phase's recorded result without inventing a second edge from its old Gate.
 No generic foreign Read, Traverse or Receipt catalogue is granted.
 
-Existing causal Write continuations of the current Gate offer their permitted
-Attestation actions and, after earlier-Cycle personal
-Attestation, Traverse to Order. Mediated and homologous additional Gates are Reclassify sources only;
-their existing Bias-produced Writes do not become this Participant's Traverse
-options. A foreign-source classification owned by another Cycle-entry Region
-cannot be adopted as a local Write merely through its Supersession edge. Historical material on the
-Participant's own lineage remains visible under the existing history rules.
-The same restriction applies to frozen successful classifications. No edge
-means no movement.
+Existing causal Writes of the current Gate offer Attestation and, after
+qualifying earlier-Cycle personal judgment, Traverse to Order. Additional
+mediated or homologous Gates supply Reclassification candidates only. To
+cross into a foreign classification the Participant must occupy its exact
+recorded source at Bias. Its child retains the producing Region and the
+ordinary mutability, Exploration and terminal checks govern the crossing.
+Historical material on the Participant's own lineage remains visible.
 
 ## Order: local Commit and additional homologous Committal Traverse
 

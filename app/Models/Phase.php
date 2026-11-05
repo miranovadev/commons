@@ -4,8 +4,8 @@ namespace App\Models;
 
 use App\Enums\PhaseKind;
 use App\Services\CausalContextService;
+use App\Services\CausalCrossoverService;
 use App\Services\FieldMutationService;
-use App\Services\ReconciliationCrossoverService;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,8 +29,8 @@ class Phase extends Model
             if ($phase->exists && $phase->isDirty('crossover_cycle_id')) {
                 throw new \DomainException('A Phase cannot change its crossover context.');
             }
-            if ($phase->crossover_cycle_id !== null && (! $phase->exists || $phase->isDirty(['kind', 'gate_proposition_id']))) {
-                app(ReconciliationCrossoverService::class)->assertArrival($phase);
+            if ($phase->crossover_cycle_id !== null && (! $phase->exists || $phase->isDirty(['kind', 'gate_proposition_id', 'write_register']))) {
+                app(CausalCrossoverService::class)->assertArrival($phase);
             }
             if ($phase->exists && $phase->isDirty('cycle_id')) {
                 throw new \DomainException('A Phase cannot change its creating Cycle.');

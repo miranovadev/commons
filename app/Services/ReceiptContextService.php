@@ -45,7 +45,7 @@ final readonly class ReceiptContextService
                 ->concat($this->mediation->visibleReadsFor($phase, $context))
                 ->concat($this->options->gateOptionsFor($phase, $context)->whereNotIn('id', $foreignOperands))
                 ->concat($this->options->writeOptionsFor($phase, $context)->whereNotIn('id',
-                    app(ReconciliationCrossoverService::class)->children($phase, $context)->pluck('id')))
+                    app(CausalCrossoverService::class)->children($phase, $context)->pluck('id')))
                 ->concat($this->options->instrumentOptionsFor($phase, $context))
                 ->unique('id')->filter(fn ($node) => $context->activeIds->has($node->id));
             $present = $exposed->pluck('id');
@@ -189,7 +189,7 @@ final readonly class ReceiptContextService
                 ->concat($this->mediation->visibleReadsFor($phase, $context))
                 ->concat($this->options->gateOptionsFor($phase, $context))
                 ->concat($this->options->writeOptionsFor($phase, $context)->whereNotIn('id',
-                    app(ReconciliationCrossoverService::class)->children($phase, $context)->pluck('id')))
+                    app(CausalCrossoverService::class)->children($phase, $context)->pluck('id')))
                 ->concat($this->options->traversalOptionsFor($phase, $context))
                 ->unique('id');
             $references = $nodes->flatMap(fn ($node) => $this->state->evidenceReceipts($node, $context))
