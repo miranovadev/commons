@@ -88,7 +88,7 @@ final class ExhaustionService
             $exit = DB::table('supersessions as edge')
                 ->join('propositions as source', 'source.id', '=', 'edge.source_proposition_id')
                 ->join('phases as phase', 'phase.id', '=', 'source.phase_id')
-                ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
+                ->join('cycles as cycle', 'cycle.id', '=', 'phase.operating_cycle_id')
                 ->where('source.tier', 'expressive')->where('cycle.entry_committal_id', $seed->id)
                 ->where('edge.type', 'commit')->where('edge.target_proposition_id', $descendant)->exists();
             if (! $exit || ! DB::table('commit_region_exhaustions')->where('governing_committal_id', $descendant)->exists()) {
@@ -152,7 +152,7 @@ final class ExhaustionService
             $parents = DB::table('supersessions as edge')
                 ->join('propositions as source', 'source.id', '=', 'edge.source_proposition_id')
                 ->join('phases as phase', 'phase.id', '=', 'source.phase_id')
-                ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
+                ->join('cycles as cycle', 'cycle.id', '=', 'phase.operating_cycle_id')
                 ->where('edge.type', 'commit')->where('edge.target_proposition_id', $seed->id)
                 ->where('source.tier', 'expressive')->distinct()->pluck('cycle.entry_committal_id');
             foreach (Proposition::whereKey($parents)->get() as $parent) {

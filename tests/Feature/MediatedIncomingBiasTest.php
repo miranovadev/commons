@@ -34,6 +34,7 @@ use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\CreatesHomologousPositions;
 use Tests\Fixtures\ExplorationHistory;
+use Tests\Fixtures\HistoricalReconciliation;
 use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
@@ -93,7 +94,7 @@ class MediatedIncomingBiasTest extends TestCase
         $this->actor = (new Participant)->forceFill(['substrate_id' => $this->mediator->substrate_id,
             'callsign' => 'incoming', 'current_proposition_id' => $this->gateB->id]);
         $this->actor->save();
-        $this->bias = $this->progressToBias($this->b, $this->readB, $this->gateB, $localB);
+        $this->bias = $this->progressToBias($this->b, $this->readB, $this->gateB, $localB, historical: true);
         $this->bResult = $this->bias->gate;
         // Keep A outside the independent homologous population's dominant sign.
         app(PropositionMeasurementService::class)->project($this->result, .8, .1, .8,
@@ -180,8 +181,8 @@ class MediatedIncomingBiasTest extends TestCase
 
     public function test_personal_judgment_in_the_owning_region_supports_later_local_continuation(): void
     {
-        // Give the same reader two independently governed Cycles. The incoming
-        // edge never assigns their entry Region or permits a foreign judgment.
+        // On the second visit this reader can cross directly into A, or choose
+        // the historical local child and use the established Bias authority in B.
         $this->actor = (new Participant)->forceFill(['substrate_id' => $this->mediator->substrate_id,
             'callsign' => 'returning-reader']);
         $this->actor->save();
@@ -199,10 +200,12 @@ class MediatedIncomingBiasTest extends TestCase
         $this->publishPotentialFixture($this->actor);
         $plan = app(InputPlanService::class)->forPhase($this->actor, $local);
         $this->assertNotContains($this->gateA->id, array_column($plan['gate_options'], 'id'));
-        $this->assertNotContains($this->result->id, array_column($plan['attestation_options'], 'id'));
-        $this->assertNotContains($this->result->id, array_column($plan['traversal_options'], 'id'));
+        $this->assertContains($this->result->id, array_column($plan['attestation_options'], 'id'));
+        $this->assertContains($this->result->id, array_column($plan['traversal_options'], 'id'));
         $participation->contribute($this->actor, $local->id, [...$vote, 'proposition_id' => $this->bResult->id]);
         $bias = $local->cycle->phases()->where('kind', PhaseKind::Bias)->sole();
+        $this->assertNull($bias->crossover_cycle_id);
+        $this->assertSame($this->b->id, $bias->governance()->entry_committal_id);
         $this->assertContains($this->result->id, app(MediatedIncomingBiasService::class)->forPhase($bias)->pluck('id'));
         $own = $this->loadedReceiptFixture($this->gateB);
         $this->publishPotentialFixture($this->actor);
@@ -261,7 +264,7 @@ class MediatedIncomingBiasTest extends TestCase
         $localResult = $fromA->gate;
         $fromA->forceFill(['completed_at' => now()])->save();
         $fromA->cycle->forceFill(['completed_at' => now()])->save();
-        $this->bias = $this->progressToBias($this->b, $this->readB, $bGate, $other);
+        $this->bias = $this->progressToBias($this->b, $this->readB, $bGate, $other, historical: true);
         $this->result = $localResult;
         $this->attestResult();
         $this->loadedReceiptFixture($bGate);
@@ -344,11 +347,17 @@ class MediatedIncomingBiasTest extends TestCase
         }
     }
 
-    private function progressToBias(Proposition $owner, Proposition $read, Proposition $gate, Proposition $other): Phase
+    private function progressToBias(Proposition $owner, Proposition $read, Proposition $gate, Proposition $other, bool $historical = false): Phase
     {
         $disperse = $this->phase($owner, $read, PhaseKind::Disperse);
         $mediate = app(PhaseProgressionService::class)->advance($disperse, $gate);
         $this->publishPotentialFixture($this->actor);
+        if ($historical) {
+            // The receiving Bias Gate predates operand exclusivity.
+            $child = HistoricalReconciliation::record($mediate, $gate, $other, 'The two local observations agree.');
+
+            return app(PhaseProgressionService::class)->advance($mediate, $child);
+        }
         app(ParticipationService::class)->contribute($this->actor, $mediate->id,
             ['action' => 'proposition.reconcile', 'other_proposition_id' => $other->id, 'statement' => 'The observations share a common cause.']);
 

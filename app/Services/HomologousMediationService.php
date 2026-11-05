@@ -28,7 +28,7 @@ final readonly class HomologousMediationService
      * Member qualification uses each Read's own Correspondence, never its Gate child.
      * Context hydration includes structural operands and their measurement ancestry.
      * Receipt availability remains independently qualified by the acting Region.
-     * Final action policy (including exhausted continuations and established pairs) remains
+     * Final action policy (including exhausted continuations and bound operands) remains
      * the responsibility of ReconciliationOptionService.
      *
      * @return array{reads: Collection, gates: Collection}
@@ -49,7 +49,7 @@ final readonly class HomologousMediationService
         $seeds = $context->seedIds();
 
         return $this->poolFor($phase, $context)['gates']
-            ->filter(fn ($gate) => ($seeds[$gate->id] ?? null) !== $phase->cycle->entry_committal_id)
+            ->filter(fn ($gate) => ($seeds[$gate->id] ?? null) !== $phase->governance()->entry_committal_id)
             ->pluck('id');
     }
 
@@ -67,7 +67,7 @@ final readonly class HomologousMediationService
             $anchor = $this->mediation->anchorFor($phase);
 
             return [$phase->id => $anchor !== null && $this->positions->matches($anchor, $phase, PhaseKind::Constrain)
-                && $this->regions->seedFor($anchor, $context)?->id === $phase->cycle->entry_committal_id ? $anchor : null];
+                && $this->regions->seedFor($anchor, $context)?->id === $phase->governance()->entry_committal_id ? $anchor : null];
         });
         $result = [];
         // All supplied probes share an actor's entry and Horizon. The canonical
@@ -98,7 +98,7 @@ final readonly class HomologousMediationService
             return $empty;
         }
         $owner = $this->regions->seedFor($anchor);
-        if ($owner === null || $owner->id !== $phase->cycle->entry_committal_id) {
+        if ($owner === null || $owner->id !== $phase->governance()->entry_committal_id) {
             return $empty;
         }
         $population = $this->populations->forPosition($anchor);
@@ -111,7 +111,7 @@ final readonly class HomologousMediationService
 
     private function discoverGates(Phase $phase, Collection $reads): Collection
     {
-        $domain = $phase->cycle->contextHorizon->domain;
+        $domain = $phase->governance()->contextHorizon->domain;
         $register = $domain->registerFor(PhaseKind::Disperse);
 
         return Proposition::query()->active()->where('tier', 'expressive')->where('register', $register)
@@ -161,7 +161,7 @@ final readonly class HomologousMediationService
 
                 return ($seeds[$gate->id] ?? null) !== null
                     && $seeds[$gate->id] === ($seeds[$read->id] ?? null)
-                    && $gate->phase->cycle->context_horizon_id === $read->phase->cycle->context_horizon_id;
+                    && $gate->phase->governance()->context_horizon_id === $read->phase->governance()->context_horizon_id;
             });
         })->sortBy('id')->values();
 

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\PhaseKind;
 use App\Models\EvidenceExecution;
 use App\Models\Phase;
+use App\Models\Proposition;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 
@@ -21,17 +22,27 @@ final class ContinuationOpportunityService
         foreach ($pools as $pool) {
             $additional = $additional->merge($pool['reads']->pluck('id'))->merge($pool['gates']->pluck('id'));
         }
+        $arrivals = $probes->whereIn('kind', [PhaseKind::Mediate, PhaseKind::Bias]);
+        foreach (app(CausalCrossoverService::class)->childrenFor($arrivals) as $phaseId => $children) {
+            $additional = $additional->merge($children->pluck('id'));
+            $pools['crossover:'.$phaseId] = $children;
+        }
+        $destinations = $probes->whereNotNull('crossover_cycle_id')
+            ->map(fn ($probe) => $probe->governance()->entry_committal_id)->unique();
+        if ($destinations->isNotEmpty()) {
+            $additional = $additional->merge(Proposition::active()->whereHas('phase.operatingCycle',
+                fn ($q) => $q->whereIn('entry_committal_id', $destinations))->pluck('id'));
+        }
         foreach ([PhaseKind::Bias->value => HomologousBiasService::class, PhaseKind::Order->value => HomologousOrderService::class] as $kind => $service) {
-            $group = $probes->filter(fn ($probe) => $probe->kind->value === $kind);
-            if ($group->isEmpty()) {
-                continue;
-            }
-            // Same entry, Domain and producing position have one canonical population.
-            $pool = app($service)->populationFor($group->first(), $context);
-            $additional = $additional->merge($pool->pluck('id'));
-            foreach ($group as $probe) {
-                $prefix = $probe->kind === PhaseKind::Bias ? 'homologous-bias-structure:' : 'homologous-order-structure:';
-                $pools[$prefix.$probe->id] = $pool;
+            $groups = $probes->filter(fn ($probe) => $probe->kind->value === $kind)
+                ->groupBy(fn ($probe) => $probe->governance()->entry_committal_id);
+            foreach ($groups as $group) {
+                $pool = app($service)->populationFor($group->first(), $context);
+                $additional = $additional->merge($pool->pluck('id'));
+                foreach ($group as $probe) {
+                    $prefix = $probe->kind === PhaseKind::Bias ? 'homologous-bias-structure:' : 'homologous-order-structure:';
+                    $pools[$prefix.$probe->id] = $pool;
+                }
             }
         }
         $bias = $probes->filter(fn ($probe) => $probe->kind === PhaseKind::Bias);

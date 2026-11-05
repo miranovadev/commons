@@ -32,7 +32,7 @@ Implementation and test results are recorded with the PR. Historical epoch-based
 
 The returning Mediate probe uses the Participant’s recorded Disperse arrival anchor, not the new Cycle’s absent Disperse Phase or another actor’s journey. Forward active-head discovery and historical arrival provenance serve different purposes.
 
-Comparison boundaries are batched by canonical position within the acting entry/Horizon. Directed incoming Bias relationships and used Reconcile pairs are queried in batches. Context-local terminal results are shared by Horizon; snapshot relations are populated from the existing batch. No persistent exploration cache or new observation counter is introduced.
+Comparison boundaries are batched by canonical position within the acting entry/Horizon. Directed incoming Bias relationships and bound Reconciliation operands are queried in batches. Context-local terminal results are shared by Horizon; snapshot relations are populated from the existing batch. No persistent exploration cache or new observation counter is introduced.
 
 See [validation and acceptance coverage](participant-relative-exploration-validation.md) for exact results and remaining limitations.
 

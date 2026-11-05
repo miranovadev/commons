@@ -125,6 +125,12 @@ export interface Phase {
   name?: string;
   number: number;
   write_register: RegisterName;
+  crossover?: {
+    operand_id: Identifier;
+    child_id: Identifier;
+    governing_committal_id: Identifier;
+    context_horizon_id: Identifier;
+  };
 }
 
 export interface ParticipantPosition {
@@ -560,7 +566,7 @@ export interface ParticipantContext {
   rest_available: boolean;
   commitment?: ParticipantPlan['commitment'];
   commitment_options?: ParticipantPlan['commitment_options'];
-  phase: Pick<Phase, 'id' | 'number' | 'kind' | 'write_register'>;
+  phase: Pick<Phase, 'id' | 'number' | 'kind' | 'write_register' | 'crossover'>;
   provenance_id: Identifier | null;
   gate_id: Identifier;
   lineage: Proposition[];

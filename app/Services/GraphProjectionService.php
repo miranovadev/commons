@@ -47,11 +47,11 @@ final readonly class GraphProjectionService
             ->join('tragedies as tragedy', 'tragedy.receipt_id', '=', 'receipt.id')
             ->join('propositions as target', 'target.id', '=', 'consumption.proposition_id')
             ->join('phases as phase', 'phase.id', '=', 'target.phase_id')
-            ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
+            ->join('cycles as cycle', 'cycle.id', '=', 'phase.operating_cycle_id')
             ->join('participants as actor', 'actor.id', '=', 'cycle.participant_id')
             ->join('propositions as source', 'source.id', '=', 'consumption.source_proposition_id')
             ->join('phases as producer', 'producer.id', '=', 'source.phase_id')
-            ->join('cycles as source_cycle', 'source_cycle.id', '=', 'producer.cycle_id')
+            ->join('cycles as source_cycle', 'source_cycle.id', '=', 'producer.operating_cycle_id')
             ->join('supersessions as edge', fn ($join) => $join
                 ->on('edge.target_proposition_id', '=', 'target.id')->on('edge.source_proposition_id', '=', 'source.id')
                 ->on('edge.phase_id', '=', 'phase.id')->where('edge.type', 'reclassify'))

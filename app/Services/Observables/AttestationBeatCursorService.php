@@ -62,7 +62,7 @@ final readonly class AttestationBeatCursorService
         if ($endingSequence <= (int) $from) {
             throw new DomainException('An Attestation beat must follow its branch cursor.');
         }
-        $entry = $proposition->phase->cycle->entry_committal_id;
+        $entry = $proposition->phase->governance()->entry_committal_id;
         if ($entry === null) {
             return 0;
         }
@@ -70,7 +70,7 @@ final readonly class AttestationBeatCursorService
         // A Cycle recorded after ledger sequence S is after beat S, but before
         // the next ledger event. Inclusive lower / exclusive upper bounds are intentional.
         return Cycle::where('entry_committal_id', $entry)
-            ->where('context_horizon_id', $proposition->phase->cycle->context_horizon_id)
+            ->where('context_horizon_id', $proposition->phase->governance()->context_horizon_id)
             ->where('chirality_entry_after_sequence', '>=', $from)
             ->where('chirality_entry_after_sequence', '<', $endingSequence)->count();
     }

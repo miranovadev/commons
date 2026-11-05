@@ -41,18 +41,18 @@ final readonly class ChiralityCalculator
     private function population(DomainLineage $lineage): array
     {
         $context = $lineage->context;
-        $entries = $lineage->propositions->map(fn ($p) => $p->phase->cycle->entry_committal_id)
+        $entries = $lineage->propositions->map(fn ($p) => $p->phase->governance()->entry_committal_id)
             ->merge($lineage->propositions->where('tier', 'committal')->pluck('id'))->filter()->unique();
         // Origin's actual producing Cycle is the sole null-entry population.
         // Never count all null-entry Cycles or infer participation from acts.
         $origins = $lineage->propositions->filter(fn ($p) => $p->tier === 'committal'
-            && $p->phase->cycle->entry_committal_id === null
+            && $p->phase->governance()->entry_committal_id === null
             && $lineage->horizon->parent_context_horizon_id === null)
             ->map(fn ($p) => $p->phase->cycle->id)->unique();
         $load = function () use ($entries, $context) {
             $ids = $context === null ? $entries : $context->propositions
-                ->map(fn ($p) => $p->phase->cycle->entry_committal_id)
-                ->push($context->phase->cycle->entry_committal_id)
+                ->map(fn ($p) => $p->phase->governance()->entry_committal_id)
+                ->push($context->phase->governance()->entry_committal_id)
                 ->merge($context->propositions->where('tier', 'committal')->pluck('id'))->filter()->unique()->merge($entries)->unique();
 
             return Cycle::whereIn('entry_committal_id', $ids)->selectRaw('entry_committal_id, context_horizon_id, count(*) as aggregate')

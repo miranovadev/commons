@@ -40,7 +40,7 @@ final class ReceiptEvidenceService
         }
         $execution = $receipt->evidenceExecution;
         if (! $receipt->supports(ReceiptCapability::Readable) || ! $receipt->observationComplete()
-            || ($receipt->context_horizon_id !== $context->phase->cycle->context_horizon_id
+            || ($receipt->context_horizon_id !== $context->phase->governance()->context_horizon_id
                 && ! $context->propositions->has($execution->proposition_id))) {
             return null;
         }

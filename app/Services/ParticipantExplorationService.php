@@ -20,14 +20,27 @@ final class ParticipantExplorationService
     public function exploredIds(Phase $phase, Collection $ids, ?ParticipationContext $context = null): Collection
     {
         $context ??= new ParticipationContext($phase);
+        $foreign = collect();
+        $crossings = app(CausalCrossoverService::class)->children($phase, $context)->whereIn('id', $ids);
+        foreach ($crossings->groupBy(fn ($node) => $node->phase->governance()->entry_committal_id) as $group) {
+            $arrival = $this->probe($group->first(), $phase, $context);
+            $arrival->crossover_cycle_id = $group->first()->phase->operating_cycle_id;
+            $arrival->setRelation('crossoverCycle', $group->first()->phase->governance());
+            $foreign = $foreign->union($this->exploredIds($arrival, $group->pluck('id'), $context));
+        }
+        $ids = $ids->diff($crossings->pluck('id'));
+        if ($ids->isEmpty()) {
+            return $foreign;
+        }
         $events = $context->remember('personal-exploration-events:'.$phase->cycle->participant_id, fn () => DB::table('exploration_events as event')
             ->join('phases as rest', 'rest.id', '=', 'event.phase_id')
             ->join('cycles as cycle', 'cycle.id', '=', 'rest.cycle_id')
+            ->join('cycles as scope', 'scope.id', '=', 'rest.operating_cycle_id')
             ->where('cycle.participant_id', $phase->cycle->participant_id)
             ->whereIn('event.proposition_id', $context->propositions->keys())
-            ->get(['event.*', 'cycle.entry_committal_id', 'cycle.context_horizon_id', 'rest.cycle_id as encounter_cycle_id'])->groupBy('proposition_id'));
+            ->get(['event.*', 'scope.entry_committal_id', 'scope.context_horizon_id', 'rest.cycle_id as encounter_cycle_id'])->groupBy('proposition_id'));
         if ($events->isEmpty()) {
-            return collect();
+            return $foreign;
         }
 
         $evaluation = $this->withProbeBoundaries($phase, $context, $events->keys());
@@ -39,19 +52,18 @@ final class ParticipantExplorationService
                 return $heads->isNotEmpty() && $heads->every(function ($head) use ($id, $phase, $context, $events, $evaluation): bool {
                     $encounters = $this->encounters($head, $phase, $context, $events);
 
-                    return $encounters->contains(fn ($event) => $event->context_horizon_id === $phase->cycle->context_horizon_id
-                        && $event->entry_committal_id === $phase->cycle->entry_committal_id
+                    return $encounters->contains(fn ($event) => $event->context_horizon_id === $phase->governance()->context_horizon_id
+                        && $event->entry_committal_id === $phase->governance()->entry_committal_id
                         && $this->participationComplete($head, $phase, $context, $id, $event->encounter_cycle_id))
                         && ! $this->canGenerateFromHead($head, $phase, $evaluation);
                 });
             });
-        })->flip();
+        })->flip()->union($foreign);
     }
 
     /**
      * Follow forward producing positions in this Cycle's Region/Horizon only.
-     * A foreign Reconcile operand grants no movement; local results retain their
-     * existing Attestation routes. Revisions replace
+     * Exact foreign Writes are evaluated separately in their destination context. Revisions replace
      * their source at the same position. A Committal ends this excursion.
      * Full frontier evaluation precedes every presentation limit.
      */
@@ -79,14 +91,14 @@ final class ParticipantExplorationService
                 $next = $children->filter(function ($edge) use ($node, $phase, $context, $seeds, $terminal): bool {
                     $target = $context->propositions->get($edge->target_proposition_id);
                     if ($target === null || ! $context->activeIds->has($target->id) || $terminal->has($target->id)
-                        || $target->phase->cycle->context_horizon_id !== $phase->cycle->context_horizon_id
-                        || ($seeds[$target->id] ?? null) !== $phase->cycle->entry_committal_id) {
+                        || $target->phase->governance()->context_horizon_id !== $phase->governance()->context_horizon_id
+                        || ($seeds[$target->id] ?? null) !== $phase->governance()->entry_committal_id) {
                         return false;
                     }
                     if ($edge->type === 'revise') {
                         return $target->phase->kind === $node->phase->kind && $target->register === $node->register;
                     }
-                    if ($node->tier === 'committal' && $node->id !== $phase->cycle->entry_committal_id) {
+                    if ($node->tier === 'committal' && $node->id !== $phase->governance()->entry_committal_id) {
                         return false;
                     }
                     $expected = $node->tier === 'committal' ? PhaseKind::Distinguish->value : $node->phase->kind->value + 1;
@@ -95,7 +107,7 @@ final class ParticipantExplorationService
                         && ($target->phase->gate_proposition_id === $node->id || $edge->type === 'reconcile'
                             || ($edge->type === 'reclassify' && $target->phase->kind === PhaseKind::Bias
                                 && app(PhasePositionService::class)->matches($target, $phase, PhaseKind::Bias)))
-                        && $target->register === $phase->cycle->contextHorizon->domain->registerFor($target->phase->kind);
+                        && $target->register === $phase->governance()->contextHorizon->domain->registerFor($target->phase->kind);
                 });
                 if ($next->isNotEmpty()) {
                     foreach ($next->sortBy('target_proposition_id') as $edge) {
@@ -162,10 +174,10 @@ final class ParticipantExplorationService
                     return false;
                 }
                 $seen[$id] = true;
-                if ($node->id !== $phase->cycle->entry_committal_id
+                if ($node->id !== $phase->governance()->entry_committal_id
                     && ($node->tier === 'committal'
-                        || $node->phase->cycle->context_horizon_id !== $phase->cycle->context_horizon_id
-                        || ($context->seedIds()[$node->id] ?? null) !== $phase->cycle->entry_committal_id)) {
+                        || $node->phase->governance()->context_horizon_id !== $phase->governance()->context_horizon_id
+                        || ($context->seedIds()[$node->id] ?? null) !== $phase->governance()->entry_committal_id)) {
                     continue;
                 }
                 $active = $context->activeIds->has($node->id) && ! $terminal->has($node->id)
@@ -214,7 +226,7 @@ final class ParticipantExplorationService
             foreach ($context->parents->get($id, collect())->where('type', 'revise') as $edge) {
                 $source = $context->propositions->get($edge->source_proposition_id);
                 if ($source !== null && $source->phase->kind === $node->phase->kind && $source->register === $node->register
-                    && $source->phase->cycle->entry_committal_id === $node->phase->cycle->entry_committal_id) {
+                    && $source->phase->governance()->entry_committal_id === $node->phase->governance()->entry_committal_id) {
                     $pending[] = $source->id;
                 }
             }
@@ -250,8 +262,8 @@ final class ParticipantExplorationService
             foreach ($context->parents->get($id, collect())->where('type', 'revise') as $edge) {
                 $source = $context->propositions->get($edge->source_proposition_id);
                 if ($source !== null && $source->phase->kind === $head->phase->kind && $source->register === $head->register
-                    && $source->phase->cycle->context_horizon_id === $phase->cycle->context_horizon_id
-                    && ($context->seedIds()[$source->id] ?? null) === $phase->cycle->entry_committal_id) {
+                    && $source->phase->governance()->context_horizon_id === $phase->governance()->context_horizon_id
+                    && ($context->seedIds()[$source->id] ?? null) === $phase->governance()->entry_committal_id) {
                     $pending[] = $source->id;
                 }
             }
@@ -265,18 +277,19 @@ final class ParticipantExplorationService
         $phase = new Phase;
         $kind = $head->tier === 'committal' ? PhaseKind::Distinguish : PhaseKind::from($head->phase->kind->value + 1);
         $phase->forceFill(['id' => 'exploration:'.$acting->id.':'.$head->id, 'cycle_id' => $acting->cycle_id,
-            'kind' => $kind, 'gate_proposition_id' => $head->id,
-            'write_register' => $acting->cycle->contextHorizon->domain->registerFor($kind)]);
-        $phase->setRelation('cycle', $acting->cycle);
+            'crossover_cycle_id' => $acting->crossover_cycle_id, 'kind' => $kind, 'gate_proposition_id' => $head->id,
+            'write_register' => $acting->governance()->contextHorizon->domain->registerFor($kind)]);
+        $phase->setRelation('cycle', $acting->cycle)->setRelation('crossoverCycle', $acting->crossoverCycle);
         $phase->setRelation('gate', $head);
         if ($kind === PhaseKind::Mediate) {
             $events = $context->remember('personal-exploration-events:'.$acting->cycle->participant_id, fn () => DB::table('exploration_events as event')
                 ->join('phases as rest', 'rest.id', '=', 'event.phase_id')->join('cycles as cycle', 'cycle.id', '=', 'rest.cycle_id')
+            ->join('cycles as scope', 'scope.id', '=', 'rest.operating_cycle_id')
                 ->where('cycle.participant_id', $acting->cycle->participant_id)
                 ->whereIn('event.proposition_id', $context->propositions->keys())
-                ->get(['event.*', 'cycle.entry_committal_id', 'cycle.context_horizon_id', 'rest.cycle_id as encounter_cycle_id'])->groupBy('proposition_id'));
-            $encounter = $this->encounters($head, $acting, $context, $events)->first(fn ($event) => $event->entry_committal_id === $acting->cycle->entry_committal_id
-                && $event->context_horizon_id === $acting->cycle->context_horizon_id);
+                ->get(['event.*', 'scope.entry_committal_id', 'scope.context_horizon_id', 'rest.cycle_id as encounter_cycle_id'])->groupBy('proposition_id'));
+            $encounter = $this->encounters($head, $acting, $context, $events)->first(fn ($event) => $event->entry_committal_id === $acting->governance()->entry_committal_id
+                && $event->context_horizon_id === $acting->governance()->context_horizon_id);
             $witness = $encounter === null ? [] : json_decode($encounter->witness, true, flags: JSON_THROW_ON_ERROR);
             $phase->setRelation('arrivalAnchor', $context->propositions->get($witness['arrival_source_id'] ?? null));
         }
@@ -290,8 +303,8 @@ final class ParticipantExplorationService
         return $context->remember('exploration-boundaries:'.$phase->id, function () use ($phase, $context, $ids): ParticipationContext {
             $heads = $ids->flatMap(fn ($id) => $this->heads($id, $phase, $context)->values())->unique('id')->filter(fn ($head) => $head->tier === 'expressive'
                 && $head->phase->kind !== PhaseKind::Order
-                && $head->phase->cycle->context_horizon_id === $phase->cycle->context_horizon_id
-                && ($context->seedIds()[$head->id] ?? null) === $phase->cycle->entry_committal_id
+                && $head->phase->governance()->context_horizon_id === $phase->governance()->context_horizon_id
+                && ($context->seedIds()[$head->id] ?? null) === $phase->governance()->entry_committal_id
                 && $this->heads($head->id, $phase, $context)->keys()->all() === [$head->id]);
             $probes = $heads->map(fn ($head) => $this->probe($head, $phase, $context));
 

@@ -15,7 +15,7 @@ final class TragedyEvidenceService
             ->join('context_horizons as proof_horizon', 'proof_horizon.id', '=', 'exhaustion.context_horizon_id')
             ->join('propositions as node', 'node.id', '=', 'exhaustion.governing_committal_id')
             ->join('phases as phase', 'phase.id', '=', 'node.phase_id')
-            ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
+            ->join('cycles as cycle', 'cycle.id', '=', 'phase.operating_cycle_id')
             ->where('cycle.context_horizon_id', $horizonId)->where('node.tier', 'committal')
             ->orderByDesc('node.created_at')->orderByDesc('node.id');
     }
@@ -45,7 +45,7 @@ final class TragedyEvidenceService
             $archived = DB::table('horizon_exhaustions as exhaustion')
                 ->join('propositions as node', 'node.id', '=', 'exhaustion.opening_proposition_id')
                 ->join('phases as phase', 'phase.id', '=', 'node.phase_id')
-                ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
+                ->join('cycles as cycle', 'cycle.id', '=', 'phase.operating_cycle_id')
                 ->where('cycle.context_horizon_id', $receipt->context_horizon_id)->whereIn('node.id', $missing)
                 ->orderByDesc('node.created_at')->orderByDesc('node.id')
                 ->get(['node.id', 'node.statement', 'node.register', 'node.tier', 'phase.kind as phase_number',

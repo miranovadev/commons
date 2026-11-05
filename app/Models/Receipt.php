@@ -60,7 +60,14 @@ class Receipt extends Model
                     || $receipt->receiptable_id !== $execution->proposition_id)) {
                 throw new DomainException('Receipt type, creating Phase and origin must match its evidence execution.');
             }
-            $horizonId = $receipt->phase?->cycle->context_horizon_id;
+            $horizonId = $receipt->phase?->governance()->context_horizon_id;
+            if ($receipt->type === 'tragedy' && $receipt->context_horizon_id !== $horizonId
+                && $receipt->phase !== null && $receipt->receiptable_type === (new Proposition)->getMorphClass()) {
+                $child = app(\App\Services\CausalCrossoverService::class)->children($receipt->phase)->firstWhere('id', $receipt->receiptable_id);
+                if ($child !== null) {
+                    $horizonId = $child->phase->governance()->context_horizon_id;
+                }
+            }
             if ($horizonId === null || ($receipt->type !== 'tragedy' && $receipt->evidence_execution_id === null)) {
                 throw new DomainException('A Receipt requires a creating action in a Horizon.');
             }

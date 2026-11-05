@@ -37,7 +37,7 @@ class AuditCausalEntries extends Command
             }
             foreach (Proposition::whereHas('phase.cycle.contextHorizon', fn ($query) => $query->where('substrate_id', $substrate->id))->lazyById() as $proposition) {
                 try {
-                    $causality->assertRegister($proposition->register, $proposition->phase->cycle->contextHorizon);
+                    $causality->assertRegister($proposition->register, $proposition->phase->governance()->contextHorizon);
                 } catch (Throwable $exception) {
                     $failures++;
                     $this->error("{$substrate->slug}: Proposition {$proposition->id}: {$exception->getMessage()}");

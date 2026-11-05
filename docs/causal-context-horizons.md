@@ -12,20 +12,20 @@ No edge means no movement.
 
 `cycles.context_horizon_id` is a required foreign key. Cycle creation resolves a Horizon in the same Substrate and saves that association once. Eloquent guards and PostgreSQL/SQLite triggers reject ownership changes, including bulk SQL updates. Horizon parent, Domain and opening boundary are also immutable through the model.
 
-Potential selects a Committal; that Committal determines entry context. `forEntry()` returns the direct child explicitly opened by a boundary Committal, or the creating Cycle's own Horizon for a non-boundary Committal. It validates the immutable snapshot direction and direct parent/opener relationship. Missing boundary projection is an error. It never searches open descendants or uses Horizon sequence to reinterpret an old Gate.
+Potential selects a Committal; that Committal determines entry context. `forEntry()` returns the direct child explicitly opened by a boundary Committal, or the producing Phase's operating Horizon for a non-boundary Committal. It validates the immutable snapshot direction and direct parent/opener relationship. Missing boundary projection is an error. It never searches open descendants or uses Horizon sequence to reinterpret an old Gate.
 
 For recovery, that Committal must first be found on the Participant's actual
-backward lineage. Ordinary completion retains its exact causal Committal;
+backward recovery hierarchy. After a Reconciliation crossover its starting Region is the chosen child's Region. Ordinary completion retains its exact causal Committal;
 initial entry without a position uses its separate selection contract. Resolving
 a selected Committal's Horizon never authorises a jump to another Proposition.
 
 Causal backtracking may enter a historical closed Horizon. `closed_at` remains a record of its first boundary; entry does not clear it, rewrite ownership, or reopen a global Domain. `currentFor()` supplies only the initial/default Horizon when there is no selected Gate. Operational entry always supplies the selected Committal's explicit Horizon.
 
-The Cycle's Horizon supplies initial and subsequent Phase/register vocabulary, participant Domain/workspace state, prospective Commit context and actual Commitment snapshot Domain. Every Phase Gate must belong to that Horizon or be the Committal that directly opened it. Model and direct contribution guards reject incompatible Gates and Domain vocabulary; new Propositions validate their creating Phase and register. Phase-to-Cycle and Proposition-to-Phase ownership are immutable through Eloquent and PostgreSQL/SQLite triggers, alongside the existing Cycle guard. A completed Cycle still reports its own Horizon; the next Cycle resolves its own entry region.
+The Cycle's entry Horizon supplies the initial Phase vocabulary. Selecting an established cross-Region Reconciliation at Mediate gives Bias and Order the child's operating Horizon for registers, workspace state and Commitment. Every Phase Gate must belong to its operating Horizon or be the Committal that directly opened it. Model and direct contribution guards reject incompatible Gates and Domain vocabulary; new Propositions validate their creating Phase and register. Phase-to-Cycle and Proposition-to-Phase ownership are immutable through Eloquent and PostgreSQL/SQLite triggers, alongside the existing Cycle guard. A completed Cycle still reports its own Horizon; the next Cycle resolves its own entry region.
 
 Proposition membership follows:
 
-`Proposition → creating Phase → Cycle → Context Horizon`
+`Proposition → creating Phase → operating context → Context Horizon`
 
 The membership table is a disposable projection of that relation. A late Stance/Concord write by an H2 Settlement Cycle belongs to H2 even after H3 Emergence opens. Graph queries and realtime notifications use that membership, and graph/workspace Horizon metadata exposes parent and opening Commit IDs without changing presentation.
 
@@ -37,7 +37,7 @@ The boundary-producing Commit belongs to the closing parent. The child reference
 
 For example, H2 Settlement can have H3a and H3b Emergence children. H4a Settlement points to H3a, and H4b Settlement points to H3b. `sequence` remains a unique, Substrate-local display/order number; it is never used to infer ancestry or Domain parity. Applying the same boundary twice returns the same child.
 
-`commons:horizons-rebuild` rebuilds memberships from durable Cycle ownership and replays missing boundary projections idempotently. It preserves Horizon IDs, Cycle ownership and immutable snapshots, and marks disposable measurements stale. It no longer deletes Horizon records and invents replacement identities.
+`commons:horizons-rebuild` rebuilds memberships from durable Phase ownership and replays missing boundary projections idempotently. It preserves Horizon IDs, Cycle ownership and immutable snapshots, and marks disposable measurements stale. It no longer deletes Horizon records and invents replacement identities.
 
 ## Calculations and history
 

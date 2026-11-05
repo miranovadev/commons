@@ -14,11 +14,22 @@ final class CommitRegionService
     public function __construct(private readonly PhasePositionService $positions) {}
 
     /**
-     * Persisted Cycle entry is the only live ownership authority. Parents
+     * The producing Phase selects its immutable governing context. Parents
      * remain an accepted argument for callers carrying a graph, but are not read.
      * One bounded join resolves all supplied positions, independently of topology.
      */
     public function seedIdsFor(Collection $positions, Collection $nodes, ?Collection $parents = null): array
+    {
+        return $this->resolveSeeds($positions, 'operating_cycle_id');
+    }
+
+    /** Used only by historical migrations between Cycle entry backfill and Phase crossover. */
+    public function entryOnlySeedIds(Collection $positions): array
+    {
+        return $this->resolveSeeds($positions, 'cycle_id');
+    }
+
+    private function resolveSeeds(Collection $positions, string $scopeColumn): array
     {
         $ids = $positions->filter(fn ($node) => $node->exists)->pluck('id');
         $result = $positions->mapWithKeys(fn ($node) => [$node->id => null])->all();
@@ -27,12 +38,12 @@ final class CommitRegionService
         }
         $rows = DB::table('propositions as p')
             ->join('phases as ph', 'ph.id', '=', 'p.phase_id')
-            ->join('cycles as c', 'c.id', '=', 'ph.cycle_id')
+            ->join('cycles as c', 'c.id', '=', 'ph.'.$scopeColumn)
             ->join('participants as participant', 'participant.id', '=', 'c.participant_id')
             ->leftJoin('context_horizons as h', 'h.id', '=', 'c.context_horizon_id')
             ->leftJoin('propositions as g', 'g.id', '=', 'c.entry_committal_id')
             ->leftJoin('phases as gp', 'gp.id', '=', 'g.phase_id')
-            ->leftJoin('cycles as gc', 'gc.id', '=', 'gp.cycle_id')
+            ->leftJoin('cycles as gc', 'gc.id', '=', 'gp.'.$scopeColumn)
             ->leftJoin('participants as entry_participant', 'entry_participant.id', '=', 'gc.participant_id')
             ->leftJoin('context_horizons as gh', 'gh.id', '=', 'gc.context_horizon_id')
             ->leftJoin('commitment_snapshots as snapshot', 'snapshot.proposition_id', '=', 'g.id')
@@ -66,7 +77,7 @@ final class CommitRegionService
         return $result;
     }
 
-    /** Committals own themselves; expressive Propositions use their creating Cycle. */
+    /** Committals own themselves; expressive Propositions use their producing Phase's operating context. */
     public function seedFor(Proposition $position, ?ParticipationContext $context = null): ?Proposition
     {
         if (! $position->exists) {
@@ -94,7 +105,7 @@ final class CommitRegionService
             return $context->members($seed);
         }
         $members = Proposition::query()->active()->where('tier', 'expressive')
-            ->whereHas('phase.cycle', fn ($q) => $q->where('entry_committal_id', $seed->id))
+            ->whereHas('phase.operatingCycle', fn ($q) => $q->where('entry_committal_id', $seed->id))
             ->orderBy('id')->get();
         $seeds = $this->seedIdsFor($members, $members);
 

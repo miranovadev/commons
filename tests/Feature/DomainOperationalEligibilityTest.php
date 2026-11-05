@@ -94,7 +94,13 @@ class DomainOperationalEligibilityTest extends TestCase
         $this->assertEqualsCanonicalizing([$gate->id, $counterpart->id], $x->parents->pluck('id')->all());
         $another = $this->node($cycle, $first, $otherRead, kind: PhaseKind::Disperse);
         $measurements->project($another, .7, 0, 0, correspondenceComponents: new CorrespondenceValues(.7, .7));
-        $y = $dispatcher->dispatch($cycle->participant, $inverse, ['action' => 'proposition.reconcile',
+        $this->reject($inverse, ['action' => 'proposition.reconcile', 'other_proposition_id' => $another->id,
+            'statement' => 'A relationship with an already bound operand.']);
+        $fourth = $this->node($cycle, $first, $anchor, kind: PhaseKind::Disperse);
+        $measurements->project($fourth, .7, 0, 0, correspondenceComponents: new CorrespondenceValues(.7, .7));
+        $this->phase($cycle, PhaseKind::Disperse, $anchor, completed: true);
+        $independent = $this->phase($cycle, PhaseKind::Mediate, $fourth);
+        $y = $dispatcher->dispatch($cycle->participant, $independent, ['action' => 'proposition.reconcile',
             'other_proposition_id' => $another->id, 'statement' => 'A second distinct relationship.']);
         // Even the implicit anchor must have the exact Read register.
         // Legacy corruption is rejected on write; retain a raw fixture to test read-side exclusion.

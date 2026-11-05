@@ -137,6 +137,12 @@ final class PropositionOptionService
     public function writeOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         $writes = $this->resolveWrites($phase, $context);
+        if (in_array($phase->kind, [PhaseKind::Mediate, PhaseKind::Bias], true)) {
+            $children = app(CausalCrossoverService::class)->children($phase, $context);
+            if ($children->isNotEmpty()) {
+                $writes = $writes->concat($children)->unique('id')->sortBy('id')->values();
+            }
+        }
 
         return $phase->kind === PhaseKind::Order ? $writes
             : $writes->filter(fn (Proposition $node): bool => $this->availability->mutable($node, $context))->values();
@@ -326,12 +332,11 @@ final class PropositionOptionService
     private function atWritePosition(Collection $ids, Phase $phase, ?ParticipationContext $context): Collection
     {
         if ($phase->kind === PhaseKind::Mediate) {
-            // A foreign operand's edge is real provenance, not permission to adopt
-            // a result owned by another Region during the current Cycle.
+            // The exact crossover selector handles established foreign Reconciliation children.
             $nodes = $context !== null ? $context->nodes($ids) : Proposition::whereKey($ids)->get();
             $seeds = $context !== null ? $context->seedIds() : app(CommitRegionService::class)->seedIdsFor($nodes, $nodes);
             $ids = $nodes->filter(fn ($node) => ($seeds[$node->id] ?? null) !== null
-                && $seeds[$node->id] === $phase->cycle->entry_committal_id)->pluck('id');
+                && $seeds[$node->id] === $phase->governance()->entry_committal_id)->pluck('id');
         }
 
         return $context !== null

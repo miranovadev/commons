@@ -11,16 +11,20 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Services\CommitRegionService;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
+use App\Services\Observables\PhaseProfileObservationService;
 use App\Services\Observables\ProspectiveClosureHistory;
 use App\Services\Observables\ProspectiveClosureService;
+use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class ProspectiveClosureStateTest extends TestCase
@@ -181,7 +185,7 @@ class ProspectiveClosureStateTest extends TestCase
         $this->assertSame([1, 1, 1, 1, 1, 1, 1], $state['domain_profiles']['emergence']['sample_counts']);
     }
 
-    private function bias(bool $staggered = false): Proposition
+    private function bias(bool $staggered = false, ?Phase $receivingMediate = null): Proposition
     {
         $head = $this->born(PhaseKind::Distinguish, $this->origin);
         if ($staggered) {
@@ -196,13 +200,19 @@ class ProspectiveClosureStateTest extends TestCase
             $this->enter();
         }
         $head = $this->born(PhaseKind::Disperse, $head);
-        $other = $this->born(PhaseKind::Disperse, $head->parents()->sole());
+        $other = $receivingMediate?->gate ?? $this->born(PhaseKind::Disperse, $head->parents()->sole());
         if ($staggered) {
             $this->enter();
         }
         $head = $this->born(PhaseKind::Mediate, $head, 'reconcile', $other);
         if ($staggered) {
             $this->enter();
+        }
+
+        if ($receivingMediate !== null) {
+            app(PhaseProgressionService::class)->advance($receivingMediate, $head);
+            $this->cycle = $receivingMediate->cycle;
+            $this->actor = $this->cycle->participant;
         }
 
         return $this->born(PhaseKind::Bias, $head, 'reclassify');
@@ -277,19 +287,127 @@ class ProspectiveClosureStateTest extends TestCase
         }
     }
 
-    public function test_grounded_negative_coherence_commit_preserves_authorised_state_without_an_extra_trigger(): void
+    /** Stage an independent, non-boundary entry and its Disperse operand.
+     *  The crossover source and final Commit below use actual prospective observations.
+     */
+    private function receivingMediate(): Phase
+    {
+        $domain = $this->cycle->contextHorizon->domain;
+        $seedSource = $this->bias();
+        $basin = $this->preserve($seedSource, $this->service()->stored($seedSource));
+        $snapshot = $this->origin->commitmentSnapshot->replicate();
+        $snapshot->forceFill(['proposition_id' => $basin->id, 'ledger_entry_id' => $basin->ledgerEntry->id,
+            'supersession_id' => Supersession::where('target_proposition_id', $basin->id)->sole()->id,
+            'direction_before' => $domain, 'direction_after' => $domain, 'calculator_version' => 'crossover-fixture'])->save();
+        $producing = $this->enter();
+        $reader = (new Participant)->forceFill(['substrate_id' => $this->actor->substrate_id, 'callsign' => 'receiving-reader']);
+        $reader->save();
+        $cycle = (new Cycle)->forceFill(['participant_id' => $reader->id,
+            'sequence' => 1,
+            'entry_committal_id' => $basin->id, 'context_horizon_id' => $this->cycle->context_horizon_id]);
+        $cycle->save();
+        $this->cycle = $cycle;
+        $first = $this->born(PhaseKind::Distinguish, $basin);
+        $second = $this->born(PhaseKind::Persist, $first);
+        $read = $this->born(PhaseKind::Constrain, $second, 'reclassify');
+        $operand = $this->born(PhaseKind::Disperse, $read);
+        $operand->phase->forceFill(['completed_at' => now()])->save();
+        $this->cycle = $producing;
+        $mediate = (new Phase)->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Mediate,
+            'gate_proposition_id' => $operand->id, 'write_register' => $domain->registerFor(PhaseKind::Mediate), 'started_at' => now()]);
+        $mediate->save();
+
+        return $mediate;
+    }
+
+    public function test_grounded_order_after_a_foreign_reclassification_preserves_the_observed_child(): void
+    {
+        // Both basins have recorded history. Create a Mediate source in the receiving
+        // basin, then stage its unary classification at a genuine local Bias Gate.
+        $parallel = $this->enter();
+        $receiving = $this->receivingMediate();
+        $producer = $this->cycle;
+        $this->cycle = $receiving->cycle;
+        $partner = $this->born(PhaseKind::Disperse, $receiving->gate->parents()->sole());
+        $source = $this->born(PhaseKind::Mediate, $receiving->gate, 'reconcile', $partner);
+        $bias = app(PhaseProgressionService::class)->advance($receiving, $source);
+        $this->cycle = $producer;
+        $local = $this->bias(staggered: true);
+        $child = $this->born(PhaseKind::Bias, $source, 'reclassify');
+        DB::table('reclassification_results')->insert(['source_proposition_id' => $source->id,
+            'target_proposition_id' => $child->id, 'register' => $child->register]);
+        $this->assertSame($local->phase_id, $child->phase_id);
+        $this->assertSame($source->id, $child->parents()->sole()->id);
+
+        $reader = $receiving->cycle->participant;
+        $reader->forceFill(['current_proposition_id' => $source->id])->save();
+        $this->loadedReceiptFixture($child);
+        // Stage two adjacent births on an already-open, independent path in
+        // the destination basin, one on each side of the reader's crossover.
+        $this->cycle = $parallel;
+        $beforeCrossing = $this->born(PhaseKind::Distinguish, $this->origin);
+        $beforeArrival = $this->service()->stored($child);
+        app(ContributionDispatcher::class)->dispatch($reader, $bias, [
+            'action' => 'attestation.create', 'direction' => 'support', 'proposition_id' => $child->id]);
+        $order = app(PhaseProgressionService::class)->advance($bias, $child);
+        $this->assertSame($receiving->cycle_id, $order->cycle_id);
+        $this->assertSame($producer->entry_committal_id, $order->governance()->entry_committal_id);
+        $atArrival = $this->service()->stored($child);
+        $this->assertFalse($atArrival['admissible']);
+        $this->assertSame($beforeArrival, $atArrival);
+        $afterCrossing = $this->born(PhaseKind::Persist, $beforeCrossing);
+        $birth = app(PhaseProfileObservationService::class)->stored($afterCrossing->id);
+        $this->assertSame($beforeCrossing->id, $birth->preceding_phase_proposition_id);
+        $this->assertSame(0, $birth->cycle_interval);
+        $this->cycle = $producer;
+        // Only a genuine entry into the owning basin may refresh prospective Closure.
+        $entry = $this->enter();
+        $observation = $this->service()->stored($child);
+        $this->assertSame($entry->id, $observation['trigger']['id']);
+        $this->assertTrue($observation['admissible']);
+        $this->assertSame('positive', $observation['historical_extent_direction']);
+        $this->assertSame('positive', $observation['historical_rhythm_direction']);
+        $resolved = app(PropositionMeasurementService::class)->recalculate($child);
+        $canonical = app(ContributionDispatcher::class)->dispatch($reader, $order,
+            ['action' => 'proposition.commit', 'proposition_id' => $child->id]);
+        $this->assertSame($child->statement, $canonical->statement);
+        $this->assertSame($order->id, $canonical->phase_id);
+        $this->assertSame($observation, $this->service()->stored($canonical));
+        $this->assertEquals($observation, $canonical->fresh()->commitmentSnapshot->closure_observation);
+        foreach (['correspondence', 'chirality', 'orientation_direction', 'attestation_cadence_direction',
+            'shape_topology_direction', 'phase_profile_direction'] as $key) {
+            $this->assertSame($resolved->$key, $canonical->fresh()->measurement->$key, $key);
+        }
+    }
+
+    public static function commitPaths(): array
+    {
+        return ['ordinary Order' => [false], 'Order after exact crossover' => [true]];
+    }
+
+    #[DataProvider('commitPaths')]
+    public function test_grounded_negative_coherence_commit_preserves_authorised_state_without_an_extra_trigger(bool $crossed): void
     {
         // A separate Stage 3 scenario; existing authored Integration populations
         // and their expected transitions are not changed to manufacture a Commit.
-        $source = $this->bias(staggered: true);
+        $receiving = $crossed ? $this->receivingMediate() : null;
+        $source = $this->bias(staggered: true, receivingMediate: $receiving);
         $attestation = (new Attestation)->forceFill(['phase_id' => $source->phase_id,
             'proposition_id' => $source->id, 'direction' => 'refute']);
         $attestation->save();
         app(LedgerService::class)->record($attestation);
         $this->loadedReceiptFixture($source);
-        $phase = (new Phase)->forceFill(['cycle_id' => $this->cycle->id, 'kind' => PhaseKind::Order,
-            'gate_proposition_id' => $source->id, 'write_register' => $source->register, 'started_at' => now()]);
-        $phase->save();
+        if ($crossed) {
+            $phase = app(PhaseProgressionService::class)->advance($source->phase, $source);
+            $this->assertSame($receiving->cycle_id, $phase->cycle_id);
+            $this->assertNotSame($source->phase->gate->phase->cycle->participant_id, $phase->cycle->participant_id);
+            $this->assertNotSame($this->origin->id, $phase->cycle->entry_committal_id);
+            $this->assertSame($this->origin->id, app(CommitRegionService::class)->seedFor($source)->id);
+        } else {
+            $phase = (new Phase)->forceFill(['cycle_id' => $this->cycle->id, 'kind' => PhaseKind::Order,
+                'gate_proposition_id' => $source->id, 'write_register' => $source->register, 'started_at' => now()]);
+            $phase->save();
+        }
         $this->actor->forceFill(['current_proposition_id' => $source->id])->save();
         $state = $this->service()->stored($source);
         $this->assertTrue($state['admissible'], json_encode($state));
@@ -299,6 +417,8 @@ class ProspectiveClosureStateTest extends TestCase
         $target = app(ContributionDispatcher::class)->dispatch($this->actor, $phase,
             ['action' => 'proposition.commit', 'proposition_id' => $source->id]);
         $this->assertSame($state, $this->service()->stored($target));
+        $this->assertSame($source->statement, $target->statement);
+        $this->assertSame($phase->governance()->entry_committal_id, $target->phase->governance()->entry_committal_id);
         $this->assertEquals($state, $target->fresh()->commitmentSnapshot->closure_observation);
         foreach (['correspondence', 'chirality', 'orientation_direction', 'attestation_cadence_direction',
             'shape_topology_direction', 'phase_profile_direction'] as $key) {

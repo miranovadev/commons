@@ -12,9 +12,9 @@ final class ExhaustedContinuationService
 {
     public function ids(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        $calculate = fn () => $this->idsForHorizons(collect([$phase->cycle->context_horizon_id]));
+        $calculate = fn () => $this->idsForHorizons(collect([$phase->governance()->context_horizon_id]));
 
-        return $context === null ? $calculate() : $context->remember('terminal-continuations:'.$phase->cycle->context_horizon_id, $calculate);
+        return $context === null ? $calculate() : $context->remember('terminal-continuations:'.$phase->governance()->context_horizon_id, $calculate);
     }
 
     public function idsForHorizons(Collection $horizons): Collection

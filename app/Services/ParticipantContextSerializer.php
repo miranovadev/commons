@@ -49,7 +49,7 @@ final class ParticipantContextSerializer
             ->whereNotIn('id', $read->concat($gate)->concat($write)->pluck('id'))->unique('id');
 
         return [
-            'phase' => Arr::only($plan['phase'], ['id', 'number', 'kind', 'write_register']),
+            'phase' => Arr::only($plan['phase'], ['id', 'number', 'kind', 'write_register', 'crossover']),
             'provenance_id' => $plan['provenance_id'] ?? null,
             ...(isset($plan['acquisition']) ? ['acquisition' => $plan['acquisition']] : []),
             'preparation' => $plan['preparation'] ?? null,

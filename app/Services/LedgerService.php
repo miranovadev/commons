@@ -80,7 +80,7 @@ final readonly class LedgerService
                 $this->horizons->include($entry);
                 app(PhaseProfileObservationService::class)->recordBirth($ledgerable, $entry, $phaseProfileSource);
                 app(LocalChiralityStateService::class)->initialize($ledgerable);
-                if ($ledgerable->tier === 'committal' && $ledgerable->phase->cycle->entry_committal_id === null) {
+                if ($ledgerable->tier === 'committal' && $ledgerable->phase->governance()->entry_committal_id === null) {
                     app(ProspectiveClosureService::class)->initialize($ledgerable);
                 }
             }
@@ -102,7 +102,10 @@ final readonly class LedgerService
                 // Cognitive memory is auditable history, not field/evidence mutation.
                 $memoryOnly = ($ledgerable instanceof ReceiptContextEvent
                     && ($ledgerable->context->receipt->isSpecial() || $ledgerable->context->receipt->isFailure()));
-                if (! $memoryOnly) {
+                if ($ledgerable instanceof Attestation && $phase->governance()->context_horizon_id !== $ledgerable->proposition->phase->governance()->context_horizon_id) {
+                    app(FieldMutationService::class)->mark($substrate->id,
+                        [$phase->governance()->context_horizon_id, $ledgerable->proposition->phase->governance()->context_horizon_id], $affected);
+                } elseif (! $memoryOnly) {
                     app(FieldMutationService::class)->touch($phase, $affected,
                         measurementsDirty: ! ($ledgerable instanceof Receipt && $ledgerable->isFailure()));
                 }
@@ -119,7 +122,7 @@ final readonly class LedgerService
                     $realtime->proposition($ledgerable->source_proposition_id);
                     $realtime->proposition($ledgerable->target_proposition_id);
                 } elseif ($ledgerable instanceof Receipt) {
-                    $realtime->horizon($phase->cycle->context_horizon_id, $substrate->id,
+                    $realtime->horizon($ledgerable->context_horizon_id, $substrate->id,
                         ['type' => 'receipt.created', 'receipt_id' => $ledgerable->id]);
                 }
             }

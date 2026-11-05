@@ -13,7 +13,7 @@ final class TerminalContinuationService
     public function graph(string $substrateId): array
     {
         $nodes = DB::table('propositions as p')->join('phases as ph', 'ph.id', '=', 'p.phase_id')
-            ->join('cycles as c', 'c.id', '=', 'ph.cycle_id')
+            ->join('cycles as c', 'c.id', '=', 'ph.operating_cycle_id')
             ->join('participants as participant', 'participant.id', '=', 'c.participant_id')
             ->where('participant.substrate_id', $substrateId)
             ->get(['p.id', 'p.tier', 'c.entry_committal_id'])->keyBy('id');

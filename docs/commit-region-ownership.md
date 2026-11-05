@@ -1,16 +1,30 @@
 # Commit Region ownership and Cycle entry
 
-Commit Region ownership is determined by immutable Cycle entry. A persisted Committal owns
-itself. An expressive Proposition belongs to the immutable `entry_committal_id`
-of its creating Phase's Cycle. Supersession ancestry records causal provenance
-and may be multi-parent. Multi-parent causal provenance does not imply ambiguous
-operational ownership.
+A Committal owns itself. An expressive Proposition takes its governing Committal
+and Context Horizon from its producing Phase. Ordinarily these are the entry
+Committal and Horizon of the Participant's actual Cycle.
 
-Context Horizon ownership independently comes from the creating Cycle's
-`context_horizon_id`. Movement remains lineage-constrained and is not granted by
-Region or Horizon membership. No edge means no movement. A multi-input result's
-producing Phase Gate records the traversed route; foreign inputs do not create
-movement shortcuts.
+When B is the receiving operand of an A-owned Reconciliation X, choosing X
+at Mediate records B as the Gate of the completed Phase and X as the Gate of
+Bias in that same Cycle. Bias records the governing Cycle of X's producing
+Phase in the immutable `phases.crossover_cycle_id`. Order inherits that
+context on local progression. If the Bias Gate is the exact source of a
+foreign Reclassification Y, choosing Y gives Order the governing Cycle of
+Y's producing Phase instead. This also applies when Y's author crossed
+earlier in their own Cycle. Rows from
+before crossover have a null witness. The generated `operating_cycle_id`
+resolves the appropriate ownership join for either case. Actor identity,
+Phase sequence and participation history always use `phases.cycle_id`.
+
+On Rest the Participant recovers through the current Region's nearest eligible
+Committal hierarchy. A's governor can be eligible even when the Participant
+arrived through B. Its ordinary viability and exhaustion checks apply, including
+when A and B share a Horizon. A successful recovery records a genuine new Cycle
+entry. The original Cycle keeps its B entry.
+
+The migration can be rolled back before the first crossed Phase. Once a crossing
+has been recorded, retain the Phase context for historical ownership. Future
+admission can be disabled separately in Mediate and Bias option discovery.
 
 ## Resolution and failure policy
 

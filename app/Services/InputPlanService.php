@@ -87,6 +87,7 @@ final readonly class InputPlanService
 
         return [
             'phase' => ['id' => $phase->id, 'number' => $phase->kind->value, 'kind' => $plan['name'],
+                ...($phase->crossover_cycle_id === null ? [] : ['crossover' => app(CausalCrossoverService::class)->arrival($phase)]),
                 'description' => $description,
                 'write_register' => $phase->write_register, 'started_at' => $phase->started_at],
             ...($workspace ? ['workspace' => null] : []),
@@ -187,6 +188,7 @@ final readonly class InputPlanService
                 'id' => $phase->getKey(),
                 'number' => $phase->kind->value,
                 'kind' => $plan['name'],
+                ...($phase->crossover_cycle_id === null ? [] : ['crossover' => app(CausalCrossoverService::class)->arrival($phase)]),
                 'description' => $plan['description'],
                 'write_register' => $phase->write_register,
                 'started_at' => $phase->started_at,
@@ -243,7 +245,7 @@ final readonly class InputPlanService
         Collection $lineage,
         ?ParticipationContext $context,
     ): array {
-        $horizon = $context !== null ? $context->horizons->get($phase->cycle->context_horizon_id) : $phase->cycle->contextHorizon;
+        $horizon = $context !== null ? $context->horizons->get($phase->governance()->context_horizon_id) : $phase->governance()->contextHorizon;
         $domain = $horizon->domain;
         $registers = $domain === ContextDomain::Emergence
             ? ['activity', 'frontier', 'canon']
@@ -390,9 +392,11 @@ final readonly class InputPlanService
         ?ParticipationContext $context,
     ): array {
         $foreignOperand = match ($context?->phase->kind) {
-            PhaseKind::Mediate => app(HomologousMediationService::class)->foreignGateIdsFor($context->phase, $context)->contains($proposition->id),
+            PhaseKind::Mediate => app(HomologousMediationService::class)->foreignGateIdsFor($context->phase, $context)->contains($proposition->id)
+                || app(CausalCrossoverService::class)->children($context->phase, $context)->contains('id', $proposition->id),
             PhaseKind::Bias => app(HomologousBiasService::class)->foreignGateIdsFor($context->phase, $context)
-                ->merge(app(MediatedIncomingBiasService::class)->foreignGateIdsFor($context->phase, $context))->contains($proposition->id),
+                ->merge(app(MediatedIncomingBiasService::class)->foreignGateIdsFor($context->phase, $context))->contains($proposition->id)
+                || app(CausalCrossoverService::class)->children($context->phase, $context)->contains('id', $proposition->id),
             PhaseKind::Order => $proposition->tier === 'committal'
                 && app(HomologousOrderService::class)->forPhase($context->phase, $context)->contains('id', $proposition->id)
                 && ! $context->remember('order-local-commits:'.$context->phase->id,
