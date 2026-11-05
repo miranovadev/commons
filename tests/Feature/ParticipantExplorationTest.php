@@ -480,13 +480,14 @@ class ParticipantExplorationTest extends TestCase
             app(ParticipationService::class)->contribute($actor, $disperse->id, ['action' => 'proposition.traverse', 'proposition_id' => $target->id]);
             $disperse = app(PhaseService::class)->currentFor($actor->fresh());
         }
-        // The unjudged sibling still offers a first vote. Only coherent operands
-        // can give the completed Signal a new reason to return to Mediate.
+        // The new sibling still offers a first vote. Its coherence cannot reopen
+        // a completed route through a Signal that is already bound.
         $measures = app(PropositionMeasurementService::class);
         $measures->project($unjudged, .8, .8, .8, correspondenceComponents: new CorrespondenceValues(.8, .8));
         $options = app(PropositionOptionService::class);
-        self::assertContains($unjudged->id, app(ReconciliationOptionService::class)->forPhase($other->fresh())->pluck('id'));
-        self::assertTrue($options->traversalOptionsFor($disperse)->contains('id', $signal->id));
+        self::assertEmpty(app(ReconciliationOptionService::class)->forPhase($other->fresh()));
+        self::assertFalse($options->traversalOptionsFor($disperse)->contains('id', $signal->id));
+        self::assertTrue($options->attestationOptionsFor($disperse)->contains('id', $unjudged->id));
         $measures->project($unjudged, 0, .8, .8, correspondenceComponents: new CorrespondenceValues(-.8, .8));
         self::assertEmpty(app(ReconciliationOptionService::class)->forPhase($other->fresh()));
         self::assertFalse($options->traversalOptionsFor($disperse)->contains('id', $signal->id));

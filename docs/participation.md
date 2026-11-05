@@ -175,7 +175,7 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 | Phase 2 fresh Variant, readable causal Artifact | Preparation, then Variant or Defer |
 | Phase 2 fresh Variant, no readable causal Artifact | Instrument fallback, then Variant or Defer |
 | Phase 3 | Reclassify an attested Phase-2 source with an available Receipt |
-| Phase 5 | First birth per unordered pair under the existing Correspondence rules |
+| Phase 5 | First birth for both operands under the existing Correspondence rules |
 | Phase 6 | Reclassify an attested Phase-5 source with Receipt and lineage agreement |
 | Phase 7 | Existing grounded, freshly attested and Closure-aligned Commit or Committal Traverse |
 
@@ -344,9 +344,9 @@ change, and the aggregate is never written back into them.
 
 Gate Correspondence and Chirality do not select these children. The current
 causal Gate must remain in the ordinary eligible Gate pool; `gate_options`
-contains its counterparts. Availability, exhaustion and substrate-wide unordered-pair uniqueness
-still apply. The Participant writes how the two Propositions relate. Both are
-hard causal parents. The acting Cycle supplies the Phase, entry Region and Horizon.
+contains its admissible counterparts. A recorded Reconciliation binds both operands
+throughout the substrate. Availability and exhaustion also apply. The Participant
+writes how the two Propositions relate. Both are hard causal parents. The acting Cycle supplies the Phase, entry Region and Horizon.
 
 Homologous Gates are Reconcile operands only. They do not become Read choices,
 Traverse destinations or Receipt catalogue sources. The acting Phase Gate remains
@@ -367,16 +367,20 @@ input. Only an incoming relationship for that exact operand can expose `A_result
 It does not search arbitrary ancestors or substitute a structural homologue.
 An unrelated Mediate/Bias chain does not acquire this mediated authority.
 
-Mediate creates the doorway; Bias may later use it through ordinary Reclassify.
+Under operand exclusivity this exact doorway is reachable when its two births
+already exist in history. A fresh relationship binds B on its first use. B can
+no longer produce a second child to supply the receiving Bias Gate. A different
+local pair can reach Bias, but that pair does not confer this incoming authority.
+
+With both recorded births in place, Bias may use the doorway through ordinary Reclassify.
 A remains in its acting Cycle, Commit Region and Horizon during Reconcile. The
 operand grants no Traverse, no movement into B and no Receipt scope. Direction
 is asymmetric: A's use of B creates an incoming option from B's downstream
 Mediate/Bias path; it does not automatically create the reverse relationship.
 
 The relevant boundary is the Commit Region, not every expressive branch.
-Same-Region mediated paths remain ordinary expressive relationships. A real
-cross-Region Mediate operand establishes the incoming doorway across that
-boundary. Both use the ordinary Bias evidence/ancestry comparison, effective
+Same-Region mediated paths remain ordinary expressive relationships. A matching pair of historical Mediate births can establish the incoming
+doorway across that boundary. Both use the ordinary Bias evidence/ancestry comparison, effective
 Attestation, completed unconsumed own-Region Receipt, source/register uniqueness,
 mutability and independent terminal-exhaustion protections. No Tragedy is
 required. Foreign option visibility never imports its Region's Receipts. A
@@ -543,26 +547,25 @@ parent's wording. The child starts with no Attestations, Receipts or inherited
 Phase touches. Normal progression records a new touch. Both operands retain
 their content. Reconcile consumes no Receipt.
 
-The experimental identity policy admits one birth for each exact unordered pair
-in a substrate. A relationship established from B with A precludes its reciprocal
-from A, including across Regions and Horizons. Either operand can still establish
-a relationship with a third Proposition. Both parent edges carry causal provenance.
-The producing Phase Gate supplies the sole selected temporal predecessor.
-Commit preserves the statement of the selected expressive source.
+Each Proposition can be an operand in one Reconciliation birth in its substrate.
+After A and B reconcile, neither can reconcile with a different partner in any
+Region, Horizon or Cycle. C and D may still reconcile. The child records both
+causal parents and the acting Gate as its selected temporal predecessor.
+Commit preserves its selected source's expression.
 
-The selector reads the two persisted Reconcile edges of the same Mediate birth
-under its producing substrate. It applies the exclusion even when the original
-child is historical. The submission transaction recomputes the selector while
-holding the substrate row lock. Historical reciprocal children keep their own
-statements, owners, lineages and ledger records. There is no backfill or migration.
+The selector reads both Reconcile edges of each recorded birth in the substrate.
+The locked submission rechecks the same rule. Historical children continue to
+bind their operands after exhaustion, supersession or Commitment. Each existing
+child keeps its own lineage, statement and ledger entries even where historical
+relationships overlap. Binding changes only Reconciliation admission. Attestation,
+personal Exploration, Traverse and evidence-grounded Reclassification retain
+their ordinary rules.
 
-To retire the experiment, restore directed admission in
-`ReconciliationOptionService::establishedCounterparts` and adjust the pair and
-contention expectations in Reconciliation, Homologous Mediation, Causal Operational
-Scope, Domain Operational Eligibility and Transaction Lock Order tests. Recheck
-the fixed HTTP Commit journey and Exploration Completion journey against the
-reopened frontier. Statement validation, schemas, forms and recorded edges are
-independent of this selector policy.
+To retire operand exclusivity, restore the unordered-pair selector in
+`app/Services/ReconciliationOptionService.php` from `d570a94`. Restore the
+corresponding admission, contention and incoming lifecycle fixtures and rerun
+the HTTP Commit journey. This requires no migration, record repair or change to
+authored statement validation.
 
 ## Bias grounding
 

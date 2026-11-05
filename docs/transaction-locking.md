@@ -62,7 +62,7 @@ and explicit row locks (schema migrations are outside the participation runtime)
 | Path | Scope and protected invariant |
 | --- | --- |
 | ParticipationService::contribute | Substrate → Participant → Cycle → Phase; current occurrence, shared admissibility, atomic contribution/progression |
-| ContributionDispatcher::dispatch | Substrate for direct callers, shared generation, source consumption and unordered Reconciliation admission. Replacing an effective Attestation also locks its row. |
+| ContributionDispatcher::dispatch | Substrate for direct callers, shared generation, source consumption and exclusive Reconciliation operand admission. Replacing an effective Attestation also locks its row. |
 | CycleEntryService::start | Substrate → Participant; one active Cycle, Origin uniqueness, causal entry and immediate rollover/recovery. Active `prepare` is a lock-free no-op, then rechecks inside the transaction if entry is needed |
 | OperationalInstrumentService::execute | Substrate; recheck mutability/invocation duplication and persist the already gathered observation atomically |
 | ReceiptReplayService::replay | Substrate → Participant → Phase; fresh encounter/capability/eligibility check, immutable replay invocation |
