@@ -45,20 +45,20 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
                 $this->assertSame(Participant::findOrFail($actor)->substrate_id, $metadata['substrate_id']);
                 $index = count($phases);
                 if ($index === 1 || $index === 3) {
-                    $receipt = Receipt::where('phase_id', $state['plan']['phase']['id'])->sole();
+                    $receipt = Receipt::where('phase_id', $state['phase']['id'])->sole();
                     $this->assertSame('completed', $receipt->evidenceExecution->status);
                     $this->assertSame($actor, $receipt->evidenceExecution->cycle->participant_id);
-                    $this->assertSame('awaiting_resolution', $state['plan']['acquisition']['status']);
-                    $this->assertContains($receipt->id, array_column($state['plan']['receipts'], 'id'));
+                    $this->assertSame('awaiting_resolution', $state['context']['gate']['acquisition']['status']);
+                    $this->assertContains($receipt->id, array_column($state['context']['receipts'], 'id'));
                 }
-                $this->assertSame(['distinguish', 'distinguish', 'persist', 'persist'][$index], $state['plan']['phase']['kind']);
+                $this->assertSame(['distinguish', 'distinguish', 'persist', 'persist'][$index], $state['phase']['kind']);
                 $this->assertSame('settlement', $state['domain']);
                 $this->assertSame($initial['context_horizon_id'], $state['context_horizon_id']);
                 $this->assertSame($initial['cycle']['id'], $state['cycle']['id']);
-                $this->assertSame($state['current_proposition_id'], $state['plan']['gate_id']);
+                $this->assertSame($state['current_proposition_id'], $state['context']['gate']['acting_id']);
                 if ($index === 1 || $index === 3) {
                     $this->assertSame($positions[$index - 1], $state['current_proposition_id']);
-                    $this->assertSame($phases[$index - 1], $state['plan']['phase']['kind']);
+                    $this->assertSame($phases[$index - 1], $state['phase']['kind']);
                 } elseif ($index > 0) {
                     $this->assertDatabaseHas('supersessions', [
                         'source_proposition_id' => $positions[$index - 1],
@@ -66,14 +66,14 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
                     ]);
                 }
                 $positions[] = $state['current_proposition_id'];
-                $phases[] = $state['plan']['phase']['kind'];
+                $phases[] = $state['phase']['kind'];
 
                 // Exact synchronous worker inputs; no autonomous inference policy.
                 return [
                     ['action' => 'instrument.execute', 'proposition_id' => $initial['current_proposition_id'],
                         'instrument' => ['kind' => 'proposition_search', 'limit' => 1]],
                     ['action' => 'proposition.variant', 'statement' => 'Testable opportunity 0'],
-                    ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+                    ['action' => 'instrument.execute', 'proposition_id' => $state['context']['gate']['acting_id'],
                         'instrument' => ['kind' => 'citation', 'reference' => $initial['current_proposition_id']]],
                     ['action' => 'proposition.variant', 'statement' => 'Develop through an independent Persist attempt'],
                 ][count($phases) - 1];
@@ -86,7 +86,7 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
         $this->assertNotNull($constrain->completed_at);
         $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $positions[3],
             'target_proposition_id' => $constrain->gate_proposition_id]);
-        $this->assertSame('distinguish', $after['plan']['phase']['kind']);
+        $this->assertSame('distinguish', $after['phase']['kind']);
         $this->assertSame($initial['current_proposition_id'], $after['current_proposition_id']);
         $this->assertGreaterThan($initial['cycle']['sequence'], $after['cycle']['sequence']);
         $this->assertDatabaseHas('cycles', ['id' => $initial['cycle']['id'], 'rest_reason' => 'no_available_move']);
@@ -112,8 +112,10 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
             $connected = $this->readParticipation($actor);
             $this->assertSame($manual, $connected, 'Connection identity must not change participation semantics.');
             $input = $this->persistJourneyInput($step);
-            $prompt = app(ParticipantPromptFactory::class)->make(Connection::findOrFail($connection), $connected);
-            $this->assertSame($connected['plan']['schema'], $prompt['schema']);
+            $operational = app(\App\Services\ParticipationService::class)->stateFor(Participant::findOrFail($actor));
+            $prompt = app(ParticipantPromptFactory::class)->make(Connection::findOrFail($connection), $operational);
+            $this->assertEquals($connected['context'], json_decode($prompt['user'], true, flags: JSON_THROW_ON_ERROR));
+            $this->assertSame($connected['schema'], $prompt['schema']);
             $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
             $contribution = $transport['properties']['contribution'];
             $variant = collect($contribution['anyOf'] ?? [$contribution])->first(
@@ -121,7 +123,7 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
             $this->assertNotNull($variant, 'The provider schema must contain this exact action.');
             $envelope = ['contribution' => array_replace(array_fill_keys($variant['required'], null), $input)];
             $this->assertTrue(app(Validator::class)->validate(Helper::toJSON($envelope), Helper::toJSON($transport))->isValid(), 'Step '.$step.' '.json_encode($envelope));
-            $seen[$connected['plan']['phase']['kind']] = true;
+            $seen[$connected['phase']['kind']] = true;
             $seen[$input['action']] = true;
             $after = $this->executePersistJourneyStep($actor, $step);
             $this->patchJson($url.'/'.$link, ['is_enabled' => false])->assertOk();
@@ -131,7 +133,7 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
             'participant.rest', 'proposition.commit'] as $position) {
             $this->assertArrayHasKey($position, $seen);
         }
-        $this->assertSame('distinguish', $after['plan']['phase']['kind']);
+        $this->assertSame('distinguish', $after['phase']['kind']);
         $this->assertNotSame($origin, $after['last_commitment']['proposition_id']);
     }
 }

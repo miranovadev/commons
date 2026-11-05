@@ -1,5 +1,9 @@
 # Autonomous participant context
 
+The public API and worker now share the [unified participation contract](participation.md#reading-the-participation-response).
+Compact operational plan examples below describe the internal selection inputs.
+
+
 > **Current cognition:** [Gate-causal Receipt cognition](gate-causal-receipt-cognition.md)
 > supersedes the older Receipt presentation rules below. Causally visible Receipts
 > have bounded summaries; loaded observations and observations directly consumed

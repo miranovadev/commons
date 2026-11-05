@@ -74,7 +74,7 @@ class ParticipantContextTest extends TestCase
         app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $state = app(ParticipationService::class)->stateFor($fixture->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
-        $this->assertSame(['participant', 'receipts', 'read', 'gate', 'write', 'actions'], array_keys(json_decode($prompt['user'], true)));
+        $this->assertSame(['participant', 'receipts', 'read', 'gate', 'write'], array_keys(json_decode($prompt['user'], true)));
         $this->assertLessThanOrEqual(self::MAX_BYTES, strlen($prompt['user']));
         $polluted = $state;
         $polluted['plan']['workspace'] = ['registers' => array_fill(0, 500, $plan['gate_options'])];
@@ -130,12 +130,11 @@ class ParticipantContextTest extends TestCase
         $connection->configuration = [];
         $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
         $packet = json_decode($prompt['user'], true, flags: JSON_THROW_ON_ERROR);
-        $schema = $packet['actions'];
+        $this->assertArrayNotHasKey('actions', $packet);
+        $schema = $prompt['schema'];
         $this->assertArrayNotHasKey('instrument.execute', $schema['$defs']['actions']);
         $this->assertArrayNotHasKey('anyOf', $schema['$defs']['instrument']);
-        $transportSchema = $prompt['schema'];
-        unset($transportSchema['x-commons']['description'], $transportSchema['$comment']);
-        $this->assertSame($schema, $transportSchema);
+        $this->assertSame($state['plan']['schema'], $schema);
 
         $guidance = 'Loading does not grant action permission.';
         $this->assertStringNotContainsString($guidance, $prompt['system']);
@@ -317,9 +316,11 @@ class ParticipantContextTest extends TestCase
         $base = '/api/substrates/'.$fixture->substrate->slug.'/participants/'.$fixture->viewer->id;
         $this->getJson($base.'/workspace')->assertUnauthorized();
         $this->actingAs(User::factory()->create())->getJson($base.'/workspace')->assertForbidden();
-        $this->actingAs($user)->getJson($base.'/workspace')->assertOk()->assertJsonStructure(['data' => ['plan' => ['workspace' => ['registers']]]]);
-        $this->getJson($base.'/participate')->assertOk()->assertJsonMissingPath('data.plan.workspace')->assertJsonMissingPath('data.plan.gate');
-        $this->getJson($base.'/plan')->assertOk()->assertJsonPath('data.gate_id', $fixture->gate->id)->assertJsonMissingPath('data.workspace');
+        $public = $this->actingAs($user)->getJson($base.'/participate')->assertOk()
+            ->assertJsonPath('data.context.gate.acting_id', $fixture->gate->id)->assertJsonMissingPath('data.plan')->json('data');
+        foreach (['workspace', 'plan'] as $alias) {
+            $this->assertSame($public, $this->getJson($base.'/'.$alias)->assertOk()->json('data'));
+        }
     }
 
     private function fullObjectCount(mixed $value): int

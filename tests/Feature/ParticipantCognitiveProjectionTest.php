@@ -238,10 +238,9 @@ class ParticipantCognitiveProjectionTest extends TestCase
         $this->assertGreaterThan(1, count($ids));
         $state = ['participant' => ['id' => $f->viewer->id, 'callsign' => 'Nova', 'designation' => 'Analytical explorer'], 'plan' => $plan];
         $packet = app(ParticipantContextSerializer::class)->inference($state);
-        $this->assertSame(['participant', 'receipts', 'read', 'gate', 'write', 'actions'], array_keys($packet));
+        $this->assertSame(['participant', 'receipts', 'read', 'gate', 'write'], array_keys($packet));
         $this->assertSame($state['participant'], $packet['participant']);
-        unset($schema['x-commons']['description']);
-        $this->assertSame($schema, $packet['actions']);
+        $this->assertSame($schema, app(ParticipantContextSerializer::class)->participation($state)['schema']);
         $this->assertSame($plan, $state['plan']);
         $this->assertSame('How do these propositions relate?', $packet['read']['question']);
         $this->assertSame($plan['read_options'][0]['id'], $packet['read']['propositions'][0]['id']);
@@ -292,7 +291,7 @@ class ParticipantCognitiveProjectionTest extends TestCase
         $this->assertSame('acting', $packet['gate']['propositions'][0]['relation']);
         $this->assertSame(array_column($plan['write_options'], 'id'), array_column($packet['write']['propositions'], 'id'));
         $this->assertSame('What else is possible here?', $packet['write']['question']);
-        $this->assertSame($f->writes, $packet['actions']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum']);
+        $this->assertSame($f->writes, $state['plan']['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum']);
         $state['plan']['write_options'] = [];
         $empty = app(ParticipantContextSerializer::class)->inference($state);
         $this->assertSame([], $empty['write']['propositions']);

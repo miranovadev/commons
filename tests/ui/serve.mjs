@@ -16,17 +16,18 @@ const bundle = await build({ absWorkingDir: root, entryPoints: ['tests/ui/worksp
       function useFixture() { useSyncExternalStore(callback => { listeners.add(callback); return () => listeners.delete(callback); }, () => version); }
       export const useGetSessionQuery = () => ({ data: { has_system_access: true } });
       export const useGetPreparationHistoryQuery = () => ({ currentData: { items: [], next_cursor: null } });
-export const useGetPreparationQuery = () => ({});
+      export const useGetPreparationQuery = () => ({});
+      export const useReadPreparationMutation = () => [() => {}, {}];
+      export const useAcknowledgePreparationMutation = () => [() => {}, {}];
       export const useGetParticipantsQuery = () => { useFixture(); return { data: previewParticipants }; };
       export const useGetParticipantQuery = ({ participantId }) => { useFixture(); return { data: previewParticipants.find(p => p.id === participantId) || fixture.participant }; };
-      export const useGetParticipationQuery = (...args) => useGetParticipantWorkspaceQuery(...args);
-export const useGetParticipantWorkspaceQuery = ({ participantId }) => { useFixture(); const data = previewStates[participantId] || fixture.participation; return { data, currentData: data }; };
+      export const useGetParticipationQuery = ({ participantId }) => { useFixture(); const data = previewStates[participantId] || fixture.participation; return { data, currentData: data }; };
       export const useContributeMutation = () => [input => ({ unwrap: async () => {
         const output = document.querySelector('[data-last-action]');
         if (output) output.textContent = JSON.stringify(input.contribution);
         const state = previewStates[input.participantId];
-        if (state?.plan?.phase?.kind === 'order') {
-          const next = { status: 'waiting', plan: null, completion: { phase_id: state.plan.phase.id, cycle_id: 'completed-cycle', proposition_id: input.contribution.proposition_id, completed_at: new Date().toISOString() }, entry: { mode: 'potential', selection: 'position', available: new URLSearchParams(location.search).get('status') !== 'inactive', message: 'Continue from the Participant’s current substrate position.' } };
+        if (state?.phase?.kind === 'order') {
+          const next = { status: 'waiting', participant: state.participant, phase: null, context: null, schema: null, completion: { phase_id: state.phase.id, cycle_id: 'completed-cycle', proposition_id: input.contribution.proposition_id, completed_at: new Date().toISOString() }, entry: { mode: 'potential', selection: 'position', available: new URLSearchParams(location.search).get('status') !== 'inactive', message: 'Continue from the Participant’s current substrate position.' } };
           previewStates[input.participantId] = next;
           version++; listeners.forEach(notify => notify());
           return next;
@@ -40,7 +41,7 @@ export const useGetParticipantWorkspaceQuery = ({ participantId }) => { useFixtu
           if (state?.status !== 'waiting' || !state?.entry?.available) { const error = new Error('Entry unavailable in this preview state.'); setError(error); throw error; }
           previewStates[input.participantId] = fixture.participation;
           const participant = previewParticipants.find(p => p.id === input.participantId);
-          participant.position = { cycle_sequence: 2, cycle_completed: false, phase: fixture.participation.plan.phase };
+          participant.position = { cycle_sequence: 2, cycle_completed: false, phase: fixture.participation.phase };
           const output = document.querySelector('[data-last-action]');
           if (output) output.textContent = 'Preview Cycle entered: ' + participant.callsign;
           version++; listeners.forEach(notify => notify());

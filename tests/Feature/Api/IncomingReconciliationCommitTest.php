@@ -39,12 +39,12 @@ class IncomingReconciliationCommitTest extends ScriptedParticipationTestCase
         }
         $state = $this->readParticipation($reader);
         $this->assertActionUnavailable($state, 'proposition.reconcile');
-        $this->postContribution($reader, $state['plan']['phase']['id'], ['action' => 'proposition.reconcile',
+        $this->postContribution($reader, $state['phase']['id'], ['action' => 'proposition.reconcile',
             'other_proposition_id' => $ids['thirdSignal'], 'statement' => 'The third reading repeats the onset.'])->assertUnprocessable();
         $source = Proposition::findOrFail($ids['leftSynthesis']);
         $state = $this->contribute($reader, ['action' => 'attestation.create', 'proposition_id' => $source->id,
             'direction' => 'support'], $state);
-        $bias = Phase::findOrFail($state['plan']['phase']['id']);
+        $bias = Phase::findOrFail($state['phase']['id']);
         $this->assertSame($source->id, $bias->gate_proposition_id);
         $this->assertNotContains($source->id, app(MediatedIncomingBiasService::class)->forPhase($bias)->pluck('id'));
 

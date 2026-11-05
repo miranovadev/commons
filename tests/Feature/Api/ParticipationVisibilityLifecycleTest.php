@@ -42,14 +42,14 @@ class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
         $state = $this->readParticipation($observer);
         $originCard = $this->visibleProposition($state, $origin);
         $signalCard = $this->visibleProposition($state, $signal);
-        $this->assertSame(1, $originCard['attestation_summary']['positive']);
-        $this->assertSame(0, $signalCard['attestation_summary']['positive']); // Fresh generation does not fabricate a judgment.
+        $this->assertArrayNotHasKey('attestation_summary', $originCard);
+        $this->assertArrayNotHasKey('attestation', $signalCard); // Fresh generation does not fabricate a judgment.
         $this->assertSame([$origin], $signalCard['parent_ids']);
         $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $origin, 'target_proposition_id' => $signal]);
         $localReceipt = DB::table('receipts')->where('receiptable_id', $signal)->sole()->id;
         $this->assertCount(1, $originCard['receipts']);
-        $this->assertDatabaseHas('receipts', ['id' => $originCard['receipts'][0]['id'], 'receiptable_id' => $origin]);
-        $this->assertContains($localReceipt, array_column($signalCard['receipts'], 'id'));
+        $this->assertDatabaseHas('receipts', ['id' => $originCard['receipts'][0], 'receiptable_id' => $origin]);
+        $this->assertContains($localReceipt, $signalCard['receipts']);
         $json = json_encode($state);
         foreach ([$foreignOrigin, $foreignChild, $distant, ...$foreignReceipts, ...$foreignAttestations, ...$foreignEdges,
             'Foreign branch content.', 'Distant forward detail.'] as $excluded) {
@@ -57,22 +57,22 @@ class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
         }
         $before = DB::table('propositions')->count();
         foreach ([$foreignChild, $distant] as $excluded) {
-            $this->postContribution($observer, $state['plan']['phase']['id'], [
+            $this->postContribution($observer, $state['phase']['id'], [
                 'action' => 'attestation.create', 'proposition_id' => $excluded, 'direction' => 'support',
             ])->assertUnprocessable();
         }
-        $this->postContribution($observer, $state['plan']['phase']['id'], ['action' => 'receipt.read', 'receipt_id' => $foreignReceipts[0]])->assertUnprocessable();
+        $this->postContribution($observer, $state['phase']['id'], ['action' => 'receipt.read', 'receipt_id' => $foreignReceipts[0]])->assertUnprocessable();
         $this->assertSame($before, DB::table('propositions')->count());
-        $this->assertSame($state['plan']['phase']['id'], $this->readParticipation($observer)['plan']['phase']['id']);
+        $this->assertSame($state['phase']['id'], $this->readParticipation($observer)['phase']['id']);
         $this->getJson('/api/substrates/'.$localSlug.'/propositions/'.$foreignChild)->assertNotFound();
     }
 
     private function observePersistGate(string $author, array $state): array
     {
-        $this->assertSame('persist', $state['plan']['phase']['kind']);
-        $next = $this->contribute($author, ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+        $this->assertSame('persist', $state['phase']['kind']);
+        $next = $this->contribute($author, ['action' => 'instrument.execute', 'proposition_id' => $state['context']['gate']['acting_id'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://evidence.example.test/'.$author]], $state);
-        $this->assertSame($state['plan']['phase']['id'], $next['plan']['phase']['id']);
+        $this->assertSame($state['phase']['id'], $next['phase']['id']);
 
         return $next;
     }

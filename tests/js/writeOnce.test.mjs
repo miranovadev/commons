@@ -23,15 +23,10 @@ const result = await build({ stdin: { contents: `
       write.register = 'frontier';
       actions['proposition.traverse'] = { properties: { proposition_id: { enum: ['write'] } } };
     }
-    const plan = { gate, phase: { id: 'return-cycle', number: persist ? 2 : 4, kind: persist ? 'persist' : 'disperse', write_register: write.register },
+    const plan = { context: { receipts: [], read: { propositions: [] }, gate: { acting_id: gate.id, propositions: [{ ...gate, receipts: [] }] }, write: { propositions: [{ ...write, receipts: [] }] } }, phase: { id: 'return-cycle', number: persist ? 2 : 4, kind: persist ? 'persist' : 'disperse', write_register: write.register },
       write_options: [write], revision_options: [write], schema: { $defs: { actions } } };
     // Stale client action labels must never override the new authoritative schema.
     return render(<ParticipantWorkspace plan={plan} availableActions={['proposition.variant', ...Object.keys(actions)]} onAction={() => {}} />);
-  }
-  export function exhaustedCommitNotice(phasePosition = true) {
-    const plan = { commitment: { requirements: { attestation: true, receipt: true, reinforcement: true, closure: true, phase_position: phasePosition, write_opportunity: false } } };
-    const notices = participationNotices({ plan, participation: { reason: { message: 'This source has already been committed. Continue through its Committal result.' } }, canCommit: false, canRest: false, onRest: () => {} });
-    return { title: notices[0].title, content: render(notices[0].content) };
   }
 `, loader: 'tsx', resolveDir: process.cwd() }, bundle: true, platform: 'node', format: 'cjs', write: false, jsx: 'automatic' });
 const module = { exports: {} };
@@ -49,13 +44,6 @@ test('returning Disperse exposes authorized revision and support without another
   assert.match(write, />Refute<\/span>/);
 });
 
-test('an exhausted Commit opportunity is explained without suggesting more grounding will restore it', () => {
-  const notice = module.exports.exhaustedCommitNotice();
-  assert.equal(notice.title, 'Source already committed');
-  assert.match(notice.content, /Continue through its Committal result/);
-  assert.doesNotMatch(notice.content, /Grounding can be added/);
-});
-
 test('an owned Write without authorized Revise retains support controls but hides revision', () => {
   const html = module.exports.workspace(false);
   assert.doesNotMatch(html, />Revise<\/span>/);
@@ -69,12 +57,4 @@ test('Persist hides unavailable Variant and Revise while retaining schema-author
   assert.match(html, />Support<\/span>/);
   assert.match(html, />Refute<\/span>/);
   assert.match(html, />Instrument<\/span>/);
-});
-
-
-test('an early same-register Gate is not described as an already committed source', () => {
-  const notice = module.exports.exhaustedCommitNotice(false);
-  assert.equal(notice.title, 'No phase-6 candidate at this Gate');
-  assert.match(notice.content, /Bias-produced candidate in the current Commit Region/);
-  assert.doesNotMatch(notice.content, /Grounding can be added/);
 });

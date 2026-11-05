@@ -88,7 +88,7 @@ const result = await build({ stdin: { contents: `
   import { configureStore } from '@reduxjs/toolkit';
   import { MemoryRouter, Routes, Route } from 'react-router-dom';
   import { SubstratePage } from './resources/js/pages/SubstratePage';
-  import { commonsApi, useGetParticipantQuery, useGetParticipationQuery, useGetParticipantWorkspaceQuery } from './resources/js/services/commonsApi';
+  import { commonsApi, useGetParticipantQuery, useGetParticipationQuery } from './resources/js/services/commonsApi';
   import { ParticipantWorkspace } from './resources/js/components/ParticipantWorkspace';
   import { useParticipantRealtime, useContextHorizonRealtime } from './resources/js/realtime/useRealtime';
   export { act } from 'react';
@@ -103,10 +103,10 @@ const result = await build({ stdin: { contents: `
   }
   function GraphProbe({ slug, enabled = true }) { useContextHorizonRealtime(slug, enabled); return null; }
   function WorkspaceProbe({ id }) {
-    const { data } = useGetParticipantWorkspaceQuery({ slug: 'test', participantId: id });
+    const { data } = useGetParticipationQuery({ slug: 'test', participantId: id });
     useParticipantRealtime('test', id, Boolean(data), data?.context_horizon_id);
-    return data?.plan ? <MantineProvider env="test"><ParticipantWorkspace plan={data.plan}
-      availableActions={Object.keys(data.plan.schema.$defs.actions)} onAction={() => {}} /></MantineProvider> : null;
+    return data?.context ? <MantineProvider env="test"><ParticipantWorkspace plan={data}
+      availableActions={Object.keys(data.schema.$defs.actions)} onAction={() => {}} /></MantineProvider> : null;
   }
   export function mount(container) {
     const store = configureStore({ reducer: { [commonsApi.reducerPath]: commonsApi.reducer },
@@ -603,15 +603,15 @@ test('personal encounter notifications refresh only the actor and structural cha
 
   globalThis.fetch = async request => {
     const path = new URL(request.url).pathname;
-    if (path.endsWith('/workspace')) {
+    if (path.endsWith('/participate')) {
       requests++;
-      return json({ status: 'ready', context_horizon_id: 'local', plan: {
+      return json({ status: 'ready', context_horizon_id: 'local',
         phase: { id: 'phase', kind: 'distinguish', number: 1, write_register: 'activity' }, gate: origin,
-        write_options: [{ ...proposition('A', ['Origin']), explored, structural_position: 1 }],
+        context: { receipts: [], read: { propositions: [] }, gate: { acting_id: origin.id, propositions: [{ ...origin, receipts: [] }] }, write: { propositions: [{ ...proposition('A', ['Origin']), receipts: [], explored }] } },
         exhausted_alternatives: [],
         schema: { $defs: { actions: explored ? { 'proposition.variant': { properties: {} } }
           : { 'proposition.traverse': { properties: { proposition_id: { enum: ['A'] } } } } } },
-      } });
+      });
     }
     return json({ id: 'viewer' });
   };

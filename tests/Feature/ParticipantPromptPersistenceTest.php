@@ -58,7 +58,7 @@ class ParticipantPromptPersistenceTest extends TestCase
             $after = json_decode($prompt['user'], true);
             $bodies = collect($after['receipts'])->filter(fn ($r) => isset($r['loaded_inline_content']))->keyBy('id')->all();
             $this->assertEquals($before, $after);
-            $this->assertSame($before['actions'], $after['actions']);
+            $this->assertArrayNotHasKey('actions', $after);
             $references = json_decode($prompt['support'] ?: '{"receipts":[]}', true)['receipts'];
             foreach ($references as $reference) {
                 $this->assertArrayNotHasKey('evidence', $reference);

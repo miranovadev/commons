@@ -3,7 +3,6 @@
 namespace Tests\Fixtures;
 
 use App\Models\Receipt;
-use App\Services\ParticipantContextSerializer;
 use Illuminate\Support\Facades\DB;
 
 /** Read-only assertions over real journeys; never manufactures prerequisite state. */
@@ -13,7 +12,7 @@ trait EvidenceLifecycleAudit
     {
         $before = DB::table('participant_receipt_contexts')->orderBy('id')->get()->toJson();
         $events = DB::table('receipt_context_events')->count();
-        $packet = app(ParticipantContextSerializer::class)->inference($state);
+        $packet = $state['context'];
         $this->assertSame($before, DB::table('participant_receipt_contexts')->orderBy('id')->get()->toJson());
         $this->assertSame($events, DB::table('receipt_context_events')->count());
         $ids = array_column($packet['receipts'], 'id');

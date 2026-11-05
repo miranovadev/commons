@@ -7,6 +7,7 @@ use App\Http\Requests\EnterCycleRequest;
 use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Substrate;
+use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipationService;
 use App\Services\PreparationService;
 use DomainException;
@@ -19,6 +20,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ParticipationController extends Controller
 {
+    public function __construct(private readonly ParticipantContextSerializer $serializer) {}
+
     public function show(
         Substrate $substrate,
         Participant $participant,
@@ -27,18 +30,8 @@ class ParticipationController extends Controller
         Gate::authorize('act', $participant);
 
         return response()->json([
-            'data' => $participation->stateFor($participant),
+            'data' => $this->serializer->participation($participation->stateFor($participant)),
         ]);
-    }
-
-    public function workspace(
-        Substrate $substrate,
-        Participant $participant,
-        ParticipationService $participation,
-    ): JsonResponse {
-        Gate::authorize('act', $participant);
-
-        return response()->json(['data' => $participation->workspaceFor($participant)]);
     }
 
     public function reading(Request $request, Substrate $substrate, Participant $participant, string $execution): JsonResponse
@@ -89,7 +82,7 @@ class ParticipationController extends Controller
         }
 
         return response()->json(
-            ['data' => $state],
+            ['data' => $this->serializer->participation($state)],
             Response::HTTP_CREATED,
         );
     }
@@ -128,6 +121,6 @@ class ParticipationController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        return response()->json(['data' => $state]);
+        return response()->json(['data' => $this->serializer->participation($state)]);
     }
 }

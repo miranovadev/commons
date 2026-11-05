@@ -19,6 +19,14 @@ use Illuminate\Support\Facades\DB;
 /** Cognitive catalogue only. Neither discovery nor visibility grants load authority. */
 final class ParticipantReceiptProjection
 {
+    /** Historical Receipt metadata can contain snapshots from the observation interface. */
+    private const MEASUREMENTS = [
+        'observables', 'attestation_summary', 'attestation_counts', 'reinforcement_count', 'structural_position',
+        'correspondence', 'chirality', 'closure', 'tension', 'charge', 'potential_charge', 'impact', 'field_state',
+        'depth', 'cadence', 'depth_direction', 'cadence_direction', 'closure_history', 'closure_observation',
+        'historical_extent', 'historical_rhythm', 'tension_before', 'tension_after', 'recorded_field_available',
+    ];
+
     public function normalize(array &$registers, array $state): array
     {
         $catalogue = collect($state['plan']['receipts'] ?? [])->keyBy('id');
@@ -98,7 +106,7 @@ final class ParticipantReceiptProjection
             $content = null;
             if (($loaded || $contextual) && ($memory ? ($receipt['memory_active'] ?? false) : ($visible->has($receipt['id']) || $receipt['type'] === 'proposition_search'))) {
                 if ($memory) {
-                    $content = $receipt['tragedy_memory'] ?? null;
+                    $content = isset($receipt['tragedy_memory']) ? $this->cognitiveMemory($receipt['tragedy_memory']) : null;
                 } elseif ($model !== null) {
                     $content = $evidence->observation($model)['evidence'] ?? $evidence->failure($model);
                     if ($model->type === 'citation') {
@@ -109,14 +117,39 @@ final class ParticipantReceiptProjection
                 }
             }
 
-            return [...($model?->only(['id', 'type', 'reference']) ?? Arr::only($receipt, ['id', 'type', 'reference'])), 'loaded' => $loaded,
+            return $this->withoutMeasurements([...($model?->only(['id', 'type', 'reference']) ?? Arr::only($receipt, ['id', 'type', 'reference'])), 'loaded' => $loaded,
                 'summary' => $summaries->forReceipt($model ?? (new Receipt)->forceFill(Arr::only($receipt, ['type', 'reference']))),
                 ...($model?->evidenceExecution !== null ? ['originating_gate_id' => $model->evidenceExecution->proposition_id] : []),
                 ...($model?->consumption !== null ? ['consumed_by_proposition_id' => $model->consumption->proposition_id] : []),
                 ...($content !== null ? ['load_mode' => $loaded ? 'participant' : 'read_context', 'read_context' => $contextual] : []),
                 ...($model?->type === 'load_file' ? ['acquisition' => $evidence->acquisition($model)] : []),
-                ...($content !== null ? ['loaded_inline_content' => $content] : [])];
+                ...($content !== null ? ['loaded_inline_content' => $content] : [])]);
         })->values()->all();
+    }
+
+    private function withoutMeasurements(array $metadata): array
+    {
+        $metadata = Arr::except($metadata, self::MEASUREMENTS);
+        foreach ($metadata as $key => $value) {
+            if (is_array($value)) {
+                $metadata[$key] = $this->withoutMeasurements($value);
+            }
+        }
+
+        return $metadata;
+    }
+
+    /** Recall the failed lineage and its recorded statements without historical field measurements. */
+    private function cognitiveMemory(array $memory): array
+    {
+        return [
+            ...Arr::only($memory, ['tragedy_id', 'receipt_id', 'governing_committal_id', 'chain_limit',
+                'earlier_history_omitted', 'starts_at_current_committal', 'chain_direction']),
+            'committed_chain' => array_map(fn ($node) => Arr::only($node,
+                ['proposition_id', 'statement', 'register', 'domain']), $memory['committed_chain'] ?? []),
+            'catastrophe' => Arr::only($memory['catastrophe'] ?? [],
+                ['proposition_id', 'statement', 'phase', 'register', 'observed_at']),
+        ];
     }
 
     /** Batch the canonical association rules, including Commit's inherited history. */

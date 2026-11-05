@@ -40,7 +40,7 @@ final readonly class ParticipationService
         return $this->state($participant, false, $fieldVersion);
     }
 
-    /** Human-only display state, fetched separately from autonomous participation. */
+    /** Legacy rich projection retained for internal diagnostics. Participation clients use stateFor(). */
     public function workspaceFor(Participant $participant): array
     {
         return $this->state($participant, true);

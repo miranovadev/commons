@@ -206,7 +206,7 @@ class ParticipantExplorationTest extends TestCase
         self::assertNotNull($write, 'Explored Writes remain visible to autonomous Participants');
         self::assertTrue($write['explored'] ?? false);
         foreach (['attestation.create', 'proposition.revise', 'proposition.traverse'] as $action) {
-            self::assertArrayNotHasKey($action, $packet['actions']['$defs']['actions']);
+            self::assertArrayNotHasKey($action, $plan['schema']['$defs']['actions']);
         }
     }
 
