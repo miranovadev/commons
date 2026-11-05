@@ -114,6 +114,8 @@ option lists, lineage and `workspace.registers` with the ordered
 `context.{read,gate,write}.propositions` arrays. Use the action definitions for
 target IDs and Receipt options. A GET or POST response does not acknowledge or
 present an Artifact. Observation and Preparation history have separate interfaces.
+On Order, clients can copy the schema’s `$comment` into the optional
+`expected_closure` field beside `phase_id` to guard the evaluated Closure snapshot.
 On a 409, refresh the state and reconsider the draft against the current Phase.
 
 Revision is bound to a specific `proposition_id`. The server only advertises

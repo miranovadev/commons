@@ -519,7 +519,7 @@ interface Lifecycle {
   last_commitment: { proposition_id: Identifier } | null;
   horizon_sequence: number | null;
   domain: DomainName | null;
-  entry: { mode: 'origin' | 'continuity' | 'potential'; selection?: string; available: boolean; message: string; proposition_id?: Identifier | null } | null;
+  entry: { mode: 'origin' | 'continuity' | 'potential'; selection?: string; available: boolean; message: string; proposition_id?: Identifier | null; requirements?: string[] } | null;
   reason: { code: string; message: string } | null;
   preparation: ParticipantPlan['preparation'];
 }

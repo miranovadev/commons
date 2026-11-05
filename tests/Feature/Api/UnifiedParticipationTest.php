@@ -20,6 +20,8 @@ class UnifiedParticipationTest extends ParticipationHttpTestCase
         $this->getJson($url.'/participate')->assertUnauthorized();
         $this->postJson('/api/session', ['email' => 'operator@example.test', 'password' => 'deterministic-test-password'])->assertOk();
         $this->getJson($url.'/participate')->assertOk()->assertJsonPath('data.entry.mode', 'origin')
+            ->assertJsonPath('data.entry.requirements', ['statement', 'attestation'])
+            ->assertJsonMissingPath('data.entry.distance')->assertJsonMissingPath('data.entry.potential_charge')
             ->assertJsonPath('data.context', null)->assertJsonPath('data.schema', null);
 
         $entered = $this->enterParticipant($actor, true);

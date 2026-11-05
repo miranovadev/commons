@@ -73,6 +73,12 @@ class ParticipantContextTest extends TestCase
         $connection->configuration = [];
         app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $state = app(ParticipationService::class)->stateFor($fixture->viewer);
+        $packet = app(ParticipantContextSerializer::class)->participation($state);
+        $this->assertLessThan(22 * 1024, strlen(json_encode($packet, JSON_THROW_ON_ERROR)));
+        $idsInRoles = collect(['read', 'gate', 'write'])
+            ->flatMap(fn ($role) => array_column($packet['context'][$role]['propositions'], 'id'));
+        // Mediate's dense representative fixture has distinct role populations.
+        $this->assertSame($idsInRoles->unique()->count(), $this->fullObjectCount($packet));
         $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
         $this->assertSame(['participant', 'receipts', 'read', 'gate', 'write'], array_keys(json_decode($prompt['user'], true)));
         $this->assertLessThanOrEqual(self::MAX_BYTES, strlen($prompt['user']));

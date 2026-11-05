@@ -22,7 +22,7 @@ final class ParticipantReceiptProjection
     /** Historical Receipt metadata can contain snapshots from the observation interface. */
     private const MEASUREMENTS = [
         'observables', 'attestation_summary', 'attestation_counts', 'reinforcement_count', 'structural_position',
-        'correspondence', 'chirality', 'closure', 'tension', 'charge', 'potential_charge', 'impact', 'field_state',
+        'correspondence', 'chirality', 'closure', 'tension', 'charge', 'potential_charge', 'impact', 'field', 'field_state',
         'depth', 'cadence', 'depth_direction', 'cadence_direction', 'closure_history', 'closure_observation',
         'historical_extent', 'historical_rhythm', 'tension_before', 'tension_after', 'recorded_field_available',
     ];

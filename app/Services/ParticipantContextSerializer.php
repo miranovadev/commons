@@ -32,7 +32,7 @@ final class ParticipantContextSerializer
         return [
             ...Arr::only($state, ['status', 'participant', 'cycle', 'reason', 'completion',
                 'current_proposition_id', 'context_horizon_id', 'horizon_sequence', 'domain']),
-            'entry' => $entry === null ? null : Arr::except($entry, ['distance', 'potential_charge']),
+            'entry' => $entry === null ? null : Arr::only($entry, ['mode', 'selection', 'available', 'message', 'proposition_id', 'requirements']),
             'last_commitment' => isset($state['last_commitment'])
                 ? Arr::only($state['last_commitment'], ['proposition_id']) : null,
             'phase' => $plan['phase'] ?? null,
