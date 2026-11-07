@@ -128,7 +128,7 @@ class RevisionAdmissibilityTest extends TestCase
 
         $this->expectException(DomainException::class);
         $this->expectExceptionMessage(
-            'Revision requires a Variant at this Write position and an effective self-Refute from an earlier Cycle.'
+            'Revision requires a Variant-family expression with no direct Revision at this Write position and an effective self-Refute from an earlier Cycle.'
         );
 
         app(ContributionDispatcher::class)->dispatch(
@@ -202,6 +202,62 @@ class RevisionAdmissibilityTest extends TestCase
         app(ContributionService::class)->validate($participant, $support);
         $dispatch->dispatch($participant, $phase, $support);
         $this->assertSame('support', $revised->effectiveAttestations()->sole()->direction);
+    }
+
+    public function test_revision_chain_requires_a_fresh_personal_refute_for_each_expression(): void
+    {
+        $this->resolveExpressiveFieldFixture(.8);
+        [$participant, $phase, $gate, $source] = $this->revisionFixture();
+        $this->attest($source->phase, $source, 'refute');
+        $dispatch = app(ContributionDispatcher::class);
+        $input = ['action' => 'proposition.revise', 'proposition_id' => $source->id, 'statement' => 'First revision'];
+        $child = $dispatch->dispatch($participant, $phase, $input);
+        $phase = $this->nextEncounter($phase);
+        $this->assertRevisionUnavailable($participant, $phase, $source);
+        $this->assertRevisionUnavailable($participant, $phase, $child);
+        $dispatch->dispatch($participant, $phase, [
+            'action' => 'attestation.create', 'proposition_id' => $child->id, 'direction' => 'refute',
+        ]);
+        $this->assertRevisionUnavailable($participant, $phase, $child);
+        $phase = $this->nextEncounter($phase);
+        $this->assertSame([$child->id], array_column(app(InputPlanService::class)->forParticipant($participant)['revision_options'], 'id'));
+        $next = $dispatch->dispatch($participant, $phase, [...$input, 'proposition_id' => $child->id, 'statement' => 'Second revision']);
+        $this->assertEqualsCanonicalizing([$gate->id, $child->id], $next->parents()->pluck('propositions.id')->all());
+        $this->assertFalse($next->effectiveAttestations()->exists());
+        $phase = $this->nextEncounter($phase);
+        $this->assertRevisionUnavailable($participant, $phase, $source);
+        $this->assertRevisionUnavailable($participant, $phase, $child);
+    }
+
+    public function test_historical_revision_siblings_remain_readable_and_close_their_exact_source(): void
+    {
+        $this->resolveExpressiveFieldFixture(.8);
+        [$participant, $phase, $gate, $source] = $this->revisionFixture();
+        $this->attest($source->phase, $source, 'refute');
+        $first = app(ContributionDispatcher::class)->dispatch($participant, $phase, [
+            'action' => 'proposition.revise', 'proposition_id' => $source->id, 'statement' => 'First sibling',
+        ]);
+
+        // Import a second, historical single-edge Revision as a persisted fixture.
+        $legacyPhase = $this->nextEncounter($phase);
+        $legacy = (new Proposition)->forceFill(['phase_id' => $legacyPhase->id, 'register' => $source->register,
+            'tier' => 'expressive', 'statement' => 'Legacy sibling']);
+        $legacy->save();
+        $ledger = app(LedgerService::class);
+        $ledger->record($legacy, $source);
+        $edge = (new Supersession)->forceFill(['phase_id' => $legacyPhase->id, 'source_proposition_id' => $source->id,
+            'target_proposition_id' => $legacy->id, 'type' => 'revise']);
+        $edge->save();
+        $ledger->record($edge);
+
+        $current = $this->nextEncounter($legacyPhase);
+        $this->assertRevisionUnavailable($participant, $current, $source);
+        $this->assertEqualsCanonicalizing([$first->id, $legacy->id],
+            $source->children()->wherePivot('type', 'revise')->pluck('propositions.id')->all());
+        $this->assertEqualsCanonicalizing([$gate->id, $source->id], $first->parents()->pluck('propositions.id')->all());
+        $this->assertSame($source->id, $legacy->parents()->sole()->id);
+        $this->assertEqualsCanonicalizing([$first->id, $legacy->id],
+            app(PropositionOptionService::class)->attestationOptionsFor($current)->pluck('id')->all());
     }
 
     public function test_switching_back_to_support_invalidates_a_previously_valid_revision_packet(): void

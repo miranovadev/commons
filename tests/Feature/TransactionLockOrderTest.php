@@ -42,6 +42,7 @@ use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\ReceiptContextService;
+use App\Services\PropositionOptionService;
 use App\Services\ReconciliationOptionService;
 use App\Services\ReferencePotentialChargeService;
 use App\Services\TragedyService;
@@ -323,6 +324,50 @@ class TransactionLockOrderTest extends TestCase
         $this->assertSame($measurements + 1, DB::table('proposition_measurements')->count());
         $this->assertSame(2, Supersession::where('type', 'reconcile')->count());
         $this->assertSame(1, $a->children()->wherePivot('type', 'reconcile')->count());
+    }
+
+    #[Group('load')]
+    public function test_competing_personal_refutes_can_create_only_one_revision_of_the_exact_expression(): void
+    {
+        $this->resolveExpressiveFieldFixture(.8);
+        $this->initializeExhaustionFixture(originOpensSettlement: true);
+        $first = $this->phase($this->origin, PhaseKind::Distinguish);
+        $second = $this->phase($this->origin, PhaseKind::Distinguish);
+        $source = $this->node($first, $this->origin);
+        $options = app(PropositionOptionService::class);
+        $encounters = [];
+        foreach ([$first, $second] as $prior) {
+            $vote = (new Attestation)->forceFill(['phase_id' => $prior->id, 'proposition_id' => $source->id, 'direction' => 'refute']);
+            $vote->save();
+            app(LedgerService::class)->record($vote);
+            $prior->forceFill(['completed_at' => now()])->save();
+            $prior->cycle->forceFill(['completed_at' => now()])->save();
+            $cycle = $prior->cycle->replicate()->forceFill(['sequence' => 2, 'completed_at' => null]);
+            $cycle->save();
+            $current = $prior->replicate(['operating_cycle_id'])->forceFill(['cycle_id' => $cycle->id, 'completed_at' => null]);
+            $current->save();
+            $current = $current->fresh();
+            $this->assertContains($source->id, $options->revisionOptionsFor($current, $current->cycle->participant)->modelKeys());
+            $encounters[] = $current;
+        }
+        [$winner, $waiting] = $encounters;
+        $input = ['action' => 'proposition.revise', 'proposition_id' => $source->id, 'statement' => 'First revision'];
+        $before = Proposition::count();
+        $edges = Supersession::count();
+        $ledger = $this->substrate->ledgerEntries()->count();
+        $measurements = DB::table('proposition_measurements')->count();
+        $this->whileWorkerWaits($this->substrate, [
+            'operation' => 'dispatch-rejected', 'participant_id' => $waiting->cycle->participant_id, 'phase_id' => $waiting->id,
+            'contribution' => [...$input, 'statement' => 'Competing revision'], 'expected_message' => 'Revision requires',
+        ], fn () => app(ContributionDispatcher::class)->dispatch($winner->cycle->participant, $winner, $input));
+
+        $child = $source->children()->wherePivot('type', 'revise')->sole();
+        $this->assertSame($before + 1, Proposition::count());
+        $this->assertSame($edges + 2, Supersession::count());
+        $this->assertSame($ledger + 3, $this->substrate->ledgerEntries()->count());
+        $this->assertSame($measurements + 1, DB::table('proposition_measurements')->count());
+        $this->assertCount(2, $source->effectiveAttestations()->where('direction', 'refute')->get());
+        $this->assertFalse($child->effectiveAttestations()->exists());
     }
 
     #[Group('load')]

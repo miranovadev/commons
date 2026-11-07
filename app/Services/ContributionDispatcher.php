@@ -117,7 +117,7 @@ final readonly class ContributionDispatcher
             };
             if ($targets !== null && ! $targets->contains('id', $input['proposition_id'] ?? null)) {
                 throw new DomainException($action === 'proposition.revise'
-                    ? 'Revision requires a Variant at this Write position and an effective self-Refute from an earlier Cycle.'
+                    ? 'Revision requires a Variant-family expression with no direct Revision at this Write position and an effective self-Refute from an earlier Cycle.'
                     : 'Support requires an admissible Proposition in the current Write.');
             }
 
