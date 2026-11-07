@@ -223,6 +223,7 @@ final class PropositionOptionService
                 && $node->phase->governance()->context_horizon_id === $phase->governance()->context_horizon_id
                 && $node->phase->governance()->entry_committal_id === $phase->governance()->entry_committal_id
                 && (app(StructuralSourceService::class)->forProposition($node, $context)['structural_source_id'] ?? null) === $phase->gate_proposition_id
+                && ! $context->children->get($node->id, collect())->contains('type', 'revise')
                 && $this->variantFamily($node->id, $context);
         });
 
