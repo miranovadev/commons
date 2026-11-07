@@ -56,7 +56,8 @@ class ParticipatoryCompletionTest extends TestCase
         ExplorationHistory::record($head, $terminal);
         $before = DB::table('exploration_events')->get()->toJson();
         $context = new ParticipationContext($terminal);
-        self::assertFalse(app(ParticipantExplorationService::class)->explored($a, $terminal, $context));
+        self::assertFalse(app(ParticipantExplorationService::class)->explored($nodes[$missing - 1], $terminal, $context));
+        self::assertSame($missing !== 1, app(ParticipantExplorationService::class)->explored($a, $terminal, $context));
         self::assertNull(app(ExplorationEventService::class)->completionWitness($terminal, $context));
         $this->personalVote($nodes[$missing - 1]->phase, $nodes[$missing - 1], 'refute');
         self::assertNotNull(app(ExplorationEventService::class)->completionWitness($terminal, new ParticipationContext($terminal)));

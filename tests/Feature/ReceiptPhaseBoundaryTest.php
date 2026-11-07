@@ -50,18 +50,28 @@ class ReceiptPhaseBoundaryTest extends TestCase
         $service = app(ParticipationService::class);
         $before = $service->stateFor($f->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $before);
-        $this->assertSame($desired === 'unload' ? 1 : 0, substr_count($prompt['user'], 'BOUNDARY-BODY')); // Loaded Gate and Write evidence are visible before unloading.
+        $this->assertSame($role === 'gate' && $desired === 'unload' ? 1 : 0, substr_count($prompt['user'], 'BOUNDARY-BODY'));
         $phaseCount = DB::table('phases')->count();
         $eventCount = DB::table('receipt_context_events')->count();
-        $after = $service->contribute($f->viewer, $f->phase->id, ['action' => 'attestation.create',
-            'proposition_id' => $f->gate->id, 'direction' => 'support', 'receipt_options' => [$desired => [$r->id]]]);
+        $action = ['action' => 'attestation.create', 'proposition_id' => $f->gate->id, 'direction' => 'support'];
+        $selection = ['receipt_options' => [$desired => [$r->id]]];
+        if ($role === 'write') {
+            try {
+                $service->contribute($f->viewer, $f->phase->id, $action + $selection);
+                self::fail('The evidence becomes visible only on arrival.');
+            } catch (\InvalidArgumentException) {
+                self::assertNull($f->phase->fresh()->completed_at);
+            }
+        }
+        $after = $service->contribute($f->viewer, $f->phase->id, $role === 'gate' ? $action + $selection : $action);
         $this->assertSame('mediate', $after['plan']['phase']['kind']);
         $this->assertSame($phaseCount + 1, DB::table('phases')->count());
-        $this->assertSame($eventCount + 1, DB::table('receipt_context_events')->count());
+        $this->assertSame($eventCount + ($role === 'gate' ? 1 : 0), DB::table('receipt_context_events')->count());
         $this->assertSame([$anchor->id], array_column($after['plan']['read_options'], 'id'));
-        $this->assertSame($desired === 'load' ? 1 : 0, ParticipantReceiptContext::active()->where('receipt_id', $r->id)->count());
+        $loaded = ($role === 'gate') === ($desired === 'load');
+        $this->assertSame((int) $loaded, ParticipantReceiptContext::active()->where('receipt_id', $r->id)->count());
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $after);
-        $this->assertSame($desired === 'load' ? 1 : 0, substr_count($prompt['user'].$prompt['evidence'], 'BOUNDARY-BODY'));
+        $this->assertSame((int) $loaded, substr_count($prompt['user'].$prompt['evidence'], 'BOUNDARY-BODY'));
         $this->assertNotNull($f->phase->fresh()->completed_at);
     }
 }

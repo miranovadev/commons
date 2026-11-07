@@ -408,7 +408,7 @@ class ParticipantWakeTest extends TestCase
             $kind = $state['phase']['number'];
             $calls[] = [$kind, $state['phase']['id']];
             if ($kind === 1) {
-                $this->assertTrue(collect($state['context']['receipts'])->firstWhere('id', $receipt->id)['loaded']);
+                $this->assertNotContains($receipt->id, array_column($state['context']['receipts'], 'id'));
             }
             if ($kind === 3) {
                 $this->assertTrue(collect($state['context']['receipts'])->firstWhere('id', $receipt->id)['loaded']);

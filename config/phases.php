@@ -8,6 +8,7 @@ return [
         'actions' => [
             'instrument.execute',
             'proposition.variant',
+            'proposition.revise',
             'attestation.create',
             'proposition.traverse',
         ],
@@ -32,7 +33,6 @@ return [
         'description' => 'Reclassify the Persist Gate by expressing what its evidence supports in the new register. Grounding is acquired during Persist.',
         'gate' => 'previous-phase-position',
         'actions' => [
-            'proposition.revise',
             'proposition.reclassify',
             'attestation.create',
             'proposition.traverse',

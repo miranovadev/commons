@@ -1,5 +1,7 @@
 # Traversing personally explored structure
 
+The [current Exploration rules](participant-relative-exploration.md) separate personal judgment from meaningful movement. The implementation and measurements below describe the earlier experiment.
+
 An explored badge records the Participant’s completion of the existing route. The same Write can be a Traverse destination on the way to new generation. The action schema continues to suppress repeat Attestation and Revision on explored Writes.
 
 ## Reproduced on merged main

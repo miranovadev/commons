@@ -27,7 +27,9 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
     public function test_late_operand_reader_must_explore_before_new_acquisition_and_sees_causal_history(): void
     {
         [$author] = $this->beginPersistJourney('reconciliation-author');
-        // The exact existing transcript reaches its first lawful Reconciliation.
+        // The second Persist reading followed the author's judgment of the Distinction.
+        // Reaffirm it on return so the later Origin acquisition has a completed frontier.
+        $this->persistJourneySteps[8]['input'] = $this->persistJourneySteps[4]['input'];
         foreach (array_keys($this->persistJourneySteps) as $index) {
             $state = $this->executePersistJourneyStep($author, $index);
             if ($this->persistJourneySteps[$index]['input']['action'] === 'proposition.reconcile') {
@@ -231,13 +233,9 @@ class EvidenceExplorationLifecycleTest extends ScriptedParticipationTestCase
         $returned = $this->contribute($observer, ['action' => 'participant.rest']);
         $withoutRead = $this->auditEvidencePacket($returned);
         $this->assertArrayNotHasKey('loaded_inline_content', collect($withoutRead['receipts'])->firstWhere('id', $consumed));
-        $event = DB::table('exploration_events')->join('phases', 'phases.id', '=', 'exploration_events.phase_id')
-            ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')->where('cycles.participant_id', $observer)->sole();
-        $proof = json_decode($event->witness, true);
-        $this->assertSame($observer, $proof['participant_id']);
-        $judgment = DB::table('attestations')->join('phases', 'phases.id', '=', 'attestations.phase_id')
-            ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')->where('attestations.id', $proof['attestation_id'])->sole();
-        $this->assertSame($observer, $judgment->participant_id);
+        // The later Disperse observation reopened the observer's judgment at that Gate.
+        // Rest remains lawful, while this route does not qualify for a completion witness.
+        $this->assertSame($prior, DB::table('exploration_events')->get()->toJson());
         $this->assertTrue($this->visibleProposition($returned, $a)['explored']);
         $this->assertActionUnavailable($returned, 'attestation.create');
         $this->assertSame([$a], $returned['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum']);

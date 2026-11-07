@@ -20,7 +20,7 @@ final readonly class PropositionPresentationService
     public function transition(Proposition $position, ?ParticipationContext $context = null): ?array
     {
         if ($context === null) {
-            $parent = $position->parents()->orderBy('supersessions.created_at')->orderBy('supersessions.id')->first();
+            $parent = $position->parents()->orderByRaw("CASE WHEN supersessions.type = 'revise' THEN 0 ELSE 1 END")->orderBy('supersessions.created_at')->orderBy('supersessions.id')->first();
 
             return $parent === null ? null : [
                 'type' => $parent->pivot->type, 'from' => $parent->register,
@@ -29,8 +29,8 @@ final readonly class PropositionPresentationService
         }
 
         return $context->remember('presentation-transition:'.$position->id, function () use ($position, $context): ?array {
-            $edge = $context->parents->get($position->id, collect())
-                ->sortBy([['created_at', 'asc'], ['id', 'asc']])->first();
+            $parents = $context->parents->get($position->id, collect());
+            $edge = $parents->firstWhere('type', 'revise') ?? $parents->sortBy([['created_at', 'asc'], ['id', 'asc']])->first();
             $parent = $edge === null ? null : ($context->propositions->get($edge->source_proposition_id)
                 ?? ($position->relationLoaded('parents') ? $position->parents->firstWhere('id', $edge->source_proposition_id) : null));
 

@@ -117,7 +117,7 @@ final readonly class ContributionDispatcher
             };
             if ($targets !== null && ! $targets->contains('id', $input['proposition_id'] ?? null)) {
                 throw new DomainException($action === 'proposition.revise'
-                    ? 'Revision requires an owned active head in the current write register with an effective self-Refute from an earlier Cycle.'
+                    ? 'Revision requires a Variant at this Write position and an effective self-Refute from an earlier Cycle.'
                     : 'Support requires an admissible Proposition in the current Write.');
             }
 
@@ -136,7 +136,6 @@ final readonly class ContributionDispatcher
                     $input,
                 ),
                 'proposition.revise' => $this->revise(
-                    $participant,
                     $phase,
                     $input,
                 ),
@@ -218,28 +217,15 @@ final readonly class ContributionDispatcher
 
     /** @param array<string, mixed> $input */
     private function revise(
-        Participant $participant,
         Phase $phase,
         array $input,
     ): Proposition {
-        $source = Proposition::query()
-            ->whereKey($input['proposition_id'])
-            ->whereKeyNot($phase->gate_proposition_id)
-            ->where('register', $phase->write_register)
-            ->whereHas(
-                'phase.cycle',
-                fn ($query) => $query->whereBelongsTo($participant),
-            )
-            ->whereDoesntHave('children')
-            ->first();
+        $source = Proposition::findOrFail($input['proposition_id']);
+        $target = $this->write($phase, $input['statement'], tier: 'expressive', temporalSource: $phase->gate);
+        $this->ledger->record($this->supersede($phase, $phase->gate, $target, 'variant'));
+        $this->ledger->record($this->supersede($phase, $source, $target, 'revise'));
 
-        if ($source === null) {
-            throw new DomainException(
-                'Revision requires an owned active head in the current write register.'
-            );
-        }
-
-        return $this->proposition($phase, $source, $input);
+        return $target;
     }
 
     /** @param array<string, mixed> $input */

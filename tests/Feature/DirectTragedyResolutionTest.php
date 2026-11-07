@@ -302,7 +302,7 @@ class DirectTragedyResolutionTest extends TestCase
             'gate_proposition_id' => $gate->id, 'write_register' => $prior->write_register, 'started_at' => now()]);
         $phase->save();
         $actor = $cycle->participant;
-        $this->instrumentGateFixture($phase);
+        $this->receiptFixture($gate);
         $options = app(PropositionOptionService::class);
         $this->assertContains($write->id, $options->revisionOptionsFor($phase, $actor)->pluck('id'));
         $terminal = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);

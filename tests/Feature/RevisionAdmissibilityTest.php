@@ -41,7 +41,7 @@ class RevisionAdmissibilityTest extends TestCase
         $this->isolateClosureOutput();
     }
 
-    public function test_revision_targets_owned_heads_in_the_write_register_from_a_prior_cycle(): void
+    public function test_revision_targets_personally_refuted_variants_at_the_producing_write(): void
     {
         // Isolate structural rules from a new Charge-boundary event.
         $this->resolveExpressiveFieldFixture(.8);
@@ -128,7 +128,7 @@ class RevisionAdmissibilityTest extends TestCase
 
         $this->expectException(DomainException::class);
         $this->expectExceptionMessage(
-            'Revision requires an owned active head in the current write register with an effective self-Refute from an earlier Cycle.'
+            'Revision requires a Variant at this Write position and an effective self-Refute from an earlier Cycle.'
         );
 
         app(ContributionDispatcher::class)->dispatch(
@@ -176,6 +176,7 @@ class RevisionAdmissibilityTest extends TestCase
         ]);
         $phase = $this->nextEncounter($phase);
         $this->assertRevisionUnavailable($participant, $phase, $head);
+        $this->newObservation($phase, $gate);
         $dispatch->dispatch($participant, $phase, [
             'action' => 'attestation.create', 'proposition_id' => $head->id, 'direction' => 'refute',
         ]);
@@ -188,7 +189,7 @@ class RevisionAdmissibilityTest extends TestCase
         $input = ['action' => 'proposition.revise', 'proposition_id' => $head->id, 'statement' => 'Fresh revision'];
         app(ContributionService::class)->validate($participant, $input);
         $revised = $dispatch->dispatch($participant, $phase, $input);
-        $this->assertSame([$head->id], $revised->parents()->pluck('propositions.id')->all());
+        $this->assertEqualsCanonicalizing([$gate->id, $head->id], $revised->parents()->pluck('propositions.id')->all());
         $this->assertDatabaseHas('supersessions', [
             'source_proposition_id' => $head->id, 'target_proposition_id' => $revised->id, 'type' => 'revise',
         ]);
@@ -208,6 +209,7 @@ class RevisionAdmissibilityTest extends TestCase
         [$participant, $phase, $gate, $head] = $this->revisionFixture();
         $this->attest($head->phase, $head, 'refute');
         $this->assertNotEmpty(app(InputPlanService::class)->forParticipant($participant)['revision_options']);
+        $this->newObservation($phase, $gate);
         app(ContributionDispatcher::class)->dispatch($participant, $phase, [
             'action' => 'attestation.create', 'proposition_id' => $head->id, 'direction' => 'support',
         ]);
@@ -215,7 +217,7 @@ class RevisionAdmissibilityTest extends TestCase
         $this->assertRevisionUnavailable($participant, $this->nextEncounter($phase), $head);
     }
 
-    public function test_a_personal_refute_does_not_allow_revision_of_another_participants_write(): void
+    public function test_a_personal_refute_allows_revision_of_another_participants_variant(): void
     {
         [$participant, $phase, $gate] = $this->currentPhase();
         $other = new Participant;
@@ -224,7 +226,7 @@ class RevisionAdmissibilityTest extends TestCase
         $personalHistory = $this->priorHead($participant, 'activity', 'Personal history')->phase;
         $gate->children()->attach($head->id, ['id' => (string) str()->ulid(), 'phase_id' => $phase->id, 'type' => 'variant']);
         $this->attest($personalHistory, $head, 'refute');
-        $this->assertRevisionUnavailable($participant, $phase, $head);
+        $this->assertSame([$head->id], app(PropositionOptionService::class)->revisionOptionsFor($phase, $participant)->modelKeys());
     }
 
     public function test_an_earlier_phase_in_the_same_cycle_does_not_unlock_revision(): void
@@ -242,13 +244,11 @@ class RevisionAdmissibilityTest extends TestCase
         $this->publishPotentialFixture($participant);
         $state = app(ParticipationService::class)->stateFor($participant);
         $plan = app(InputPlanService::class)->forParticipant($participant);
-        $this->assertSame([], $plan['revision_options']);
-        $this->assertArrayNotHasKey('proposition.revise', $plan['schema']['$defs']['actions']);
+        $this->assertNotContains($head->id, array_column($plan['revision_options'], 'id'));
+        $this->assertNotContains($head->id, $plan['schema']['$defs']['actions']['proposition.revise']['properties']['proposition_id']['enum'] ?? []);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
         $this->assertSame($plan['schema'], $prompt['schema']);
-        $judgedThisPhase = $head->effectiveAttestations()->where('phase_id', $phase->id)->exists();
-        $this->assertSame($judgedThisPhase, $plan['rest_available'], 'This single-Write encounter may Rest once its judgment is recorded');
-        $this->assertTrue(app(PropositionOptionService::class)->revisionOptionsFor($phase, $participant)->isEmpty());
+        $this->assertFalse(app(PropositionOptionService::class)->revisionOptionsFor($phase, $participant)->contains('id', $head->id));
         $input = ['action' => 'proposition.revise', 'proposition_id' => $head->id, 'statement' => 'Must not be written'];
         $counts = [Proposition::count(), Supersession::count(), $participant->substrate->ledgerEntries()->count()];
         try {
@@ -284,6 +284,13 @@ class RevisionAdmissibilityTest extends TestCase
         app(LedgerService::class)->record($attestation);
 
         return $attestation;
+    }
+
+    private function newObservation(Phase $phase, Proposition $gate): void
+    {
+        $service = app(\App\Services\EvidenceExecutionService::class);
+        $service->complete($service->start($phase, $gate, 'citation', $gate->id), $gate);
+        $this->publishPotentialFixture($phase->cycle->participant);
     }
 
     private function nextEncounter(Phase $previous): Phase

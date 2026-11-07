@@ -51,7 +51,7 @@ class ParticipantExplorationHttpTest extends ScriptedParticipationTestCase
             $actions = $state['schema']['$defs']['actions'];
             self::assertContains($id, $actions['proposition.traverse']['properties']['proposition_id']['enum']);
             if ($key === 'constrain') {
-                self::assertSame(['proposition.traverse'], array_keys($actions), 'P2 is already classified. Its only continuation leads to P3.');
+                self::assertArrayNotHasKey('proposition.reclassify', $actions, 'P2 is already classified.');
             }
             self::assertNotContains($id, $actions['attestation.create']['properties']['proposition_id']['enum'] ?? []);
             self::assertNotContains($id, $actions['proposition.revise']['properties']['proposition_id']['enum'] ?? []);
@@ -100,11 +100,13 @@ class ParticipantExplorationHttpTest extends ScriptedParticipationTestCase
         $this->assertSame($origin, $after['context']['gate']['acting_id']);
         $this->assertFalse($this->visibleProposition($after, $a)['explored']);
         $this->assertActionUnavailable($after, 'proposition.variant');
-        // Luna encounters the existing head through her own recorded arrivals.
+        // The Origin discovery reopens the observer's earlier judgments along this route.
         $this->judge($observer, $b);
         $this->contribute($observer, ['action' => 'participant.rest']);
-        $this->assertDatabaseCount('exploration_events', 2);
-        $this->assertTrue($this->visibleProposition($this->readParticipation($observer), $a)['explored']);
+        $this->assertSame($history, DB::table('exploration_events')->get()->toJson());
+        $returned = $this->readParticipation($observer);
+        $this->assertFalse($this->visibleProposition($returned, $a)['explored']);
+        $this->assertContains($a, $returned['schema']['$defs']['actions']['attestation.create']['properties']['proposition_id']['enum']);
         $this->assertFalse($this->visibleProposition($this->readParticipation($originObserver), $a)['explored']);
     }
 }

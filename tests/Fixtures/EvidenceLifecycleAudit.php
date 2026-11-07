@@ -17,9 +17,13 @@ trait EvidenceLifecycleAudit
         $this->assertSame($events, DB::table('receipt_context_events')->count());
         $ids = array_column($packet['receipts'], 'id');
         $this->assertSame($ids, array_values(array_unique($ids)));
-        $sorted = $ids;
-        sort($sorted);
-        $this->assertSame($sorted, $ids);
+        $gate = $packet['gate']['acting_id'];
+        $atGate = array_values(array_filter($packet['receipts'], fn ($r) => ($r['originating_gate_id'] ?? null) === $gate));
+        $this->assertSame(array_column($atGate, 'id'), array_slice($ids, 0, count($atGate)));
+        foreach (collect($packet['receipts'])->groupBy('originating_gate_id') as $group) {
+            $atOrigin = $group->pluck('id');
+            $this->assertSame($atOrigin->sort()->values()->all(), $atOrigin->all());
+        }
         $models = Receipt::with(['evidenceExecution', 'consumption'])->whereKey($ids)->get()->keyBy('id');
         foreach ($packet['receipts'] as $receipt) {
             $this->assertNotEmpty($receipt['summary'], $receipt['id']);

@@ -211,3 +211,19 @@ test('density changes geometry without changing topology, including a 500-node g
   assert.equal(isGraphDensity('future-zoom'), false);
   assert.equal(buildGraphLayout(buildGraphStructure([])).nodes.length, 0);
 });
+
+test('a Revision shares its original producing Phase row and retains its same-row hard edge', () => {
+  const input = [
+    { ...node('p'), is_origin: true },
+    { ...node('x', ['p']), structural_position: 1 },
+    { ...node('y', ['x', 'p']), structural_position: 1, structural_source_id: 'p' },
+    { ...node('legacy', ['y']), structural_position: 1 },
+    { ...node('z', ['x']), structural_position: 2 },
+  ];
+  const structure = buildGraphStructure(input);
+  assert.deepEqual(structure.levels, [['p'], ['x', 'y', 'legacy'], ['z']]);
+  for (const density of ['detailed', 'topology']) {
+    const graph = buildGraphLayout(structure, density);
+    assert.match(graph.edges.find(edge => edge.from === 'x' && edge.to === 'y').path, / L /);
+  }
+});

@@ -96,7 +96,7 @@ class ReceiptGovernedGenerationTest extends TestCase
         }
         $policy = app(PhaseGenerationService::class);
         $this->assertSame($available && $used, $policy->epistemicActionAvailable($f->phase, 'proposition.variant'));
-        $this->assertSame($available, $policy->epistemicActionAvailable($f->phase, 'proposition.revise'));
+        $this->assertTrue($policy->epistemicActionAvailable($f->phase, 'proposition.revise'));
         $this->assertSame(! $used, app(PropositionOptionService::class)->instrumentOptionsFor($f->phase)->isNotEmpty());
         $this->assertSame($available, app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->isNotEmpty());
         app(PotentialProjectionService::class)->refresh($f->substrate->id);
@@ -143,7 +143,7 @@ class ReceiptGovernedGenerationTest extends TestCase
         $this->assertDatabaseMissing('proposition_receipt_links', ['receipt_id' => $receipt->id]);
         $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $f->gate->id, 'target_proposition_id' => $after['current_proposition_id'], 'type' => 'variant']);
         $this->assertSame($observer->id, $receipt->evidenceExecution->phase_id);
-        $this->assertContains($receipt->id, array_column($after['plan']['receipts'], 'id'));
+        $this->assertNotContains($receipt->id, array_column($after['plan']['receipts'], 'id'));
     }
 
     #[DataProvider('ordinaryKinds')]
@@ -183,14 +183,14 @@ class ReceiptGovernedGenerationTest extends TestCase
         $service->observeFor($f->phase, $f->gate, $input);
     }
 
-    public function test_available_evidence_does_not_override_viable_routes_or_revision_ownership(): void
+    public function test_revision_depends_on_the_personal_refute_and_fresh_generation_on_the_viable_route(): void
     {
         $f = $this->fixture();
         $head = $f->node($f->gate, 'frontier', position: PhaseKind::Persist);
         $vote = (new Attestation)->forceFill(['phase_id' => $head->phase_id, 'proposition_id' => $head->id, 'direction' => 'refute']);
         $vote->save();
         app(LedgerService::class)->record($vote);
-        $this->assertEmpty(app(PropositionOptionService::class)->revisionOptionsFor($f->phase, $f->viewer));
+        $this->assertContains($head->id, app(PropositionOptionService::class)->revisionOptionsFor($f->phase, $f->viewer)->pluck('id'));
         $observer = $this->observer($f);
         $this->observationFixture($observer, $f->gate, ['kind' => 'citation', 'reference' => $f->seed->id]);
         $this->assertFalse(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant'));
@@ -201,7 +201,7 @@ class ReceiptGovernedGenerationTest extends TestCase
         $count = Receipt::count();
         $revised = app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase,
             ['action' => 'proposition.revise', 'proposition_id' => $head->id, 'statement' => 'Revise after shared observation']);
-        $this->assertSame([$head->id], $revised->parents()->pluck('propositions.id')->all());
+        $this->assertEqualsCanonicalizing([$head->id, $f->gate->id], $revised->parents()->pluck('propositions.id')->all());
         $this->assertSame($count, Receipt::count());
         $this->assertDatabaseCount('receipt_consumptions', 0);
     }
@@ -259,7 +259,7 @@ class ReceiptGovernedGenerationTest extends TestCase
         foreach (PhaseKind::cases() as $kind) {
             $f->phase->kind = $kind;
             foreach (['proposition.variant', 'proposition.revise'] as $action) {
-                $requiresEvidence = $action === 'proposition.variant' ? [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Disperse] : [PhaseKind::Persist, PhaseKind::Disperse];
+                $requiresEvidence = $action === 'proposition.variant' ? [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Disperse] : [];
                 $this->assertSame(! in_array($kind, $requiresEvidence, true), app(PhaseGenerationService::class)->epistemicActionAvailable($f->phase, $action));
             }
             foreach (['attestation.create', 'proposition.traverse', 'proposition.reclassify', 'participant.rest'] as $action) {
@@ -269,7 +269,7 @@ class ReceiptGovernedGenerationTest extends TestCase
         }
     }
 
-    public function test_consumed_shared_evidence_preserves_independent_attestation_and_traverse(): void
+    public function test_consumed_evidence_preserves_reconsideration_without_an_empty_traverse(): void
     {
         $f = $this->fixture();
         $head = $f->node($f->gate, 'frontier', position: PhaseKind::Persist);
@@ -284,13 +284,12 @@ class ReceiptGovernedGenerationTest extends TestCase
         $this->consume($f, $receipt);
         app(PotentialProjectionService::class)->refresh($f->substrate->id);
         $plan = app(InputPlanService::class)->forPhase($f->viewer, $f->phase);
-        foreach (['instrument.execute', 'proposition.variant', 'proposition.revise'] as $action) {
+        // New causal evidence reopens the prior judgment. Its consumption leaves Revision eligible.
+        foreach (['proposition.variant', 'instrument.execute', 'proposition.traverse'] as $action) {
             $this->assertArrayNotHasKey($action, $plan['schema']['$defs']['actions']);
         }
-        foreach (['attestation.create', 'proposition.traverse'] as $action) {
-            $this->assertArrayHasKey($action, $plan['schema']['$defs']['actions']);
-            $this->assertStringContainsString($head->id, json_encode($plan['schema']['$defs']['actions'][$action]));
-        }
+        $this->assertContains($head->id, $plan['schema']['$defs']['actions']['proposition.revise']['properties']['proposition_id']['enum']);
+        $this->assertContains($head->id, $plan['schema']['$defs']['actions']['attestation.create']['properties']['proposition_id']['enum']);
         $this->assertFalse($plan['rest_available']);
         app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase,
             ['action' => 'attestation.create', 'proposition_id' => $head->id, 'direction' => 'support']);

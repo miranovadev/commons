@@ -289,6 +289,8 @@ class PreparationJourneyTest extends TestCase
         $fixture = new PreparationFixture(available: true);
         $f = $fixture->context;
         $head = $this->refutedWrite($fixture);
+        // The owned Write has already been judged. A separate unjudged sibling keeps acquisition closed.
+        DB::transaction(fn () => $f->node($f->gate, $head->register, position: PhaseKind::Disperse));
         $this->publishPotentialFixture($f->viewer);
         $encounters = DB::table('exploration_events')->count();
         $url = '/api/substrates/'.$f->substrate->slug.'/participants/'.$f->viewer->id;

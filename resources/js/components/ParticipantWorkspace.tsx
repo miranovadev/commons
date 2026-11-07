@@ -50,7 +50,7 @@ export function ParticipantWorkspace({ plan, availableActions: offered, onAction
                 {availableActions.filter(action => targets.get(action)?.has(node.id)).map(action => {
                   if (action === 'attestation.create') return <Group key={action} gap="xs">
                     {attestationDirections(plan, node.id).map(direction => <Button size="xs" variant="light" key={direction}
-                      onClick={() => onAction(action, { proposition_id: node.id, direction })}>{direction === 'support' ? 'Support' : 'Refute'}</Button>)}
+                      onClick={() => onAction(action, { proposition_id: node.id, direction })}>{node.attestation?.direction === direction ? 'Reaffirm ' : ''}{direction === 'support' ? 'Support' : 'Refute'}</Button>)}
                     <Button size="xs" variant="subtle" onClick={() => onForm(action, { proposition_id: node.id })}>{labels[action]}</Button>
                   </Group>;
                   return <Group key={action} gap="xs"><Button size="xs" variant="light" onClick={() => onAction(action,

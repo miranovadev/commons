@@ -160,16 +160,10 @@ final class ParticipantContextSerializer
             'receipts' => $receipts, ...$registers];
     }
 
-    /** Shared available catalogue plus the Participant's already-admitted loaded state.
-     * Loaded consumed observations remain joinable by the existing cache layout;
-     * they are personal loaded context, never shared available catalogue entries.
-     */
+    /** Keep the authoritative Gate order and its visible consumed observations. */
     public function receipts(array $receipts): array
     {
-        return array_values(array_map($this->receipt(...), array_filter($receipts,
-            fn (array $receipt): bool => ($receipt['status'] ?? null) === 'loaded'
-                || (($receipt['availability'] ?? null) === 'available'
-                    && empty($receipt['attached_proposition_id']) && empty($receipt['consumed_at'])))));
+        return array_values(array_map($this->receipt(...), $receipts));
     }
 
     private function receipt(array $receipt): array

@@ -4,7 +4,6 @@ namespace App\Services\Evidence;
 
 use App\Enums\ReceiptCapability;
 use App\Models\Attestation;
-use App\Models\ParticipantReceiptContext;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Services\Participation\ParticipationContext;
@@ -13,24 +12,20 @@ use Illuminate\Support\Collection;
 /** Evidence identity is independent of its producer and of participant uptake. */
 final class ReceiptEvidenceService
 {
-    /** Persistent personal citation knowledge survives leaving its producing lineage. */
-    public function loadedCitationTargets(ParticipationContext $context): Collection
+    /** Only visible loaded citations contribute subjects to the current context. */
+    public function loadedCitationTargets(ParticipationContext $context, Collection $visible): Collection
     {
-        return $context->remember('loaded-citation-targets', function () use ($context): Collection {
-            $references = Receipt::where('type', 'citation')->whereIn('id', ParticipantReceiptContext::active()
-                ->where('participant_id', $context->phase->cycle->participant_id)->select('receipt_id'))
-                ->whereHas('evidenceExecution', fn ($q) => $q->where('status', 'completed')
-                    ->whereHas('proposition.phase.cycle.participant', fn ($q) => $q->where('substrate_id', $context->substrate->id)))
-                ->get(['id', 'reference', 'type', 'capabilities'])
-                ->filter(fn ($receipt) => $receipt->supports(ReceiptCapability::Readable))->pluck('reference')->unique();
-            if ($references->isEmpty()) {
-                return collect();
-            }
-            $owned = fn ($q) => $q->where('substrate_id', $context->substrate->id);
+        $loaded = $context->receiptContexts->where('participant_id', $context->phase->cycle->participant_id)
+            ->whereNull('cleared_at')->pluck('receipt_id');
+        $references = $visible->where('type', 'citation')->whereIn('id', $loaded)
+            ->filter(fn ($receipt) => $receipt->supports(ReceiptCapability::Readable))->pluck('reference')->unique();
+        if ($references->isEmpty()) {
+            return collect();
+        }
+        $owned = fn ($q) => $q->where('substrate_id', $context->substrate->id);
 
-            return Proposition::whereIn('id', $references)->whereHas('phase.cycle.participant', $owned)->pluck('id')
-                ->merge(Attestation::whereIn('id', $references)->whereHas('phase.cycle.participant', $owned)->pluck('proposition_id'))->unique();
-        });
+        return Proposition::whereIn('id', $references)->whereHas('phase.cycle.participant', $owned)->pluck('id')
+            ->merge(Attestation::whereIn('id', $references)->whereHas('phase.cycle.participant', $owned)->pluck('proposition_id'))->unique();
     }
 
     public function describe(Receipt $receipt, ParticipationContext $context): ?array

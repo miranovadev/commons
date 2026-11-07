@@ -38,6 +38,7 @@ class AttestationDirectionChangeTest extends TestCase
         $phase->save();
         $next = $this->phase($cycle, PhaseKind::Distinguish, $proposition->parents()->firstOrFail());
 
+        $this->receiptFixture($next->gate);
         $dispatcher->dispatch($participant, $next, [
             'action' => 'attestation.create',
             'proposition_id' => $proposition->getKey(),
@@ -49,7 +50,7 @@ class AttestationDirectionChangeTest extends TestCase
         $this->assertCount(2, $attestations);
         $this->assertSame($attestations[0]->getKey(), $attestations[1]->supersedes_attestation_id);
         $this->assertSame('refute', Attestation::query()->effective()->sole()->direction);
-        $this->assertDatabaseCount('substrate_ledger_entries', 7);
+        $this->assertSame(2, Attestation::whereHas('ledgerEntry')->count());
 
         app(PropositionMeasurementService::class)->project(
             $proposition,

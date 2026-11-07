@@ -9,7 +9,6 @@ use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
 use App\Models\Proposition;
 use App\Models\Receipt;
-use App\Services\ContributionDispatcher;
 use App\Services\Evidence\ReceiptEvidenceService;
 use App\Services\EvidenceExecutionService;
 use App\Services\InputPlanService;
@@ -59,7 +58,7 @@ class ParticipantReceiptC2Test extends TestCase
         }
 
         return app(ParticipantReceiptProjection::class)->normalize($registers,
-            ['participant' => ['id' => ($viewer ?? $f->viewer)->id], 'plan' => ['phase' => ['id' => $f->phase->id], 'receipts' => []]]);
+            ['participant' => ['id' => ($viewer ?? $f->viewer)->id], 'plan' => ['phase' => ['id' => $f->phase->id], 'gate_id' => $f->gate->id]]);
     }
 
     #[DataProvider('visibility')]
@@ -140,7 +139,7 @@ class ParticipantReceiptC2Test extends TestCase
             'gate' => ['propositions' => []], 'write' => ['propositions' => []]];
         $before = $this->snapshot();
         $catalogue = app(ParticipantReceiptProjection::class)->normalize($registers,
-            ['participant' => ['id' => $f->viewer->id], 'plan' => ['phase' => ['id' => $f->phase->id], 'receipts' => []]]);
+            ['participant' => ['id' => $f->viewer->id], 'plan' => ['phase' => ['id' => $f->phase->id], 'gate_id' => $f->gate->id]]);
         $this->assertSame([$r->id], $registers['read']['propositions'][0]['receipts']);
         $this->assertSame([$r->id], array_column($catalogue, 'id'));
         $this->assertStringContainsString('C2-IMMUTABLE-BODY', json_encode($catalogue));
@@ -227,26 +226,24 @@ class ParticipantReceiptC2Test extends TestCase
         $context->clear($f->viewer, $f->phase, $r->id);
         $this->publishPotentialFixture($f->viewer);
         $schema = app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema'];
-        $this->assertContains($r->id, $schema['$defs']['actions']['attestation.create']['properties']['receipt_options']['properties']['load']['items']['enum']);
-        $this->assertSame(0, $schema['$defs']['actions']['attestation.create']['properties']['receipt_options']['properties']['unload']['maxItems']);
-        app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase, ['action' => 'attestation.create',
-            'proposition_id' => $write->id, 'direction' => 'support', 'receipt_options' => ['load' => [$r->id]]]);
+        $this->assertNotContains($r->id, $schema['$defs']['actions']['attestation.create']['properties']['receipt_options']['properties']['load']['items']['enum'] ?? []);
+        $state = app(\App\Services\ParticipationService::class)->contribute($f->viewer, $f->phase->id,
+            ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'support']);
+        $arrival = \App\Models\Phase::findOrFail($state['plan']['phase']['id']);
+        $context->read($f->viewer, $arrival, $r->id);
         $events = DB::table('receipt_context_events')->count();
-        DB::transaction(fn () => $context->desired($f->viewer, $f->phase, ['load' => [$r->id]]));
+        DB::transaction(fn () => $context->desired($f->viewer, $arrival, ['load' => [$r->id]]));
         $this->assertDatabaseCount('receipt_context_events', $events);
-        $this->assertArrayHasKey('loaded_inline_content', $this->catalogue($f, $r, ['write'])[0]);
-        $this->assertArrayHasKey('loaded_inline_content', $this->catalogue($f, $r, ['gate'])[0]);
 
-        // A different branch's loaded Receipt is not a current load option, but remains unloadable.
         $foreign = $f->node(null, 'canon', 'variant', 'committal');
         $hidden = $this->receipt($f, $f->node($foreign, 'activity'));
         $immutable = $hidden->fresh()->getAttributes();
-        $this->assertNotContains($hidden->id, $context->loadOptions($f->phase)->pluck('id'));
-        $this->assertContains($hidden->id, $context->unloadOptions($f->phase));
-        DB::transaction(fn () => $context->desired($f->viewer, $f->phase, ['unload' => [$hidden->id]]));
+        $this->assertNotContains($hidden->id, $context->loadOptions($arrival)->pluck('id'));
+        $this->assertNotContains($hidden->id, $context->unloadOptions($arrival));
+        $context->clear($f->viewer, $arrival, $hidden->id);
         $this->assertSame($immutable, $hidden->fresh()->getAttributes());
         $this->expectException(DomainException::class);
-        DB::transaction(fn () => $context->desired($f->viewer, $f->phase, ['unload' => [$hidden->id]]));
+        DB::transaction(fn () => $context->desired($f->viewer, $arrival, ['unload' => [$hidden->id]]));
     }
 
     private function snapshot(): array

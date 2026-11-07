@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Domain\Evidence\ReadingParameters;
 use App\Enums\PhaseKind;
-use App\Models\Attestation;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Services\Participation\ParticipationContext;
@@ -196,13 +195,9 @@ final readonly class InputSchemaService
 
         if (isset($schema['$defs']['actions']['attestation.create'])) {
             $ids = $attestationOptionIds ?? $writeOptionIds;
-            $effective = Attestation::query()->effective()
-                ->whereIn('proposition_id', $ids)
-                ->whereHas('phase.cycle', fn ($query) => $query->whereBelongsTo($participant))
-                ->pluck('direction', 'proposition_id');
             $choices = [];
             foreach (['refute', 'support'] as $direction) {
-                $targets = array_values(array_filter($ids, fn (string $id): bool => $effective->get($id) !== $direction));
+                $targets = array_values($ids);
                 if ($targets !== []) {
                     $choices[] = ['properties' => [
                         'proposition_id' => ['enum' => $targets],
@@ -213,15 +208,11 @@ final readonly class InputSchemaService
             $schema['$defs']['actions']['attestation.create']['anyOf'] = $choices;
         }
 
-        // Forward movement and reconsideration may coexist with a qualified exploration Rest.
-        $generationOrAcquisition = array_diff(array_keys($schema['$defs']['actions']), ['proposition.traverse', 'attestation.create', 'proposition.revise']);
-        if ($generationOrAcquisition === [] && $schema['$defs']['actions'] !== []) {
-            $ids = collect($attestationOptionIds ?? $writeOptionIds)->merge($revisionOptionIds)->merge($traversalOptionIds)->unique();
-            $explored = app(ParticipantExplorationService::class)->exploredIds($occurrence, $ids, $context);
-            // An explored Traverse target now leads to actual generation. Its
-            // completion alone cannot justify an otherwise actionless Rest.
-            if (($traversalOptionIds === [] && $ids->diff($explored->keys())->isEmpty())
-                || app(ExplorationEventService::class)->completionWitness($occurrence, $context ?? new ParticipationContext($occurrence)) !== null) {
+        // Changing a previous judgment is a choice. Never force a reversal to finish the Cycle.
+        if (array_keys($schema['$defs']['actions']) === ['attestation.create']) {
+            $ids = collect($attestationOptionIds);
+            $judged = ($context ?? new ParticipationContext($occurrence))->personalAttestationsByProposition($participant->id);
+            if ($ids->diff($judged->keys())->isEmpty()) {
                 $rest = $this->forPhase($kind, ['participant.rest']);
                 $schema['$defs']['actions']['participant.rest'] = $rest['$defs']['actions']['participant.rest'];
                 $schema['oneOf'][] = ['$ref' => '#/$defs/actions/participant.rest'];
@@ -248,7 +239,7 @@ final readonly class InputSchemaService
                 fn ($option) => ($option['$ref'] ?? null) !== '#/$defs/actions/participant.rest'));
         }
         $ids = $this->receipts->loadOptions($phase, $context)->pluck('id')->sort()->values()->all();
-        $unloadIds = $this->receipts->unloadOptions($phase)->all();
+        $unloadIds = $this->receipts->unloadOptions($phase, $context)->all();
         if ($ids === [] && $unloadIds === []) {
             return $schema;
         }

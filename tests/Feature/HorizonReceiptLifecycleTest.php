@@ -61,8 +61,8 @@ class HorizonReceiptLifecycleTest extends TestCase
         $this->assertTrue($context->propositions->has($producer->id));
         $before = DB::table('substrate_ledger_entries')->count();
         $item = app(ReceiptContextService::class)->forPhase($viewer, $context)->firstWhere('id', $receipt->id);
-        $this->assertSame('available', $item['availability']);
-        $this->assertSame($this->origin->statement, $item['evidence']['statement']);
+        $this->assertNull($item, 'A future Write is outside the catalogue at the governor.');
+        $this->assertContains($receipt->id, app(HorizonReceiptService::class)->ordinaryAvailable($viewer, $context)->pluck('id'));
         $this->assertSame($before, DB::table('substrate_ledger_entries')->count());
         $this->assertDatabaseCount('participant_receipt_contexts', 1);
         $this->assertNull($receipt->fresh()->consumption);
