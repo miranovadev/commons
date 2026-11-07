@@ -17,37 +17,37 @@ class DisperseFallbackHttpTest extends ParticipationHttpTestCase
         $initial = $this->enterParticipant($observer, true);
         $this->discoverGate($observer);
         $persist = $this->contribute($observer, ['action' => 'proposition.variant', 'statement' => 'Investigate a shared distinction.']);
-        $this->contribute($observer, ['action' => 'instrument.execute', 'proposition_id' => $persist['plan']['gate_id'],
+        $this->contribute($observer, ['action' => 'instrument.execute', 'proposition_id' => $persist['context']['gate']['acting_id'],
             'instrument' => ['kind' => 'citation', 'reference' => $initial['current_proposition_id']]]);
         $source = Receipt::where('type', 'citation')->sole();
 
         $actor = $this->joinParticipant('Shared evidence developer');
         $this->enterParticipant($actor);
         $sharedPersist = $this->contribute($actor, ['action' => 'attestation.create',
-            'proposition_id' => $persist['plan']['gate_id'], 'direction' => 'support']);
-        $this->assertSame('persist', $sharedPersist['plan']['phase']['kind']);
+            'proposition_id' => $persist['context']['gate']['acting_id'], 'direction' => 'support']);
+        $this->assertSame('persist', $sharedPersist['phase']['kind']);
         $this->assertActionAvailable($sharedPersist, 'instrument.execute');
         $this->assertActionUnavailable($sharedPersist, 'proposition.variant');
         $this->discoverGate($actor);
         $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Develop the shared observation.']);
-        $disperse = $this->driveUntil($actor, fn ($state) => $state['plan']['phase']['kind'] === 'disperse', 5, $source->id);
+        $disperse = $this->driveUntil($actor, fn ($state) => $state['phase']['kind'] === 'disperse', 5, $source->id);
         $this->assertNotNull($source->fresh()->consumption);
-        $this->assertSame([], $disperse['plan']['preparation_options']);
+        $this->assertArrayNotHasKey('preparation_options', $disperse['context']['gate']);
         $this->assertActionAvailable($disperse, 'instrument.execute');
         $this->assertActionUnavailable($disperse, 'proposition.variant');
         $this->assertActionUnavailable($disperse, 'preparation.start');
-        $acquired = $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $disperse['plan']['gate_id'],
+        $acquired = $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $disperse['context']['gate']['acting_id'],
             'instrument' => ['kind' => 'proposition_search']]);
-        $this->assertSame($disperse['plan']['phase'], $acquired['plan']['phase']);
+        $this->assertSame($disperse['phase'], $acquired['phase']);
         $this->assertSame($disperse['cycle'], $acquired['cycle']);
-        $this->assertSame($disperse['plan']['gate_id'], $acquired['plan']['gate_id']);
-        $execution = EvidenceExecution::where('phase_id', $disperse['plan']['phase']['id'])->sole();
+        $this->assertSame($disperse['context']['gate']['acting_id'], $acquired['context']['gate']['acting_id']);
+        $execution = EvidenceExecution::where('phase_id', $disperse['phase']['id'])->sole();
         $this->assertSame('instrument', $execution->type);
         $this->assertNull($execution->receipt->consumption);
         $this->assertActionAvailable($acquired, 'proposition.variant');
         $this->assertActionUnavailable($acquired, 'instrument.execute');
         $mediate = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Express the acquired evidence.']);
-        $this->assertSame('mediate', $mediate['plan']['phase']['kind']);
+        $this->assertSame('mediate', $mediate['phase']['kind']);
         $this->assertSame($disperse['cycle']['id'], $mediate['cycle']['id']);
     }
 }

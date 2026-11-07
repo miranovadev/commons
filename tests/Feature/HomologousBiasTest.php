@@ -593,6 +593,11 @@ class HomologousBiasTest extends TestCase
         foreach ([$readers[0], $readers[1], $readers[0]] as $index => $reader) {
             $this->actor = $reader;
             $phase = $this->biasAt($this->a, $this->gateA);
+            if ($index === 2) {
+                // Prior judgment alone cannot justify a return. Give Order a genuine grounding Receipt.
+                $this->assertFalse(app(PropositionOptionService::class)->traversalOptionsFor($phase)->contains('id', $child->id));
+                $this->receiptFixture($child);
+            }
             $this->publishPotentialFixture($reader);
             $plan = $service->stateFor($reader)['plan'];
             $actions = $plan['schema']['$defs']['actions'];
@@ -630,6 +635,8 @@ class HomologousBiasTest extends TestCase
         $this->assertSame(1, Supersession::where('type', 'reclassify')->count());
         $this->assertSame(0, Supersession::where('type', 'reconcile')->count());
 
+        // The controlled Closure field now withdraws the opportunity before the recovery check.
+        $this->componentClosureInput($child, ['admissible' => false]);
         $service->contribute($reader, $order->id, ['action' => 'participant.rest']);
         $this->assertSame($entriesB + 1, Cycle::where('entry_committal_id', $this->b->id)->count());
         $this->assertSame($this->b->id, $reader->cycles()->latest('sequence')->firstOrFail()->entry_committal_id);

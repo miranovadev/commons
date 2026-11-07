@@ -58,12 +58,12 @@ class PreparationExecutionTest extends TestCase
         $fixture = new PreparationFixture(true);
         $f = $fixture->context;
         $acting = $f->gate;
-        DB::transaction(function () use ($f, $fixture, $acting, &$included, &$excluded, &$secondary): void {
+        DB::transaction(function () use ($f, $fixture, $acting, &$included, &$excluded, &$secondary, &$join): void {
             $signal = $f->node($acting, 'activity', position: PhaseKind::Disperse);
             $secondaryRoot = $f->node($f->seed, 'canon', position: PhaseKind::Constrain);
             $secondary = $f->node($secondaryRoot, 'activity', position: PhaseKind::Disperse);
             $unrelated = $f->node($secondaryRoot, 'activity', position: PhaseKind::Disperse);
-            $f->node($signal, 'frontier', 'reconcile', additionalParent: $secondary, position: PhaseKind::Mediate);
+            $join = $f->node($signal, 'frontier', 'reconcile', additionalParent: $secondary, position: PhaseKind::Mediate);
             $f->gate = $secondaryRoot;
             $included = $fixture->receipt('Secondary ancestor preserved bytes', true);
             $f->gate = $unrelated;
@@ -72,7 +72,12 @@ class PreparationExecutionTest extends TestCase
         });
         $options = app(PreparationService::class)->options($f->phase);
         $ids = array_column($options, 'receipt_id');
-        $this->assertContains($included->id, $ids);
+        $this->assertNotContains($included->id, $ids);
+        $atJoin = clone $f->phase;
+        $atJoin->gate_proposition_id = $join->id;
+        $after = array_column(app(PreparationService::class)->options($atJoin), 'receipt_id');
+        $this->assertContains($included->id, $after);
+        $this->assertNotContains($excluded->id, $after);
         $this->assertNotContains($excluded->id, $ids);
         $this->assertSame(count($ids), count(array_unique($ids)));
         $this->assertFalse(app(PreparationService::class)->eligible($f->phase), 'Existing unexplored continuation still takes precedence.');
@@ -121,7 +126,8 @@ class PreparationExecutionTest extends TestCase
         $this->assertTrue(app(HorizonReceiptService::class)->ordinaryAvailable($other)->contains('id', $receipt->id));
         $registers = ['gate' => ['propositions' => [['id' => $f->gate->id]]], 'read' => ['propositions' => []], 'write' => ['propositions' => []]];
         $catalogue = app(ParticipantReceiptProjection::class)->normalize($registers, ['participant' => $other->cycle->participant->only(['id']),
-            'plan' => ['phase' => ['id' => $other->id, 'kind' => 'disperse'], 'gate_id' => $f->gate->id]]);
+            'plan' => ['phase' => ['id' => $other->id, 'kind' => 'disperse'], 'gate_id' => $f->gate->id,
+                'receipts' => app(\App\Services\ReceiptContextService::class)->forPhase($other)->all()]]);
         $this->assertContains($receipt->id, array_column($catalogue, 'id'));
         $entry = collect($catalogue)->firstWhere('id', $receipt->id);
         $this->assertSame($f->gate->id, $entry['originating_gate_id']);

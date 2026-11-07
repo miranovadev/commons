@@ -21,7 +21,7 @@ class ParticipationLifecycleRegressionTest extends ScriptedParticipationTestCase
         $source = DB::table('supersessions')->where('type', 'commit')->where('target_proposition_id', $commit)->sole()->source_proposition_id;
         $biasGate = DB::table('supersessions')->where('type', 'reclassify')->where('target_proposition_id', $source)->sole()->source_proposition_id;
         $revisit = $this->revisitPersistCommit($revisitor);
-        $this->assertSame($biasGate, $revisit['plan']['gate_id']);
+        $this->assertSame($biasGate, $revisit['context']['gate']['acting_id']);
         $history = DB::table('exploration_events')->orderBy('proposition_id')->orderBy('phase_id')->get()->toJson();
         $snapshot = DB::table('commitment_snapshots')->where('proposition_id', $commit)->sole();
         $propositions = DB::table('propositions')->count();
@@ -32,10 +32,10 @@ class ParticipationLifecycleRegressionTest extends ScriptedParticipationTestCase
             $this->assertStringNotContainsString($source, json_encode($this->actionDefinitions($revisit)[$action] ?? []));
         }
         $order = $this->contribute($revisitor, ['action' => 'proposition.traverse', 'proposition_id' => $source]);
-        $this->assertSame('order', $order['plan']['phase']['kind']);
+        $this->assertSame('order', $order['phase']['kind']);
         $next = $this->contribute($revisitor, ['action' => 'proposition.traverse', 'proposition_id' => $commit]);
-        $this->assertSame('distinguish', $next['plan']['phase']['kind']);
-        $this->assertSame($commit, $next['plan']['gate_id']);
+        $this->assertSame('distinguish', $next['phase']['kind']);
+        $this->assertSame($commit, $next['context']['gate']['acting_id']);
         $this->assertEquals($snapshot, DB::table('commitment_snapshots')->where('proposition_id', $commit)->sole());
         $this->assertSame($propositions, DB::table('propositions')->count());
         $this->assertSame($attestations, DB::table('attestations')->count());

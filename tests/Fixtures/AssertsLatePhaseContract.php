@@ -22,7 +22,7 @@ trait AssertsLatePhaseContract
         $participant = Phase::findOrFail($plan['phase']['id'])->cycle->participant;
         $packet = $serializer->inference(['participant' => $participant->only(['id', 'callsign', 'designation']), 'plan' => $visible]);
         $prompt = json_decode(app(ParticipantPromptLayout::class)->make($packet)['user'], true);
-        // Detailed measurement diagnostics remain in the operational/API plan.
+        // Detailed measurement diagnostics remain in the operational plan.
         $this->assertContains($sourceId, array_column($visible[$role], 'id'));
         $state = data_get($visible, $diagnostic);
         $this->assertSame($allowed, $state['admissible']);
@@ -31,7 +31,7 @@ trait AssertsLatePhaseContract
         foreach ([$packet, $prompt] as $view) {
             $register = $phase === PhaseKind::Order ? 'write' : 'gate';
             $this->assertContains($sourceId, array_column($view[$register]['propositions'], 'id'));
-            $this->assertSame($allowed, isset($view['actions']['$defs']['actions'][$action]));
+            $this->assertSame($allowed, isset($visible['schema']['$defs']['actions'][$action]));
             if ($phase === PhaseKind::Order) {
                 $node = collect($view['write']['propositions'])->firstWhere('id', $sourceId);
                 $this->assertArrayNotHasKey('commitment', $node);

@@ -28,7 +28,7 @@ class ParticipantExplorationHttpTest extends ScriptedParticipationTestCase
         $journey = $this->personalExplorationJourney();
         $actor = $journey['actor'];
         $state = $this->readParticipation($actor);
-        $entry = Phase::findOrFail($state['plan']['phase']['id']);
+        $entry = Phase::findOrFail($state['phase']['id']);
         self::assertSame($journey['origin'], $entry->gate_proposition_id);
         $history = DB::table('exploration_events')->get()->toJson();
         $this->assertDatabaseCount('exploration_events', 1);
@@ -48,17 +48,17 @@ class ParticipantExplorationHttpTest extends ScriptedParticipationTestCase
         foreach (['a', 'persist', 'constrain'] as $key) {
             $id = $journey[$key];
             self::assertTrue($this->visibleProposition($state, $id)['explored']);
-            $actions = $state['plan']['schema']['$defs']['actions'];
+            $actions = $state['schema']['$defs']['actions'];
             self::assertContains($id, $actions['proposition.traverse']['properties']['proposition_id']['enum']);
             if ($key === 'constrain') {
-                self::assertSame(['proposition.traverse'], array_keys($actions), 'P2 is already classified. Its only continuation leads to P3.');
+                self::assertArrayNotHasKey('proposition.reclassify', $actions, 'P2 is already classified.');
             }
             self::assertNotContains($id, $actions['attestation.create']['properties']['proposition_id']['enum'] ?? []);
             self::assertNotContains($id, $actions['proposition.revise']['properties']['proposition_id']['enum'] ?? []);
-            self::assertSame($state['plan']['schema'], app(ParticipantPromptFactory::class)->make(new Connection, $state)['schema']);
+            self::assertSame($state['schema'], app(ParticipantPromptFactory::class)->make(new Connection, $state)['schema']);
             $state = $this->contribute($actor, ['action' => 'proposition.traverse', 'proposition_id' => $id], $state);
         }
-        self::assertSame($p3->id, $state['plan']['gate_id']);
+        self::assertSame($p3->id, $state['context']['gate']['acting_id']);
         self::assertTrue($this->visibleProposition($state, $journey['b'])['explored']);
         $this->assertActionUnavailable($state, 'proposition.variant');
         $this->assertActionUnavailable($state, 'proposition.traverse');
@@ -96,15 +96,17 @@ class ParticipantExplorationHttpTest extends ScriptedParticipationTestCase
         $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Nova explores a new alternative']);
         $this->assertSame($history, DB::table('exploration_events')->get()->toJson());
         $after = $this->readParticipation($originObserver);
-        $this->assertSame($luna['plan']['phase']['id'], $after['plan']['phase']['id']);
-        $this->assertSame($origin, $after['plan']['gate_id']);
+        $this->assertSame($luna['phase']['id'], $after['phase']['id']);
+        $this->assertSame($origin, $after['context']['gate']['acting_id']);
         $this->assertFalse($this->visibleProposition($after, $a)['explored']);
         $this->assertActionUnavailable($after, 'proposition.variant');
-        // Luna encounters the existing head through her own recorded arrivals.
+        // The Origin discovery reopens the observer's earlier judgments along this route.
         $this->judge($observer, $b);
         $this->contribute($observer, ['action' => 'participant.rest']);
-        $this->assertDatabaseCount('exploration_events', 2);
-        $this->assertTrue($this->visibleProposition($this->readParticipation($observer), $a)['explored']);
+        $this->assertSame($history, DB::table('exploration_events')->get()->toJson());
+        $returned = $this->readParticipation($observer);
+        $this->assertFalse($this->visibleProposition($returned, $a)['explored']);
+        $this->assertContains($a, $returned['schema']['$defs']['actions']['attestation.create']['properties']['proposition_id']['enum']);
         $this->assertFalse($this->visibleProposition($this->readParticipation($originObserver), $a)['explored']);
     }
 }

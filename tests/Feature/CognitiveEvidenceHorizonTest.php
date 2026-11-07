@@ -22,9 +22,9 @@ class CognitiveEvidenceHorizonTest extends TestCase
         $e = $f->node($c1, 'activity');
         $c2 = $f->node($e, 'canon', 'commit', 'committal');
         $this->assertEqualsCanonicalizing([$f->seed->id], $this->ids($f->seed, 'distinguish'));
-        $this->assertEqualsCanonicalizing([$f->seed->id, $c1->id], $this->ids($c1, 'distinguish'));
-        $this->assertEqualsCanonicalizing([$f->seed->id, $c1->id, $c2->id], $this->ids($c2, 'distinguish'));
-        $this->assertEqualsCanonicalizing([$c1->id, $e->id], $this->ids($e));
+        $this->assertEqualsCanonicalizing([$f->seed->id, $f->gate->phase->gate_proposition_id, $f->gate->id, $c1->id], $this->ids($c1, 'distinguish'));
+        $this->assertEqualsCanonicalizing([$e->id, $c1->id, $c2->id], $this->ids($c2, 'distinguish'));
+        $this->assertEqualsCanonicalizing([$f->seed->id, $f->gate->phase->gate_proposition_id, $f->gate->id, $c1->id, $e->id], $this->ids($e));
     }
 
     public function test_selected_branch_does_not_expand_from_ancestors_or_shared_membership(): void
@@ -34,8 +34,8 @@ class CognitiveEvidenceHorizonTest extends TestCase
         $e2 = $f->node($e1, 'frontier');
         $e3 = $f->node($e1, 'frontier');
         $leaf = $f->node($e2, 'canon');
-        $this->assertEqualsCanonicalizing([$f->seed->id, $e1->id, $e2->id, $e3->id, $leaf->id], $this->ids($e1));
-        $this->assertEqualsCanonicalizing([$f->seed->id, $e1->id, $e2->id, $leaf->id], $this->ids($e2));
+        $this->assertEqualsCanonicalizing([$f->seed->id, $e1->id], $this->ids($e1));
+        $this->assertEqualsCanonicalizing([$f->seed->id, $e1->id, $e2->id], $this->ids($e2));
         $this->assertEqualsCanonicalizing([$f->seed->id, $e1->id, $e3->id], $this->ids($e3));
     }
 
@@ -49,7 +49,7 @@ class CognitiveEvidenceHorizonTest extends TestCase
         // Isolated historical graph fixture. This is NOT a dispatched encounter.
         // The service still computes authoritative all-child closure from storage.
         $this->terminal($e2);
-        $this->assertEqualsCanonicalizing([$f->seed->id, $e1->id, $e2->id, $sibling->id], $this->ids($e1));
+        $this->assertEqualsCanonicalizing([$f->seed->id, $e1->id], $this->ids($e1));
         $this->assertEqualsCanonicalizing([$f->seed->id, $e1->id, $e2->id], $this->ids($e2));
         $this->assertEqualsCanonicalizing([$f->seed->id, $e1->id, $sibling->id], $this->ids($sibling));
         $this->assertContains($e2->id, $this->ids($e3), 'Terminality does not erase recorded ancestry.');
@@ -68,11 +68,11 @@ class CognitiveEvidenceHorizonTest extends TestCase
         $unrelated = $f->node($b0, 'frontier');
         $otherContinuation = $f->node($b, 'frontier');
         $join = $f->node($a, 'frontier', 'reconcile', additionalParent: $b);
-        $this->assertContains($b->id, $this->ids($a));
-        $this->assertContains($b0->id, $this->ids($a));
+        $this->assertNotContains($b->id, $this->ids($a));
+        $this->assertNotContains($b0->id, $this->ids($a));
         $this->assertNotContains($unrelated->id, $this->ids($a));
         $this->assertNotContains($otherContinuation->id, $this->ids($a));
-        $this->assertContains($a->id, $this->ids($b), 'Both approach directions expose direct operands.');
+        $this->assertNotContains($a->id, $this->ids($b));
         $this->assertContains($b0->id, $this->ids($join), 'Completed same-basin ancestry follows both recorded parents.');
 
         $foreign = $f->node($f->gate, 'canon', 'commit', 'committal');
@@ -80,12 +80,12 @@ class CognitiveEvidenceHorizonTest extends TestCase
         $operand = $f->node($fp, 'activity');
         $result = $f->node($a, 'frontier', 'reconcile', additionalParent: $operand);
         foreach ([$a, $result] as $position) {
-            $this->assertContains($operand->id, $this->ids($position));
+            $this->assertNotContains($operand->id, $this->ids($position));
             $this->assertNotContains($fp->id, $this->ids($position));
             $this->assertNotContains($foreign->id, $this->ids($position));
         }
         $this->terminal($operand);
-        $this->assertContains($operand->id, $this->ids($result));
+        $this->assertNotContains($operand->id, $this->ids($result));
         $this->terminal($a);
         $this->assertNotContains($operand->id, $this->ids($a));
     }
@@ -98,7 +98,7 @@ class CognitiveEvidenceHorizonTest extends TestCase
         $c = $f->node($a, 'canon', 'commit', 'committal');
         $this->terminal($b);
         $this->assertFalse(app(TerminalContinuationService::class)->closed($a));
-        $this->assertContains($b->id, $this->ids($a));
+        $this->assertNotContains($b->id, $this->ids($a));
         $this->assertNotContains($c->id, $this->ids($a));
     }
 

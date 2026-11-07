@@ -15,8 +15,7 @@ final class MediationAnchorService
             return null;
         }
 
-        // A read-only exploration probe carries this Participant's immutable
-        // recorded arrival; it must not borrow the current Cycle's unrelated path.
+        // A prospective arrival carries its actual proposed Disperse Gate.
         if (! $phase->exists && $phase->relationLoaded('arrivalAnchor')) {
             return $phase->getRelation('arrivalAnchor');
         }

@@ -4,8 +4,8 @@
 <label>Theme<select id="theme"><option>dark</option><option>light</option></select></label>
 <label>Domain<select id="domain"><option>settlement</option><option>emergence</option></select></label>
 <label>Phase<select id="phase"><option>order</option><option>persist</option><option>mediate</option><option>bias</option><option>disperse</option><option>distinguish</option><option>constrain</option></select></label>
-<label>Support<select id="support"><option>positive</option><option>negative</option></select></label>
+
 <label>Cards<select id="cards"><option>12</option><option>1</option><option>0</option></select></label>
 <label>Order status<select id="status"><option>mixed</option><option>active</option><option>inactive</option></select></label></header>
 <iframe title="Workspace preview" id="preview"></iframe>
-<script>const controls=['viewport','theme','domain','phase','support','cards','status'].map(id=>document.getElementById(id));function update(){const [w,h]=controls[0].value.split(',');preview.width=w;preview.height=h;preview.src='/frame?'+new URLSearchParams(Object.fromEntries(controls.slice(1).map(el=>[el.id,el.value])))}controls.forEach(el=>el.onchange=update);update();</script></body></html>
+<script>const controls=['viewport','theme','domain','phase','cards','status'].map(id=>document.getElementById(id));function update(){const [w,h]=controls[0].value.split(',');preview.width=w;preview.height=h;preview.src='/frame?'+new URLSearchParams(Object.fromEntries(controls.slice(1).map(el=>[el.id,el.value])))}controls.forEach(el=>el.onchange=update);update();</script></body></html>

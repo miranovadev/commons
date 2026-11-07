@@ -17,17 +17,18 @@ test('the participant page offers Rest only when the authoritative schema expose
         import { ParticipantPage } from './resources/js/pages/ParticipantPage';
         import { setParticipation } from './resources/js/services/commonsApi';
         export function render(action, rest_available, rest_reason, alternative) {
-          setParticipation({ status: 'ready', plan: {
+          setParticipation({ status: 'ready',
             gate: { id: 'gate', register: 'canon', tier: 'expressive', statement: 'Gate' },
             phase: { id: 'phase', kind: 'order', number: 7, write_register: 'canon' },
             rest_available, rest_reason, traversal_options: [],
-            exhausted_alternatives: [{ id: 'spent', statement: 'A route we learned from', tier: 'expressive', register: 'canon', role: 'gate', phase_number: 6, statement_truncated: false,
-              exhausted: true, basin_exhausted: false, exhausted_at: '2026-09-16', actionable: false }],
+            context: { participant: {id:'viewer',callsign:'Viewer'}, receipts:[], read:{propositions:[]},write:{propositions:[]},
+              gate:{acting_id:'gate',propositions:[{ id: 'spent', statement: 'A route we learned from', tier: 'expressive', register: 'canon', role: 'gate', phase_number: 6, statement_truncated: false,
+              exhausted: true, basin_exhausted: false, exhausted_at: '2026-09-16', actionable: false, receipts:[] }]}},
             schema: {
               oneOf: [{ $ref: '#/$defs/actions/' + action }],
               $defs: { actions: { [action]: { title: action, properties: { action: { const: action } } }, ...(alternative ? { [alternative]: { title: alternative, properties: { action: { const: alternative } } } } : {}) } },
             },
-          } });
+          });
           return renderToStaticMarkup(<MantineProvider env="test"><MemoryRouter><ParticipantPage /></MemoryRouter></MantineProvider>);
         }
       `,
@@ -71,9 +72,9 @@ export const useGetParticipantWorkspaceQuery = () => ({ data: participation });
   const exhausted = module.exports.render('participant.rest', true);
   assert.match(exhausted, /No available move/);
   assert.doesNotMatch(exhausted, /Tragic Region/);
-  assert.match(exhausted, /aria-label="Exhausted Gate alternatives"/);
+  assert.match(exhausted, /Exhausted continuation/);
   assert.match(exhausted, /A route we learned from/);
-  assert.doesNotMatch(exhausted, /data-proposition-id="spent"/);
+  assert.match(exhausted, /data-proposition-id="spent"/);
   assert.match(exhausted, /aria-label="Open No available move · Rest"/);
   const archived = module.exports.render('participant.rest', true, 'no_remaining_potential');
   assert.match(archived, /Open No available move · Rest/);

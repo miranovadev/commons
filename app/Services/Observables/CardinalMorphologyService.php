@@ -10,7 +10,6 @@ use App\Models\Supersession;
 use App\Services\Participation\ParticipationContext;
 use DomainException;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 final class CardinalMorphologyService
 {
@@ -127,7 +126,10 @@ final class CardinalMorphologyService
             }
         }
 
-        return new CardinalMorphology($nodes, $edges->values(), $positions, $primaryHorizon->id, $primaryDepth);
+        $morphology = new CardinalMorphology($nodes, $edges->values(), $positions, $primaryHorizon->id, $primaryDepth);
+        $revised = $edges->where('type', 'revise')->pluck('source_proposition_id');
+
+        return $revised->isEmpty() ? $morphology : $this->subset($morphology, $nodes->keys()->diff($revised)->all(), $primaryDepth);
     }
 
     private function parentEdges(Proposition $node, ?ParticipationContext $context): Collection

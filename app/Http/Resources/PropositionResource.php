@@ -20,7 +20,7 @@ class PropositionResource extends JsonResource
             ? $this->contextHorizonMembership?->horizon
             : null;
         $parent = $this->relationLoaded('parents')
-            ? $this->parents->first()
+            ? ($this->parents->firstWhere('pivot.type', 'revise') ?? $this->parents->first())
             : null;
 
         return [
@@ -55,6 +55,8 @@ class PropositionResource extends JsonResource
                     'callsign',
                 ]),
             ),
+            'structural_source_id' => $this->whenLoaded('phase', fn () => $this->phase->gate_proposition_id),
+            'structural_position' => $this->whenLoaded('phase', fn () => $this->phase->kind->value),
             'parent_ids' => $this->whenLoaded(
                 'parents',
                 fn () => $this->parents->modelKeys(),

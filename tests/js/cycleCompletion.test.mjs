@@ -60,9 +60,8 @@ test('completion navigates to the Substrate Participants and respects waiting, r
 
 test('Persist Instrument renders on the Gate and disappears when its allowance is consumed', () => {
   const target = node('instrument-gate');
-  const plan = { phase: { id: 'phase', kind: 'persist', number: 2, write_register: 'frontier' }, gate: target, write_options: [], instrument_options: [target, node('forbidden')],
+  const plan = { phase: { id: 'phase', kind: 'persist', number: 2, write_register: 'frontier' }, context: { receipts: [], read: { propositions: [] }, gate: { acting_id: target.id, propositions: [{ ...target, receipts: [] }] }, write: { propositions: [] } }, instrument_options: [target, node('forbidden')],
     schema: { $defs: { actions: { 'instrument.execute': { properties: { proposition_id: { enum: [target.id] } } } } } } };
-  assert.deepEqual(ui.writePropositions(plan), []);
   const html = ui.workspace(plan);
   assert.match(html, /instrument-gate/);
   assert.match(html, />Instrument<\/span>/);

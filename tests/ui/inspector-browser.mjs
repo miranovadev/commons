@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 import { chromium } from 'playwright';
+import { checkParticipation } from './participation-browser.mjs';
 const directory = 'test-results/inspector';
 await mkdir(directory, { recursive: true });
 const server = spawn(process.execPath, ['tests/ui/serve-graph.mjs'], { stdio: ['ignore', 'pipe', 'inherit'] });
@@ -57,6 +58,7 @@ try {
     assert.deepEqual(errors, []);
     await page.close();
   }
+  await checkParticipation(browser);
 } finally {
   await browser?.close();
   server.kill();

@@ -244,12 +244,12 @@ class PreparationJourneyTest extends TestCase
         $f = $fixture->context;
         $this->publishPotentialFixture($f->viewer);
         $url = '/api/substrates/'.$f->substrate->slug.'/participants/'.$f->viewer->id;
-        $plan = $this->getJson($url.'/workspace')->assertOk()->json('data.plan');
+        $plan = $this->getJson($url.'/workspace')->assertOk()->json('data');
         $this->assertArrayHasKey('preparation.start', $plan['schema']['$defs']['actions']);
-        $this->assertSame(['raw', 'text', 'regex'], array_column($plan['preparation_options'][0]['capabilities'], 'read_type'));
+        $this->assertSame(['raw', 'text', 'regex'], array_column($plan['context']['gate']['preparation_options'][0]['capabilities'], 'read_type'));
         $started = $this->postJson($url.'/participate', ['phase_id' => $f->phase->id,
             'contribution' => ['action' => 'preparation.start', 'proposition_id' => $f->gate->id, ...$fixture->input()]])->assertOk();
-        $id = $started->json('data.plan.preparation.execution_id');
+        $id = $started->json('data.preparation.execution_id');
         $reading = $this->getJson($url.'/preparations/'.$id.'/reading')->assertOk()->assertHeader('Cache-Control', 'no-store, private')->json('data');
         $this->assertSame('preserved artifact body', $reading['deliveries'][0]['content']);
         $this->assertSame('pending', EvidenceExecution::findOrFail($id)->status);
@@ -258,7 +258,7 @@ class PreparationJourneyTest extends TestCase
         $this->postJson($url.'/preparations/'.$id.'/presented', ['presentation_token' => $reading['presentation_token']])->assertOk();
         $this->postJson($url.'/preparations/'.$id.'/presented', ['presentation_token' => $reading['presentation_token']])->assertOk();
         $resolved = $this->postJson($url.'/participate', ['phase_id' => $f->phase->id, 'contribution' => $resolution])->assertOk();
-        $this->assertNotSame($f->phase->id, $resolved->json('data.plan.phase.id'));
+        $this->assertNotSame($f->phase->id, $resolved->json('data.phase.id'));
         $this->assertNotNull($f->phase->cycle->fresh()->deferred_at);
         $this->assertDatabaseCount('exploration_events', 0);
         $this->assertSame($resolution['reason'], EvidenceExecution::findOrFail($id)->receipt->metadata['outcome']['reason']);
@@ -289,6 +289,8 @@ class PreparationJourneyTest extends TestCase
         $fixture = new PreparationFixture(available: true);
         $f = $fixture->context;
         $head = $this->refutedWrite($fixture);
+        // The owned Write has already been judged. A separate unjudged sibling keeps acquisition closed.
+        DB::transaction(fn () => $f->node($f->gate, $head->register, position: PhaseKind::Disperse));
         $this->publishPotentialFixture($f->viewer);
         $encounters = DB::table('exploration_events')->count();
         $url = '/api/substrates/'.$f->substrate->slug.'/participants/'.$f->viewer->id;
@@ -296,7 +298,7 @@ class PreparationJourneyTest extends TestCase
             'contribution' => ['action' => 'preparation.start', 'proposition_id' => $f->gate->id, ...$fixture->input()]])->assertConflict();
         $result = $this->postJson($url.'/participate', ['phase_id' => $f->phase->id, 'contribution' => [
             'action' => 'proposition.revise', 'proposition_id' => $head->id,
-            'statement' => 'Reconsider this owned account.']])->assertOk()->assertJsonPath('data.plan.phase.number', 5);
+            'statement' => 'Reconsider this owned account.']])->assertOk()->assertJsonPath('data.phase.number', 5);
         $revision = Proposition::findOrFail($result->json('data.current_proposition_id'));
         $this->assertSame([$head->id], $revision->parents()->pluck('propositions.id')->all());
         $this->assertSame($encounters, DB::table('exploration_events')->count());

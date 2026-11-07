@@ -13,6 +13,7 @@ use App\Models\Phase;
 use App\Services\Evidence\ArtifactReaderRegistry;
 use App\Services\ParticipantActivityService;
 use App\Services\ParticipantConnectionTriggerService;
+use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipationService;
 use App\Services\PreparationService;
 use App\Services\WakeClock;
@@ -192,9 +193,10 @@ class WakeParticipant implements ShouldQueue
 
     private function inferContribution(ParticipantInference $inference, Connection $connection, Participant $participant, array $state): array
     {
+        $state = app(ParticipantContextSerializer::class)->participation($state);
         $preparedExecution = null;
         $delivery = null;
-        if ($executionId = data_get($state, 'plan.preparation.execution_id')) {
+        if ($executionId = data_get($state, 'preparation.execution_id')) {
             $preparedExecution = EvidenceExecution::findOrFail($executionId);
             $delivery = app(PreparationService::class)->delivery($participant, $preparedExecution, 'inline-text');
             $state['prepared_context'] = array_diff_key($delivery, ['presentation_token' => true]);

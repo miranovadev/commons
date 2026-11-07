@@ -181,8 +181,7 @@ class MediatedIncomingBiasTest extends TestCase
 
     public function test_personal_judgment_in_the_owning_region_supports_later_local_continuation(): void
     {
-        // On the second visit this reader can cross directly into A, or choose
-        // the historical local child and use the established Bias authority in B.
+        // A judged result with no onward action in A still supports the historical local Bias route in B.
         $this->actor = (new Participant)->forceFill(['substrate_id' => $this->mediator->substrate_id,
             'callsign' => 'returning-reader']);
         $this->actor->save();
@@ -201,7 +200,7 @@ class MediatedIncomingBiasTest extends TestCase
         $plan = app(InputPlanService::class)->forPhase($this->actor, $local);
         $this->assertNotContains($this->gateA->id, array_column($plan['gate_options'], 'id'));
         $this->assertContains($this->result->id, array_column($plan['attestation_options'], 'id'));
-        $this->assertContains($this->result->id, array_column($plan['traversal_options'], 'id'));
+        $this->assertNotContains($this->result->id, array_column($plan['traversal_options'], 'id'));
         $participation->contribute($this->actor, $local->id, [...$vote, 'proposition_id' => $this->bResult->id]);
         $bias = $local->cycle->phases()->where('kind', PhaseKind::Bias)->sole();
         $this->assertNull($bias->crossover_cycle_id);

@@ -38,27 +38,27 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $classification = Proposition::findOrFail($this->persistJourneyIds['classification']);
         $this->assertSame(1, app(ReinforcementService::class)->count($classification));
         $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $this->persistJourneyIds['rightDiscovery'], 'proposition_id' => $classification->id]);
-        $boundary = $committed['last_commitment'];
+        $seed = Proposition::findOrFail($committed['last_commitment']['proposition_id']);
+        $boundary = $seed->commitmentSnapshot;
         // This lawful skeptical history remains in Settlement; instrumentation
         // changes the chronology, not the domain-transition equations.
-        $this->assertFalse($boundary['closure_boundary']);
+        $this->assertFalse($boundary->isClosureBoundary());
         $this->assertEqualsWithDelta(0, $boundary['depth'], 0.0000001);
         $this->assertEqualsWithDelta(0, $boundary['cadence'], 0.0000001);
         // Twelve author Cycles at Origin and three still-open observer Cycles.
         $this->assertSame(15, (int) DB::table('commitment_snapshots')
             ->where('proposition_id', $boundary['proposition_id'])->value('cadence_interval'));
-        $this->assertSame(['instrument.execute'], array_keys($committed['plan']['schema']['$defs']['actions']));
-        $this->assertNull($committed['plan']['rest_reason']);
+        $this->assertSame(['instrument.execute'], array_keys($committed['schema']['$defs']['actions']));
+        $this->assertNull($committed['reason']);
         $participant = Participant::findOrFail($actor);
         $cycle = $participant->cycles()->latest('sequence')->firstOrFail();
         $origin = $initial['current_proposition_id'];
-        $seed = Proposition::findOrFail($boundary['proposition_id']);
         $entries = DB::table('cycles')->where('entry_committal_id', $origin)
             ->where('context_horizon_id', $seed->phase->cycle->context_horizon_id);
         $this->assertSame(15, $entries->count());
         $this->assertTrue($entries->whereNull('completed_at')->exists());
         $this->assertReceiptNeutralChiralityChain($participant->position);
-        $this->assertSame($boundary['tension_after'], $seed->commitmentSnapshot->tension);
+        $this->assertArrayNotHasKey('tension_after', $committed['last_commitment']);
         $this->assertFalse($seed->commitmentSnapshot->closure_observation['availability']['cadence']);
         $this->assertSame($seed->id, $cycle->entry_committal_id);
         $this->assertSame('settlement', $cycle->contextHorizon->domain->value);

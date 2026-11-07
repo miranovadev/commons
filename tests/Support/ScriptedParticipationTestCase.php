@@ -2,7 +2,9 @@
 
 namespace Tests\Support;
 
+use App\Models\Participant;
 use App\Models\Receipt;
+use App\Services\ParticipationService;
 
 /** Executes an authored transcript. Never chooses an action from runtime eligibility. */
 abstract class ScriptedParticipationTestCase extends ParticipationHttpTestCase
@@ -47,17 +49,29 @@ abstract class ScriptedParticipationTestCase extends ParticipationHttpTestCase
                 $before = $this->readParticipation($participants[$name]);
                 $expectedBefore = isset($step['before']['previous_after'])
                     ? $this->script[$step['before']['previous_after']]['after'] : $step['before'];
-                $this->bindScriptIds($step['bind_before'] ?? [], $before, $label.' before', $expectedBefore);
-                $this->assertScriptState($expectedBefore, $before, $label.' before');
+                $snapshot = $this->transcriptSnapshot($before);
+                $this->bindScriptIds($step['bind_before'] ?? [], $snapshot, $label.' before', $expectedBefore);
+                $this->assertScriptState($expectedBefore, $snapshot, $label.' before');
                 $actual = $this->contribute($participants[$name], $this->resolveScriptReferences($step['input']), $before);
             }
-            $this->bindScriptIds($step['bind'], $actual, $label, $step['after']);
-            $this->assertScriptState($step['after'], $actual, $label.' after');
+            $snapshot = $this->transcriptSnapshot($actual);
+            $this->bindScriptIds($step['bind'], $snapshot, $label, $step['after']);
+            $this->assertScriptState($step['after'], $snapshot, $label.' after');
             $states[$name] = $actual;
             $this->scriptResponses[$index] = $actual;
         }
 
         return ['participants' => $participants, 'states' => $states, 'responses' => $this->scriptResponses];
+    }
+
+    /** Archived transcripts assert the operational state; HTTP input and output use the public contract. */
+    private function transcriptSnapshot(array $public): array
+    {
+        $state = app(ParticipationService::class)->stateFor(Participant::findOrFail($public['participant']['id']));
+        $this->assertSame($public['schema'], $state['plan']['schema'] ?? null);
+        $this->assertSame($public['phase']['id'] ?? null, $state['plan']['phase']['id'] ?? null);
+
+        return $state;
     }
 
     protected function nextScriptInput(): array

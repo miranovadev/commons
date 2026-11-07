@@ -74,7 +74,7 @@ class ReceiptContextTest extends TestCase
         $service = app(ParticipationService::class);
         $this->publishPotentialFixture($fixture->viewer);
         $before = $service->stateFor($fixture->viewer)['plan'];
-        $this->assertSame('loaded', collect($before['receipts'])->firstWhere('id', $receipt->id)['status']);
+        $this->assertNotContains($receipt->id, array_column($before['receipts'], 'id'));
         $this->assertArrayNotHasKey('receipt.read', $before['schema']['$defs']['actions']);
         $this->assertSame(1, app(ReinforcementService::class)->count($subject));
         $this->assertPublicCount($fixture, $subject, 1);
@@ -266,10 +266,12 @@ class ReceiptContextTest extends TestCase
         $context = new ParticipationContext($next->fresh());
         $this->assertFalse($context->propositions->has($subject->id));
         $this->assertFalse($context->propositions->has($reference->id));
-        $this->assertSame('already-in-context', $service->forPhase($next, $context)->firstWhere('id', $duplicate->id)['status']);
+        $this->assertNotContains($duplicate->id, $service->forPhase($next, $context)->pluck('id'));
         $this->assertNotContains($first->id, $service->forPhase($next, $context)->pluck('id'));
         // Clearing remembered evidence changes availability without importing old history.
         $service->clear($fixture->viewer, $next, $first->id);
+        $this->assertNotContains($duplicate->id, $service->forPhase($next)->pluck('id'));
+        $next->gate_proposition_id = $newSubject->id;
         $this->assertSame('available', $service->forPhase($next)->firstWhere('id', $duplicate->id)['status']);
     }
 

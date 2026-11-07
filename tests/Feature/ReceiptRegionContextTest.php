@@ -132,17 +132,18 @@ class ReceiptRegionContextTest extends TestCase
         foreach ($nodes as $index => $node) {
             $r = $this->receipt($f, $node, 'role-'.$index);
             $receipts[] = $r;
-            app(ReceiptContextService::class)->read($f->viewer, $f->phase, $r->id);
+            if ($index !== 2) {
+                app(ReceiptContextService::class)->read($f->viewer, $f->phase, $r->id);
+            }
         }
         $this->publishPotentialFixture($f->viewer);
         $state = app(ParticipationService::class)->stateFor($f->viewer);
         $this->assertSame([$read->id], array_column($state['plan']['read_options'], 'id'));
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
-        $this->assertEqualsCanonicalizing(array_map(fn ($r) => $r->id, $receipts), collect(json_decode($prompt['user'], true)['receipts'])->filter(fn ($r) => isset($r['loaded_inline_content']))->pluck('id')->all());
+        $this->assertEqualsCanonicalizing([$receipts[0]->id, $receipts[1]->id, $receipts[3]->id], collect(json_decode($prompt['user'], true)['receipts'])->filter(fn ($r) => isset($r['loaded_inline_content']))->pluck('id')->all());
         $this->assertSame(1, substr_count($prompt['evidence'].$prompt['user'], 'BODY-role-0'));
-        foreach ([2, 3] as $index) {
-            $this->assertSame(1, substr_count($prompt['evidence'].$prompt['user'], 'BODY-role-'.$index));
-        }
+        $this->assertStringNotContainsString('BODY-role-2', $prompt['user']);
+        $this->assertSame(1, substr_count($prompt['evidence'].$prompt['user'], 'BODY-role-3'));
         foreach (json_decode($prompt['user'], true)['receipts'] as $ref) {
             $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded', 'summary', 'originating_gate_id',
                 ...(isset($ref['loaded_inline_content']) ? ['loaded_inline_content', 'load_mode', 'read_context'] : [])], array_keys($ref));
@@ -154,7 +155,7 @@ class ReceiptRegionContextTest extends TestCase
         app(ReceiptContextService::class)->clear($f->viewer, $f->phase, $receipts[0]->id);
         $this->publishPotentialFixture($f->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, app(ParticipationService::class)->stateFor($f->viewer));
-        $this->assertEqualsCanonicalizing([$receipts[1]->id, $receipts[2]->id, $receipts[3]->id], collect(json_decode($prompt['user'], true)['receipts'])->filter(fn ($r) => isset($r['loaded_inline_content']))->pluck('id')->all());
+        $this->assertEqualsCanonicalizing([$receipts[1]->id, $receipts[3]->id], collect(json_decode($prompt['user'], true)['receipts'])->filter(fn ($r) => isset($r['loaded_inline_content']))->pluck('id')->all());
         $this->assertSame(0, $reinforcement->count($read));
         $this->assertSame(1, $reinforcement->count($f->gate));
     }

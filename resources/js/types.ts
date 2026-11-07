@@ -226,6 +226,7 @@ export type ActionName =
 export type InstrumentInput =
   | { kind: 'citation' | 'hyperlink'; reference: string }
   | { kind: 'web_search'; query: string }
+  | { kind: 'proposition_search'; query?: string; limit?: number }
   | { kind: 'load_file'; method: 'download'; reference: string }
   | { replay_receipt_id: string };
 
@@ -290,6 +291,9 @@ export interface OriginInput {
 export type ContributionInitialValues = Partial<Omit<ContributionInput, 'action'>>;
 
 export interface ActionSchemaProperty {
+  maxLength?: number;
+  minLength?: number;
+  maxItems?: number;
   anyOf?: ActionSchemaProperty[];
   properties?: Record<string, ActionSchemaProperty>;
   items?: ActionSchemaProperty;
@@ -309,7 +313,7 @@ export interface InputSchema {
   $comment?: string;
   'x-commons'?: { instrument_exclusions?: Record<Identifier, Array<{ receipt_id: Identifier; invocation: InstrumentInput }>> };
   oneOf?: Array<{ $ref?: string }>;
-  $defs?: { actions?: Partial<Record<ActionName, ActionSchema>> };
+  $defs?: { actions?: Partial<Record<ActionName, ActionSchema>>; instrument?: ActionSchemaProperty };
 }
 
 export interface WorkspaceHorizon {
@@ -370,6 +374,7 @@ export interface CognitiveReceipt {
   type: string;
   reference: string;
   summary: Record<string, ReceiptObservation>;
+  acquisition?: ReceiptObservation;
   loaded: boolean;
   originating_gate_id?: Identifier;
   consumed_by_proposition_id?: Identifier;
@@ -479,37 +484,54 @@ export interface PropositionSelection {
   projectedObservables?: Observables;
 }
 
-export interface Participation {
-  completion?: { cycle_id: Identifier; phase_id: Identifier; completed_at: string; proposition_id: Identifier } | null;
-  current_proposition_id?: Identifier | null;
-  domain?: DomainName | null;
-  horizon_sequence?: number | null;
-  context_horizon_id?: Identifier | null;
-  last_commitment?: {
-    historical_extent?: number | null;
-    historical_rhythm?: number | null;
-    historical_phase_profile?: number | null;
-    historical_orientation?: number | null;
-    historical_extent_direction?: ComponentDirection;
-    historical_rhythm_direction?: ComponentDirection;
-    committed_cardinal_position?: number | null;
-    committed_cardinal_position_direction?: ComponentDirection;
-    proposition_id: Identifier;
-    depth: number | null;
-    cadence: number | null;
-    depth_direction: 'positive' | 'negative' | null;
-    cadence_direction: 'positive' | 'negative' | null;
-    domain_before: DomainName;
-    domain_after: DomainName;
-    tension_before: number | null;
-    tension_after: number;
-    closure_boundary: boolean;
-  } | null;
-  status: 'waiting' | 'ready';
-  plan?: ParticipantPlan;
-  entry?: { mode?: 'origin' | 'continuity' | 'potential'; selection?: 'position' | 'recovery'; available?: boolean; message?: string; proposition_id?: Identifier | null; distance?: number | null; potential_charge?: number };
-  reason?: { code?: string; message?: string };
+export type CognitiveIdentity = Pick<Participant, 'id' | 'callsign' | 'designation'>;
+
+export interface CognitiveProposition extends Pick<Proposition, 'id' | 'statement' | 'register' | 'tier' | 'participant' | 'explored' | 'parent_ids'> {
+  receipts: Identifier[];
+  relation?: 'acting' | 'ancestor' | 'causal' | 'counterpart';
+  attestation?: { direction: AttestationDirection; rationale?: string | null };
+  instruments?: Array<{ kind: string; reference?: string; status: string; failure_reason?: string }>;
+  exhausted?: boolean;
+  continuation_exhausted?: boolean;
+  basin_exhausted?: boolean;
+  statement_truncated?: boolean;
 }
+
+interface CognitiveRegister {
+  question?: string;
+  propositions: CognitiveProposition[];
+}
+
+export interface CognitiveContext {
+  participant: CognitiveIdentity;
+  receipts: CognitiveReceipt[];
+  read: CognitiveRegister;
+  gate: CognitiveRegister & { acting_id: Identifier; acquisition?: ParticipantPlan['acquisition']; preparation_options?: PreparationOption[] };
+  write: CognitiveRegister;
+}
+
+interface Lifecycle {
+  participant: CognitiveIdentity;
+  cycle: { id: Identifier; sequence: number } | null;
+  completion?: { cycle_id: Identifier; phase_id: Identifier; completed_at: string; proposition_id: Identifier } | null;
+  context_horizon_id: Identifier | null;
+  current_proposition_id: Identifier | null;
+  last_commitment: { proposition_id: Identifier } | null;
+  horizon_sequence: number | null;
+  domain: DomainName | null;
+  entry: { mode: 'origin' | 'continuity' | 'potential'; selection?: string; available: boolean; message: string; proposition_id?: Identifier | null; requirements?: string[] } | null;
+  reason: { code: string; message: string } | null;
+  preparation: ParticipantPlan['preparation'];
+}
+
+export interface ReadyParticipation extends Lifecycle {
+  status: 'ready';
+  phase: Phase;
+  context: CognitiveContext;
+  schema: InputSchema;
+}
+
+export type Participation = ReadyParticipation | (Lifecycle & { status: 'waiting'; phase: null; context: null; schema: null });
 
 export interface BootstrapInput {
   name: string;
@@ -559,21 +581,3 @@ export interface ParticipantParameters {
 export interface ApiEnvelope<T> {
   data: T;
 }
-
-/** Protected autonomous context; human display uses ParticipantPlan via /workspace. */
-export interface ParticipantContext {
-  exhausted_alternatives?: ExhaustedAlternative[];
-  rest_available: boolean;
-  commitment?: ParticipantPlan['commitment'];
-  commitment_options?: ParticipantPlan['commitment_options'];
-  phase: Pick<Phase, 'id' | 'number' | 'kind' | 'write_register' | 'crossover'>;
-  provenance_id: Identifier | null;
-  gate_id: Identifier;
-  lineage: Proposition[];
-  read_options: Proposition[];
-  gate_options: Proposition[];
-  write_options: Proposition[];
-  schema: InputSchema;
-}
-
-export type AutonomousParticipation = Omit<Participation, 'plan'> & { plan?: ParticipantContext | null };

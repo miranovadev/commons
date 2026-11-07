@@ -128,6 +128,7 @@ final class ParticipationContext
         $this->receipts = Receipt::query()->where(fn ($q) => $q
             ->where(fn ($q) => $q->where('receiptable_type', (new Proposition)->getMorphClass())->whereIn('receiptable_id', $ids))
             ->orWhere(fn ($q) => $q->where('receiptable_type', (new Attestation)->getMorphClass())->whereIn('receiptable_id', $this->attestations->keys()))
+            ->orWhereHas('evidenceExecution', fn ($q) => $q->whereIn('proposition_id', $ids))
             ->orWhereIn('id', $this->receiptLinks->pluck('receipt_id')))
             ->with(['ledgerEntry', 'evidenceExecution'])->get();
         // Historical load subjects need not match their Receipt's observed subject.
@@ -329,7 +330,7 @@ final class ParticipationContext
 
     public function active(Collection $nodes): Collection
     {
-        return $nodes->filter(fn ($node) => $this->activeIds->has($node->id) && $this->children->get($node->id, collect())->where('type', '!=', 'variant')->isEmpty())->values();
+        return $nodes->filter(fn ($node) => $this->activeIds->has($node->id) && $this->children->get($node->id, collect())->whereNotIn('type', ['variant', 'revise'])->isEmpty())->values();
     }
 
     public function effectiveAttestations(iterable $sourceIds): Collection

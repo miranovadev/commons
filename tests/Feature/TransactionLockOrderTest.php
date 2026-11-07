@@ -419,10 +419,10 @@ class TransactionLockOrderTest extends TestCase
             $this->assertSame(0, DB::transactionLevel());
             $this->assertSame($phase->cycle_id, $state['cycle']['id']);
             if (++$calls === 1) {
-                return ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+                return ['action' => 'instrument.execute', 'proposition_id' => $state['context']['gate']['acting_id'],
                     'instrument' => ['kind' => 'citation', 'reference' => $phase->cycle->entry_committal_id]];
             }
-            $this->assertSame('distinguish', $state['plan']['phase']['kind']);
+            $this->assertSame('distinguish', $state['phase']['kind']);
             $this->assertNull($phase->fresh()->completed_at);
             $process = new Process([PHP_BINARY, base_path('tests/Support/concurrent-commons-worker.php')], base_path(), null,
                 json_encode(['operation' => 'contribute', 'participant_id' => $second->id, 'phase_id' => $secondPhase->id,

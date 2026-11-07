@@ -253,18 +253,10 @@ final class PreparationService
 
     private function causalReceipts(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        $select = function () use ($phase, $context) {
-            $plan = ['gate_id' => $phase->gate_proposition_id,
-                'phase' => ['kind' => config("phases.{$phase->kind->value}.name")]];
-            $ids = app(CognitiveEvidenceHorizon::class)->propositionIds($plan)
-                ->merge(app(CausalWriteService::class)->forPhase($phase, $context)->pluck('id'));
-            $references = app(ParticipantReceiptProjection::class)->referencesFor($ids->unique())->flatten(1)->pluck('id')->unique();
+        $context ??= new ParticipationContext($phase);
 
-            return Receipt::whereKey($references)->whereHas('evidenceExecution.phase.cycle.participant',
-                fn ($q) => $q->where('substrate_id', $phase->cycle->participant->substrate_id))->orderBy('receipts.id')->get();
-        };
-
-        return $context === null ? $select() : $context->remember('preparation-causal-receipts:'.$phase->id, $select);
+        return $phase->gate_proposition_id === null ? collect()
+            : app(CognitiveEvidenceHorizon::class)->receipts($phase->gate_proposition_id, $context)->values();
     }
 
     private function accessibleArtifacts(Phase $phase, ?ParticipationContext $context): iterable

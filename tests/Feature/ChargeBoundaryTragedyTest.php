@@ -106,7 +106,7 @@ class ChargeBoundaryTragedyTest extends TestCase
             'kind' => PhaseKind::Persist, 'gate_proposition_id' => $gate->id,
             'write_register' => $prior->write_register, 'started_at' => now()]);
         $phase->save();
-        $this->instrumentGateFixture($phase);
+        $this->receiptFixture($gate);
         $this->resolveExpressiveFieldFixture(-1);
         $target = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.revise', 'proposition_id' => $head->id, 'statement' => 'Boundary revision']);

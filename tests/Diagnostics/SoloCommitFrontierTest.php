@@ -79,7 +79,7 @@ class SoloCommitFrontierTest extends ScriptedParticipationTestCase
                 $this->contribute($actor, ['action' => 'attestation.create',
                     'proposition_id' => $this->persistJourneyIds['leftCanon'], 'direction' => $judgment]);
                 $start = $this->contribute($actor, $this->persistJourneyInput(8));
-                $this->persistJourneyIds['execution10'] = $start['plan']['preparation']['execution_id'];
+                $this->persistJourneyIds['execution10'] = $start['preparation']['execution_id'];
                 $this->assertNotSame($id, $this->persistJourneyIds['execution10']);
                 $this->readAndAcknowledgePreparation($actor, $this->persistJourneyIds['execution10']);
                 $extraCycle = 1;
@@ -111,7 +111,7 @@ class SoloCommitFrontierTest extends ScriptedParticipationTestCase
         $this->assertActionAvailable($state, 'instrument.execute');
         $this->assertActionUnavailable($state, 'proposition.variant');
         $this->assertSame([$this->persistJourneyIds['leftDistinction']],
-            $state['plan']['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum']);
+            $state['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum']);
         $this->assertActionUnavailable($state, 'attestation.create');
         $this->assertDatabaseMissing('supersessions', ['type' => 'reconcile']);
     }

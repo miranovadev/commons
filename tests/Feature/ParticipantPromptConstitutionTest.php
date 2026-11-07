@@ -95,9 +95,7 @@ class ParticipantPromptConstitutionTest extends TestCase
                     }
                 }
                 $this->assertSame('What else is possible here?', $packet['write']['question']);
-                $actions = $state['plan']['schema'];
-                unset($actions['$comment'], $actions['x-commons']['description']);
-                $this->assertSame($actions, $packet['actions']);
+                $this->assertArrayNotHasKey('actions', $packet);
 
                 return true;
             });

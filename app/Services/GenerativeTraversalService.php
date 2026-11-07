@@ -17,7 +17,7 @@ final readonly class GenerativeTraversalService
         private PhasePositionService $positions,
     ) {}
 
-    /** @return Collection<string, int> explored destinations with a reachable generating action */
+    /** @return Collection<string, int> base Traverse destinations with a meaningful onward action */
     public function destinations(Phase $from, Collection $candidates, ParticipationContext $context): Collection
     {
         $probes = $this->arrivals($from, $candidates, $context);
@@ -39,18 +39,10 @@ final readonly class GenerativeTraversalService
             || ($this->positions->matches($node, $from, $from->kind)
                 && ($seeds[$node->id] ?? null) === $from->governance()->entry_committal_id))
             ->mapWithKeys(function (Proposition $gate) use ($from, $next, $context, $crossings) {
-                $id = 'traverse:'.$from->cycle_id.':'.$gate->id;
-                if ($next === PhaseKind::Mediate) {
-                    $id .= ':'.$from->gate_proposition_id;
-                }
                 $crossed = $crossings->has($gate->id) ? $gate->phase->governance() : $from->crossoverCycle;
-                $phase = (new Phase)->forceFill(['id' => $id, 'cycle_id' => $from->cycle_id, 'kind' => $next,
-                    'crossover_cycle_id' => $crossed?->id,
-                    'gate_proposition_id' => $gate->id, 'write_register' => ($crossed ?? $from->cycle)->contextHorizon->domain->registerFor($next)]);
-                $phase->setRelation('cycle', $from->cycle)->setRelation('crossoverCycle', $crossed)->setRelation('gate', $gate);
-                $phase->setRelation('arrivalAnchor', $context->propositions->get($from->gate_proposition_id));
+                $phase = $this->positions->prospectiveArrival($from, $gate, $next, $crossed, $context->propositions->get($from->gate_proposition_id));
 
-                return [$id => $phase];
+                return [$phase->id => $phase];
             });
     }
 
@@ -64,8 +56,14 @@ final readonly class GenerativeTraversalService
         $direct = $probes->filter(function (Phase $phase) use ($evaluation): bool {
             // A projected Phase has no execution. Use the same pre-acquisition
             // decision as a real arrival, without reserving an attempt.
-            return $this->acquisition->state($phase, $evaluation)['status'] === 'required'
-                || $this->opportunities->nonVariantGenerationAvailable($phase, $evaluation);
+            $options = app(PropositionOptionService::class);
+            $judgment = $options->attestationOptionsFor($phase, $evaluation)->isNotEmpty();
+
+            return $judgment || $this->acquisition->state($phase, $evaluation)['status'] === 'required'
+                || $this->opportunities->nonVariantGenerationAvailable($phase, $evaluation)
+                || (in_array('proposition.revise', config('phases.'.$phase->kind->value.'.actions', []), true)
+                    && $options->revisionOptionsFor($phase, $phase->cycle->participant, $evaluation)->isNotEmpty())
+                || ($phase->kind === PhaseKind::Order && $options->traversalOptionsFor($phase, $evaluation, base: true)->isNotEmpty());
         });
         $children = collect();
         $paths = [];

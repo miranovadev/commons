@@ -4,13 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { messageFrom } from '../errors';
 import { participantIsWaiting, participantPath, switchableParticipants } from '../participantSelection';
 import { useEnterCycleMutation, useGetParticipantsQuery, useGetParticipationQuery, useGetSessionQuery } from '../services/commonsApi';
-import type { OriginInput, Participant } from '../types';
+import type { CognitiveIdentity, OriginInput, Participant } from '../types';
 import { ParticipantAvatar } from './ParticipantIdentity';
 import { OriginCycleForm } from './OriginCycleForm';
 import { CycleEntryControl } from './CycleEntryControl';
 
 export function ParticipantSwitcher({ slug, participant, opened, onClose }: {
-  slug: string; participant: Participant; opened: boolean; onClose: () => void;
+  slug: string; participant: CognitiveIdentity; opened: boolean; onClose: () => void;
 }) {
   const navigate = useNavigate();
   const { data: all = [], isFetching, error } = useGetParticipantsQuery(slug, { skip: !opened, refetchOnMountOrArgChange: true });

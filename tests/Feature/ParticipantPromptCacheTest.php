@@ -37,18 +37,21 @@ class ParticipantPromptCacheTest extends TestCase
     public function test_layers_preserve_all_cognition_and_both_action_schemas(PhaseKind $phase): void
     {
         $state = $this->state($phase);
-        $before = app(ParticipantContextSerializer::class)->inference($state);
+        $public = app(ParticipantContextSerializer::class)->participation($state);
+        $before = $public['context'];
         $connection = $this->connection();
         $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
         $after = $this->reconstruct($prompt);
-        $this->assertEquals($this->visiblePacket($before), $after);
+        $this->assertEquals($before, $after);
+        $this->assertSame($public['schema'], $prompt['schema']);
+        $this->assertArrayNotHasKey('actions', $before);
         // Assert ordered populations separately: recursive object-key equality must
         // never conceal a change to historical, ranked or action ordering.
         foreach (['read', 'gate', 'write'] as $key) {
             $this->assertSame(array_column($before[$key]['propositions'], 'id'), array_column($after[$key]['propositions'], 'id'));
         }
         $this->assertSame($state['plan']['schema'], $prompt['schema']);
-        $this->assertSame($before['actions'], $after['actions']);
+        $this->assertArrayNotHasKey('actions', $after);
         $request = app(OpenAIRequestFactory::class)->make($connection, $prompt);
         $this->assertSame(app(OpenAIResponseSchema::class)->fromCommons($state['plan']['schema']), $request['text']['format']['schema']);
         $this->assertSame(1, substr_count($prompt['evidence'].$prompt['user'], 'immutable observation'));
@@ -155,7 +158,7 @@ class ParticipantPromptCacheTest extends TestCase
         $connection = $this->connection();
         $key = fn ($c, $s) => app(OpenAIRequestFactory::class)->make($c, app(ParticipantPromptFactory::class)->make($c, $s), $s['_inference'])['prompt_cache_key'];
         $before = $key($connection, $state);
-        $this->assertStringStartsWith('commons-context-c3:', $before);
+        $this->assertStringStartsWith('commons-cognitive-v1:', $before);
         foreach (PhaseKind::cases() as $phase) {
             $this->assertSame($before, $key($connection, $this->state($phase)));
         }
@@ -234,9 +237,31 @@ class ParticipantPromptCacheTest extends TestCase
         Http::assertSentCount(1);
     }
 
-    private function visiblePacket(array $packet): array
+    public function test_loaded_tragedy_keeps_statements_and_omits_historical_measurements(): void
     {
-        return $packet;
+        $state = $this->state();
+        $state['plan']['receipts'][0]['evidence']['metadata'] = [
+            'title' => 'An observed title', 'observables' => ['chirality' => 1],
+        ];
+        $state['plan']['receipts'][] = [
+            'id' => 'memory', 'type' => 'tragedy', 'reference' => 'Failed lineage', 'load_mode' => 'memory',
+            'memory_active' => true, 'loaded' => true, 'tragedy_memory' => [
+                'tragedy_id' => 'tragedy', 'historical_extent' => 6,
+                'committed_chain' => [['proposition_id' => 'earlier', 'statement' => 'Earlier commitment.', 'cadence' => 0.4]],
+                'catastrophe' => ['proposition_id' => 'terminal', 'statement' => 'Terminal statement.', 'observables' => ['closure' => 1]],
+            ],
+        ];
+
+        $packet = app(ParticipantContextSerializer::class)->participation($state);
+        $receipts = collect($packet['context']['receipts']);
+        $this->assertSame(['title' => 'An observed title'], $receipts->sole('id', 'r1')['loaded_inline_content']['metadata']);
+        $receipt = $receipts->sole('id', 'memory');
+        $this->assertSame([
+            'tragedy_id' => 'tragedy',
+            'committed_chain' => [['proposition_id' => 'earlier', 'statement' => 'Earlier commitment.']],
+            'catastrophe' => ['proposition_id' => 'terminal', 'statement' => 'Terminal statement.'],
+        ], $receipt['loaded_inline_content']);
+        $this->assertEquals($packet['context'], $this->reconstruct(app(ParticipantPromptFactory::class)->make($this->connection(), $packet)));
     }
 
     private function reconstruct(array $prompt): array

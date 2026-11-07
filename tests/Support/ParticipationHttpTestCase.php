@@ -24,12 +24,12 @@ abstract class ParticipationHttpTestCase extends TestCase
         $this->discoverGate($actor);
         $first = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'First distinction']);
         $observed = $this->contribute($actor, ['action' => 'instrument.execute',
-            'proposition_id' => $first['plan']['gate_id'],
+            'proposition_id' => $first['context']['gate']['acting_id'],
             'instrument' => ['kind' => 'citation', 'reference' => $initial['current_proposition_id']]]);
-        $this->assertSame($first['plan']['phase'], $observed['plan']['phase']);
+        $this->assertSame($first['phase'], $observed['phase']);
         $this->assertSame($first['cycle'], $observed['cycle']);
         $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Persistent development']);
-        $this->assertSame('constrain', $state['plan']['phase']['kind']);
+        $this->assertSame('constrain', $state['phase']['kind']);
 
         return compact('actor', 'initial', 'first', 'observed', 'state');
     }
@@ -39,7 +39,7 @@ abstract class ParticipationHttpTestCase extends TestCase
     {
         $state = $this->readParticipation($actor);
 
-        return $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+        return $this->contribute($actor, ['action' => 'instrument.execute', 'proposition_id' => $state['context']['gate']['acting_id'],
             'instrument' => ['kind' => 'proposition_search', 'query' => 'Personal discovery '.$actor.' Cycle '.$state['cycle']['sequence'], 'limit' => 1]]);
     }
 
@@ -142,13 +142,13 @@ abstract class ParticipationHttpTestCase extends TestCase
 
     protected function actionDefinitions(array $state): array
     {
-        return $state['plan']['schema']['$defs']['actions'] ?? [];
+        return $state['schema']['$defs']['actions'] ?? [];
     }
 
     protected function visibleProposition(array $state, string $id): array
     {
-        foreach (['lineage', 'read_options', 'gate_options', 'write_options'] as $population) {
-            foreach ($state['plan'][$population] ?? [] as $node) {
+        foreach (['read', 'gate', 'write'] as $population) {
+            foreach ($state['context'][$population]['propositions'] as $node) {
                 if ($node['id'] === $id) {
                     return $node;
                 }
@@ -160,8 +160,8 @@ abstract class ParticipationHttpTestCase extends TestCase
     protected function reachFirstCommit(string $participant, string $origin): array
     {
         $state = $this->driveUntil($participant, fn ($state) => ($state['last_commitment']['proposition_id'] ?? $origin) !== $origin);
-        $this->assertSame('distinguish', $state['plan']['phase']['kind'], $this->traceMessage($state));
-        $this->assertSame($state['last_commitment']['proposition_id'], $state['plan']['gate_id']);
+        $this->assertSame('distinguish', $state['phase']['kind'], $this->traceMessage($state));
+        $this->assertSame($state['last_commitment']['proposition_id'], $state['context']['gate']['acting_id']);
 
         return $state;
     }
@@ -184,15 +184,15 @@ abstract class ParticipationHttpTestCase extends TestCase
         $this->assertActionAvailable($state, $input['action']);
         $this->trace[] = [
             'participant' => $participant, 'cycle' => $state['cycle']['sequence'],
-            'phase' => $state['plan']['phase']['kind'], 'phase_id' => $state['plan']['phase']['id'],
-            'horizon' => $state['context_horizon_id'], 'gate' => $state['plan']['gate_id'],
+            'phase' => $state['phase']['kind'], 'phase_id' => $state['phase']['id'],
+            'horizon' => $state['context_horizon_id'], 'gate' => $state['context']['gate']['acting_id'],
             'available' => array_keys($this->actionDefinitions($state)), 'input' => $input,
         ];
         if (getenv('COMMONS_TRACE_HTTP') === '1' && count($this->trace) % 25 === 0) {
             fwrite(STDERR, json_encode(['contributions' => count($this->trace), 'domain' => $state['domain'],
-                'phase' => $state['plan']['phase']['kind'], 'last_commitment' => $state['last_commitment']]).PHP_EOL);
+                'phase' => $state['phase']['kind'], 'last_commitment' => $state['last_commitment']]).PHP_EOL);
         }
-        $response = $this->postContribution($participant, $state['plan']['phase']['id'], $input);
+        $response = $this->postContribution($participant, $state['phase']['id'], $input);
         $this->assertSame(200, $response->status(), $response->getContent().$this->traceMessage($state));
 
         return $response->json('data');
@@ -203,13 +203,13 @@ abstract class ParticipationHttpTestCase extends TestCase
         $state = $this->readParticipation($participant);
         $this->assertActionAvailable($state, 'preparation.start');
         $this->assertActionUnavailable($state, 'proposition.variant');
-        $source = $state['plan']['preparation_options'][0];
+        $source = $state['context']['gate']['preparation_options'][0];
         $started = $this->contribute($participant, ['action' => 'preparation.start',
-            'proposition_id' => $state['plan']['gate_id'], 'purpose' => 'Examine preserved evidence before exploring this continuation.',
+            'proposition_id' => $state['context']['gate']['acting_id'], 'purpose' => 'Examine preserved evidence before exploring this continuation.',
             'artifacts' => [['receipt_id' => $source['receipt_id'], 'artifact_id' => $source['artifact_id'],
                 'read_type' => 'text', 'parameters' => ['max_chars' => 4000]]]], $state);
-        $this->assertSame($state['plan']['phase'], $started['plan']['phase']);
-        $id = $started['plan']['preparation']['execution_id'];
+        $this->assertSame($state['phase'], $started['phase']);
+        $id = $started['preparation']['execution_id'];
         $this->readAndAcknowledgePreparation($participant, $id);
 
         return $this->contribute($participant, ['action' => 'proposition.variant', 'execution_id' => $id, 'statement' => $statement]);
@@ -269,10 +269,8 @@ abstract class ParticipationHttpTestCase extends TestCase
 
     protected function driveUntil(string $participant, callable $reached, int $maxActions = 100, ?string $preferredReceipt = null): array
     {
-        $lastCommitment = null;
         for ($step = 0; $step <= $maxActions; $step++) {
             $state = $this->readParticipation($participant);
-            $lastCommitment = $state['plan']['commitment'] ?? $lastCommitment;
             if ($reached($state)) {
                 return $state;
             }
@@ -286,8 +284,7 @@ abstract class ParticipationHttpTestCase extends TestCase
                 $this->contribute($participant, $input, $state);
             }
         }
-        $this->fail('HTTP action budget exhausted. Last Commit eligibility: '.json_encode($lastCommitment)
-            .'; '.$this->traceMessage($state));
+        $this->fail('HTTP action budget exhausted. '.$this->traceMessage($state));
     }
 
     protected function traceMessage(array $state = []): string

@@ -17,20 +17,6 @@ const result = await build({ stdin: { contents: `
   export { navigationState, navigationTarget } from './resources/js/navigation';
   const render = element => renderToStaticMarkup(<MantineProvider env="test">{element}</MantineProvider>);
   export function summary(support, negative, positive) { return render(<AttestationCounts proposition={{ attestation_summary: { support_direction: support, negative, positive } }} />); }
-  export function workspace(support, effective = null) {
-    const gate = { id: 'gate', register: 'signal', tier: 'expressive', statement: 'Gate context' };
-    const child = { id: 'child', register: 'stance', tier: 'expressive', statement: 'Write context', attestation_summary: { support_direction: support, negative: 2, positive: 3 } };
-    const actions = {
-      'proposition.variant': { properties: { statement: {} } },
-      'proposition.reclassify': { properties: { proposition_id: { enum: ['gate'] }, receipt_id: { enum: ['receipt'] } } },
-      'proposition.revise': { properties: { proposition_id: { enum: ['child'] } } },
-      'proposition.traverse': { properties: { proposition_id: { enum: effective ? ['child'] : [] } } },
-      'attestation.create': { properties: { proposition_id: { enum: ['child'] }, direction: { enum: ['support', 'refute'].filter(label => label !== effective) } } },
-    };
-    const plan = { gate, phase: { id: 'phase', number: 2, kind: 'persist', write_register: 'stance' },
-      write_options: [child], revision_options: [child], attestation_options: [child], traversal_options: [child], schema: { $defs: { actions } } };
-    return render(<ParticipantWorkspace plan={plan} availableActions={Object.keys(actions)} onAction={() => {}} />);
-  }
   export function metadata(mode) { return render(<PropositionContent mode={mode} proposition={{ tier: 'expressive', register: 'concord', statement: 'The statement', transition: { type: 'reclassify', from: 'stance', to: 'concord' } }} />); }
   export function navigator() { return render(<PropositionNavigator label="Write"><div>Only card</div></PropositionNavigator>); }
   export function status() { return render(<WorkspaceStatus notices={[{ id: 'closure', title: 'Closure preview', color: 'indigo', icon: IconLock, content: <p>Full status content</p> }]} />); }
@@ -46,33 +32,12 @@ for (const support of ['positive', 'negative']) {
     assert.deepEqual(slots.map(s => s.direction), ['negative', 'positive']);
     assert.deepEqual(slots.map(s => s.label), support === 'positive' ? ['refute', 'support'] : ['support', 'refute']);
     for (const slot of slots) assert.equal(slot.color, slot.label === 'support' ? 'violet' : 'blue.6');
-    const markup = ui.workspace(support);
-    const footer = markup.slice(markup.indexOf('write-option-card__actions--directional'));
-    const buttons = [...footer.matchAll(/<button\b[\s\S]*?<\/button>/g)].map(match => match[0]);
-    assert.equal(buttons.length, 2);
-    buttons.forEach((button, index) => {
-      const slot = slots[index];
-      assert.ok(button.includes(`data-label="${slot.label}"`) && button.includes(`data-direction="${slot.direction}"`));
-      assert.ok(button.includes(`--button-color:var(--mantine-color-${slot.label === 'refute' ? 'blue-6' : 'violet-light-color'})`));
-      assert.ok(index === 0 ? button.indexOf('directional-whirl') < button.indexOf(`>${slot.text}</span>`) : button.indexOf('directional-whirl') > button.indexOf(`>${slot.text}</span>`));
-    });
     const summary = ui.summary(support, 5, 2);
     assert.equal([...summary.matchAll(/class="directional-whirl"/g)].length, 1);
     assert.match(summary, /data-direction="negative" data-animated="true"/);
     assert.ok(summary.indexOf('−5') < summary.indexOf('directional-whirl'));
     assert.ok(summary.indexOf('+2') > summary.indexOf('directional-whirl'));
     for (const slot of slots) assert.ok(summary.includes(`aria-label="${slot.label}: ${slot.side === 'left' ? 5 : 2}"`));
-  });
-  test(`Traverse arrows point into the outer whirl for ${support} Support`, () => {
-    for (const label of ['support', 'refute']) {
-      const markup = ui.workspace(support, label);
-      const footer = markup.slice(markup.indexOf('write-option-card__actions--directional'));
-      const traverse = [...footer.matchAll(/<button\b[\s\S]*?<\/button>/g)].map(match => match[0]).find(button => button.includes('>Traverse</span>'));
-      assert.ok(traverse);
-      const side = ui.directionSlots(support).find(slot => slot.label === label).side;
-      assert.match(traverse, new RegExp(`tabler-icon-arrow-${side}`));
-      assert.ok(side === 'left' ? traverse.indexOf('directional-whirl') < traverse.indexOf('tabler-icon-arrow-left') : traverse.indexOf('tabler-icon-arrow-right') < traverse.indexOf('directional-whirl'));
-    }
   });
 }
 
@@ -99,22 +64,6 @@ test('navigation recognizes overflow, disables boundaries and advances by a card
   assert.equal(ui.navigationTarget(620, 620, [0, 310, 620, 930, 1240], -1), 0);
   assert.equal(ui.navigationTarget(0, 360, [0, 334, 668], 1), 334);
   assert.doesNotMatch(ui.navigator(), /aria-label="(Previous|Next) Write"/);
-});
-
-test('Variant stays with Gate while revision stays with Write', () => {
-  const html = ui.workspace('positive');
-  const read = html.slice(html.indexOf('data-role="read"'), html.indexOf('data-role="gate"'));
-  const gate = html.slice(html.indexOf('data-role="gate"'), html.indexOf('data-role="write"'));
-  const write = html.slice(html.indexOf('data-role="write"'));
-  assert.doesNotMatch(read, />Reclassify<\/span>|>Revise<\/span>|>Variant<\/span>/);
-  assert.match(gate, />Reclassify<\/span>/);
-  assert.doesNotMatch(gate, />Revise<\/span>/);
-  assert.match(gate, />Variant<\/span>/);
-  assert.doesNotMatch(html, /Generative Write actions|>Generate</);
-  assert.doesNotMatch(write, />Variant<\/span>/);
-  assert.match(write, /data-action-region="middle"[\s\S]*>Revise<\/span>/);
-  assert.doesNotMatch(write, />Reclassify<\/span>|>Supersession<\/span>/);
-
 });
 
 test('compact metadata omits register transition prose while detailed inspection preserves it', () => {

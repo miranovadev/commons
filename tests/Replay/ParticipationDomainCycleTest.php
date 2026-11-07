@@ -54,7 +54,7 @@ class ParticipationDomainCycleTest extends ScriptedParticipationTestCase
         $horizons = [];
         foreach ($journey['responses'] as $state) {
             $horizon = $state['context_horizon_id'];
-            $phases[$horizon][$state['plan']['phase']['kind']] = true;
+            $phases[$horizon][$state['phase']['kind']] = true;
             $horizons[$horizon] = $state['domain'];
         }
         $this->assertSame(['settlement', 'emergence', 'settlement'], array_values($horizons));
@@ -74,8 +74,8 @@ class ParticipationDomainCycleTest extends ScriptedParticipationTestCase
             ]);
             $opened = collect($journey['responses'])->firstWhere('context_horizon_id', $horizon->id);
             $this->assertSame($horizon->opened_by_proposition_id, $opened['current_proposition_id']);
-            $this->assertSame($opened['current_proposition_id'], $opened['plan']['gate_id']);
-            $this->assertSame('distinguish', $opened['plan']['phase']['kind']);
+            $this->assertSame($opened['current_proposition_id'], $opened['context']['gate']['acting_id']);
+            $this->assertSame('distinguish', $opened['phase']['kind']);
         }
         foreach ($journey['participants'] as $name => $participant) {
             $current = $this->readParticipation($participant);
@@ -86,7 +86,7 @@ class ParticipationDomainCycleTest extends ScriptedParticipationTestCase
             foreach (['current_proposition_id', 'context_horizon_id', 'domain'] as $key) {
                 $this->assertSame($journey['states'][$name][$key], $current[$key]);
             }
-            $this->assertSame($journey['states'][$name]['plan']['phase']['id'], $current['plan']['phase']['id']);
+            $this->assertSame($journey['states'][$name]['phase']['id'], $current['phase']['id']);
             $this->assertSame($journey['states'][$name]['cycle']['id'], $current['cycle']['id']);
         }
     }

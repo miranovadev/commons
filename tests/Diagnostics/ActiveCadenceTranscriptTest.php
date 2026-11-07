@@ -41,8 +41,8 @@ class ActiveCadenceTranscriptTest extends ScriptedParticipationTestCase
             foreach ($this->persistJourneySteps as $index => $step) {
                 $before = $this->readParticipation($actor);
                 $trace[$index] = ['step' => $index, 'expected' => $step,
-                    'actual_phase' => $before['plan']['phase']['number'], 'actual_cycle' => $before['cycle']['sequence'],
-                    'available_actions' => array_keys($before['plan']['schema']['$defs']['actions']),
+                    'actual_phase' => $before['phase']['number'], 'actual_cycle' => $before['cycle']['sequence'],
+                    'available_actions' => array_keys($before['schema']['$defs']['actions']),
                     'before' => $snapshot()];
                 $this->executePersistJourneyStep($actor, $index);
                 $trace[$index]['after'] = $snapshot();

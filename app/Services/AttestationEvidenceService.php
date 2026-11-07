@@ -51,13 +51,18 @@ final readonly class AttestationEvidenceService
     {
         $seen = [$candidate->id => true];
         $ids = [];
+        $revised = [];
         $frontier = collect([$candidate]);
         $substrateId = $candidate->phase->cycle->participant->substrate_id;
         while ($frontier->isNotEmpty()) {
-            $parents = $context !== null
-                ? $frontier->flatMap(fn ($node) => $context->parentNodes($node))->unique('id')
-                : Proposition::query()->whereKey(Supersession::whereIn('target_proposition_id', $frontier->pluck('id'))->pluck('source_proposition_id'))
-                    ->whereHas('phase.cycle.participant', fn ($q) => $q->where('substrate_id', $substrateId))->get();
+            $edges = $context !== null ? $frontier->flatMap(fn ($node) => $context->parents->get($node->id, collect()))
+                : Supersession::whereIn('target_proposition_id', $frontier->pluck('id'))->get(['type', 'source_proposition_id']);
+            foreach ($edges->where('type', 'revise') as $edge) {
+                $revised[$edge->source_proposition_id] = true;
+            }
+            $sources = $edges->pluck('source_proposition_id')->unique();
+            $parents = $context !== null ? $context->nodes($sources)
+                : Proposition::query()->whereKey($sources)->whereHas('phase.cycle.participant', fn ($q) => $q->where('substrate_id', $substrateId))->get();
             $frontier = $parents->reject(fn ($node) => isset($seen[$node->id]) || $node->tier !== 'expressive')->values();
             foreach ($parents as $node) {
                 $seen[$node->id] = true;
@@ -67,7 +72,7 @@ final readonly class AttestationEvidenceService
             }
         }
 
-        return collect($ids);
+        return collect($ids)->reject(fn ($id) => isset($revised[$id]))->values();
     }
 
     /** Replay the same region/register's historical active population, not today's heads alone. */
@@ -77,8 +82,8 @@ final readonly class AttestationEvidenceService
         if ($context === null) {
             $members->load('ledgerEntry');
         }
-        $edges = $context !== null ? $context->edges->whereIn('source_proposition_id', $members->pluck('id'))->where('type', '!=', 'variant') : Supersession::query()->whereIn('source_proposition_id', $members->pluck('id'))
-            ->where('type', '!=', 'variant')->with('ledgerEntry')->get();
+        $edges = $context !== null ? $context->edges->whereIn('source_proposition_id', $members->pluck('id'))->whereNotIn('type', ['variant', 'revise']) : Supersession::query()->whereIn('source_proposition_id', $members->pluck('id'))
+            ->whereNotIn('type', ['variant', 'revise'])->with('ledgerEntry')->get();
         $removed = $edges->groupBy('source_proposition_id')->map(fn ($group) => $group->min(fn ($edge) => $edge->ledgerEntry?->sequence ?? 0));
         $events = $members->map(fn ($node) => $node->ledgerEntry?->sequence ?? 0)
             ->merge($removed->values())->all();

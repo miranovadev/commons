@@ -39,19 +39,15 @@ final class PropositionOptionService
     {
         $load = fn () => $this->baseTraversalOptions($phase, $context);
         $candidates = $context === null ? $load() : $context->remember('base-traversal:'.$phase->id, $load);
-        if ($base || $candidates->isEmpty()) {
+        if ($base || $candidates->isEmpty() || $phase->kind === PhaseKind::Order) {
             return $candidates;
         }
         $context ??= new ParticipationContext($phase);
 
         return $context->remember('actionable-traversal:'.$phase->id, function () use ($phase, $context, $candidates) {
-            $explored = app(ParticipantExplorationService::class)->exploredIds($phase, $candidates->pluck('id'), $context);
-            if ($explored->isEmpty()) {
-                return $candidates;
-            }
-            $towardGeneration = app(GenerativeTraversalService::class)->destinations($phase, $context->nodes($explored->keys()), $context);
+            $reachable = app(GenerativeTraversalService::class)->destinations($phase, $candidates, $context);
 
-            return $candidates->filter(fn ($node) => ! $explored->has($node->id) || $towardGeneration->has($node->id))->values();
+            return $candidates->filter(fn ($node) => $reachable->has($node->id))->values();
         });
     }
 
@@ -182,17 +178,7 @@ final class PropositionOptionService
         return $this->writeDescendants($phase, $context)->orderBy('id')->get();
     }
 
-    private function unexplored(Phase $phase, Collection $options, ?ParticipationContext $context): Collection
-    {
-        if ($options->isEmpty()) {
-            return $options;
-        }
-        $explored = app(ParticipantExplorationService::class)->exploredIds($phase, $options->pluck('id'), $context);
-
-        return $options->reject(fn ($node) => $explored->has($node->id))->values();
-    }
-
-    /** Every valid Write descendant offers the as-yet-unattested direction(s). */
+    /** First judgments and evidence-reopened judgments use the same eligible Writes. */
     public function attestationOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         if ($phase->kind === PhaseKind::Order) {
@@ -201,14 +187,15 @@ final class PropositionOptionService
 
         $context ??= new ParticipationContext($phase);
         $judgedHere = $context->personalAttestationsByProposition($phase->cycle->participant_id)->where('phase_id', $phase->id);
-        $writes = $this->availableWrites($phase, $context)->reject(fn (Proposition $write) => $judgedHere->has($write->id));
 
-        return $this->unexplored($phase, $writes, $context);
+        $writes = $this->availableWrites($phase, $context);
+        $explored = app(ParticipantExplorationService::class)->exploredIds($phase, $writes->pluck('id'), $context);
+
+        return $writes->reject(fn ($write) => $judgedHere->has($write->id) || $explored->has($write->id))->values();
     }
 
     /**
-     * Revision is an ownership-preserving move within a producing phase position. It cannot
-     * target the Gate merely because the Gate belongs to the Participant.
+     * Revision creates a sibling at the Variant's producing Write position.
      * The exact Write must have an effective self-Refute from an earlier Cycle;
      * a revision's ancestry never supplies its personal revision eligibility.
      *
@@ -224,43 +211,34 @@ final class PropositionOptionService
             return collect();
         }
 
-        if ($context !== null) {
-            $parents = $context->remember('propositions-with-children', fn () => Supersession::whereIn('source_proposition_id', $context->propositions->keys())
-                ->distinct()->pluck('source_proposition_id')->flip());
-            $refuted = $context->effectiveAttestations($context->propositions->keys())
-                ->filter(fn ($attestation) => $attestation->direction === 'refute'
-                    && $attestation->phase->cycle->participant_id === $participant->id
-                    && $attestation->phase->cycle->sequence < $phase->cycle->sequence)->pluck('proposition_id')->flip();
-            $terminal = app(ExhaustedContinuationService::class)->ids($phase, $context);
-
-            $eligible = $context->nodes($this->descendantIds($phase, $context))->filter(fn ($node) => $context->activeIds->has($node->id)
-                && ! $parents->has($node->id) && ! $terminal->has($node->id) && $refuted->has($node->id)
-                && $node->id !== $phase->gate_proposition_id && $node->register === $phase->write_register
-                && $node->tier === 'expressive' && $node->phase->cycle->participant_id === $participant->id)
-                ->sortByDesc('created_at')->values();
-
-            return $this->unexplored($phase, $eligible, $context);
+        if (! in_array('proposition.revise', config('phases.'.$phase->kind->value.'.actions', []), true)) {
+            return collect();
         }
+        $context ??= new ParticipationContext($phase);
+        $prior = $context->personalAttestationsByProposition($participant->id)
+            ->filter(fn ($vote) => $vote->direction === 'refute' && $vote->phase->cycle->sequence < $phase->cycle->sequence);
 
-        $query = Proposition::query()->active()->whereDoesntHave('children')
-            ->whereKey($this->descendantIds($phase, $context))
-            ->where('register', $phase->write_register)
-            ->where('tier', 'expressive')
-            ->whereKeyNot($phase->gate_proposition_id)
-            ->whereHas(
-                'phase.cycle',
-                fn (Builder $query) => $query->whereBelongsTo($participant),
-            );
-        $query->whereHas('effectiveAttestations', fn (Builder $query) => $query
-            ->where('direction', 'refute')
-            ->whereHas('phase.cycle', fn (Builder $query) => $query
-                ->whereBelongsTo($participant)
-                ->where('sequence', '<', $phase->cycle->sequence)));
+        $eligible = $this->availableWrites($phase, $context)->filter(function ($node) use ($prior, $context, $phase) {
+            return $prior->has($node->id) && $node->phase->kind === $phase->kind
+                && $node->phase->governance()->context_horizon_id === $phase->governance()->context_horizon_id
+                && $node->phase->governance()->entry_committal_id === $phase->governance()->entry_committal_id
+                && (app(StructuralSourceService::class)->forProposition($node, $context)['structural_source_id'] ?? null) === $phase->gate_proposition_id
+                && $this->variantFamily($node->id, $context);
+        });
 
-        $eligible = $query->latest('created_at')
-            ->get()->reject(fn (Proposition $node) => app(ExhaustedContinuationService::class)->ids($phase, $context)->has($node->id))->values();
+        return (new Proposition)->newCollection($eligible->all())->values();
+    }
 
-        return $this->unexplored($phase, $eligible, $context);
+    /** A historical unary Revision can trace back to a non-Variant birth. */
+    private function variantFamily(string $id, ParticipationContext $context): bool
+    {
+        return $context->remember('revision-variant-family:'.$id, function () use ($id, $context) {
+            $edges = $context->parents->get($id, collect());
+            $revision = $edges->firstWhere('type', 'revise');
+
+            return $revision === null ? $edges->count() === 1 && $edges->first()->type === 'variant'
+                : $this->variantFamily($revision->source_proposition_id, $context);
+        });
     }
 
     /**

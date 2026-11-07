@@ -23,17 +23,9 @@ const result = await build({ stdin: { contents: `
   const render = element => renderToStaticMarkup(<MantineProvider env="test">{element}</MantineProvider>);
   const participant = { id: 'claire', callsign: 'Claire', designation: 'Additional participant details', max_read_count: 25 };
   const gate = { id: 'gate', statement: 'Current Gate', register: 'concord', tier: 'expressive' };
-  export function notices(commit, closure) {
-    return participationNotices({ participation: { status: 'ready' }, plan: { commitment: { requirements: { attestation: false, receipt: false, closure }, closure: { depth: 0, cadence: 0 } } }, canCommit: commit, canRest: false, onRest() {} });
-  }
   export function nativeAdmissibility(plan) {
     return participationNotices({ participation: { status: 'ready' }, plan, canCommit: false, canRest: false, onRest() {} })
       .map(notice => ({ id: notice.id, satisfied: notice.satisfied, html: render(notice.content) }));
-  }
-  export function status(commit, closure) { return render(<WorkspaceStatus notices={notices(commit, closure)} />); }
-  export function placement() {
-    const plan = { gate, phase: { id: 'p', number: 7, kind: 'order', write_register: 'concord' }, schema: { $defs: { actions: {} } } };
-    return render(<ParticipantWorkspace plan={plan} availableActions={[]} onAction={() => {}} status={<WorkspaceStatus notices={notices(false, false)} />} />);
   }
   export function phase(kind) { return render(<PhaseIdentity kind={kind} />); }
   export function identity() { return render(<ParticipantIdentity participant={participant} onSelect={() => {}} />); }
@@ -61,51 +53,6 @@ const module = { exports: {} };
 new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
 const ui = module.exports;
 const css = readFileSync('resources/css/workspace.css', 'utf8');
-
-test('commit and Closure statuses independently follow actual availability, with open/closed locks', () => {
-  for (const commit of [false, true]) for (const closure of [false, true, null]) {
-    const notices = ui.notices(commit, closure);
-    assert.equal(notices.find(n => n.id === 'commitment').color, commit ? 'indigo' : 'gray');
-    assert.equal(notices.find(n => n.id === 'closure-preview').color, closure === true ? 'indigo' : 'gray');
-    const html = ui.status(commit, closure);
-    assert.match(html, commit ? /tabler-icon-lock / : /tabler-icon-lock-open/);
-    assert.match(html, commit ? /Open Committable candidate/ : /Open No committable candidate/);
-    if (commit) assert.doesNotMatch(html, /tabler-icon-lock-open/);
-  }
-  const html = ui.placement();
-  assert.ok(html.indexOf('data-role="write"') < html.indexOf('aria-label="Workspace status"'));
-  assert.ok(html.indexOf('aria-label="Workspace status"') < html.indexOf('No existing Proposition'));
-});
-
-test('late-phase notices expose backend component directions without granting actions from signs', () => {
-  for (const sign of ['positive', 'negative']) {
-    for (const admissible of [true, false]) {
-      const state = { gate_id: 'gate', admissible, reason: admissible ? null : 'component_directions_disagree' };
-      const notices = ui.nativeAdmissibility({
-        correspondence_admissibility: { ...state, shape_topology_direction: sign, phase_profile_direction: sign },
-        chirality_admissibility: { ...state, orientation_direction: sign, attestation_cadence_direction: sign },
-        commitment: { requirements: { closure: admissible }, closure: { historical_extent: 0, historical_rhythm: 0, historical_extent_direction: sign, historical_rhythm_direction: sign } },
-      });
-      for (const [id, labels, action] of [
-        ['correspondence-admissibility', ['Shape Topology', 'Phase Profile'], 'Reconcile'],
-        ['chirality-admissibility', ['Orientation', 'Attestation Cadence'], 'Reclassify'],
-        ['closure-preview', ['Historical Extent', 'Historical Rhythm'], 'Commit'],
-      ]) {
-        const notice = notices.find(n => n.id === id);
-        assert.equal(notice.satisfied, admissible);
-        for (const label of labels) assert.ok(notice.html.includes(label));
-        assert.ok(notice.html.includes(sign));
-        if (!admissible) assert.ok(notice.html.includes(action + ' unavailable'));
-        assert.doesNotMatch(notice.html, /<button/);
-      }
-    }
-  }
-  const [unavailable] = ui.nativeAdmissibility({ chirality_admissibility: {
-    gate_id: 'gate', admissible: false, reason: 'component_directions_unavailable',
-    orientation_direction: null, attestation_cadence_direction: null,
-  } });
-  assert.match(unavailable.html, /Component directions are unavailable/);
-});
 
 test('header provides a touch Phase info button, selectable identity, and desktop Phase progress', () => {
   for (const kind of ['distinguish', 'persist', 'constrain', 'disperse', 'mediate', 'bias', 'order']) {
@@ -182,13 +129,13 @@ test('personal acquisition notices explain authoritative choices and current att
     ['persist', ['instrument.execute'], /Choose an available Instrument/],
     ['disperse', ['instrument.execute', 'preparation.start'], /Choose Instrument or an available Preparation/],
   ]) {
-    const plan = { phase: { kind }, acquisition: { role: 'role', status: 'required' }, schema: { $defs: { actions: Object.fromEntries(actions.map(a => [a, {}])) } } };
+    const plan = { phase: { kind }, context: { gate: { acquisition: { role: 'role', status: 'required' } } }, schema: { $defs: { actions: Object.fromEntries(actions.map(a => [a, {}])) } } };
     const notice = ui.nativeAdmissibility(plan).find(n => n.id === 'personal-acquisition');
     assert.equal(notice.satisfied, false);
     assert.match(notice.html, wording);
     assert.doesNotMatch(notice.html, /<button/);
     for (const [status, outcome, expected] of [['pending', null, /Resolve the current execution/], ['awaiting_resolution', null, /Choose Variant or Defer/], ['resolved', { action: 'defer' }, /Later Phases evaluate fresh opportunities/]]) {
-      plan.acquisition = { role: 'role', status, outcome };
+      plan.context.gate.acquisition = { role: 'role', status, outcome };
       const result = ui.nativeAdmissibility(plan).find(n => n.id === 'personal-acquisition');
       assert.equal(result.satisfied, status === 'resolved');
       assert.match(result.html, expected);
