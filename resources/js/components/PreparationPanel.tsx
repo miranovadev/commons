@@ -7,7 +7,7 @@ import type { ParticipantPlan } from '../types';
 
 /** Material lives in this interaction only, never in the ordinary workspace query. */
 export function PreparationPanel({ slug, participantId, preparation, onDefer }: {
-  slug: string; participantId: string; preparation: NonNullable<ParticipantPlan['preparation']>; onDefer: () => void;
+  slug: string; participantId: string; preparation: NonNullable<ParticipantPlan['preparation']>; onDefer?: () => void;
 }) {
   const [read, reading] = useReadPreparationMutation();
   const [acknowledge, acknowledgement] = useAcknowledgePreparationMutation();
@@ -40,6 +40,6 @@ export function PreparationPanel({ slug, participantId, preparation, onDefer }: 
       <Box component="pre" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', maxHeight: 400, overflow: 'auto' }}>{item.content || '(Empty Artifact representation)'}</Box>
     </Box>)}
     {presented && <Text size="sm">Resolve this reading with a reason to continue. In Disperse, an available Variant or Revise can also resolve it.</Text>}
-    <Button variant="light" disabled={!presented} onClick={onDefer}>Resolve without contribution</Button>
+    {onDefer && <Button variant="light" disabled={!presented} onClick={onDefer}>Resolve without contribution</Button>}
   </Stack>;
 }

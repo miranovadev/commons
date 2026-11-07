@@ -53,31 +53,19 @@ class HorizonWorkspaceTest extends TestCase
 
         foreach ([[$nova, $concord, $h2, 'settlement', $origin], [$vela, $canon, $h3, 'emergence', $boundary]] as [$participant, $gate, $horizon, $domain, $provenance]) {
             $response = $this->getJson('/api/substrates/presentation/participants/'.$participant->id.'/workspace')->assertOk()
-                ->assertJsonPath('data.plan.phase.number', 7)
-                ->assertJsonPath('data.plan.phase.write_register', $gate->register)
-                ->assertJsonPath('data.plan.gate.register', $gate->register)
-                ->assertJsonPath('data.plan.workspace.domain', $domain)
-                ->assertJsonPath('data.plan.workspace.horizon.domain', $domain)
-                ->assertJsonPath('data.plan.workspace.horizon.id', $horizon->id)
-                ->assertJsonPath('data.plan.workspace.horizon.opened_by_proposition_id', $horizon->opened_by_proposition_id)
-                ->assertJsonPath('data.plan.workspace.horizon.opening_proposition.id', $horizon->opened_by_proposition_id)
-                ->assertJsonPath('data.plan.workspace.provenance.id', $provenance->id)
-                ->assertJsonPath('data.plan.workspace.provenance.register', $provenance->register);
-            $plan = $response->json('data.plan');
-            $this->assertContains($gate->id, array_column($plan['receipt_cognition']['gate']['propositions'], 'id'));
-            $this->assertSame([$provenance->id], array_column($plan['lineage'], 'id'));
-            $this->assertSame($provenance->register, $plan['lineage'][0]['register']);
-            foreach ($plan['workspace']['registers'] as $register => $cards) {
-                foreach ($cards as $card) {
-                    $this->assertSame($register, $card['register']);
-                }
-            }
+                ->assertJsonPath('data.phase.number', 7)
+                ->assertJsonPath('data.phase.write_register', $gate->register)
+                ->assertJsonPath('data.context.gate.acting_id', $gate->id)
+                ->assertJsonPath('data.context_horizon_id', $horizon->id)
+                ->assertJsonPath('data.domain', $domain)
+                ->assertJsonMissingPath('data.plan');
+            $this->assertContains($gate->id, array_column($response->json('data.context.gate.propositions'), 'id'));
             $this->getJson('/api/substrates/presentation/propositions/'.$gate->id)->assertOk()->assertJsonPath('data.register', $gate->register);
         }
         $this->assertNotSame($origin->id, $h3->opened_by_proposition_id);
         $this->assertSame('concord', Proposition::findOrFail($h3->opened_by_proposition_id)->register);
         $this->getJson('/api/substrates/presentation/participants/'.$vela->id.'/workspace')
-            ->assertJsonPath('data.plan.workspace.horizon.opening_proposition.register', 'concord');
+            ->assertJsonPath('data.context_horizon_id', $h3->id);
         $this->assertNotNull($h2->fresh()->closed_at);
         $this->assertNull($nova->cycles()->sole()->completed_at);
     }

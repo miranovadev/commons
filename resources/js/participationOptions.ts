@@ -1,7 +1,7 @@
 import type { ActionName, AttestationDirection, ContributionInitialValues, ContributionInput, ParticipantPlan, Proposition, ReceiptReference } from './types';
 
 /** Only the workspace's fully specified, schema-authorized navigation actions bypass a form. */
-export function quickContribution(plan: ParticipantPlan, action: ActionName, values: ContributionInitialValues = {}): ContributionInput | null {
+export function quickContribution(plan: Pick<ParticipantPlan, 'schema'>, action: ActionName, values: ContributionInitialValues = {}): ContributionInput | null {
   if (!values.proposition_id || !actionTargetIds(plan, action).has(values.proposition_id)) return null;
   if (action === 'proposition.traverse') return { action, proposition_id: values.proposition_id };
   if (action === 'attestation.create' && values.direction && attestationDirections(plan, values.proposition_id).includes(values.direction)) {
@@ -11,9 +11,10 @@ export function quickContribution(plan: ParticipantPlan, action: ActionName, val
 }
 
 /** The schema is authoritative for both visible buttons and form choices. */
-export function actionTargetIds(plan: ParticipantPlan, action: ActionName): Set<string> {
+export function actionTargetIds(plan: Pick<ParticipantPlan, 'schema'>, action: ActionName): Set<string> {
   const property = action === 'proposition.reconcile' ? 'other_proposition_id' : 'proposition_id';
-  return new Set(plan.schema?.$defs?.actions?.[action]?.properties[property]?.enum ?? []);
+  const rule = plan.schema?.$defs?.actions?.[action]?.properties[property];
+  return new Set(rule?.const ? [rule.const] : rule?.enum ?? []);
 }
 
 export function actionPropositions(plan: ParticipantPlan, action: ActionName): Proposition[] {
@@ -29,7 +30,7 @@ export function actionPropositions(plan: ParticipantPlan, action: ActionName): P
 }
 
 /** Read the same per-target direction branches validated by the server. */
-export function attestationDirections(plan: ParticipantPlan, propositionId?: string): AttestationDirection[] {
+export function attestationDirections(plan: Pick<ParticipantPlan, 'schema'>, propositionId?: string): AttestationDirection[] {
   if (!propositionId || !actionTargetIds(plan, 'attestation.create').has(propositionId)) return [];
   const schema = plan.schema?.$defs?.actions?.['attestation.create'];
   const choices = schema?.anyOf;
@@ -68,7 +69,7 @@ export function receiptChoices(plan: ParticipantPlan): ReceiptReference[] {
 }
 
 /** Keep the source/Receipt binding from Bias's schema in the manual form too. */
-export function reclassificationReceiptRule(plan: ParticipantPlan, propositionId?: string) {
+export function reclassificationReceiptRule(plan: Pick<ParticipantPlan, 'schema'>, propositionId?: string) {
   const schema = plan.schema?.$defs?.actions?.['proposition.reclassify'];
   if (!schema?.anyOf) return schema?.properties.receipt_id;
   return schema.anyOf.find(choice => choice.properties.proposition_id?.const === propositionId

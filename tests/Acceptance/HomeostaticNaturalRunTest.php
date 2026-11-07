@@ -87,7 +87,7 @@ class HomeostaticNaturalRunTest extends ParticipationHttpTestCase
                 if (isset($actions['participant.rest'])) {
                     $this->assertSame(['participant.rest'], array_keys($actions));
                 }
-                $phase = Phase::findOrFail($state['plan']['phase']['id']);
+                $phase = Phase::findOrFail($state['phase']['id']);
                 $cycle = $phase->cycle;
                 $entry = $cycle->entry_committal_id;
                 $additional = $this->additionalChoices($phase, $state);

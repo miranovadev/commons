@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 /** Allowlisted model/API contract. UI additions cannot enter inference implicitly. */
 final class ParticipantContextSerializer
 {
-    /** Same cognitive catalogue for the human workspace, separate from action options. */
+    /** Receipt references for callers inspecting the legacy rich projection. */
     public function receiptCognition(array $state): array
     {
         $registers = app(ParticipantCognitiveProjection::class)->registers($state['plan']);
@@ -21,6 +21,25 @@ final class ParticipantContextSerializer
         unset($register);
 
         return ['receipts' => $receipts, ...$registers];
+    }
+
+    /** Publish lifecycle coordinates, cognitive content and the original validation schema separately. */
+    public function participation(array $state): array
+    {
+        $plan = $state['plan'];
+        $entry = $state['entry'] ?? null;
+
+        return [
+            ...Arr::only($state, ['status', 'participant', 'cycle', 'reason', 'completion',
+                'current_proposition_id', 'context_horizon_id', 'horizon_sequence', 'domain']),
+            'entry' => $entry === null ? null : Arr::only($entry, ['mode', 'selection', 'available', 'message', 'proposition_id', 'requirements']),
+            'last_commitment' => isset($state['last_commitment'])
+                ? Arr::only($state['last_commitment'], ['proposition_id']) : null,
+            'phase' => $plan['phase'] ?? null,
+            'preparation' => $plan['preparation'] ?? null,
+            'context' => $plan === null ? null : $this->inference($state),
+            'schema' => $plan['schema'] ?? null,
+        ];
     }
 
     public function plan(array $plan): array
@@ -132,11 +151,13 @@ final class ParticipantContextSerializer
             PhaseKind::from($plan['phase']['number']), $plan['phase']['write_register'],
         );
         $receipts = app(ParticipantReceiptProjection::class)->normalize($registers, $state);
-        $schema = $plan['schema'];
-        unset($schema['$comment'], $schema['x-commons']['description']); // Publication guard remains in the transport/validator.
+        $registers['gate']['acting_id'] = $plan['gate_id'];
+        if (! empty($plan['preparation_options'])) {
+            $registers['gate']['preparation_options'] = $plan['preparation_options'];
+        }
 
         return ['participant' => Arr::only($state['participant'], ['id', 'callsign', 'designation']),
-            'receipts' => $receipts, ...$registers, 'actions' => $schema];
+            'receipts' => $receipts, ...$registers];
     }
 
     /** Keep the authoritative Gate order and its visible consumed observations. */

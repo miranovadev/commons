@@ -30,6 +30,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { commonsApi } from './resources/js/services/commonsApi';
 import { ParticipantPage } from './resources/js/pages/ParticipantPage';
 import { InspectorContent } from './resources/js/components/PropositionInspector';
+import { PreparationHistory } from './resources/js/components/PreparationHistory';
 import { PreparationDetails } from './resources/js/components/PreparationDetails';
 export { act } from 'react';
 function Location() { return <output data-location>{useLocation().pathname + useLocation().search}</output>; }
@@ -38,7 +39,7 @@ export function mount(container, surface, preparation) {
  const root = createRoot(container);
  return {
   render() { root.render(<Provider store={store}><MantineProvider env="test"><MemoryRouter initialEntries={['/substrates/test/participants/viewer']}>
-   <Location /><Routes><Route path="/substrates/:slug/participants/:participantId" element={surface === 'details' ? <PreparationDetails slug="test" preparation={preparation} /> : surface === 'graph' ? <InspectorContent graph substrateSlug="test" selection={{ kind:'graph', proposition: globalThis.experience.plan.gate }} /> : <ParticipantPage />} /><Route path="*" element={<div>Graph destination</div>} /></Routes>
+   <Location /><Routes><Route path="/substrates/:slug/participants/:participantId" element={surface === 'directory' ? <PreparationHistory slug="test" participantId="viewer" /> : surface === 'details' ? <PreparationDetails slug="test" preparation={preparation} /> : surface === 'graph' ? <InspectorContent graph substrateSlug="test" selection={{ kind:'graph', proposition: globalThis.experience.gate }} /> : <ParticipantPage />} /><Route path="*" element={<div>Graph destination</div>} /></Routes>
   </MemoryRouter></MantineProvider></Provider>); },
   refresh() { store.dispatch(commonsApi.util.invalidateTags([{ type: 'Participation', id:'viewer' }])); },
   close() { root.unmount(); store.dispatch(commonsApi.util.resetApiState()); }
@@ -62,9 +63,11 @@ async function draft(value) {
 function fixture() {
  const gate = { id:'gate', register:'canon', tier:'expressive', statement:'An observed Gate.', instruments:[] };
  const action = { title:'Variant', properties:{ action:{ const:'proposition.variant' }, statement:{} }, required:['action','statement'] };
- const plan = { phase:{ id:'phase', kind:'disperse', number:4, write_register:'activity' }, gate, read:[], write_options:[], gate_options:[gate],
+ const participant = { id:'viewer',callsign:'Claire' };
+ const plan = { status:'ready',participant, context_horizon_id:'horizon',phase:{ id:'phase', kind:'disperse', number:4, write_register:'activity' },
+  context:{participant,receipts:[],read:{propositions:[]},gate:{acting_id:'gate',propositions:[{...gate,receipts:[]}]},write:{question:'What follows?',propositions:[]}},
   schema:{ oneOf:[{ $ref:'#/$defs/actions/proposition.variant' }], $defs:{ actions:{ 'proposition.variant':action } } } };
- return { plan, state:{ status:'ready', plan, participant:{ id:'viewer', callsign:'Claire' }, context_horizon_id:'horizon' }, requests:[], posts:[], workspaceReads:0 };
+ return { plan,state:plan,gate,requests:[],posts:[],workspaceReads:0 };
 }
 function record(outcome = 'contributed') {
  return { id:'execution', participant:{id:'viewer',callsign:'Claire'}, originating_gate_id:'gate', cycle:{id:'cycle',sequence:3}, phase:{id:'phase',number:4,name:'disperse'},
@@ -84,14 +87,14 @@ async function withPage(surface, run, preparation) {
   harness.requests.push(url);
   let data;
   if (path.endsWith('/csrf-cookie')) return new Response(null, {status:204});
-  if (path.endsWith('/participate')) {
+  if (path.endsWith('/participate') && request.method === 'POST') {
    harness.posts.push(JSON.parse(await request.text()));
    return new Promise(resolve => { harness.resolvePost = resolve; });
   }
-  if (path.endsWith('/workspace')) {
+  if (path.endsWith('/participate')) {
    harness.workspaceReads++;
    if (harness.holdWorkspace) await new Promise(resolve => { harness.releaseWorkspace = resolve; });
-   data = harness.state;
+   data = { participant:harness.plan.participant,...harness.state };
   } else if (path.endsWith('/preparations/execution')) data = record();
   else if (path.endsWith('/preparations')) data = { items:[record()],next_cursor:null };
   else if (path.endsWith('/participants/viewer')) data = {id:'viewer',callsign:'Claire',max_read_count:25};
@@ -132,7 +135,7 @@ test('background HTTP and projection refresh retain the interactive workspace, d
   assert.equal(h.posts[0].contribution.statement, field.value);
   assert.equal(h.posts[0].phase_id, 'phase');
   assert.equal(document.querySelector('fieldset').disabled, true, 'own submitted action retains local feedback');
-  h.state = {status:'ready',plan:h.plan};
+  h.state = h.plan;
   await act(async () => h.resolvePost(new Response(JSON.stringify({data:h.state}), {headers:{'Content-Type':'application/json'}})));
   await until(() => !document.querySelector('textarea'));
   assert.ok(h.workspaceReads >= 3, 'mutation still invalidates the workspace');
@@ -143,11 +146,11 @@ test('a Mediate reader selects a counterpart and authors the child statement', a
  await withPage('participant', async (h, page) => {
   await until(() => button('Variant'));
   const action = 'proposition.reconcile';
-  const counterpart = { ...h.plan.gate, id: 'other', statement: 'Another observation.' };
+  const counterpart = { ...h.gate, receipts:[], relation:"counterpart", id: 'other', statement: 'Another observation.' };
   const definition = { title: 'Reconcile two Propositions', required: ['action', 'other_proposition_id', 'statement'],
    properties: { action: { const: action }, other_proposition_id: { enum: ['other'] }, statement: { type: 'string' } } };
-  h.state = { ...h.state, plan: { ...h.plan, phase: { ...h.plan.phase, kind: 'mediate', number: 5, write_register: 'frontier' },
-   gate_options: [counterpart], schema: { oneOf: [{ $ref: '#/$defs/actions/' + action }], $defs: { actions: { [action]: definition } } } } };
+  h.state = { ...h.plan, phase: { ...h.plan.phase, kind: 'mediate', number: 5, write_register: 'frontier' },
+   context:{...h.plan.context,read:{propositions:[counterpart]}}, schema: { oneOf: [{ $ref: '#/$defs/actions/' + action }], $defs: { actions: { [action]: definition } } } };
   await act(async () => page.refresh());
   await until(() => button('Reconcile'));
   await click(button('Reconcile'));
@@ -166,7 +169,7 @@ for (const phaseId of ['phase', 'next-phase']) test(`changed options (${phaseId}
  await withPage('participant', async (h, page) => {
   await until(() => button('Variant')); await click(button('Variant'));
   const field = await draft('Keep this draft after a conflict.');
-  h.state = {status:'ready',plan:{...h.plan,phase:{...h.plan.phase,id:phaseId},schema:{$defs:{actions:{}},oneOf:[]}}};
+  h.state = {...h.plan,phase:{...h.plan.phase,id:phaseId},schema:{$defs:{actions:{}},oneOf:[]}};
   await act(async () => page.refresh()); await until(() => h.workspaceReads >= 2); await tick();
   assert.equal(document.querySelector('textarea'),field);
   await click(button('Apply contribution')); await until(() => h.posts.length === 1);
@@ -209,7 +212,7 @@ for (const outcome of ['contributed','deferred','failed','pending','presented'])
  }, record(outcome));
 });
 
-for (const surface of ['graph','participant']) test(`${surface} opens the shared read-only Preparation details and links to its result`, async () => {
+for (const surface of ['graph','directory']) test(`${surface} opens the shared read-only Preparation details and links to its result`, async () => {
  await withPage(surface, async (h) => {
   await until(() => button('Preparation history')); await click(button('Preparation history'));
   await until(() => [...document.querySelectorAll('button')].some(b => b.textContent.includes('Compare two readings.')));
@@ -228,7 +231,7 @@ for (const surface of ['graph','participant']) test(`${surface} opens the shared
 test('an observed Instrument offers a reasoned Defer without Rest or restarting after refresh', async () => {
  await withPage('participant', async (h, page) => {
   await until(() => button('Variant'));
-  h.plan.acquisition = { role:'disperse_acquisition', gate_id:'gate', status:'awaiting_resolution', execution_id:'admitted', outcome:null };
+  h.plan.context.gate.acquisition = { role:'disperse_acquisition', gate_id:'gate', status:'awaiting_resolution', execution_id:'admitted', outcome:null };
   const defer = { title:'Defer', properties:{ action:{const:'acquisition.defer'}, execution_id:{const:'admitted',type:'string'}, reason:{type:'string',minLength:1,maxLength:2000} }, required:['action','execution_id','reason'] };
   h.plan.schema.$defs.actions['acquisition.defer'] = defer;
   h.plan.schema.oneOf.push({$ref:'#/$defs/actions/acquisition.defer'});
@@ -245,7 +248,7 @@ test('an observed Instrument offers a reasoned Defer without Rest or restarting 
   await click(button('Apply contribution'));
   await until(() => h.posts.length === 1);
   assert.deepEqual(h.posts[0].contribution, {action:'acquisition.defer',execution_id:'admitted',reason:field.value});
-  h.state = {status:'ready',plan:{...h.plan,acquisition:{...h.plan.acquisition,status:'resolved',outcome:{action:'defer'}}}};
+  h.state = h.plan;
   await act(async () => h.resolvePost(new Response(JSON.stringify({data:h.state}), {headers:{'Content-Type':'application/json'}})));
  });
 });

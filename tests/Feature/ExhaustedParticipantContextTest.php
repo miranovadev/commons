@@ -148,7 +148,7 @@ class ExhaustedParticipantContextTest extends TestCase
         $this->assertTrue($historical['basin_exhausted']);
         $this->assertFalse($historical['actionable']);
         $this->assertSame('What should persist?', $packet['write']['question']);
-        $this->assertStringNotContainsString($commit->id, json_encode($packet['actions']));
+        $this->assertArrayNotHasKey('actions', $packet);
     }
 
     public function test_outstanding_discovery_does_not_reopen_an_exhausted_committal(): void

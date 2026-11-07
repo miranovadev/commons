@@ -223,9 +223,9 @@ class ParticipantExplorationTest extends TestCase
         $write = collect($packet['write']['propositions'])->firstWhere('id', $head->id);
         self::assertNotNull($write, 'Explored Writes remain visible to autonomous Participants');
         self::assertTrue($write['explored'] ?? false);
-        self::assertArrayHasKey('proposition.revise', $packet['actions']['$defs']['actions']);
-        self::assertArrayNotHasKey('attestation.create', $packet['actions']['$defs']['actions']);
-        self::assertArrayNotHasKey('proposition.traverse', $packet['actions']['$defs']['actions']);
+        self::assertArrayHasKey('proposition.revise', $plan['schema']['$defs']['actions']);
+        self::assertArrayNotHasKey('attestation.create', $plan['schema']['$defs']['actions']);
+        self::assertArrayNotHasKey('proposition.traverse', $plan['schema']['$defs']['actions']);
     }
 
     public function test_rest_is_available_with_an_explored_write(): void

@@ -105,6 +105,8 @@ class ParticipantContextC3ComparisonTest extends TestCase
                 }
                 sort($times);
                 $packet = json_decode($prompt['user'], true, flags: JSON_THROW_ON_ERROR);
+                $this->assertArrayNotHasKey('actions', $packet);
+                $this->assertSame($state['plan']['schema'], $prompt['schema']);
                 $packets[$version] = $packet;
                 $receipts = $packet['receipts'];
                 $bytes = strlen($prompt['system']) + strlen($prompt['user']) + strlen($prompt['evidence']) + strlen($prompt['support']);
@@ -117,7 +119,6 @@ class ParticipantContextC3ComparisonTest extends TestCase
                     'duplicate_catalogue_entries' => count($receipts) - count(array_unique(array_column($receipts, 'id'))),
                 ];
             }
-            $this->assertSame($packets['c2']['actions'], $packets['c3']['actions']);
             foreach (['read', 'gate', 'write'] as $role) {
                 $this->assertSame($packets['c2'][$role], $packets['c3'][$role]);
                 foreach ($packets['c3'][$role]['propositions'] as $node) {
