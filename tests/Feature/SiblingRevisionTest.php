@@ -8,7 +8,10 @@ use App\Services\ActiveParticipantLineage;
 use App\Services\ContributionDispatcher;
 use App\Services\LedgerService;
 use App\Services\PhaseProgressionService;
+use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
+use App\Services\TerminalContinuationService;
+use App\Services\TragedyService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Fixtures\ParticipantExplorationFixture;
 use Tests\TestCase;
@@ -56,6 +59,28 @@ class SiblingRevisionTest extends TestCase
         [, $x, $phase] = $this->laterRefutedPosition();
         $this->node($this->phase($x, PhaseKind::Mediate), $x);
         self::assertContains($x->id, app(PropositionOptionService::class)->revisionOptionsFor($phase, $phase->cycle->participant)->pluck('id'));
+    }
+
+    public function test_a_terminal_revision_child_keeps_its_source_closed_to_further_revision(): void
+    {
+        [, $source, $phase] = $this->laterRefutedPosition();
+        // A live branch keeps the source itself out of terminal path propagation.
+        $this->node($this->phase($source, PhaseKind::Mediate), $source);
+        $participant = $phase->cycle->participant;
+        $input = ['action' => 'proposition.revise', 'proposition_id' => $source->id, 'statement' => 'Revision at the boundary'];
+        $child = app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
+        $this->controlledBirthClosureFixture(1, $child->id);
+        app(PropositionMeasurementService::class)->project($child, 1, 1, 1);
+        $this->assertNotNull(app(TragedyService::class)->record($child, $phase, 'proposition.revise'));
+
+        $terminal = app(TerminalContinuationService::class);
+        $this->assertTrue($terminal->closed($child));
+        $this->assertFalse($terminal->closed($source));
+        $options = app(PropositionOptionService::class);
+        $this->assertContains($source->id, $options->writeOptionsFor($phase)->pluck('id')->all());
+        $this->assertNotContains($child->id, $options->writeOptionsFor($phase)->pluck('id')->all());
+        $this->assertNotContains($source->id, $options->revisionOptionsFor($phase, $participant)->pluck('id')->all());
+        $this->assertSame($child->id, $source->children()->wherePivot('type', 'revise')->sole()->id);
     }
 
     public function test_personal_refute_can_revise_another_authors_variant(): void

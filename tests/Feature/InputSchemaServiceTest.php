@@ -132,6 +132,7 @@ class InputSchemaServiceTest extends TestCase
             PhaseKind::Distinguish->value => [
                 'instrument.execute',
                 'proposition.variant',
+                'proposition.revise',
                 'attestation.create',
                 'proposition.traverse',
             ],
@@ -144,7 +145,6 @@ class InputSchemaServiceTest extends TestCase
                 'proposition.traverse',
             ],
             PhaseKind::Constrain->value => [
-                'proposition.revise',
                 'proposition.reclassify',
                 'attestation.create',
                 'proposition.traverse',
