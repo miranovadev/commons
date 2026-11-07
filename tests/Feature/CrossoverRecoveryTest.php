@@ -258,7 +258,7 @@ class CrossoverRecoveryTest extends TestCase
         foreach ($route as $target) {
             $unfinished = $act($luna, 'proposition.traverse', $target);
         }
-        $this->assertEqualsCanonicalizing([$left->id, $right->id], $unfinished['plan']['schema']['$defs']['actions']['attestation.create']['properties']['proposition_id']['enum']);
+        $this->assertSame([$right->id], $unfinished['plan']['schema']['$defs']['actions']['attestation.create']['properties']['proposition_id']['enum']);
         $this->assertFalse(collect($unfinished['plan']['write_options'])->firstWhere('id', $right->id)['explored']);
         $act($luna, 'attestation.create', $right);
         $act($nova, 'attestation.create', $route[0]);

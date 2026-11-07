@@ -91,6 +91,7 @@ final readonly class LineageMeasurementService
         $frontier = collect([$position]);
         $seen = [];
         $positions = collect();
+        $revised = [];
         $distance = 0;
         while ($frontier->isNotEmpty()) {
             $expand = collect();
@@ -104,8 +105,13 @@ final readonly class LineageMeasurementService
                     $expand->push($proposition->id);
                 }
             }
-            $parentIds = $context !== null ? $expand->flatMap(fn ($id) => $context->parents->get($id, collect())->pluck('source_proposition_id')) : DB::table('supersessions')->whereIn('target_proposition_id', $expand)
-                ->pluck('source_proposition_id');
+            $edges = $context !== null
+                ? $expand->flatMap(fn ($id) => $context->parents->get($id, collect()))
+                : DB::table('supersessions')->whereIn('target_proposition_id', $expand)->get(['source_proposition_id', 'type']);
+            foreach ($edges->where('type', 'revise') as $edge) {
+                $revised[$edge->source_proposition_id] = true;
+            }
+            $parentIds = $edges->pluck('source_proposition_id');
             if ($distance === 0 && ! $position->exists) {
                 $parentIds = $parentIds->merge($position->parents->pluck('id'));
             }
@@ -115,6 +121,6 @@ final readonly class LineageMeasurementService
             $distance++;
         }
 
-        return $positions;
+        return $positions->reject(fn ($member) => isset($revised[$member[0]->id]))->values();
     }
 }

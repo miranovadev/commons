@@ -77,10 +77,13 @@ final class StructuralSourceService
             $inputs = $parents->get($id, collect());
             $revisions = $inputs->where('type', 'revise');
             if ($revisions->isNotEmpty()) {
-                if ($inputs->count() !== 1) {
+                if ($revisions->count() !== 1 || ($inputs->count() !== 1 && ($inputs->count() !== 2 || ! $inputs->contains('type', 'variant')))) {
                     throw new DomainException('A revision must preserve one structural position.');
                 }
                 $position = $resolve($revisions->sole()->source_proposition_id);
+                if ($inputs->count() === 2 && $inputs->firstWhere('type', 'variant')->source_proposition_id !== ($position['structural_source_id'] ?? null)) {
+                    throw new DomainException('Revision must share its original structural source.');
+                }
                 if ($position !== null && ($position['context_horizon_id'] !== $node->context_horizon_id
                     || $position['structural_position'] !== (int) $node->kind)) {
                     throw new DomainException('A revision cannot change its structural position.');

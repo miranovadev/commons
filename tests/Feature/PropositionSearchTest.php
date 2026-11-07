@@ -219,6 +219,26 @@ class PropositionSearchTest extends TestCase
         $this->assertDatabaseCount('participant_receipt_contexts', 1);
     }
 
+    public function test_loaded_search_results_only_surface_on_their_causal_line(): void
+    {
+        $s = $this->scenario();
+        $receipt = app(OperationalInstrumentService::class)->execute($s['phase'], $s['head'],
+            ['kind' => 'proposition_search', 'query' => 'needle', 'limit' => 10]);
+        $context = app(ReceiptContextService::class);
+        $this->assertTrue($context->forPhase($s['phase'])->firstWhere('id', $receipt->id)['loaded']);
+
+        // Inspect the same Participant's earlier Gate in the preceding Region.
+        $previous = $s['fixture']->phase;
+        $this->assertSame($s['phase']->cycle->participant_id, $previous->cycle->participant_id);
+        $this->assertNotContains($receipt->id, $context->forPhase($previous)->pluck('id'));
+        $plan = app(InputPlanService::class)->forPhase($s['fixture']->viewer, $previous);
+        $serializer = app(ParticipantContextSerializer::class);
+        $state = ['participant' => ['id' => $s['fixture']->viewer->id], 'plan' => $serializer->plan($plan)];
+        $this->assertNotContains($receipt->id, array_column($serializer->receiptCognition($state)['receipts'], 'id'));
+        $this->assertNotContains($receipt->id, array_column($serializer->inference($state)['receipts'], 'id'));
+        $this->assertTrue($context->forPhase($s['phase'])->firstWhere('id', $receipt->id)['loaded']);
+    }
+
     public function test_stale_internal_history_observation_is_rejected_before_persistence(): void
     {
         $s = $this->scenario();

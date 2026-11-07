@@ -29,7 +29,7 @@ class JudgmentExplorationTest extends TestCase
     {
         [$signal, $persist, $constrain, $write, $mediate] = $this->personalJourney(omitJudgment: 4);
         $exploration = app(ParticipantExplorationService::class);
-        self::assertTrue($exploration->explored($signal, $mediate));
+        self::assertFalse($exploration->explored($signal, $mediate), 'The later Persist observation reopened the earlier judgment.');
         self::assertFalse($exploration->explored($write, $mediate), 'Authorship is independent of judgment.');
         $entry = $this->returnAfterRest($mediate);
         self::assertFalse($exploration->explored($write, $entry));

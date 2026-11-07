@@ -72,8 +72,11 @@ class GateCausalReceiptCognitionTest extends TestCase
         DB::table('proposition_receipt_links')->insert(['proposition_id' => $b->id, 'receipt_id' => $shared->id, 'created_at' => now()]);
         foreach ([$a, $join] as $gate) {
             [$catalogue, $registers] = $this->project($f, $gate);
-            $this->assertSame([$shared->id, $left->id, $right->id], array_column($catalogue, 'id'));
-            $this->assertSame($b0->id, collect($catalogue)->firstWhere('id', $right->id)['originating_gate_id']);
+            $expected = $gate->is($join) ? [$left->id, $shared->id, $right->id] : [$left->id, $shared->id];
+            $this->assertSame($expected, array_column($catalogue, 'id'));
+            if ($gate->is($join)) {
+                $this->assertSame($b0->id, collect($catalogue)->firstWhere('id', $right->id)['originating_gate_id']);
+            }
             $this->assertSame([$gate->id], array_column($registers['gate']['propositions'], 'id'));
             $this->assertSame([], $registers['read']['propositions']);
             $this->assertSame([], $registers['write']['propositions']);
@@ -217,9 +220,10 @@ class GateCausalReceiptCognitionTest extends TestCase
         $b = $f->node($f->seed, 'activity');
         $f->node($a, 'frontier', 'reconcile', additionalParent: $b);
         $measure = function () use ($f, $a): array {
+            $scope = new \App\Services\Participation\ParticipationContext($f->phase);
             DB::flushQueryLog();
             DB::enableQueryLog();
-            [$catalogue] = $this->project($f, $a);
+            [$catalogue] = $this->project($f, $a, context: $scope);
             $queries = DB::getQueryLog();
             DB::disableQueryLog();
             foreach ($queries as $query) {
@@ -237,13 +241,13 @@ class GateCausalReceiptCognitionTest extends TestCase
         }
         [$large, $largeQueries, $largeBytes] = $measure();
         $this->assertCount(1, $small);
-        $this->assertCount(21, $large);
-        $this->assertSame($smallQueries, $largeQueries);
+        $this->assertCount(1, $large);
+        $this->assertLessThanOrEqual($smallQueries, $largeQueries);
         $this->assertLessThanOrEqual(60, $largeQueries);
         $this->assertLessThan(21 * 2000, $largeBytes);
         $this->assertSame(1, substr_count(json_encode($large), 'BODY-shared'));
-        $this->assertSame(1, substr_count(json_encode($large), 'BODY-overlap-20'));
-        fwrite(STDERR, sprintf("\nRECEIPT_COGNITION overlap: %d -> %d queries; %d -> %d bytes; 1 -> 21 Receipts\n",
+        $this->assertSame(0, substr_count(json_encode($large), 'BODY-overlap-20'));
+        fwrite(STDERR, sprintf("\nRECEIPT_COGNITION overlap: %d -> %d queries; %d -> %d bytes; 1 -> 1 visible Receipts\n",
             $smallQueries, $largeQueries, $smallBytes, $largeBytes));
     }
 
@@ -256,12 +260,16 @@ class GateCausalReceiptCognitionTest extends TestCase
                 description: ['title' => 'Observation '.$tag]));
     }
 
-    private function project(ParticipantContextFixture $f, Proposition $gate, array $reads = [], string $kind = 'mediate', ?Participant $viewer = null): array
+    private function project(ParticipantContextFixture $f, Proposition $gate, array $reads = [], string $kind = 'mediate', ?Participant $viewer = null, ?\App\Services\Participation\ParticipationContext $context = null): array
     {
         $registers = ['read' => ['propositions' => array_map(fn ($node) => ['id' => $node->id], $reads)],
             'gate' => ['propositions' => [['id' => $gate->id]]], 'write' => ['propositions' => []]];
         $state = ['participant' => ['id' => ($viewer ?? $f->viewer)->id],
             'plan' => ['gate_id' => $gate->id, 'phase' => ['id' => $f->phase->id, 'kind' => $kind]]];
+
+        $context ??= new \App\Services\Participation\ParticipationContext($f->phase, collect([$gate->id]), includeUnavailableAdditional: true);
+        $state['plan']['receipts'] = app(\App\Services\CognitiveEvidenceHorizon::class)->receipts($gate->id, $context)
+            ->map(fn ($receipt) => $receipt->only(['id', 'type', 'reference']))->values()->all();
 
         return [app(ParticipantReceiptProjection::class)->normalize($registers, $state), $registers];
     }

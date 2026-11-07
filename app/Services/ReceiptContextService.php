@@ -50,29 +50,19 @@ final readonly class ReceiptContextService
                 ->unique('id')->filter(fn ($node) => $context->activeIds->has($node->id));
             $present = $exposed->pluck('id');
             $available = app(HorizonReceiptService::class)->catalogue($phase, $context);
-            // Memory survives spent authority, exhaustion and recovery. Only this
-            // Participant's already loaded, same-substrate memories are retained.
+            // Special Tragedy warrants retain their independent access and memory lifecycle.
             $memories = Receipt::where('type', 'tragedy')
                 ->whereHas('horizon', fn ($q) => $q->where('substrate_id', $context->substrate->id))
                 ->where(fn ($q) => $q->whereIn('id', ParticipantReceiptContext::active()
                     ->where('participant_id', $phase->cycle->participant_id)->select('receipt_id'))
-                    // Optional loading and escape can accompany the same atomic action.
-                    ->orWhereHas('consumption', fn ($q) => $q->where('phase_id', $phase->id)))->get()
-                ->concat(Receipt::where('type', 'proposition_search')
-                    ->whereIn('id', ParticipantReceiptContext::active()
-                        ->where('participant_id', $phase->cycle->participant_id)->select('receipt_id'))
-                    ->whereHas('evidenceExecution.proposition.phase.cycle.participant',
-                        fn ($q) => $q->where('substrate_id', $context->substrate->id))->get());
-            $receipts = $available
-                ->concat($memories)
-                ->concat($context->receipts->where('context_horizon_id', $phase->governance()->context_horizon_id)
-                    ->whereIn('id', $context->receiptContexts->where('participant_id', $phase->cycle->participant_id)->whereNull('cleared_at')->pluck('receipt_id')))
-                ->concat($exposed->flatMap(fn ($node) => $this->state->receipts($node, $context)))->unique('id');
+                    ->orWhereHas('consumption', fn ($q) => $q->where('phase_id', $phase->id)))->get();
+            $ordinary = $gate === null ? collect() : app(CognitiveEvidenceHorizon::class)->receipts($gate->id, $context);
+            $receipts = $ordinary->values()->concat($available->where('type', 'tragedy'))->concat($memories)->unique('id');
             (new \Illuminate\Database\Eloquent\Collection($receipts->all()))->loadMissing(['consumption', 'phase', 'evidenceExecution']);
             $loads = ParticipantReceiptContext::where('participant_id', $phase->cycle->participant_id)
                 ->whereIn('receipt_id', $receipts->pluck('id'))->get()->keyBy('receipt_id');
             if ($receipts->contains('type', 'citation')) {
-                $present = $present->merge($this->evidence->loadedCitationTargets($context));
+                $present = $present->merge($this->evidence->loadedCitationTargets($context, $ordinary));
             }
 
             $reads = $phase->kind === PhaseKind::Order
@@ -129,7 +119,7 @@ final readonly class ReceiptContextService
                     'status' => $status, 'loaded_at' => $loaded ? $load->loaded_at->toISOString() : null,
                     ...($verified !== null ? ['evidence' => $verified['evidence']] : []),
                 ];
-            })->sortBy('id')->values();
+            })->values();
         });
     }
 
@@ -206,12 +196,10 @@ final readonly class ReceiptContextService
         });
     }
 
-    /** Personal same-substrate memory may be cleared even after leaving its position. */
-    public function unloadOptions(Phase $phase): Collection
+    /** Advertise loaded Receipts only while they are visible at this Gate. */
+    public function unloadOptions(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        return ParticipantReceiptContext::active()->where('participant_id', $phase->cycle->participant_id)
-            ->whereHas('receipt.horizon', fn ($q) => $q->where('substrate_id', $phase->cycle->participant->substrate_id))
-            ->orderBy('receipt_id')->pluck('receipt_id');
+        return $this->forPhase($phase, $context)->where('loaded', true)->pluck('id');
     }
 
     /** Called after immutable ordinary observation persistence, including Preparation failures. */

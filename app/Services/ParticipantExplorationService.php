@@ -35,8 +35,8 @@ final class ParticipantExplorationService
 
     /**
      * Follow forward producing positions in this Cycle's Region/Horizon only.
-     * Foreign movement is evaluated separately at its actual destination. Revisions replace
-     * their source at the same position. A Committal ends this excursion.
+     * Foreign movement is evaluated at its actual destination. A sibling Revision has
+     * its own soft edge at the same producing position. A Committal ends this excursion.
      * Full frontier evaluation precedes every presentation limit.
      */
     public function heads(string $id, Phase $phase, ParticipationContext $context): Collection
@@ -68,7 +68,8 @@ final class ParticipantExplorationService
                         return false;
                     }
                     if ($edge->type === 'revise') {
-                        return $target->phase->kind === $node->phase->kind && $target->register === $node->register;
+                        return ! $context->parents->get($target->id, collect())->contains('type', 'variant')
+                            && $target->phase->kind === $node->phase->kind && $target->register === $node->register;
                     }
                     if ($node->tier === 'committal' && $node->id !== $phase->governance()->entry_committal_id) {
                         return false;
@@ -90,7 +91,7 @@ final class ParticipantExplorationService
                             $pending[] = $target;
                         }
                     }
-                } elseif ($children->where('type', '!=', 'variant')->isEmpty()) {
+                } elseif ($children->whereNotIn('type', ['variant', 'revise'])->isEmpty()) {
                     // Hard-superseded nodes are history, never independent heads.
                     $heads->put($current, $node);
                 }
@@ -118,11 +119,7 @@ final class ParticipantExplorationService
             array_push($pending, ...array_keys($parents[$id] ?? []));
         }
 
-        // A Revision replaces its source at one position. Its earlier expression
-        // must not become a second quota for a Participant who judged the replacement.
-        return $context->nodes(array_keys($visited))->reject(fn ($node) => $context->children->get($node->id, collect())
-            ->contains(fn ($edge) => $edge->type === 'revise' && isset($visited[$edge->target_proposition_id])))
-            ->pluck('id');
+        return collect(array_keys($visited));
     }
 
     /** Selected movement route, never the union of Reconciliation evidence ancestors. */
@@ -167,7 +164,7 @@ final class ParticipantExplorationService
                     continue;
                 }
                 $active = $context->activeIds->has($node->id) && ! $terminal->has($node->id)
-                    && $context->children->get($node->id, collect())->where('type', '!=', 'variant')->isEmpty();
+                    && $context->children->get($node->id, collect())->whereNotIn('type', ['variant', 'revise'])->isEmpty();
                 if ($active && $node->tier === 'expressive' && $node->phase->kind !== PhaseKind::Order
                     && ! $this->judgedPosition($node, $personal, $context)) {
                     return false;
@@ -195,30 +192,18 @@ final class ParticipantExplorationService
         });
     }
 
-    /** Revision is reconsideration of a position, not a new first-judgment quota. */
     private function judgedPosition(Proposition $node, Collection $personal, ParticipationContext $context): bool
     {
-        $pending = [$node->id];
-        $seen = [];
-        while ($pending !== []) {
-            $id = array_pop($pending);
-            if (isset($seen[$id])) {
-                continue;
-            }
-            $seen[$id] = true;
-            if ($personal->has($id)) {
-                return true;
-            }
-            foreach ($context->parents->get($id, collect())->where('type', 'revise') as $edge) {
-                $source = $context->propositions->get($edge->source_proposition_id);
-                if ($source !== null && $source->phase->kind === $node->phase->kind && $source->register === $node->register
-                    && $source->phase->governance()->entry_committal_id === $node->phase->governance()->entry_committal_id
-                    && $source->phase->governance()->context_horizon_id === $node->phase->governance()->context_horizon_id) {
-                    $pending[] = $source->id;
-                }
-            }
+        $vote = $personal->get($node->id);
+        if ($vote === null) {
+            return false;
+        }
+        $sequence = $vote->ledgerEntry?->sequence;
+        if ($sequence === null) {
+            return true;
         }
 
-        return false;
+        return ! app(CognitiveEvidenceHorizon::class)->receipts($node->id, $context)
+            ->contains(fn ($receipt) => $receipt->ledgerEntry?->sequence > $sequence);
     }
 }

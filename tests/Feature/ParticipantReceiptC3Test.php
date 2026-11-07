@@ -82,7 +82,7 @@ class ParticipantReceiptC3Test extends TestCase
         $before = $this->snapshot();
         foreach (['persist', 'constrain', 'disperse', 'mediate', 'bias', 'order'] as $kind) {
             [$catalogue, $registers] = $this->project($f, $e2, $kind);
-            $this->assertEqualsCanonicalizing([$foundation->id, $past->id, $future->id], array_column($catalogue, 'id'));
+            $this->assertEqualsCanonicalizing([$foundation->id, $past->id], array_column($catalogue, 'id'));
             $this->assertNotContains($other->id, array_column($catalogue, 'id'));
             $this->assertSame([$e2->id], array_column($registers['gate']['propositions'], 'id'));
             $this->assertSame([], $registers['read']['propositions']);
@@ -90,19 +90,19 @@ class ParticipantReceiptC3Test extends TestCase
             $this->assertSame(1, substr_count(json_encode($catalogue), 'C3-BODY-past'));
             $this->assertSame(1, substr_count(json_encode($catalogue), 'C3-LINK-past'));
             $this->assertStringNotContainsString('C3-LINK-sibling', json_encode($catalogue));
-            $this->assertCount(3, array_filter($catalogue, fn ($r) => isset($r['loaded_inline_content'])));
+            $this->assertCount(2, array_filter($catalogue, fn ($r) => isset($r['loaded_inline_content'])));
         }
         $this->assertSame($before, $this->snapshot());
         $viewer = (new Participant)->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'Unloaded']);
         $viewer->save();
         [$catalogue] = $this->project($f, $e2, viewer: $viewer);
-        $this->assertCount(3, $catalogue);
+        $this->assertCount(2, $catalogue);
         $this->assertSame([], array_filter($catalogue, fn ($r) => $r['loaded'] || isset($r['loaded_inline_content'])));
         $this->assertStringNotContainsString('C3-LINK-', json_encode($catalogue));
         $this->assertDatabaseHas('participant_receipt_contexts', ['participant_id' => $f->viewer->id, 'receipt_id' => $other->id, 'cleared_at' => null]);
     }
 
-    public function test_distinguish_keeps_loaded_write_evidence_and_commit_retains_only_its_source(): void
+    public function test_distinguish_shows_the_preceding_committed_line_and_hides_write_evidence_until_arrival(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
         $foundation = $this->receipt($f, $f->seed, 'origin');
@@ -114,11 +114,11 @@ class ParticipantReceiptC3Test extends TestCase
         $child = $f->node($commit, 'activity');
         $writeReceipt = $this->receipt($f, $child, 'write');
         [$catalogue, $registers] = $this->project($f, $commit, 'distinguish', [$child]);
-        $this->assertEqualsCanonicalizing([$foundation->id, $carried->id, $writeReceipt->id], array_column($catalogue, 'id'));
-        $this->assertCount(3, array_filter($catalogue, fn ($r) => isset($r['loaded_inline_content'])));
-        $this->assertSame([$writeReceipt->id], $registers['write']['propositions'][0]['receipts']);
+        $this->assertEqualsCanonicalizing([$foundation->id, $carried->id], array_column($catalogue, 'id'));
+        $this->assertCount(2, array_filter($catalogue, fn ($r) => isset($r['loaded_inline_content'])));
+        $this->assertSame([], $registers['write']['propositions'][0]['receipts']);
         [$later] = $this->project($f, $child);
-        $this->assertEqualsCanonicalizing([$carried->id, $writeReceipt->id], array_column($later, 'id'));
+        $this->assertEqualsCanonicalizing([$foundation->id, $carried->id, $writeReceipt->id], array_column($later, 'id'));
         $this->assertNotContains($unselected->id, array_column($later, 'id'));
         [$beforeCommit] = $this->project($f, $source);
         $this->assertNotContains($writeReceipt->id, array_column($beforeCommit, 'id'));
@@ -138,7 +138,7 @@ class ParticipantReceiptC3Test extends TestCase
             'phase' => ['id' => $f->phase->id, 'kind' => 'mediate'], 'schema' => ['fixture' => 'unchanged']]];
         $before = $this->snapshot();
         $catalogue = app(ParticipantReceiptProjection::class)->normalize($registers, $state);
-        $this->assertSame([$r->id], array_column($catalogue, 'id'));
+        $this->assertNotContains($r->id, array_column($catalogue, 'id'));
         $this->assertNotContains($hidden->id, array_column($catalogue, 'id'));
         $this->assertSame(['fixture' => 'unchanged'], $state['plan']['schema']);
         $this->assertSame($before, $this->snapshot());

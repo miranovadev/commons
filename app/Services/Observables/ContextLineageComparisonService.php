@@ -13,6 +13,7 @@ use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
 use App\Services\Participation\ParticipationContext;
 use DomainException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 final class ContextLineageComparisonService
@@ -139,7 +140,7 @@ final class ContextLineageComparisonService
         if ($context !== null) {
             $ids = $context->lineageIds($horizon->id, $gateIds);
 
-            return new DomainLineage($horizon,
+            return $this->measurementLineage($horizon,
                 $context->nodes($ids)->sortBy(fn ($node) => $node->ledgerEntry->sequence)->values(),
                 $context->edges->whereIn('source_proposition_id', $ids)->whereIn('target_proposition_id', $ids)->values(), $context);
         }
@@ -192,10 +193,17 @@ final class ContextLineageComparisonService
             ->whereIn('target_proposition_id', $lineageIds)
             ->get();
 
-        return new DomainLineage(
-            $horizon,
-            $propositions,
-            $supersessions,
-        );
+        return $this->measurementLineage($horizon, $propositions, $supersessions);
+    }
+
+    private function measurementLineage(ContextHorizon $horizon, Collection $nodes, Collection $edges, ?ParticipationContext $context = null): DomainLineage
+    {
+        $revised = $edges->where('type', 'revise')->pluck('source_proposition_id');
+        if ($revised->isNotEmpty()) {
+            $nodes = $nodes->whereNotIn('id', $revised)->values();
+            $edges = $edges->whereNotIn('source_proposition_id', $revised)->whereNotIn('target_proposition_id', $revised)->values();
+        }
+
+        return new DomainLineage($horizon, $nodes, $edges, $context);
     }
 }

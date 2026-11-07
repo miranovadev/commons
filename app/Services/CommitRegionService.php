@@ -142,7 +142,7 @@ final class CommitRegionService
         }
         if (! Proposition::query()->active()->whereKey($node->id)
             ->when($phase->kind !== PhaseKind::Mediate, fn ($query) => $query->whereDoesntHave('children',
-                fn ($query) => $query->where('supersessions.type', '!=', 'variant')))->exists()) {
+                fn ($query) => $query->whereNotIn('supersessions.type', ['variant', 'revise'])))->exists()) {
             return false;
         }
         $gate = $phase->gate()->first();
@@ -158,7 +158,7 @@ final class CommitRegionService
         }
 
         // A direct Commit consumes the source for everyone; Variants preserve alternatives.
-        $nonConsuming = ['variant'];
+        $nonConsuming = ['variant', 'revise'];
         if ($context !== null) {
             $members = $this->positions->filter($this->membersFor($position, $context), $phase, $positionKind);
 

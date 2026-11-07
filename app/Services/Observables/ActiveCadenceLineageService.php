@@ -26,16 +26,16 @@ final readonly class ActiveCadenceLineageService
             throw new DomainException('Cadence birth reference requires the selected local source edge.');
         }
         $rows = collect(DB::select(<<<'SQL'
-            WITH RECURSIVE selected(id, samples) AS (
-                SELECT id, 0 FROM propositions WHERE id = ?
+            WITH RECURSIVE selected(id, samples, revised) AS (
+                SELECT id, 0, false FROM propositions WHERE id = ?
                 UNION
                 SELECT edge.source_proposition_id,
-                    selected.samples + CASE WHEN predecessor.tier = 'expressive'
+                    selected.samples + CASE WHEN edge.type <> 'revise' AND predecessor.tier = 'expressive'
                         AND NOT EXISTS (SELECT 1 FROM supersessions replacement
-                            WHERE replacement.source_proposition_id = predecessor.id AND replacement.type <> 'variant')
+                            WHERE replacement.source_proposition_id = predecessor.id AND replacement.type NOT IN ('variant', 'revise'))
                         THEN CASE WHEN json_array_length(history.intervals) >= 2 THEN 2
                             ELSE COALESCE(json_array_length(history.intervals), 0) END
-                        ELSE 0 END
+                        ELSE 0 END, edge.type = 'revise'
                 FROM selected
                 JOIN propositions current ON current.id = selected.id
                 LEFT JOIN proposition_attestation_cursors cursor ON cursor.proposition_id = current.id
@@ -48,8 +48,8 @@ final readonly class ActiveCadenceLineageService
             SELECT node.id, node.tier, edge.source_proposition_id AS predecessor_id,
                 cursor.beat_sequence, cursor.attestation_id, beat.proposition_id AS beat_owner_id,
                 state.intervals, state.act_count,
-                CASE WHEN EXISTS (SELECT 1 FROM supersessions replacement
-                    WHERE replacement.source_proposition_id = node.id AND replacement.type <> 'variant')
+                CASE WHEN selected.revised OR EXISTS (SELECT 1 FROM supersessions replacement
+                    WHERE replacement.source_proposition_id = node.id AND replacement.type NOT IN ('variant', 'revise'))
                     THEN 1 ELSE 0 END AS hard_superseded,
                 CASE WHEN EXISTS (SELECT 1 FROM attestations act
                     JOIN substrate_ledger_entries ledger ON ledger.ledgerable_id = act.id

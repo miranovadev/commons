@@ -23,14 +23,32 @@ export function buildGraphStructure(propositions: Proposition[], parents = graph
   }
   const levels: Identifier[][] = [];
   const visited = new Set<Identifier>();
-  let frontier = origin ? [origin.id] : [];
-  while (frontier.length) {
-    const current = frontier.filter(id => byId.has(id) && !visited.has(id));
-    if (!current.length) break;
-    levels.push(current);
-    for (const id of current) visited.add(id);
-    frontier = [...new Set(current.flatMap(id => children.get(id) || []))];
+  // A producing Phase fixes the row within its seven-Phase excursion. The
+  // hard edge of a Revision can connect peers, including historical unary births.
+  const pending: Identifier[][] = origin ? [[origin.id]] : [];
+  for (let row = 0; row < pending.length; row++) {
+    const level: Identifier[] = [];
+    for (const id of pending[row] || []) {
+      const parent = byId.get(id);
+      if (!parent || visited.has(id)) continue;
+      visited.add(id);
+      level.push(id);
+      for (const childId of children.get(id) || []) {
+        const child = byId.get(childId);
+        if (!child || visited.has(childId)) continue;
+        // A foreign operand records causality; the producing Gate fixes the excursion.
+        if (child.structural_source_id && child.structural_source_id !== id
+          && parents.get(childId)?.has(child.structural_source_id)) continue;
+        const from = parent.is_origin ? 0 : parent.structural_position;
+        const to = child.structural_position;
+        const distance = from === undefined || to === undefined ? 1
+          : from === 0 ? to : (to - from + 7) % 7;
+        (pending[row + distance] ??= []).push(childId);
+      }
+    }
+    levels.push(level);
   }
+  while (levels.length && !levels.at(-1)!.length) levels.pop();
   const unvisited = propositions.filter(p => !visited.has(p.id)).map(p => p.id);
   if (unvisited.length) levels.push(unvisited);
   return { origin, byId, levels, edges };
@@ -52,6 +70,13 @@ export function buildGraphLayout(structure: ReturnType<typeof buildGraphStructur
   const edges = structure.edges.map(edge => {
     const parent = positions.get(edge.from)!;
     const child = positions.get(edge.to)!;
+    if (parent.y === child.y) {
+      const forward = parent.x < child.x;
+      const start = parent.x + (forward ? nodeWidth : 0);
+      const end = child.x + (forward ? 0 : nodeWidth);
+      const y = parent.y + nodeHeight / 2;
+      return { ...edge, path: `M ${start} ${y} L ${end} ${y}` };
+    }
     const x1 = parent.x + nodeWidth / 2;
     const y1 = parent.y + nodeHeight;
     const x2 = child.x + nodeWidth / 2;

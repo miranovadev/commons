@@ -376,7 +376,7 @@ class AttestationBeatContinuityTest extends TestCase
         $this->assertSame(1, $d->attestations()->count());
     }
 
-    public function test_replacement_off_the_selected_route_is_excluded_without_following_its_new_branch(): void
+    public function test_revision_off_the_selected_route_preserves_the_original_preceding_beat(): void
     {
         [$origin, $a] = $this->start();
         $this->act($a);
@@ -388,9 +388,9 @@ class AttestationBeatContinuityTest extends TestCase
         $replacement = $this->child($b, $origin, newCycle: false, type: 'revise');
         $this->act($replacement);
         $this->act($c);
-        $this->assertSame([2, 2], $this->measuredIntervals($c));
-        $this->assertSame([$a->id], array_column($this->reference($c), 'proposition_id'));
-        $this->assertSame([2], $this->intervals($c), 'B and its replacement cannot supply the preceding beat');
+        $this->assertSame([2, 1, 1], $this->measuredIntervals($c));
+        $this->assertSame([$a->id, $b->id], array_column($this->reference($c), 'proposition_id'));
+        $this->assertSame([1], $this->intervals($c), 'The original B supplies its own branch’s preceding beat');
     }
 
     #[DataProvider('reconcileOrders')]

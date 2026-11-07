@@ -143,7 +143,7 @@ return [
             'Create a variant from the current gate',
         ),
         'proposition.revise' => [
-            'description' => 'Replace the selected proposition with a revised statement.',
+            'description' => 'Author a sibling expression from the accumulated evidence after your earlier-Cycle Refute.',
             'title' => 'Revise a proposition in the current write register',
             'type' => 'object',
             'additionalProperties' => false,

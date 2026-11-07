@@ -151,7 +151,7 @@ function WriteOptionCard({ proposition, directions, canAttest, canRevise, canIns
   const slots = directionSlots(proposition.attestation_summary?.support_direction);
   function directionalAction(slot: typeof slots[number]) {
     const attest = canAttest && directions.includes(slot.label);
-    const traverse = proposition.tier === 'expressive' && canTraverse && !directions.includes(slot.label);
+    const traverse = proposition.tier === 'expressive' && canTraverse && directions.length === 1 && !attest;
     if (!attest && !traverse) return null;
     const whirl = <DirectionalWhirl direction={slot.direction} size={17} />;
     const portal = <Group gap={2} wrap="nowrap">{slot.side === 'left' ? <>{whirl}<IconArrowLeft size={14} aria-hidden="true" /></>
@@ -161,12 +161,12 @@ function WriteOptionCard({ proposition, directions, canAttest, canRevise, canIns
       leftSection={slot.side === 'left' ? traverse ? portal : whirl : undefined}
       rightSection={slot.side === 'right' ? traverse ? portal : whirl : undefined}
       onClick={() => traverse ? onAction('proposition.traverse', { proposition_id: proposition.id })
-        : onAction('attestation.create', { proposition_id: proposition.id, direction: slot.label })}>{traverse ? 'Traverse' : slot.text}</Button>;
+        : onAction('attestation.create', { proposition_id: proposition.id, direction: slot.label })}>{traverse ? 'Traverse' : proposition.attestation?.direction === slot.label ? 'Reaffirm '+slot.text : slot.text}</Button>;
   }
   return <Box className="write-option-card" data-attested={proposition.attestation?.direction}>
     <PropositionCard proposition={proposition} committalObservables={committalObservables} compact flow="write" onClick={() => onInspect({ kind: 'write option', proposition })} />
     {hasActions && <>
-      {proposition.tier === 'committal' && canTraverse && <Group className="write-option-card__context-actions" gap={4} justify="center">
+      {canTraverse && (proposition.tier === 'committal' || directions.length !== 1) && <Group className="write-option-card__context-actions" gap={4} justify="center">
         <Button size="compact-xs" variant="subtle" color="indigo" leftSection={<IconArrowRight size={14} />}
           onClick={() => onAction('proposition.traverse', { proposition_id: proposition.id })}>Traverse</Button>
       </Group>}

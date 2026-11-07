@@ -53,7 +53,7 @@ final readonly class ActiveParticipantLineage
             $boundary = $node->tier === 'committal';
             $outgoing = $context?->children->get($node->id, collect())
                 ?? Supersession::where('source_proposition_id', $node->id)->get();
-            $hardSuperseded = $outgoing->contains(fn ($edge) => SupersessionStrength::for($edge->type) === SupersessionStrength::Hard);
+            $hardSuperseded = $outgoing->contains(fn ($edge) => $edge->type !== 'revise' && SupersessionStrength::for($edge->type) === SupersessionStrength::Hard);
             if ($boundary || (! isset($excluded[$node->id]) && ! $hardSuperseded)) {
                 $path->prepend($node);
             }

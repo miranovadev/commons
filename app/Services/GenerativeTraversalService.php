@@ -57,9 +57,7 @@ final readonly class GenerativeTraversalService
             // A projected Phase has no execution. Use the same pre-acquisition
             // decision as a real arrival, without reserving an attempt.
             $options = app(PropositionOptionService::class);
-            $personal = $evaluation->personalAttestationsByProposition($phase->cycle->participant_id);
-            $judgment = $options->attestationOptionsFor($phase, $evaluation)
-                ->contains(fn (Proposition $write) => ! $personal->has($write->id));
+            $judgment = $options->attestationOptionsFor($phase, $evaluation)->isNotEmpty();
 
             return $judgment || $this->acquisition->state($phase, $evaluation)['status'] === 'required'
                 || $this->opportunities->nonVariantGenerationAvailable($phase, $evaluation)

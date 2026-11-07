@@ -41,6 +41,23 @@ class ParticipantExplorationTest extends TestCase
 {
     use ParticipantExplorationFixture, RefreshDatabase;
 
+    /** A later visit settles the two judgments reopened by observations made after arrival. */
+    private function settledJourney(string $direction = 'support'): array
+    {
+        [$signal, $persist, $constrain, $head, $terminal] = $this->personalJourney($direction);
+        $phase = $this->returnAfterRest($terminal);
+        foreach ([$signal, $persist, $constrain, $head] as $node) {
+            if (! app(ParticipantExplorationService::class)->explored($node, $phase)) {
+                $this->personalVote($phase, $node, $node->is($head) ? $direction : 'support');
+            }
+            $phase = app(PhaseProgressionService::class)->advance($phase, $node);
+        }
+
+        $this->publishPotentialFixture($this->substrate);
+
+        return [$signal, $persist, $constrain, $head, $phase];
+    }
+
     public function test_constrain_witness_requires_personal_judgments_and_a_finished_encounter(): void
     {
         $this->resolveExpressiveFieldFixture(.8);
@@ -75,7 +92,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_completed_rest_records_one_personal_head_and_preserves_other_participants_actions(): void
     {
-        [$signal, , , $head, $terminal] = $this->personalJourney();
+        [$signal, , , $head, $terminal] = $this->settledJourney();
         $nova = $terminal->cycle->participant;
         $luna = $this->phase($this->origin, PhaseKind::Distinguish);
         $return = $this->returnAfterRest($terminal);
@@ -87,7 +104,7 @@ class ParticipantExplorationTest extends TestCase
         $this->assertFalse($exploration->explored($signal, $luna));
         $options = app(PropositionOptionService::class);
         $this->assertContains($signal->id, $options->attestationOptionsFor($luna)->pluck('id'));
-        $this->assertContains($signal->id, $options->attestationOptionsFor($return)->pluck('id'), 'A prior voter may reconsider.');
+        $this->assertNotContains($signal->id, $options->attestationOptionsFor($return)->pluck('id'), 'The personal stance covers all current evidence.');
         $this->assertContains($signal->id, $options->traversalOptionsFor($return, base: true)->pluck('id'), 'Base navigation remains lawful');
         $this->assertContains($signal->id, $options->traversalOptionsFor($return)->pluck('id'), 'The explored Write leads to fresh generation');
         $this->assertTrue($exploration->explored($signal, $return), 'Base Traverse cannot reopen the explored destination');
@@ -98,7 +115,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_variant_only_traverse_preserves_exploration_in_its_own_horizon(): void
     {
-        [$signal, $persist, $constrain, , $terminal] = $this->personalJourney();
+        [$signal, $persist, $constrain, , $terminal] = $this->settledJourney();
         $phase = $this->returnAfterRest($terminal);
         $actor = $phase->cycle->participant;
         foreach ([$signal, $persist] as $target) {
@@ -125,7 +142,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_an_explored_sibling_does_not_inherit_another_gates_reclassification(): void
     {
-        [$signal, $persist, , $firstHead, $terminal] = $this->personalJourney();
+        [$signal, $persist, , $firstHead, $terminal] = $this->settledJourney();
         $entry = $this->returnAfterRest($terminal);
         $persistPhase = app(PhaseProgressionService::class)->advance($entry, $signal);
         $sibling = $this->node($persistPhase, $signal);
@@ -144,7 +161,8 @@ class ParticipantExplorationTest extends TestCase
         app(PropositionMeasurementService::class)->project($secondHead, 0, 0, 0, correspondenceComponents: new CorrespondenceValues(.8, -.8));
         $this->publishPotentialFixture($this->substrate);
         $return = $this->returnAfterRest($mediate);
-        $this->assertDatabaseCount('exploration_events', 2);
+        $this->assertDatabaseCount('exploration_events', 1);
+        self::assertFalse(app(ParticipantExplorationService::class)->explored($classification, $return), 'The Disperse observation follows judgment on its Gate.');
         // Independently learned sibling routes. Only the first Gate still admits Constrain Reclassification.
         foreach ([$firstHead, $secondHead] as $head) {
             app(PropositionMeasurementService::class)->project($head, 0, 0, 0, correspondenceComponents: new CorrespondenceValues(.8, -.8));
@@ -169,7 +187,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_regional_tragedy_withdraws_a_previously_available_variant_route(): void
     {
-        [$signal, $persist, $constrain, , $terminal] = $this->personalJourney();
+        [$signal, $persist, $constrain, , $terminal] = $this->settledJourney();
         $phase = $this->returnAfterRest($terminal);
         foreach ([$signal, $persist] as $gate) {
             $phase = app(PhaseProgressionService::class)->advance($phase, $gate);
@@ -184,7 +202,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_prior_cycle_self_refute_preserves_revision_and_does_not_block_fresh_variant(): void
     {
-        [$signal, $persist, $constrain, $head, $terminal] = $this->personalJourney('refute');
+        [$signal, $persist, $constrain, $head, $terminal] = $this->settledJourney('refute');
         $return = $this->returnAfterRest($terminal);
         $exploration = app(ParticipantExplorationService::class);
         self::assertTrue($exploration->explored($head, $return));
@@ -196,7 +214,7 @@ class ParticipantExplorationTest extends TestCase
         }
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);
         self::assertArrayHasKey('proposition.revise', $plan['schema']['$defs']['actions']);
-        self::assertArrayHasKey('attestation.create', $plan['schema']['$defs']['actions']);
+        self::assertArrayNotHasKey('attestation.create', $plan['schema']['$defs']['actions']);
         self::assertArrayHasKey('instrument.execute', $plan['schema']['$defs']['actions']);
         $packet = app(ParticipantContextSerializer::class)->inference([
             'participant' => $phase->cycle->participant->only(['id', 'callsign', 'designation']),
@@ -206,13 +224,13 @@ class ParticipantExplorationTest extends TestCase
         self::assertNotNull($write, 'Explored Writes remain visible to autonomous Participants');
         self::assertTrue($write['explored'] ?? false);
         self::assertArrayHasKey('proposition.revise', $packet['actions']['$defs']['actions']);
-        self::assertArrayHasKey('attestation.create', $packet['actions']['$defs']['actions']);
+        self::assertArrayNotHasKey('attestation.create', $packet['actions']['$defs']['actions']);
         self::assertArrayNotHasKey('proposition.traverse', $packet['actions']['$defs']['actions']);
     }
 
     public function test_rest_is_available_with_an_explored_write(): void
     {
-        [, , , $activity, $mediate] = $this->personalJourney();
+        [, , , $activity, $mediate] = $this->settledJourney();
         $stance = $this->node($mediate, $activity);
         $this->measure($stance, 0);
         $this->personalVote($mediate, $stance);
@@ -231,7 +249,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_pending_evidence_cannot_qualify_an_exploration_completion(): void
     {
-        [, , , $head, $terminal] = $this->personalJourney();
+        [, , , $head, $terminal] = $this->settledJourney();
         self::assertNotNull(app(ExplorationEventService::class)->inspect($terminal)['witness']);
         app(EvidenceExecutionService::class)->start($terminal, $head, 'citation', $this->origin->id);
         self::assertNull(app(ExplorationEventService::class)->inspect($terminal)['witness']);
@@ -242,7 +260,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_personal_variant_follows_complete_frontier_and_does_not_reset_history(): void
     {
-        [$signal, , , $head, $terminal] = $this->personalJourney();
+        [$signal, , , $head, $terminal] = $this->settledJourney();
         $luna = $this->phase($this->origin, PhaseKind::Distinguish);
         $generation = app(PhaseGenerationService::class);
         $this->assertFalse($generation->available($luna, 'proposition.variant', prepared: true));
@@ -254,7 +272,7 @@ class ParticipantExplorationTest extends TestCase
         $fresh = app(ContributionDispatcher::class)->dispatch($return->cycle->participant, $return,
             ['action' => 'proposition.variant', 'statement' => 'A personally earned alternative']);
         $this->assertSame($history, DB::table('exploration_events')->get()->toJson());
-        $this->assertTrue(app(ParticipantExplorationService::class)->explored($signal, $return), 'An independent sibling does not erase the old route');
+        $this->assertFalse(app(ParticipantExplorationService::class)->explored($signal, $return), 'The new Origin observation reopens judgment on the old route');
         $this->assertFalse(app(ParticipantExplorationService::class)->explored($fresh, $return));
         $this->assertFalse($generation->available($return, 'proposition.variant'), 'The new shared opportunity is evaluated before another Variant');
         $this->assertFalse($generation->available($luna, 'proposition.variant'));
@@ -264,7 +282,7 @@ class ParticipantExplorationTest extends TestCase
     public function test_new_sibling_reopens_movement_without_resetting_the_ancestors_judgment(): void
     {
         config(['schemas.options.limit' => 1]);
-        [$signal, $persist, $constrain, $head, $terminal] = $this->personalJourney();
+        [$signal, $persist, $constrain, $head, $terminal] = $this->settledJourney();
         $return = $this->returnAfterRest($terminal);
         $exploration = app(ParticipantExplorationService::class);
         $this->assertTrue($exploration->explored($signal, $return));
@@ -278,7 +296,7 @@ class ParticipantExplorationTest extends TestCase
         $this->assertCount(2, $exploration->heads($signal->id, $return, new ParticipationContext($return)), 'Evaluate the complete frontier before display limits');
         $this->assertTrue($exploration->explored($head, $return));
         $this->assertFalse(app(PhaseGenerationService::class)->available($return, 'proposition.variant'));
-        $this->assertContains($signal->id, app(PropositionOptionService::class)->attestationOptionsFor($return)->pluck('id'));
+        $this->assertNotContains($signal->id, app(PropositionOptionService::class)->attestationOptionsFor($return)->pluck('id'));
         $phase = $return;
         foreach ([$signal, $persist, $constrain] as $node) {
             $phase = app(PhaseProgressionService::class)->advance($phase, $node);
@@ -286,7 +304,7 @@ class ParticipantExplorationTest extends TestCase
         $options = app(PropositionOptionService::class);
         $targets = $options->attestationOptionsFor($phase)->pluck('id');
         $this->assertContains($sibling->id, $targets);
-        $this->assertContains($head->id, $targets, 'The earlier head still allows a reversal.');
+        $this->assertNotContains($head->id, $targets, 'A new sibling does not reopen a judgment on the earlier head.');
         $this->personalVote($phase, $sibling, 'support');
         $terminal = app(PhaseProgressionService::class)->advance($phase, $sibling);
         $this->measure($sibling, 0);
@@ -305,7 +323,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_reversal_and_unrelated_updates_do_not_reopen_and_cold_hydrated_plans_agree(): void
     {
-        [$signal, , , $head, $terminal] = $this->personalJourney();
+        [$signal, , , $head, $terminal] = $this->settledJourney();
         $return = $this->returnAfterRest($terminal);
         $history = DB::table('exploration_events')->get()->toJson();
         $this->personalVote($return, $signal, 'refute');
@@ -323,7 +341,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_stale_uncompleted_and_rolled_back_rest_cannot_publish_events(): void
     {
-        [, , , $head, $terminal] = $this->personalJourney();
+        [, , , $head, $terminal] = $this->settledJourney();
         $events = app(ExplorationEventService::class);
         $proof = $events->inspect($terminal);
         $this->assertNotNull($proof['witness']);
@@ -344,7 +362,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_unrecorded_arrival_or_untested_head_is_not_an_exploration_encounter(): void
     {
-        [, , $constrain, $head, $terminal] = $this->personalJourney();
+        [, , $constrain, $head, $terminal] = $this->settledJourney();
         $unproven = $this->phase($head, PhaseKind::Mediate);
         $this->rest($unproven);
         $this->assertDatabaseCount('exploration_events', 0);
@@ -357,7 +375,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_other_participants_judgments_reopen_a_route_when_they_enable_bias_generation(): void
     {
-        [$signal, $persist, $constrain, $activity, $mediate] = $this->personalJourney();
+        [$signal, $persist, $constrain, $activity, $mediate] = $this->settledJourney();
         $stance = $this->node($mediate, $activity);
         $this->personalVote($mediate, $stance, 'refute');
         $bias = app(PhaseProgressionService::class)->advance($mediate, $stance);
@@ -388,7 +406,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_new_reconciliation_opportunity_uses_the_personal_arrival_during_recovery(): void
     {
-        [, , $constrain, $head, $terminal] = $this->personalJourney();
+        [, , $constrain, $head, $terminal] = $this->settledJourney();
         $return = $this->returnAfterRest($terminal);
         $this->assertTrue(app(ParticipantExplorationService::class)->explored($head, $return));
         $counterpart = $this->node($this->phase($constrain, PhaseKind::Disperse), $constrain);
@@ -417,7 +435,7 @@ class ParticipantExplorationTest extends TestCase
     public function test_historical_head_is_rechecked_when_reconsideration_completes_commit_grounding(): void
     {
         // Isolated history applicability, not an event-publication or natural Commit proof.
-        [$signal, , , $activity, $mediate] = $this->personalJourney();
+        [$signal, , , $activity, $mediate] = $this->settledJourney();
         $stance = $this->node($mediate, $activity);
         $this->personalVote($mediate, $stance);
         $bias = app(PhaseProgressionService::class)->advance($mediate, $stance);
@@ -440,7 +458,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_a_first_mediate_judgment_can_complete_one_branch_after_all_ordinary_receipts_are_consumed(): void
     {
-        [$distinction, $persist, $constrain, $signal, $mediate] = $this->personalJourney();
+        [$distinction, $persist, $constrain, $signal, $mediate] = $this->settledJourney();
         $sibling = $this->node($this->phase($constrain, PhaseKind::Disperse), $constrain);
         foreach ([$signal, $sibling] as $operand) {
             app(PropositionMeasurementService::class)->project($operand, .8, .8, .8, correspondenceComponents: new CorrespondenceValues(.8, .8));
@@ -497,20 +515,20 @@ class ParticipantExplorationTest extends TestCase
         self::assertEmpty($options->instrumentOptionsFor($disperse));
     }
 
-    public function test_new_receipt_alone_does_not_reopen_a_head_without_generating_opportunities(): void
+    public function test_a_new_ancestral_receipt_reopens_judgment_without_a_generating_opportunity(): void
     {
-        [$signal, , , $head, $terminal] = $this->personalJourney();
+        [$signal, , , $head, $terminal] = $this->settledJourney();
         $return = $this->returnAfterRest($terminal);
         $instruments = app(EvidenceExecutionService::class);
         $observation = $this->phase($signal, PhaseKind::Persist);
         $instruments->complete($instruments->start($observation, $signal, 'citation', $this->origin->id), $signal);
-        $this->assertTrue(app(ParticipantExplorationService::class)->explored($head, $return));
+        $this->assertFalse(app(ParticipantExplorationService::class)->explored($head, $return));
         $this->assertDatabaseCount('exploration_events', 1);
     }
 
-    public function test_a_new_receipt_reopens_only_after_it_completes_a_lawful_generating_opportunity(): void
+    public function test_new_evidence_can_open_reclassification_and_reconsideration_independently(): void
     {
-        [$signal, $persist, $constrain, $activity, $mediate] = $this->personalJourney();
+        [$signal, $persist, $constrain, $activity, $mediate] = $this->settledJourney();
         $stance = $this->node($mediate, $activity);
         $this->personalVote($mediate, $stance, 'refute');
         $bias = app(PhaseProgressionService::class)->advance($mediate, $stance);
@@ -541,13 +559,13 @@ class ParticipantExplorationTest extends TestCase
         $instruments = app(EvidenceExecutionService::class);
         $instruments->complete($instruments->start($observation, $signal, 'citation', $this->origin->id), $signal);
         $this->assertTrue(app(PhaseGenerationService::class)->available($bias, 'proposition.reclassify'));
-        $this->assertTrue(app(ParticipantExplorationService::class)->explored($stance, $bias));
+        $this->assertFalse(app(ParticipantExplorationService::class)->explored($stance, $bias));
         $this->assertSame($history, DB::table('exploration_events')->get()->toJson());
     }
 
     public function test_hard_revision_preserves_the_encounter_until_forward_progress_becomes_available(): void
     {
-        [$signal, , $constrain, $head, $terminal] = $this->personalJourney();
+        [$signal, , $constrain, $head, $terminal] = $this->settledJourney();
         $return = $this->returnAfterRest($terminal);
         $revision = $this->node($this->phase($constrain, PhaseKind::Disperse), $head);
         Supersession::where('source_proposition_id', $head->id)->where('target_proposition_id', $revision->id)->update(['type' => 'revise']);
@@ -555,7 +573,7 @@ class ParticipantExplorationTest extends TestCase
         $exploration = app(ParticipantExplorationService::class);
         $this->assertSame([$revision->id], $exploration->heads($signal->id, $return, $context)->keys()->all());
         self::assertTrue($exploration->explored($signal, $return, $context));
-        self::assertTrue($exploration->explored($revision, $return));
+        self::assertFalse($exploration->explored($revision, $return));
         $forward = $this->node($this->phase($revision, PhaseKind::Mediate), $revision);
         self::assertTrue($exploration->explored($signal, $return));
         self::assertFalse($exploration->explored($forward, $return));
@@ -564,7 +582,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_a_reconcile_counterpart_edge_does_not_authorize_the_other_operands_route(): void
     {
-        [$signal, , $constrain, $head, $terminal] = $this->personalJourney();
+        [$signal, , $constrain, $head, $terminal] = $this->settledJourney();
         $foreignEntry = $this->commitFrom($signal);
         $other = $this->node($this->phase($foreignEntry, PhaseKind::Disperse), $foreignEntry);
         $otherMediate = $this->phase($other, PhaseKind::Mediate);
@@ -588,7 +606,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_local_reconciliation_preserves_the_other_operands_existing_attestation_route(): void
     {
-        [, , $constrain, $head, $terminal] = $this->personalJourney();
+        [, , $constrain, $head, $terminal] = $this->settledJourney();
         $other = $this->node($this->phase($constrain, PhaseKind::Disperse), $constrain);
         $producer = $this->phase($other, PhaseKind::Mediate);
         $result = $this->node($producer, $other);
@@ -602,7 +620,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_event_publication_checks_frozen_arrival_identity_and_retries_are_idempotent(): void
     {
-        [, , , $head, $terminal] = $this->personalJourney();
+        [, , , $head, $terminal] = $this->settledJourney();
         $events = app(ExplorationEventService::class);
         $proof = $events->inspect($terminal);
         $terminal->forceFill(['completed_at' => now()])->save();
@@ -621,7 +639,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_hydrated_evaluation_memoizes_the_full_frontier_without_per_ancestor_queries(): void
     {
-        [$signal, $persist, $constrain, $head, $terminal] = $this->personalJourney();
+        [$signal, $persist, $constrain, $head, $terminal] = $this->settledJourney();
         $return = $this->returnAfterRest($terminal);
         $context = new ParticipationContext($return);
         $ids = collect([$signal->id, $persist->id, $constrain->id, $head->id]);
@@ -636,7 +654,7 @@ class ParticipantExplorationTest extends TestCase
 
     public function test_personal_events_are_append_only(): void
     {
-        [, , , , $terminal] = $this->personalJourney();
+        [, , , , $terminal] = $this->settledJourney();
         $this->returnAfterRest($terminal);
         $this->expectException(QueryException::class);
         DB::table('exploration_events')->where('phase_id', $terminal->id)->update(['observed_field_version' => 0]);
@@ -645,7 +663,7 @@ class ParticipantExplorationTest extends TestCase
     #[Group('query')]
     public function test_generative_traverse_cost_is_bounded_across_explored_sibling_routes(): void
     {
-        [$signal, $persist, $constrain, $head, $terminal] = $this->personalJourney();
+        [$signal, $persist, $constrain, $head, $terminal] = $this->settledJourney();
         $return = $this->returnAfterRest($terminal);
         $gates = collect([$constrain->id]);
         $heads = collect([$head]);
@@ -706,7 +724,7 @@ class ParticipantExplorationTest extends TestCase
     #[Group('query')]
     public function test_cold_frontier_queries_are_batched_as_personal_heads_grow(): void
     {
-        [, , $constrain, $head, $terminal] = $this->personalJourney();
+        [, , $constrain, $head, $terminal] = $this->settledJourney();
         $return = $this->returnAfterRest($terminal);
         $ids = collect([$head->id]);
         $counts = [];

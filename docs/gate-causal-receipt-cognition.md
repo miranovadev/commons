@@ -1,38 +1,32 @@
-# Gate-causal Receipt cognition — Stage 1
-
-Authority: Claire's 28 October 2026 implementation handoff. This changes cognitive
-presentation, not evidence acquisition, personal Exploration, movement, lifecycle
-eligibility, attestation or consumption rules. No schema migration is required.
+# Gate-causal Receipt cognition
 
 ## Selection and provenance
 
-`EvidenceExecution.proposition_id` remains the exact originating Gate. The
-cognitive catalogue discovers its recorded observations and recorded associations
-on selected Propositions. Consumption never excludes an otherwise qualifying
-observation. `ReceiptConsumption.proposition_id` is the only consumer authority;
-the projection exposes it as `consumed_by_proposition_id`.
+An ordinary observation enters the catalogue through its original
+`EvidenceExecution.proposition_id`. The current Gate's observations appear
+first, followed by those of its in-Region causal ancestors, nearest first.
+At a governing Committal, its actual Commit source carries the committed
+lineage of the immediately preceding Region. This carry ends at that
+Region's governor. At a fresh Origin, only the Origin's own observations
+qualify.
 
-The existing `CognitiveEvidenceHorizon` still selects the current Gate, its local
-ancestors and authorised continuation history, and its governing Committal.
-Distinguish retains canonical committed ancestry. Terminal nodes stop forward
-expansion; they retain their own evidence. Committals remain hard endpoints, with
-only `PropositionStateService`'s canonical source associations inherited.
+A local Reconciliation contributes the ancestry of both local operands.
+A foreign operand gives no access to the foreign Region's catalogue.
+Each observation appears once by immutable Receipt ID. Write expressions
+remain visible. Their own observations enter the catalogue on arrival,
+including observations the Participant loaded during a previous visit.
 
-An encountered genuine Reconciliation now unions both operands' qualifying
-backward ancestry. This includes a Reconciliation selected in continuation
-history. The operand worklist never descends into siblings or other continuations.
-Foreign Commit Region or Context Horizon operands retain the existing direct-leaf
-visibility; they do not seed foreign ancestry. Nested and overlapping ancestry is
-visited once per traversal mode and Receipts are deduplicated by immutable ID.
-
-This selector supplies no movement, Artifact-read, load, consumption,
-Reclassification or Reconciliation authority. Operational services and action
-schemas retain their existing selection rules.
+Consumption retains the observation's place in this history.
+`ReceiptConsumption.proposition_id` identifies its actual consumer. The
+same causal scope determines whether a newer observation reopens an
+expression for personal judgment. Tragedy retains its separate warrant
+and memory rules. Ordinary Reclassification consumption still checks its
+own regional authority. See [personal Exploration and Revision](participant-relative-exploration.md).
 
 ## One catalogue, three evidence components
 
 Proposition `receipts` arrays contain IDs. Each ID resolves once in the cognitive
-catalogue, ordered by ID. Each catalogue entry has:
+catalogue. Receipts at the same origin are ordered by ID. Each entry carries the following fields.
 
 | Field | Meaning |
 | --- | --- |
@@ -102,7 +96,7 @@ against the Phase's recorded Gate. This preserves context without inserting an
 action option. The shared system instruction remains within its unchanged
 750-byte ceiling (743 bytes).
 
-## Validation
+## Historical Stage 1 validation
 
 Baseline: merged main `5c3569c3f4ee2763f9f8ae7ae198368484ee3da4`.
 

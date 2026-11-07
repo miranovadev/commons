@@ -282,8 +282,8 @@ class AcquisitionAttemptTest extends TestCase
         $receipt = $this->instrument($f->phase);
         $attempts = app(AcquisitionAttemptService::class);
         $before = $receipt->fresh()->getAttributes();
-        // Isolated structural invalidation fixture, not an authored natural Revision.
-        DB::transaction(fn () => $f->node($f->gate, 'canon', 'revise', position: PhaseKind::Constrain));
+        // Isolated structural invalidation fixture, a recorded Reclassification retires the original source.
+        DB::transaction(fn () => $f->node($f->gate, 'canon', 'reclassify', position: PhaseKind::Constrain));
         $this->assertFalse(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant'));
         $this->assertSame(['acquisition.defer'], array_keys($attempts->schema($f->phase, $receipt->evidenceExecution)['$defs']['actions']));
         $attempts->resolve($f->viewer, $receipt->evidenceExecution, ['action' => 'acquisition.defer', 'execution_id' => $receipt->evidence_execution_id, 'reason' => 'The Gate is now historical']);

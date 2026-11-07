@@ -16,15 +16,15 @@ class ParticipantReceiptProjectionTest extends TestCase
         $r = ['id' => 'r1', 'type' => 'web_search', 'reference' => 'question', 'loaded' => false];
         $registers = [];
         foreach (['read', 'gate', 'write'] as $role) {
-            $registers[$role] = ['propositions' => [['id' => $role, 'statement' => $role, 'receipts' => [$r, $r]]]];
+            $registers[$role] = ['propositions' => [['id' => $role, 'statement' => $role, 'receipts' => [$r, $r, [...$r, 'id' => 'unrelated']]]]];
         }
         $state = ['participant' => ['id' => 'viewer'], 'plan' => ['receipts' => [
-            [...$r, 'id' => 'unrelated'], $r,
+            $r,
             ['id' => 'memory', 'type' => 'proposition_search', 'reference' => 'query', 'loaded' => true,
                 'proposition_collection' => ['results' => []]],
         ]]];
         $catalogue = app(ParticipantReceiptProjection::class)->normalize($registers, $state);
-        $this->assertSame(['memory', 'r1'], array_column($catalogue, 'id'));
+        $this->assertSame(['r1', 'memory'], array_column($catalogue, 'id'));
         foreach ($registers as $register) {
             $this->assertSame(['r1'], $register['propositions'][0]['receipts']);
         }

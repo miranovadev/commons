@@ -29,9 +29,6 @@ final readonly class PhaseGenerationService
         if (in_array($action, ['instrument.execute', 'preparation.start'], true)) {
             return $acquisition->allows($phase, $action, $context);
         }
-        if ($action === 'proposition.revise' && in_array($phase->kind, [PhaseKind::Persist, PhaseKind::Disperse], true)) {
-            return app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
-        }
         if (! in_array($action, ['proposition.variant'], true)
             || $acquisition->role($phase) === null) {
             return true;
@@ -122,8 +119,8 @@ final readonly class PhaseGenerationService
         }
 
         if ($action === 'proposition.variant' && ($context !== null
-            ? $context->children->get($gate->id, collect())->contains(fn ($edge) => $edge->type !== 'variant')
-            : $gate->children()->where('supersessions.type', '!=', 'variant')->exists())) {
+            ? $context->children->get($gate->id, collect())->contains(fn ($edge) => ! in_array($edge->type, ['variant', 'revise'], true))
+            : $gate->children()->whereNotIn('supersessions.type', ['variant', 'revise'])->exists())) {
             return false;
         }
 

@@ -84,6 +84,7 @@ final readonly class InputPlanService
 
         $attempts = app(AcquisitionAttemptService::class);
         $resolution = $attempts->admitted($phase) ? $attempts->schema($phase, $attempts->execution($phase)) : null;
+        $context = new ParticipationContext($phase, collect([$phase->gate_proposition_id]), includeUnavailableAdditional: true);
 
         return [
             'phase' => ['id' => $phase->id, 'number' => $phase->kind->value, 'kind' => $plan['name'],
@@ -95,7 +96,8 @@ final readonly class InputPlanService
                 'parent_ids' => []],
             'provenance_id' => null, 'lineage' => [], 'read_options' => [], 'write_options' => [],
             'gate_options' => [], 'revision_options' => [], 'traversal_options' => [],
-            'attestation_options' => [], 'instrument_options' => [], 'receipts' => app(ParticipantContextSerializer::class)->receipts($this->receipts->forPhase($phase)->all()),
+            'attestation_options' => [], 'instrument_options' => [],
+            'receipts' => app(ParticipantContextSerializer::class)->receipts($this->receipts->forPhase($phase, $context)->all()),
             'exhausted_alternatives' => $history,
             'commitment' => null, 'commitment_options' => [], 'rest_available' => $resolution === null, 'position_exhausted' => true,
             'rest_reason' => $resolution === null ? app(RestReasonService::class)->derive($phase)->value : null,
@@ -382,6 +384,11 @@ final readonly class InputPlanService
         $loads = $context !== null ? $context->receiptContexts->where('participant_id', $participant->id)->whereNull('cleared_at')->pluck('receipt_id')
            : ParticipantReceiptContext::active()->where('participant_id', $participant->id)->whereIn('receipt_id', $receipts->pluck('id'))->pluck('receipt_id');
 
+        if ($context !== null && $context->phase->gate_proposition_id !== null) {
+            $scope = app(CognitiveEvidenceHorizon::class)->receipts($context->phase->gate_proposition_id, $context);
+            $receipts = $receipts->filter(fn ($receipt) => $scope->has($receipt->id));
+        }
+
         return $receipts->sortBy('id')->map(fn ($receipt) => [...$receipt->only(['id', 'type', 'reference']), 'loaded' => $loads->contains($receipt->id)])->values()->all();
     }
 
@@ -443,7 +450,8 @@ final readonly class InputPlanService
                 'rationale',
                 'created_at',
             ]),
-            'instruments' => ! $foreignOperand && $proposition->relationLoaded('evidenceExecutions')
+            'instruments' => ! $foreignOperand && $context !== null && $context->phase->gate_proposition_id !== null
+                && app(CognitiveEvidenceHorizon::class)->origins($context->phase->gate_proposition_id, $context)->contains($proposition->id) && $proposition->relationLoaded('evidenceExecutions')
                 ? $proposition->evidenceExecutions->where('type', 'instrument')->values()->map(fn ($execution): array => [
                     'id' => $execution->getKey(),
                     'kind' => $execution->kind,
