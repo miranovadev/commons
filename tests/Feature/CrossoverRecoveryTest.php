@@ -2,7 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\ParticipantInference;
 use App\Enums\PhaseKind;
+use App\Jobs\WakeParticipant;
+use App\Models\Connection;
+use App\Models\ParticipantConnection;
 use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
 use App\Models\Participant;
@@ -161,6 +165,25 @@ class CrossoverRecoveryTest extends TestCase
         $state = app(ParticipationService::class)->prepare($actor);
         $this->assertSame($parent->id, $state['current_proposition_id']);
         $this->assertSame($seed->id, $phase->cycle->fresh()->entry_committal_id);
+    }
+
+    public function test_proposition_created_wake_finishes_when_the_superseded_origin_has_no_recovery(): void
+    {
+        $origin = $this->commit(null, boundary: true);
+        $this->commit($origin);
+        $phase = $this->terminal($origin);
+        $actor = $phase->cycle->participant;
+        $connection = (new Connection)->forceFill(['provider' => 'openai', 'name' => 'Recovery test',
+            'configuration' => ['model' => 'test'], 'credentials' => ['api_key' => 'test']]);
+        $connection->save();
+        $link = (new ParticipantConnection)->forceFill(['participant_id' => $actor->id, 'connection_id' => $connection->id,
+            'is_enabled' => true, 'configuration' => ['wake' => ['termination' => 'proposition_created']]]);
+        $link->save();
+        $this->mock(ParticipantInference::class)->shouldNotReceive('contribute');
+        $this->app->call([new WakeParticipant($link->id), 'handle']);
+        $this->assertSame(2, $actor->cycles()->whereNotNull('rested_at')->count());
+        $this->assertSame('recovery_unavailable', app(ParticipationService::class)->stateFor($actor)['reason']['code']);
+        $this->assertNull($link->fresh()->last_error);
     }
 
     public function test_boundary_reopens_generation_while_hard_superseded_origin_waits_in_its_horizon(): void

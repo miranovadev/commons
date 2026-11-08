@@ -13,15 +13,20 @@ final class WakeConfiguration
 
     public const MAX_TIMEOUT_SECONDS = 1800;
 
+    public const FORCED_ACTIONS = ['participant.rest', 'proposition.traverse'];
+
     public static function resolve(?array $configuration): array
     {
-        return array_replace_recursive([
+        $resolved = array_replace_recursive([
             'trigger' => [
                 'mode' => 'manual',
                 'offset' => ['mode' => 'seconds', 'seconds' => 0, 'random_from' => 0, 'random_to' => 60],
             ],
             'wake' => ['termination' => 'phase', 'timeout_seconds' => self::DEFAULT_TIMEOUT_SECONDS],
         ], $configuration ?? []);
+        $resolved['wake']['skip_inference_for'] ??= self::FORCED_ACTIONS;
+
+        return $resolved;
     }
 
     public static function rules(string $prefix = 'configuration'): array
@@ -29,6 +34,8 @@ final class WakeConfiguration
         return [
             "$prefix.wake" => ['sometimes', 'array'],
             "$prefix.wake.termination" => ['sometimes', Rule::enum(WakeTermination::class)],
+            "$prefix.wake.skip_inference_for" => ['sometimes', 'array', 'list', 'max:2'],
+            "$prefix.wake.skip_inference_for.*" => ['string', 'distinct:strict', Rule::in(self::FORCED_ACTIONS)],
             "$prefix.wake.timeout_seconds" => ['sometimes', 'integer', 'min:1', 'max:'.self::MAX_TIMEOUT_SECONDS],
             "$prefix.trigger.offset" => ['sometimes', 'array'],
             "$prefix.trigger.offset.mode" => ['sometimes', Rule::enum(WakeOffsetMode::class)],

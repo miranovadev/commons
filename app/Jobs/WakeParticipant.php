@@ -96,9 +96,9 @@ class WakeParticipant implements ShouldQueue
             $cycleId = $state['cycle']['id'];
             $phaseId = $state['plan']['phase']['id'];
             $observedCycleId = $cycleId;
-            $termination = WakeTermination::from(
-                WakeConfiguration::resolve($participantConnection->configuration)['wake']['termination'],
-            );
+            $wake = WakeConfiguration::resolve($participantConnection->configuration)['wake'];
+            $termination = WakeTermination::from($wake['termination']);
+            $untilBirth = $termination === WakeTermination::PropositionCreated;
             while (true) {
                 if ($clock->now() >= $deadline) {
                     $triggers->recordFailure($participantConnection, 'Participant wake timed out; completed contributions are preserved.');
@@ -110,7 +110,7 @@ class WakeParticipant implements ShouldQueue
                     return;
                 }
                 // A human or another writer may have advanced the original boundary.
-                if (Cycle::find($observedCycleId)?->rested_at !== null
+                if ((! $untilBirth && Cycle::find($observedCycleId)?->rested_at !== null)
                     || ($termination === WakeTermination::Phase && Phase::find($phaseId)?->completed_at !== null)
                     || ($termination === WakeTermination::Cycle && Cycle::find($cycleId)?->completed_at !== null)) {
                     break;
@@ -124,6 +124,9 @@ class WakeParticipant implements ShouldQueue
                 $state = $participation->stateFor($participant, $fieldVersion);
                 if (($state['status'] ?? null) !== 'ready') {
                     $reason = data_get($state, 'reason.code', 'participant_not_ready');
+                    if ($untilBirth && $reason === 'recovery_unavailable') {
+                        break;
+                    }
                     $triggers->recordFailure($participantConnection, "Participant wake skipped: {$reason}.");
 
                     return;
@@ -140,14 +143,8 @@ class WakeParticipant implements ShouldQueue
                 $actingCycleId = $state['cycle']['id'];
                 $observedCycleId = $actingCycleId;
                 $plan = $state['plan'];
-                $actions = $plan['schema']['$defs']['actions'] ?? null;
-                $automaticRest = is_array($actions) && array_keys($actions) === ['participant.rest']
-                    && ($actions['participant.rest']['properties']['action']['const'] ?? null) === 'participant.rest'
-                    && ($plan['schema']['oneOf'] ?? null) === [['$ref' => '#/$defs/actions/participant.rest']]
-                    && ! isset($plan['preparation'])
-                    && ! in_array($plan['acquisition']['status'] ?? null, ['pending', 'awaiting_resolution'], true);
-                $contribution = $automaticRest ? ['action' => 'participant.rest']
-                    : $this->inferContribution($inference, $currentConnection->connection, $participant, $state);
+                $automatic = $this->forcedMove($plan, $wake['skip_inference_for']);
+                $contribution = $automatic ?? $this->inferContribution($inference, $currentConnection->connection, $participant, $state);
                 // Preserve the separate transport timeout, but never start a new
                 // contribution after an inference has consumed the whole deadline.
                 if ($clock->now() >= $deadline) {
@@ -161,16 +158,20 @@ class WakeParticipant implements ShouldQueue
                         $state['plan']['phase']['id'],
                         $contribution,
                         $plan['schema'],
-                        expectedFieldVersion: $automaticRest ? $fieldVersion : null,
+                        expectedFieldVersion: $automatic !== null ? $fieldVersion : null,
+                        createdProposition: $createdProposition,
                     );
                 } catch (ConflictHttpException) {
                     // Discard the stale choice. The next iteration rebuilds the plan;
                     // the same whole-job deadline bounds repeated conflicts.
                     continue;
                 }
+                if ($untilBirth && $createdProposition) {
+                    break;
+                }
                 // contribute may already have prepared a successor Cycle, including
                 // recovery after Rest. Inspect the Cycle that actually acted.
-                if (Cycle::findOrFail($actingCycleId)->rested_at !== null
+                if ((! $untilBirth && Cycle::findOrFail($actingCycleId)->rested_at !== null)
                     || ($termination === WakeTermination::Phase && Phase::findOrFail($phaseId)->completed_at !== null)
                     || ($termination === WakeTermination::Cycle && Cycle::findOrFail($cycleId)->completed_at !== null)) {
                     break;
@@ -189,6 +190,35 @@ class WakeParticipant implements ShouldQueue
                 rescue(fn () => $activity->end($participantConnection->participant, $token), report: true);
             }
         }
+    }
+
+    private function forcedMove(array $plan, array $enabled): ?array
+    {
+        $schema = $plan['schema'];
+        $actions = $schema['$defs']['actions'] ?? null;
+        if (! is_array($actions) || count($actions) !== 1 || isset($plan['preparation'])
+            || in_array($plan['acquisition']['status'] ?? null, ['pending', 'awaiting_resolution'], true)) {
+            return null;
+        }
+
+        $name = array_key_first($actions);
+        $properties = $actions[$name]['properties'] ?? [];
+        if (! in_array($name, $enabled, true) || ($properties['action']['const'] ?? null) !== $name
+            || ($schema['oneOf'] ?? null) !== [['$ref' => '#/$defs/actions/'.$name]]) {
+            return null;
+        }
+        if ($name === 'participant.rest' && array_keys($properties) === ['action']) {
+            return ['action' => $name];
+        }
+
+        // Optional Receipt loading/unloading is also a Participant decision.
+        $targets = $properties['proposition_id']['enum'] ?? [];
+        if ($name === 'proposition.traverse' && count($properties) === 2
+            && is_array($targets) && count($targets) === 1 && is_string($targets[0] ?? null)) {
+            return ['action' => $name, 'proposition_id' => $targets[0]];
+        }
+
+        return null;
     }
 
     private function inferContribution(ParticipantInference $inference, Connection $connection, Participant $participant, array $state): array

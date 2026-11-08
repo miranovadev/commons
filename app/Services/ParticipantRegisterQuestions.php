@@ -24,6 +24,10 @@ final class ParticipantRegisterQuestions
             throw new DomainException('The Write register does not match its producing Phase.');
         }
 
+        if ($phase === PhaseKind::Bias && $writeRegister === 'concord') {
+            return 'What can be held together here, and where does the evidence still pull the claims apart?';
+        }
+
         return $phase === PhaseKind::Order ? 'What should persist?' : self::QUESTIONS[$writeRegister];
     }
 }

@@ -211,7 +211,9 @@ final readonly class ParticipationService
         ?array $expectedSchema = null,
         ?string $expectedClosureObservation = null,
         ?int $expectedFieldVersion = null,
+        ?bool &$createdProposition = null,
     ): array {
+        $createdProposition = false;
         // Invalid model output is still an error; only a formerly valid action
         // rejected by fresh admissibility is a retryable participation conflict.
         if ($expectedSchema !== null) {
@@ -240,7 +242,7 @@ final readonly class ParticipationService
                 throw new ConflictHttpException('The Preparation does not belong to this Phase.');
             }
             if ($execution->type === 'instrument' || $execution->status === 'failed') {
-                app(AcquisitionAttemptService::class)->resolve($participant, $execution, $input);
+                $createdProposition = app(AcquisitionAttemptService::class)->resolve($participant, $execution, $input);
             } elseif (($input['action'] ?? null) === 'preparation.defer') {
                 if (! $resolvedRetry && $execution->status !== 'presented') {
                     throw new ConflictHttpException('Read and acknowledge this Preparation before resolving it.');
@@ -249,7 +251,8 @@ final readonly class ParticipationService
                 $this->contributions->validateSchema($schema, $input);
                 app(PreparationService::class)->defer($participant, $execution, $input['reason']);
             } else {
-                app(PreparationService::class)->contribute($participant, $execution, $input);
+                $receipt = app(PreparationService::class)->contribute($participant, $execution, $input);
+                $createdProposition = $receipt->wasRecentlyCreated;
             }
             if ($resolvedRetry) {
                 return $this->stateFor($participant->fresh());
@@ -281,7 +284,7 @@ final readonly class ParticipationService
         }
 
         try {
-            return $this->applyContribution($participant, $phaseId, $input, $expectedSchema, $expectedClosureObservation, $observed, $expectedFieldVersion);
+            return $this->applyContribution($participant, $phaseId, $input, $expectedSchema, $expectedClosureObservation, $observed, $expectedFieldVersion, $createdProposition);
         } catch (\Throwable $exception) {
             if ($observed !== null) {
                 app(OperationalInstrumentService::class)->resultFailed($observedPhase, $observed);
@@ -291,7 +294,7 @@ final readonly class ParticipationService
     }
 
     private function applyContribution(Participant $participant, string $phaseId, array $input, ?array $expectedSchema,
-        ?string $expectedClosureObservation, ?InstrumentObservation $observed, ?int $expectedFieldVersion): array
+        ?string $expectedClosureObservation, ?InstrumentObservation $observed, ?int $expectedFieldVersion, bool &$createdProposition): array
     {
         // Build admissibility optimistically before acquiring the shared root.
         // The version check below makes this exact schema authoritative for the
@@ -327,14 +330,14 @@ final readonly class ParticipationService
             }
         }
 
-        DB::transaction(function () use (
+        $createdProposition = DB::transaction(function () use (
             $participant,
             $phaseId,
             $input,
             $observed,
             $explorationWitness,
             $validatedVersion,
-        ): void {
+        ): bool {
             // Acquire the shared root before any participant/phase or contribution lock.
             // Cycle entry, ledger writes, and horizon projection use the same order.
             $substrate = Substrate::query()->lockForUpdate()->findOrFail($participant->substrate_id);
@@ -389,7 +392,7 @@ final readonly class ParticipationService
                 // future Closure previews; both remain in this root-locked transaction.
                 $phase->cycle->forceFill(['completed_at' => now()])->save();
 
-                return;
+                return false;
             }
             $gate = $this->dispatcher->dispatch(
                 $lockedParticipant,
@@ -401,6 +404,7 @@ final readonly class ParticipationService
                 $this->progression->advance($phase, $gate);
             }
 
+            return $gate->wasRecentlyCreated;
         });
 
         app(PotentialProjectionService::class)->refresh($participant->substrate_id);

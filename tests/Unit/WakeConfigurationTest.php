@@ -13,7 +13,7 @@ class WakeConfigurationTest extends TestCase
     public static function configurations(): array
     {
         $cases = [];
-        foreach (['phase', 'cycle', 'rest'] as $mode) {
+        foreach (['phase', 'cycle', 'rest', 'proposition_created'] as $mode) {
             $cases["termination $mode"] = [['wake' => ['termination' => $mode]], true];
         }
         $cases['invalid termination'] = [['wake' => ['termination' => 'forever']], false];
@@ -45,7 +45,7 @@ class WakeConfigurationTest extends TestCase
     public function test_defaults_and_inclusive_random_bounds(): void
     {
         $configuration = WakeConfiguration::resolve(null);
-        $this->assertSame(['termination' => 'phase', 'timeout_seconds' => 600], $configuration['wake']);
+        $this->assertSame(['termination' => 'phase', 'timeout_seconds' => 600, 'skip_inference_for' => WakeConfiguration::FORCED_ACTIONS], $configuration['wake']);
         $this->assertSame(['mode' => 'seconds', 'seconds' => 0, 'random_from' => 0, 'random_to' => 60], $configuration['trigger']['offset']);
         $resolver = new WakeOffsetResolver;
         $this->assertSame(0, $resolver->seconds(null));

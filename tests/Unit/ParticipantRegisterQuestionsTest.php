@@ -16,7 +16,7 @@ class ParticipantRegisterQuestionsTest extends TestCase
         $emergence = ['What is active here?', 'What else is possible here?', 'What remains?',
             'What is active here?', 'What else is possible here?', 'What remains?', 'What should persist?'];
         $settlement = ['What is different here?', 'What position can be taken here?', 'What can be held together?',
-            'What is different here?', 'What position can be taken here?', 'What can be held together?', 'What should persist?'];
+            'What is different here?', 'What position can be taken here?', 'What can be held together here, and where does the evidence still pull the claims apart?', 'What should persist?'];
         $cases = [];
         foreach (PhaseKind::cases() as $phase) {
             foreach (ContextDomain::cases() as $domain) {
