@@ -49,9 +49,14 @@ final class ParticipantConnectionService
         $oldTrigger = WakeConfiguration::resolve($participantConnection->configuration)['trigger'];
 
         if (array_key_exists('configuration', $attributes)) {
+            $persisted = $participantConnection->configuration ?? [];
+            // A PATCH replaces the checkbox selection as a whole, including an empty list.
+            if (isset($attributes['configuration']['wake']['skip_inference_for'])) {
+                unset($persisted['wake']['skip_inference_for']);
+            }
             $attributes['configuration'] = $this->configuration(
                 array_replace_recursive(
-                    $participantConnection->configuration ?? [],
+                    $persisted,
                     $attributes['configuration'],
                 ),
             );

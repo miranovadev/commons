@@ -1,4 +1,4 @@
-import { Alert, Button, Group, NumberInput, Select, Stack, Text } from '@mantine/core';
+import { Alert, Button, Checkbox, Group, NumberInput, Select, Stack, Text } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
@@ -25,8 +25,15 @@ export function ConnectionWakeSettings({ values, onChange, errors = {} }: Fields
       {values.offset_mode === 'seconds' ? integer('offset_seconds', 'Offset seconds', 0, 60) : <Group grow align="start">{integer('random_from', 'From (seconds)', 0, 60)}{integer('random_to', 'To (seconds)', 0, 60)}</Group>}
       <Text size="xs" c="dimmed">{values.offset_mode === 'random' ? 'Sampled independently for each scheduled wake. ' : ''}Offsets delay each wake without changing the interval.</Text>
     </>}
-    <Select label="End wake job after" value={values.termination} data={[{ value: 'phase', label: 'Phase' }, { value: 'cycle', label: 'Cycle' }, { value: 'rest', label: 'Rest' }]} allowDeselect={false} onChange={(value) => value && onChange('termination', value as WakeFormValues['termination'])} />
+    <Select label="End wake job after" value={values.termination} data={[{ value: 'phase', label: 'Phase' }, { value: 'cycle', label: 'Cycle' }, { value: 'rest', label: 'Rest' }, { value: 'proposition_created', label: 'Proposition Created' }]} allowDeselect={false} onChange={(value) => value && onChange('termination', value as WakeFormValues['termination'])} />
     {values.termination === 'rest' && <Text size="xs" c="dimmed">Continue across Cycles until a valid Rest occurs. This does not force Rest.</Text>}
+    {values.termination === 'proposition_created' && <Text size="xs" c="dimmed">Continue through Rest and recovery until this Participant creates a Proposition or recovery is unavailable.</Text>}
+    <Checkbox.Group label="Skip inference for forced moves" description="Applies when the action, destination and Receipt choices leave only one possible move." value={values.skip_inference_for} onChange={(actions) => onChange('skip_inference_for', actions as WakeFormValues['skip_inference_for'])}>
+      <Group mt="xs">
+        <Checkbox value="participant.rest" label="Rest" />
+        <Checkbox value="proposition.traverse" label="Traverse" />
+      </Group>
+    </Checkbox.Group>
     {integer('timeout_seconds', 'Timeout (seconds)', 1, 1800)}
     <Text size="xs" c="dimmed">600 seconds = 10 minutes. Maximum 30 minutes for the whole wake job.</Text>
   </Stack>;

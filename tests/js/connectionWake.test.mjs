@@ -21,6 +21,8 @@ const { wakeFormValues, wakeConfigurationFor, validateWakeValues, render } = mod
 test('legacy attachments get Phase, 600 seconds and zero fixed offset', () => {
   const values = wakeFormValues({ trigger: { mode: 'interval', interval_minutes: 2 } });
   assert.equal(values.termination, 'phase');
+  assert.deepEqual(values.skip_inference_for, ['participant.rest', 'proposition.traverse']);
+  assert.deepEqual(wakeFormValues({ wake: { skip_inference_for: [] } }).skip_inference_for, []);
   assert.equal(values.timeout_seconds, 600);
   assert.equal(values.offset_mode, 'seconds');
   assert.equal(values.offset_seconds, 0);
@@ -29,7 +31,7 @@ test('legacy attachments get Phase, 600 seconds and zero fixed offset', () => {
 });
 
 test('wake configuration round-trips both offset modes and every termination', () => {
-  for (const termination of ['phase', 'cycle', 'rest']) for (const offset_mode of ['seconds', 'random']) {
+  for (const termination of ['phase', 'cycle', 'rest', 'proposition_created']) for (const offset_mode of ['seconds', 'random']) {
     const values = { ...wakeFormValues(), trigger_mode: 'interval', termination, offset_mode, random_from: 30, random_to: 40, offset_seconds: 10 };
     assert.deepEqual(wakeFormValues(wakeConfigurationFor(values)), values);
   }
@@ -39,6 +41,8 @@ test('fixed and random controls are conditional and show whole-job semantics', (
   const fixed = render({ ...wakeFormValues(), trigger_mode: 'interval' });
   assert.match(fixed, /Offset seconds/);
   assert.doesNotMatch(fixed, /From \(seconds\)/);
+  assert.match(fixed, /Skip inference for forced moves/);
+  assert.match(render({ ...wakeFormValues(), termination: 'proposition_created' }), /Proposition Created/);
   assert.match(fixed, /End wake job after/);
   assert.match(fixed, /Timeout \(seconds\)/);
   const random = render({ ...wakeFormValues(), trigger_mode: 'interval', offset_mode: 'random', termination: 'rest' });

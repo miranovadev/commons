@@ -281,7 +281,13 @@ class ParticipantConnectionApiTest extends TestCase
         ]])->assertCreated()->json('data.id');
         $url .= '/'.$id;
         $due = ParticipantConnection::findOrFail($id)->next_trigger_at;
-        foreach (['phase', 'cycle', 'rest'] as $mode) {
+        foreach ([['participant.rest'], [], ['proposition.traverse']] as $selection) {
+            $this->patchJson($url, ['configuration' => ['wake' => ['skip_inference_for' => $selection]]])
+                ->assertOk()->assertJsonPath('data.configuration.wake.skip_inference_for', $selection);
+        }
+        $this->patchJson($url, ['configuration' => ['wake' => ['skip_inference_for' => ['attestation.create']]]])
+            ->assertUnprocessable();
+        foreach (['phase', 'cycle', 'rest', 'proposition_created'] as $mode) {
             $this->patchJson($url, ['configuration' => ['wake' => ['termination' => $mode, 'timeout_seconds' => 1800]]])
                 ->assertOk()->assertJsonPath('data.configuration.wake.termination', $mode);
             $this->assertTrue(ParticipantConnection::findOrFail($id)->next_trigger_at->equalTo($due));

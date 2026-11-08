@@ -1,4 +1,4 @@
-import type { Connection, ConnectionTrigger, TriggerMode, ParticipantWakeConfiguration, WakeTermination, WakeOffsetMode } from './types';
+import type { Connection, ConnectionTrigger, TriggerMode, ParticipantWakeConfiguration, ForcedWakeAction, WakeTermination, WakeOffsetMode } from './types';
 
 export function triggerFor(mode: TriggerMode, intervalMinutes = 60): ConnectionTrigger {
   return mode === 'interval'
@@ -21,6 +21,7 @@ export interface WakeFormValues {
   offset_seconds: number;
   random_from: number;
   random_to: number;
+  skip_inference_for: ForcedWakeAction[];
   termination: WakeTermination;
   timeout_seconds: number;
 }
@@ -34,6 +35,7 @@ export function wakeFormValues(configuration?: ParticipantWakeConfiguration): Wa
     offset_seconds: offset?.seconds ?? 0,
     random_from: offset?.random_from ?? 0,
     random_to: offset?.random_to ?? 60,
+    skip_inference_for: configuration?.wake?.skip_inference_for ?? ['participant.rest', 'proposition.traverse'],
     termination: configuration?.wake?.termination ?? 'phase',
     timeout_seconds: configuration?.wake?.timeout_seconds ?? 600,
   };
@@ -45,7 +47,7 @@ export function wakeConfigurationFor(values: WakeFormValues): ParticipantWakeCon
       ...triggerFor(values.trigger_mode, values.interval_minutes),
       offset: { mode: values.offset_mode, seconds: values.offset_seconds, random_from: values.random_from, random_to: values.random_to },
     },
-    wake: { termination: values.termination, timeout_seconds: values.timeout_seconds },
+    wake: { skip_inference_for: values.skip_inference_for, termination: values.termination, timeout_seconds: values.timeout_seconds },
   };
 }
 

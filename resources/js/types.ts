@@ -175,7 +175,8 @@ export interface Connection {
   participants_count?: number;
 }
 
-export type WakeTermination = 'phase' | 'cycle' | 'rest';
+export type ForcedWakeAction = 'participant.rest' | 'proposition.traverse';
+export type WakeTermination = 'phase' | 'cycle' | 'rest' | 'proposition_created';
 export type WakeOffsetMode = 'seconds' | 'random';
 export interface WakeOffset {
   mode: WakeOffsetMode;
@@ -185,7 +186,7 @@ export interface WakeOffset {
 }
 export interface ParticipantWakeConfiguration {
   trigger?: ConnectionTrigger;
-  wake?: { termination?: WakeTermination; timeout_seconds?: number };
+  wake?: { skip_inference_for?: ForcedWakeAction[]; termination?: WakeTermination; timeout_seconds?: number };
 }
 
 export interface ConnectionTrigger {
