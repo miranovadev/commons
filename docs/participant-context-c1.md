@@ -87,7 +87,8 @@ producing Phase against its Write register; Proposition labels never infer Phase
 | --- | --- | --- |
 | 1 Distinguish; 4 Disperse | Activity: What is active here? | Signal: What is different here? |
 | 2 Persist; 5 Mediate | Frontier: What else is possible here? | Stance: What position can be taken here? |
-| 3 Constrain; 6 Bias | Canon: What remains? | Concord: What can be held together? |
+| 3 Constrain | Canon: What remains? | Concord: What can be held together? |
+| 6 Bias | Canon: What remains? | Concord: What can be held together here, and where does the evidence still pull the claims apart? |
 | 7 Order | What should persist? | What should persist? |
 
 Write carries its question even when empty. Read and Gate receive no generic
