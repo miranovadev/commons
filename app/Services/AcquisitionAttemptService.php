@@ -121,9 +121,10 @@ final class AcquisitionAttemptService
         }
     }
 
-    public function resolve(Participant $participant, EvidenceExecution $execution, array $input): void
+    /** True only when this invocation created a Proposition. */
+    public function resolve(Participant $participant, EvidenceExecution $execution, array $input): bool
     {
-        DB::transaction(function () use ($participant, $execution, $input): void {
+        return DB::transaction(function () use ($participant, $execution, $input): bool {
             Substrate::lockForUpdate()->findOrFail($participant->substrate_id);
             Participant::lockForUpdate()->findOrFail($participant->id);
             $execution = EvidenceExecution::lockForUpdate()->findOrFail($execution->id);
@@ -134,7 +135,7 @@ final class AcquisitionAttemptService
             $hash = hash('sha256', json_encode($input, JSON_THROW_ON_ERROR));
             if ($execution->attempt_resolution !== null) {
                 if (($execution->attempt_resolution['request_hash'] ?? null) === $hash) {
-                    return;
+                    return false;
                 }
                 throw new \DomainException('The attempt already has a different resolution.');
             }
@@ -148,21 +149,19 @@ final class AcquisitionAttemptService
                 throw new \DomainException('Defer requires a nonempty reason.');
             }
             app(ContributionService::class)->validateSchema($this->schema($phase, $execution), $input);
-            $result = null;
             if ($input['action'] === 'proposition.variant') {
                 unset($input['execution_id']);
                 $result = app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
                 app(PhaseProgressionService::class)->advance($phase, $result);
+
+                return true;
             }
-            if ($result !== null) {
-                return;
-            }
-            $execution->forceFill(['attempt_resolution' => ['action' => $result === null ? 'defer' : 'variant',
-                'proposition_id' => $result?->id, 'reason' => $input['reason'] ?? null, 'request_hash' => $hash]])->save();
-            if ($result === null) {
-                $phase->forceFill(['completed_at' => now()])->save();
-                $phase->cycle->forceFill(['completed_at' => now(), 'deferred_at' => now()])->save();
-            }
+            $execution->forceFill(['attempt_resolution' => ['action' => 'defer',
+                'proposition_id' => null, 'reason' => $input['reason'], 'request_hash' => $hash]])->save();
+            $phase->forceFill(['completed_at' => now()])->save();
+            $phase->cycle->forceFill(['completed_at' => now(), 'deferred_at' => now()])->save();
+
+            return false;
         });
     }
 

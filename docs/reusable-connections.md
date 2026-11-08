@@ -59,7 +59,8 @@ drawer. Save wake settings together so a Random range can be edited atomically.
 | Interval | Frequency of scheduled wake opportunities | Existing interval in minutes |
 | Offset / Seconds | Fixed delay from each scheduled trigger to queue eligibility | 0; integer 0–60 seconds |
 | Offset / Random | Independent inclusive integer sample for each claimed trigger | From 0, To 60; both 0–60, From ≤ To |
-| End wake job after | Successful Phase completion, current Cycle completion, or genuine Rest | Phase |
+| End wake job after | Phase, Cycle, Rest, or Proposition Created | Phase |
+| Skip inference for forced moves | Selected actions can run automatically when only one complete submission is available | Rest and Traverse |
 | Timeout | Maximum runtime of the whole wake execution, including state reads and all inference calls | 600 seconds; integer 1–1,800 seconds |
 
 Phase stops after the original Phase completes. Cycle continues through fresh Phases
@@ -71,12 +72,15 @@ the next Cycle after a successful action; stopping prevents any inference in it.
 The job checks the acted Cycle's persisted `rested_at`, rather than mistaking this
 prepared successor for evidence that Rest did not occur.
 
-Each step reads the current Phase, schema, Gate, Horizon and Cycle. When the
-schema offers only `participant.rest` and no evidence attempt awaits resolution,
-the wake submits Rest through ordinary participation without calling the inference
-provider. Rest alongside any other action still goes to inference. If the field
-changes before automatic Rest is accepted, the wake reads the plan and chooses
-again. Provider failures retain the existing three queue attempts and backoff.
+Proposition Created ends the wake after its successful Variant, Revision, Reconciliation,
+Reclassification or Commitment. It continues across Rest and Defer through ordinary
+recovery, ending when recovery is unavailable or the whole-job deadline expires.
+
+Each step reads the current Phase, schema, Gate, Horizon and Cycle. A selected
+Rest or Traverse bypasses inference only when it is the sole action. Traverse
+also requires one destination and no optional Receipt choices. Clearing both
+checkboxes sends every decision to inference. Automatic moves use ordinary
+contribution validation, and a stale field triggers a new decision. Provider failures retain the existing three queue attempts and backoff.
 A retry resumes the current authoritative position without replaying accepted actions.
 The previous 64-action ceiling is replaced by the whole-execution deadline, so it
 cannot prematurely cap an otherwise valid Rest wake.
@@ -126,7 +130,7 @@ No database columns or eager backfill are needed. The existing attachment JSON s
     "interval_minutes": 1,
     "offset": { "mode": "seconds", "seconds": 0, "random_from": 0, "random_to": 60 }
   },
-  "wake": { "termination": "phase", "timeout_seconds": 600 }
+  "wake": { "termination": "phase", "timeout_seconds": 600, "skip_inference_for": ["participant.rest", "proposition.traverse"] }
 }
 ```
 

@@ -7,6 +7,7 @@ use App\Contracts\WebSearchProvider;
 use App\Domain\Evidence\SearchObservation;
 use App\Enums\PhaseKind;
 use App\Jobs\WakeParticipant;
+use App\Models\Attestation;
 use App\Models\Connection;
 use App\Models\Cycle;
 use App\Models\EvidenceExecution;
@@ -479,6 +480,85 @@ class ParticipantWakeTest extends TestCase
         $this->assertNotNull($cycle->rested_at);
         $this->assertNotNull($cycle->completed_at);
         $this->assertSame('no_available_move', $cycle->rest_reason->value);
+        $this->assertNull($connection->fresh()->last_error);
+    }
+
+    public function test_deselecting_rest_returns_a_rest_only_decision_to_inference(): void
+    {
+        [$f, , $connection] = $this->restOnlyConstrain();
+        $connection->forceFill(['configuration' => ['wake' => ['skip_inference_for' => ['proposition.traverse']]]])->save();
+        $this->mock(ParticipantInference::class)->shouldReceive('contribute')->once()->andReturn(['action' => 'participant.rest']);
+        $this->app->call([new WakeParticipant($connection->id), 'handle']);
+        $this->assertNotNull($f->phase->cycle->fresh()->rested_at);
+        $this->assertNull($connection->fresh()->last_error);
+    }
+
+    public static function forcedTraversalCases(): array
+    {
+        return [
+            'one destination' => [1, false, true, false],
+            'fork' => [2, false, true, true],
+            'Receipt choices' => [1, true, true, true],
+            'disabled' => [1, false, false, true],
+        ];
+    }
+
+    #[DataProvider('forcedTraversalCases')]
+    public function test_wake_preserves_traversal_choices(int $count, bool $withReceipt, bool $enabled, bool $infer): void
+    {
+        $f = new ParticipantContextFixture(1, 0, false);
+        $f->phase->forceFill(['kind' => PhaseKind::Distinguish, 'gate_proposition_id' => $f->seed->id, 'write_register' => 'activity'])->save();
+        $f->viewer->forceFill(['current_proposition_id' => $f->seed->id])->save();
+        if ($withReceipt) {
+            $this->receiptFixture($f->seed);
+        }
+        for ($i = 0; $i < $count; $i++) {
+            $target = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+            $judgment = new Attestation;
+            $judgment->forceFill(['phase_id' => $target->phase_id, 'proposition_id' => $target->id, 'direction' => 'support'])->save();
+            app(LedgerService::class)->record($judgment);
+            $f->node($target, 'frontier', position: PhaseKind::Persist);
+        }
+        $this->publishPotentialFixture($f->viewer);
+        $actions = app(ParticipationService::class)->stateFor($f->viewer)['plan']['schema']['$defs']['actions'];
+        $this->assertSame(['proposition.traverse'], array_keys($actions));
+        $this->assertSame($withReceipt, isset($actions['proposition.traverse']['properties']['receipt_options']));
+        $this->assertCount($count, $actions['proposition.traverse']['properties']['proposition_id']['enum']);
+        $connection = $this->connectionFor($f->viewer);
+        if (! $enabled) {
+            $connection->forceFill(['configuration' => ['wake' => ['skip_inference_for' => []]]])->save();
+        }
+        $inference = $this->mock(ParticipantInference::class);
+        if ($infer) {
+            $inference->shouldReceive('contribute')->once()->andReturn(['action' => 'proposition.traverse', 'proposition_id' => $target->id]);
+        } else {
+            $inference->shouldNotReceive('contribute');
+        }
+        $this->app->call([new WakeParticipant($connection->id), 'handle']);
+        $this->assertSame($target->id, $f->viewer->fresh()->current_proposition_id);
+    }
+
+    public function test_proposition_created_wake_crosses_rest_then_yields_on_its_first_birth(): void
+    {
+        [$f, , $connection] = $this->restOnlyConstrain();
+        $connection->forceFill(['configuration' => ['wake' => ['termination' => 'proposition_created']]])->save();
+        $original = $f->phase->cycle;
+        $this->mock(ParticipantInference::class)->shouldReceive('contribute')->twice()
+            ->andReturnUsing(function ($connection, $state) use ($original): array {
+                $this->assertNotSame($original->id, $state['cycle']['id']);
+                $this->assertNotNull($original->fresh()->rested_at);
+                if (isset($state['schema']['$defs']['actions']['instrument.execute'])) {
+                    return ['action' => 'instrument.execute', 'proposition_id' => $state['context']['gate']['acting_id'],
+                        'instrument' => ['kind' => 'proposition_search', 'limit' => 3]];
+                }
+
+                return ['action' => 'proposition.variant', 'statement' => 'First birth after recovering.'];
+            });
+
+        $this->app->call([new WakeParticipant($connection->id), 'handle']);
+        $next = $f->viewer->cycles()->whereNull('completed_at')->sole();
+        $this->assertSame(PhaseKind::Persist, $next->currentPhase->kind);
+        $this->assertSame('First birth after recovering.', $f->viewer->fresh()->position->statement);
         $this->assertNull($connection->fresh()->last_error);
     }
 

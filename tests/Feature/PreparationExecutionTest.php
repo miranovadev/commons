@@ -165,7 +165,8 @@ class PreparationExecutionTest extends TestCase
         $retryInput = ['action' => 'proposition.variant', 'statement' => 'A conclusion from the prepared material.', 'execution_id' => $execution->id];
         $this->assertSame($receipt->id, $service->contribute($f->viewer, $execution, $retryInput)->id);
         $this->publishPotentialFixture($f->viewer);
-        $retry = app(ParticipationService::class)->contribute($f->viewer, $f->phase->id, $retryInput);
+        $retry = app(ParticipationService::class)->contribute($f->viewer, $f->phase->id, $retryInput, createdProposition: $created);
+        $this->assertFalse($created);
         $this->assertSame($result->id, $retry['current_proposition_id']);
         $this->assertSame($count + 1, Proposition::count());
         $this->assertSame($phaseCount + 1, Phase::count());
