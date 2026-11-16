@@ -51,8 +51,13 @@ final class ParticipantRegisterQuestions
         string $writeRegister,
         ?HorizonCloudMode $cloud = null,
     ): string {
-        $domain = collect(ContextDomain::cases())
-            ->first(fn (ContextDomain $candidate) => $candidate->registerFor($phase) === $writeRegister);
+        $domain = null;
+        foreach (ContextDomain::cases() as $candidate) {
+            if ($candidate->registerFor($phase) === $writeRegister) {
+                $domain = $candidate;
+                break;
+            }
+        }
 
         if ($domain === null) {
             throw new DomainException('The Write register does not match its producing Phase.');
